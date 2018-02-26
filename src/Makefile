@@ -1,4 +1,4 @@
-include ../local.mk
+-include ../local.mk
 include ../common.mk
 
 .PRECIOUS: vcf_reader.cc
