@@ -45,7 +45,7 @@ namespace libbio {
 		void report_unexpected_character(char const *current_character, int const current_state);
 
 	protected:
-		vcf_input						*m_input{nullptr};
+		class vcf_input					*m_input{nullptr};
 		fsm								m_fsm;
 		transient_variant				m_current_variant;
 		sample_name_map					m_sample_names;
@@ -67,12 +67,12 @@ namespace libbio {
 	public:
 		vcf_reader() = default;
 		
-		vcf_reader(vcf_input &input):
+		vcf_reader(class vcf_input &input):
 			m_input(&input)
 		{
 		}
 		
-		void set_input(vcf_input &input) { m_input = &input; }
+		void set_input(class vcf_input &input) { m_input = &input; }
 		void read_header();
 		void fill_buffer();
 		void reset();
