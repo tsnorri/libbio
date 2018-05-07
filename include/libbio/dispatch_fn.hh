@@ -276,12 +276,14 @@ namespace libbio {
 		
 		t_dispatch operator*() { return m_ptr; }
 		
-		void reset(t_dispatch ptr = nullptr)
+		void reset(t_dispatch ptr = nullptr, bool retain = false)
 		{
 			if (m_ptr)
 				dispatch_release(m_ptr);
 			
 			m_ptr = ptr;
+			if (retain && m_ptr)
+				dispatch_retain(m_ptr);
 		}
 	};
 	
