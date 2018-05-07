@@ -2,7 +2,9 @@
 include common.mk
 
 all:
-	$(MAKE) -C src
+	$(MAKE) -C src all
 
 clean:
 	$(MAKE) -C src clean
+
+clean-all: clean
