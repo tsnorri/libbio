@@ -65,7 +65,8 @@ namespace libbio {
 				// This is safe (w.r.t. alignment) because the element width is 8.
 				char *buffer_data(reinterpret_cast <char *>(buffer.data()));
 				
-				while (stream.getline(buffer_data, size - 1, '\n'))
+				char const delim('\n');
+				while (stream.getline(buffer_data, size - 1, delim))
 				{
 					++line_no;
 					
@@ -79,7 +80,9 @@ namespace libbio {
 					
 					// Get the number of characters extracted by the last input operation.
 					// Delimiter is counted in gcount.
-					std::streamsize const count(stream.gcount() - 1);
+					std::streamsize const gcount(stream.gcount());
+					std::streamsize const has_delim(delim == *(buffer_data + gcount - 1) ? 1 : 0);
+					std::streamsize const count(stream.gcount() - has_delim);
 					
 					while (true)
 					{
