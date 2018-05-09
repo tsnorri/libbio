@@ -9,6 +9,7 @@
 #include <boost/function_output_iterator.hpp>
 #include <boost/range/iterator_range_core.hpp>
 #include <libbio/assert.hh>
+#include <libbio/cxxcompat.hh>
 #include <libbio/infix_ostream_fn.hh>
 #include <libbio/types.hh>
 #include <vector>

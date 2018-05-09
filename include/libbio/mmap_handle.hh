@@ -6,7 +6,7 @@
 #ifndef LIBBIO_MMAP_HANDLE_HH
 #define LIBBIO_MMAP_HANDLE_HH
 
-#include <string_view>
+#include <libbio/cxxcompat.hh>
 
 
 namespace libbio {
