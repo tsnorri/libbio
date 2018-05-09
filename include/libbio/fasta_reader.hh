@@ -63,9 +63,11 @@ namespace libbio {
 			std::unique_ptr <vector_type> seq;
 			std::string current_identifier;
 			
+			cb.start();
+			
 			try
 			{
-				uint32_t i(0);
+				std::uint32_t i(0);
 				
 				vector_source.get_vector(seq);
 				if (t_initial_size && seq->size() < t_initial_size)
@@ -136,6 +138,7 @@ namespace libbio {
 				{
 					assert(seq.get());
 					cb.handle_sequence(current_identifier, seq, seq_length, vector_source);
+					assert(nullptr == seq.get());
 				}
 			}
 			catch (std::ios_base::failure &exc)
