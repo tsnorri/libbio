@@ -10,9 +10,13 @@
 namespace libbio {
 	
 	template <typename t_type_1, typename t_type_2>
-	constexpr std::common_type_t <t_type_1, t_type_2> const &max_ct(t_type_1 const &val_1, t_type_2 const &val_2)
+	constexpr std::common_type_t <t_type_1, t_type_2> const max_ct(t_type_1 const &val_1, t_type_2 const &val_2)
 	{
-		return std::max <std::common_type_t <t_type_1, t_type_2>>(val_1, val_2);
+		typedef std::common_type_t <t_type_1, t_type_2> return_type;
+		return_type retval(std::max <return_type>(val_1, val_2));
+		assert(val_1 <= retval);
+		assert(val_2 <= retval);
+		return retval;
 	}
 	
 	
