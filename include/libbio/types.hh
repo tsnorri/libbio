@@ -34,11 +34,6 @@ namespace libbio {
 	
 	enum { NULL_ALLELE = std::numeric_limits <uint8_t>::max() };
 	
-	enum class sv_handling : uint8_t {
-		DISCARD		= 0,
-		KEEP
-	};
-	
 	enum class sv_type : uint8_t {
 		NONE		= 0,
 		DEL,
@@ -51,6 +46,8 @@ namespace libbio {
 		INS_ME,
 		UNKNOWN
 	};
+	
+	char const *to_string(sv_type const svt);
 }
 
 #endif

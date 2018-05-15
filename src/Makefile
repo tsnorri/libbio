@@ -5,6 +5,7 @@ include ../common.mk
 
 OBJECTS		=	file_handling.o \
 				mmap_handle.o \
+				types.o \
 				variant.o \
 				vcf_input.o \
 				vcf_reader.o
