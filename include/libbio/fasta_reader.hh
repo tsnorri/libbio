@@ -51,10 +51,99 @@ namespace libbio {
 		
 	public:
 		std::size_t current_line() const { return m_lineno; }
+
+
+		// FIXME: eliminate duplicate parts of the two functions.
+		void read_to_vector_from_stream(std::istream &stream, vector_source &vector_source, t_callback &cb)
+		{
+			libbio_always_assert(stream.exceptions() & std::istream::badbit);
+			libbio_always_assert(stream.exceptions() & std::istream::failbit);
+
+			m_lineno = 0;
+
+			std::size_t seq_length(0);
+			std::unique_ptr <vector_type> seq;
+			std::string current_identifier;
+			
+			cb.start();
+			
+			try
+			{
+				vector_source.get_vector(seq);
+				if (t_initial_size && seq->size() < t_initial_size)
+					seq->resize(t_initial_size);
+
+				// Get a char pointer to the data part of the buffer.
+				char *seq_data(reinterpret_cast <char *>(seq->data()));
+				auto const seq_buf_size(seq->size() * sizeof(typename vector_type::value_type));
+
+				while (stream.getline(seq_data + seq_length, seq_buf_size - seq_length - 1, '\n'))
+				{
+					++m_lineno;
+					
+					// Discard comments.
+					auto const first(seq_data[seq_length]);
+					if (';' == first)
+						continue;
+					
+					if ('>' == first)
+					{
+						// Reset the sequence length and get a new vector.
+						auto const prev_identifier(current_identifier);
+						current_identifier.assign(1 + seq_data + seq_length);
+						if (seq_length)
+						{
+							assert(seq.get());
+							cb.handle_sequence(prev_identifier, seq, seq_length, vector_source);
+							assert(nullptr == seq.get());
+							seq_length = 0;
+							
+							vector_source.get_vector(seq);
+							if (t_initial_size && seq->size() < t_initial_size)
+								seq->resize(t_initial_size);
+						}
+						
+						continue;
+					}
+					
+					// Get the number of characters extracted by the last input operation.
+					// Delimiter is counted in gcount.
+					std::streamsize const count(stream.gcount() - 1);
+					seq_length += count;
+				}
+				
+				if (seq_length)
+				{
+					assert(seq.get());
+					cb.handle_sequence(current_identifier, seq, seq_length, vector_source);
+					assert(nullptr == seq.get());
+				}
+			}
+			catch (std::ios_base::failure &exc)
+			{
+				if (stream.eof())
+				{
+					if (seq_length)
+					{
+						assert(seq.get());
+						cb.handle_sequence(current_identifier, seq, seq_length, vector_source);
+					}
+				}
+				else
+				{
+					throw (exc);
+				}
+			}
+
+			cb.finish();
+		}
 		
 		
 		void read_from_stream(std::istream &stream, vector_source &vector_source, t_callback &cb)
 		{
+			libbio_always_assert(stream.exceptions() & std::istream::badbit);
+			libbio_always_assert(stream.exceptions() & std::istream::failbit);
+
 			m_lineno = 0;
 			
 			std::size_t const size(1024 * 1024);
@@ -67,8 +156,6 @@ namespace libbio {
 			
 			try
 			{
-				std::uint32_t i(0);
-				
 				vector_source.get_vector(seq);
 				if (t_initial_size && seq->size() < t_initial_size)
 					seq->resize(t_initial_size);
@@ -101,7 +188,7 @@ namespace libbio {
 								seq->resize(t_initial_size);
 						}
 						
-						current_identifier = std::string(1 + buffer_data);
+						current_identifier.assign(1 + buffer_data);
 						continue;
 					}
 					
@@ -141,7 +228,7 @@ namespace libbio {
 					assert(nullptr == seq.get());
 				}
 			}
-			catch (std::ios_base::failure &exc)
+			catch (std::ios_base::failure const &exc)
 			{
 				if (stream.eof())
 				{
@@ -156,7 +243,7 @@ namespace libbio {
 					throw (exc);
 				}
 			}
-			
+
 			cb.finish();
 		}
 	};
