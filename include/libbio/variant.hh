@@ -106,7 +106,7 @@ namespace libbio {
 		std::size_t zero_based_pos() const;
 		std::size_t qual() const										{ return m_qual; }
 		std::vector <sv_type> const &alt_sv_types() const				{ return m_alt_sv_types; }
-		sample_field const &sample(std::size_t const sample_idx) const	{ always_assert(sample_idx <= m_sample_count); return m_samples.at(sample_idx); }
+		sample_field const &sample(std::size_t const sample_idx) const	{ libbio_always_assert(sample_idx <= m_sample_count); return m_samples.at(sample_idx); }
 		std::vector <sample_field> const &samples() const { return m_samples; }
 	};
 	
@@ -300,7 +300,7 @@ namespace libbio {
 	template <typename t_string>
 	void variant_tpl <t_string>::set_alt(std::string_view const &alt, std::size_t const pos, bool const is_complex)
 	{
-		always_assert(!is_complex, "Only simple ALTs are handled");
+		libbio_always_assert(!is_complex, "Only simple ALTs are handled");
 		
 		if (! (pos < m_alts.size()))
 			m_alts.resize(pos + 1);
