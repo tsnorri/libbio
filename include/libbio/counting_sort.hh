@@ -72,7 +72,7 @@ namespace libbio { namespace detail {
 				}
 			}
 			counts.set_last_element(prev_idx);
-			always_assert(found_max_counts == identifier_count);
+			libbio_always_assert(found_max_counts == identifier_count);
 		}
 		
 		// Count the number of each object.

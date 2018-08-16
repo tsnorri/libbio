@@ -92,7 +92,7 @@ namespace libbio {
 						else
 						{
 							if (2 * capacity < capacity)
-								fail("Can't reserve more space.");
+								libbio_fail("Can't reserve more space.");
 							
 							// std::vector may reserve more than 2 * capacity (using reserve),
 							// sdsl::int_vector reserves the exact amount.
