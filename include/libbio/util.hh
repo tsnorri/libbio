@@ -6,6 +6,22 @@
 #ifndef LIBBIO_UTIL_HH
 #define LIBBIO_UTIL_HH
 
+#include <atomic>
+
+
+namespace libbio { namespace detail {
+	
+	template <typename t_type, typename t_first, typename... t_rest>
+	struct smallest_unsigned_lockfree_type_gte_helper
+	{
+		typedef std::conditional_t <
+			sizeof(t_first) <= sizeof(t_type) && std::atomic <t_type>::is_always_lock_free(),
+			t_first,
+			typename smallest_unsigned_lockfree_type_gte_helper <t_type, t_rest...>::type
+		> type;
+	};
+}}
+
 
 namespace libbio {
 	
@@ -35,6 +51,18 @@ namespace libbio {
 			return lhs.first < rhs;
 		}
 	};
+	
+	
+	template <typename t_type>
+	struct smallest_unsigned_lockfree_type_gte
+	{
+		typedef typename detail::smallest_unsigned_lockfree_type_gte_helper <
+			t_type, uint8_t, uint16_t, uint32_t, uint64_t
+		>::type type;
+	};
+	
+	template <typename t_type>
+	using smallest_unsigned_lockfree_type_gte_t = typename smallest_unsigned_lockfree_type_gte <t_type>::type;
 }
 
 #endif
