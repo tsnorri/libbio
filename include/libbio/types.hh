@@ -6,10 +6,13 @@
 #ifndef LIBBIO_TYPES_HH
 #define LIBBIO_TYPES_HH
 
+#include <cstdint>
+#include <limits>
+
 
 namespace libbio {
 
-	enum class vcf_field : uint8_t {
+	enum class vcf_field : std::uint8_t {
 		CHROM	= 0,
 		POS		= 1,
 		ID		= 2,
@@ -23,7 +26,7 @@ namespace libbio {
 		VARY	= 10
 	};
 	
-	enum class format_field : uint8_t {
+	enum class format_field : std::uint8_t {
 		GT		= 0,
 		DP,
 		GQ,
@@ -32,14 +35,9 @@ namespace libbio {
 		MQ
 	};
 	
-	enum { NULL_ALLELE = std::numeric_limits <uint8_t>::max() };
+	enum { NULL_ALLELE = std::numeric_limits <std::uint8_t>::max() };
 	
-	enum class sv_handling : uint8_t {
-		DISCARD		= 0,
-		KEEP
-	};
-	
-	enum class sv_type : uint8_t {
+	enum class sv_type : std::uint8_t {
 		NONE		= 0,
 		DEL,
 		INS,
@@ -51,6 +49,8 @@ namespace libbio {
 		INS_ME,
 		UNKNOWN
 	};
+	
+	char const *to_string(sv_type const svt);
 }
 
 #endif

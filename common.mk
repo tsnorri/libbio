@@ -16,11 +16,14 @@ SYSTEM_LDFLAGS	?=
 
 AR				?= ar
 CC				?= cc
+CMAKE			?= cmake
+CP				?= cp
 CXX				?= c++
 DOT				?= dot
 GENGETOPT		?= gengetopt
 MKDIR			?= mkdir
 RAGEL			?= ragel
+RM				?= rm
 
 BOOST_INCLUDE	?= /usr/include
 

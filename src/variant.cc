@@ -11,7 +11,7 @@ namespace libbio {
 
 	std::size_t variant_base::zero_based_pos() const
 	{
-		always_assert(0 != m_pos, "Unexpected position");
+		libbio_always_assert(0 != m_pos, "Unexpected position");
 		return m_pos - 1;
 	}
 	
@@ -19,8 +19,8 @@ namespace libbio {
 	void variant_base::set_gt(std::size_t const alt, std::size_t const sample_no, std::size_t const idx, bool const is_phased)
 	{
 		// Check that the samples are given in consecutive order.
-		always_assert(0 != sample_no);
-		always_assert(sample_no == 1 || sample_no == m_sample_count - 1 || sample_no == m_sample_count);
+		libbio_always_assert(0 != sample_no);
+		libbio_always_assert(sample_no == 1 || sample_no == m_sample_count - 1 || sample_no == m_sample_count);
 		m_sample_count = 1 + sample_no;
 		
 		if (! (m_sample_count <= m_samples.size()))
@@ -29,7 +29,7 @@ namespace libbio {
 		auto &sample(m_samples[sample_no]);
 		
 		// Again check the order.
-		always_assert(0 == idx || idx == sample.m_gt_count);
+		libbio_always_assert(0 == idx || idx == sample.m_gt_count);
 		sample.m_gt_count = 1 + idx;
 		
 		if (! (sample.m_gt_count <= sample.m_genotype.size()))

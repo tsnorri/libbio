@@ -156,7 +156,7 @@ namespace libbio {
 	{
 		std::string_view sv(m_fsm.p, m_fsm.pe - m_fsm.p);
 		auto const pos(sv.find('\n'));
-		always_assert(std::string_view::npos != pos, "Unable to find the next newline");
+		libbio_always_assert(std::string_view::npos != pos, "Unable to find the next newline");
 		m_fsm.p += pos;
 	}
 	
@@ -218,7 +218,7 @@ namespace libbio {
 		{
 			std::string str(*it);
 			auto const res(m_sample_names.emplace(std::move(str), i));
-			always_assert(res.second, "Duplicate sample name");
+			libbio_always_assert(res.second, "Duplicate sample name");
 			++i;
 		}
 		
@@ -288,14 +288,14 @@ namespace libbio {
 					
 					case '\t':
 					{
-						always_assert(m_format.size() == m_format_idx, "Not all fields present in the sample");
+						libbio_always_assert(m_format.size() == m_format_idx, "Not all fields present in the sample");
 						m_format_idx = 0;
 						fgoto sample_rec_f;
 					}
 					
 					case '\n':
 					{
-						always_assert(m_format.size() == m_format_idx, "Not all fields present in the sample");
+						libbio_always_assert(m_format.size() == m_format_idx, "Not all fields present in the sample");
 						
 						if (!cb(m_current_variant))
 						{
@@ -559,7 +559,7 @@ namespace libbio {
 			
 			# Sample record
 			sample_rec_f := "" >to{
-				always_assert(m_format_idx < m_format.size(), "Format does not match the sample");
+				libbio_always_assert(m_format_idx < m_format.size(), "Format does not match the sample");
 
 				// Sample index 0 is reserved for the reference.
 				++m_sample_idx;
@@ -589,7 +589,7 @@ namespace libbio {
 						fgoto sample_mq_f;
 						
 					default:
-						fail("Unexpected format value");
+						libbio_fail("Unexpected format value");
 				}
 			};
 			
