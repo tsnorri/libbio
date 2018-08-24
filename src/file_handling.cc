@@ -30,7 +30,7 @@ namespace libbio {
 
 		ios::file_descriptor_source source(fd, ios::close_handle);
 		stream.open(source);
-		stream.exceptions(std::istream::badbit | std::istream::failbit);
+		stream.exceptions(std::istream::badbit);
 	}
 	
 	
