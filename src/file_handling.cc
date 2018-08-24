@@ -34,14 +34,14 @@ namespace libbio {
 	}
 	
 	
-	void open_file_for_writing(char const *fname, file_ostream &stream, bool const should_overwrite)
+	void open_file_for_writing(char const *fname, file_ostream &stream, writing_open_mode const mode)
 	{
-		int fd(0);
-		if (should_overwrite)
-			fd = open(fname, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-		else
-			fd = open(fname, O_WRONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
-		
+		auto const flags(
+			O_WRONLY |
+			(mode & writing_open_mode::CREATE		? O_CREAT : 0) |		// Create if requested.
+			(mode & writing_open_mode::OVERWRITE	? O_TRUNC : O_EXCL)		// Truncate if OVERWRITE given, otherwise require that the file does not exist.
+		);
+		int const fd(open(fname, flags));
 		if (-1 == fd)
 			handle_file_error(fname);
 		
