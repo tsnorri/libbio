@@ -41,7 +41,7 @@ namespace libbio {
 			(mode & writing_open_mode::CREATE		? O_CREAT : 0) |		// Create if requested.
 			(mode & writing_open_mode::OVERWRITE	? O_TRUNC : O_EXCL)		// Truncate if OVERWRITE given, otherwise require that the file does not exist.
 		);
-		int const fd(open(fname, flags));
+		int const fd(open(fname, flags, S_IRUSR | S_IWUSR));
 		if (-1 == fd)
 			handle_file_error(fname);
 		
