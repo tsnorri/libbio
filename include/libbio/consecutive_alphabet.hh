@@ -7,19 +7,14 @@
 #define LIBBIO_CONSECUTIVE_ALPHABET_HH
 
 #include <array>
+#include <boost/sort/sort.hpp>
 #include <cstdint>
 #include <iostream>
 #include <libbio/assert.hh>
+#include <libbio/dispatch_fn.hh>
 #include <libbio/util.hh>
 #include <map>
 #include <vector>
-
-
-#if defined(__lib_cpp_execution) && __lib_cpp_execution >= 201603
-#	define LIBBIO_HAVE_PARALLEL_STDLIB	1
-#else
-#	define LIBBIO_HAVE_PARALLEL_STDLIB	0
-#endif
 
 
 namespace libbio { namespace detail {
@@ -189,7 +184,7 @@ namespace libbio {
 		void compress();
 		
 		// Non-template variant.
-		void compress() { compress <true>(); }
+		void compress();
 	};
 }
 
@@ -274,7 +269,7 @@ namespace libbio {
 	template <typename t_forward_iterable, bool t_parallel>
 	void consecutive_alphabet_as_parallel_builder <t_char>::prepare(t_forward_iterable const &text)
 	{
-		detail::consecutive_alphabet_as_parallel_builder_helper <t_parallel && LIBBIO_HAVE_PARALLEL_STDLIB> helper;
+		detail::consecutive_alphabet_as_parallel_builder_helper <t_parallel> helper;
 		helper.prepare(*this, text);
 	}
 	
@@ -309,7 +304,7 @@ namespace libbio {
 		std::size_t const count(m_found_char_idx);
 		std::size_t char_idx(0);
 		
-		detail::consecutive_alphabet_as_parallel_builder_helper <t_parallel && LIBBIO_HAVE_PARALLEL_STDLIB> helper;
+		detail::consecutive_alphabet_as_parallel_builder_helper <t_parallel> helper;
 		helper.sort(m_found_characters.begin(), count + m_found_characters.begin());
 		
 		auto &to_comp(this->to_comp());
@@ -324,6 +319,17 @@ namespace libbio {
 			++char_idx;
 		}
 	}
+	
+	
+	template <typename t_char>
+	void consecutive_alphabet_as_parallel_builder <t_char>::compress()
+	{
+		std::size_t const count(m_found_char_idx);
+		if (count < 64) // FIXME: better threshold?
+			compress <false>();
+		else
+			compress <true>();
+	}
 }
 
 
@@ -333,8 +339,10 @@ namespace libbio { namespace detail {
 	template <typename t_iterator>
 	void consecutive_alphabet_as_parallel_builder_helper <t_parallel>::sort(t_iterator begin, t_iterator end)
 	{
-#if LIBBIO_HAVE_PARALLEL_STDLIB
-		std::sort(std::execution::par, m_found_characters.begin(), count + m_found_characters.begin());
+#if LIBBIO_USE_STD_PARALLEL_FOR_EACH
+		std::sort(std::execution::par, begin, end);
+#else
+		boost::sort::block_indirect_sort(begin, end);
 #endif
 	}
 	
@@ -350,12 +358,9 @@ namespace libbio { namespace detail {
 	template <typename t_builder, typename t_forward_iterable>
 	void consecutive_alphabet_as_parallel_builder_helper <t_parallel>::prepare(t_builder &builder, t_forward_iterable const &text)
 	{
-#if LIBBIO_HAVE_PARALLEL_STDLIB
-		std::for_each(
-			std::execution::par_unseq,
-			text.cbegin(),
-			text.cend(),
-			[this](auto const c) {
+		parallel_for_each(
+			text,
+			[this, &builder](auto const c) {
 				if (0 == builder.m_flags[c].test_and_set())
 				{
 					// Mark the character as listed.
@@ -363,7 +368,6 @@ namespace libbio { namespace detail {
 				}
 			}
 		);
-#endif
 	}
 	
 	
