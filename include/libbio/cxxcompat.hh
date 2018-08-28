@@ -11,10 +11,20 @@
 #elif __has_include(<experimental/string_view>)
 #	include <experimental/string_view>
 
-// FIXME hack.
+// XXX hack.
 namespace std {
 	using experimental::string_view;
 }
 #endif
+
+
+#if __cplusplus < 202000L
+// XXX hack.
+#include <boost/beast/core.hpp>
+namespace std {
+	using boost::beast::span;
+}
+#endif
+
 
 #endif
