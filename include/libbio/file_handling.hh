@@ -35,7 +35,10 @@ namespace libbio {
 	
 	void handle_file_error(char const *fname);
 	void open_file_for_reading(char const *fname, file_istream &stream);
+	void open_file_for_reading(std::string const &fname, file_istream &stream);
 	void open_file_for_writing(char const *fname, file_ostream &stream, writing_open_mode const mode);
+	void open_file_for_writing(std::string const &fname, file_ostream &stream, writing_open_mode const mode);
+	
 	
 	template <typename t_stream, typename t_vector>
 	void read_from_stream(t_stream &stream, t_vector &buffer)

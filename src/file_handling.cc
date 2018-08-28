@@ -20,8 +20,20 @@ namespace libbio {
 		std::cerr << "Got an error while trying to open '" << fname << "': " << errmsg << std::endl;
 		exit(EXIT_FAILURE);
 	}
-
-
+	
+	
+	void open_file_for_reading(std::string const &fname, file_istream &stream)
+	{
+		open_file_for_reading(fname.c_str(), stream);
+	}
+	
+	
+	void open_file_for_writing(std::string const &fname, file_ostream &stream, writing_open_mode const mode)
+	{
+		open_file_for_writing(fname.c_str(), stream, mode);
+	}
+	
+	
 	void open_file_for_reading(char const *fname, file_istream &stream)
 	{
 		int fd(open(fname, O_RDONLY));
