@@ -11,8 +11,17 @@
 #include <cstdio>
 #include <dispatch/dispatch.h>
 #include <iostream>
+#include <range/v3/all.hpp>
 #include <string>
 #include <stdexcept>
+
+#ifndef LIBBIO_USE_STD_PARALLEL_FOR_EACH
+#	define LIBBIO_USE_STD_PARALLEL_FOR_EACH 0
+#endif
+
+#if LIBBIO_USE_STD_PARALLEL_FOR_EACH
+#	include <execution>
+#endif
 
 
 namespace libbio { namespace detail {
@@ -88,6 +97,63 @@ namespace libbio { namespace detail {
 		t_owner *owner(static_cast <t_owner *>(ctx));
 		(owner->*t_fn)();
 	}
+	
+	
+	template <typename t_owner, void(t_owner::*t_fn)(std::size_t)>
+	void call_member_function_dispatch_apply(void *ctx, std::size_t idx)
+	{
+		t_owner *owner(static_cast <t_owner *>(ctx));
+		(owner->*t_fn)(idx);
+	}
+	
+	
+	template <
+		typename t_range,
+		typename Fn
+	>
+	class parallel_for_each_helper
+	{
+	protected:
+		Fn					*m_fn{};	// Not owned.
+		t_range				*m_range{};	// Not owned.
+		std::size_t			m_count{};
+		std::size_t			m_stride{};
+		
+	protected:
+		void do_apply(std::size_t const idx)
+		{
+			// Call *m_fn for the current subrange.
+			auto const start(idx * m_stride);
+			auto const end(std::min(start + m_stride, m_count));
+			for (std::size_t i(start); i < end; ++i)
+				(*m_fn)(*(m_range->begin() + i));
+		}
+		
+	public:
+		parallel_for_each_helper(t_range &range, Fn &fn, std::size_t stride = 8):
+			m_fn(&fn),
+			m_range(&range),
+			m_count(range.size()),
+			m_stride(stride)
+		{
+		}
+		
+		void apply()
+		{
+			typedef parallel_for_each_helper helper_type;
+			
+			dispatch_apply_f(
+				m_count,
+#ifdef DISPATCH_APPLY_AUTO
+				DISPATCH_APPLY_AUTO,
+#else
+				dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
+#endif
+				this,
+				&call_member_function_dispatch_apply <helper_type, &helper_type::do_apply>
+			);
+		}
+	};
 }}
 
 
@@ -203,6 +269,39 @@ namespace libbio {
 		dispatch_set_context(source, new_ctx);
 		dispatch_source_set_event_handler_f(source, &context_type::call_fn_no_delete);
 		dispatch_source_set_cancel_handler_f(source, &context_type::cleanup);
+	}
+	
+	template <typename Fn, typename t_range>
+	void parallel_for_each(
+		t_range &&range,
+		Fn &&fn
+	)
+	{
+#if LIBBIO_USE_STD_PARALLEL_FOR_EACH
+		std::for_each(
+			std::execution::par_unseq,
+			range.begin(),
+			range.end(),
+			std::forward <Fn>(fn)
+		);
+#else
+		detail::parallel_for_each_helper helper(range, fn);
+		helper.apply();
+#endif
+	}
+
+
+	template <typename Fn, typename t_range>
+	void for_each(
+		t_range &&range,
+		Fn &&fn
+	)
+	{
+		std::for_each(
+			range.begin(),
+			range.end(),
+			std::forward <Fn>(fn)
+		);
 	}
 	
 	

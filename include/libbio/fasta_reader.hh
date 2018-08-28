@@ -56,8 +56,7 @@ namespace libbio {
 		// FIXME: eliminate duplicate parts of the two functions.
 		void read_to_vector_from_stream(std::istream &stream, vector_source &vector_source, t_callback &cb)
 		{
-			libbio_always_assert(stream.exceptions() & std::istream::badbit);
-			libbio_always_assert(stream.exceptions() & std::istream::failbit);
+			stream.exceptions(stream.exceptions() | std::istream::badbit | std::istream::failbit);
 
 			m_lineno = 0;
 
@@ -141,8 +140,7 @@ namespace libbio {
 		
 		void read_from_stream(std::istream &stream, vector_source &vector_source, t_callback &cb)
 		{
-			libbio_always_assert(stream.exceptions() & std::istream::badbit);
-			libbio_always_assert(stream.exceptions() & std::istream::failbit);
+			stream.exceptions(stream.exceptions() | std::istream::badbit | std::istream::failbit);
 
 			m_lineno = 0;
 			

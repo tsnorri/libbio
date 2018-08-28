@@ -118,7 +118,8 @@ namespace libbio {
 			}
 			catch (std::ios_base::failure &exc)
 			{
-				throw (exc);
+				if (!stream.eof())
+					throw (exc);
 			}
 			
 			cb.finish();

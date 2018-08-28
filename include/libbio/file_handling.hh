@@ -8,16 +8,34 @@
 
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
+#include <initializer_list>
 
 
 namespace libbio {
+	
+	enum writing_open_mode : std::uint32_t
+	{
+		NONE		= 0x0,
+		CREATE		= 0x1,
+		OVERWRITE	= 0x2
+	};
+	
+	inline constexpr writing_open_mode
+	make_writing_open_mode(std::initializer_list <std::underlying_type_t <writing_open_mode>> const &list)
+	{
+		std::underlying_type_t <writing_open_mode> retval{};
+		for (auto const val : list)
+			retval |= val;
+		return static_cast <writing_open_mode>(retval);
+	}
+	
 	
 	typedef boost::iostreams::stream <boost::iostreams::file_descriptor_source>	file_istream;
 	typedef boost::iostreams::stream <boost::iostreams::file_descriptor_sink>	file_ostream;
 	
 	void handle_file_error(char const *fname);
 	void open_file_for_reading(char const *fname, file_istream &stream);
-	void open_file_for_writing(char const *fname, file_ostream &stream, bool const should_overwrite);
+	void open_file_for_writing(char const *fname, file_ostream &stream, writing_open_mode const mode);
 	
 	template <typename t_stream, typename t_vector>
 	void read_from_stream(t_stream &stream, t_vector &buffer)
