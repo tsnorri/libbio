@@ -61,6 +61,9 @@ namespace libbio {
 	void mmap_handle::open(char const *path)
 	{
 		int fd(::open(path, O_RDONLY));
+		if (-1 == fd)
+			throw std::runtime_error(strerror(errno));
+			
 		open(fd);
 		if (-1 == ::close(fd))
 			throw std::runtime_error(strerror(errno));

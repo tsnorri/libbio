@@ -34,7 +34,12 @@ namespace libbio {
 		
 		mmap_handle &operator=(mmap_handle const &other) = delete;
 		mmap_handle &operator=(mmap_handle &&other) & = default;
-		operator std::string_view() const { return std::string_view(m_content, m_mapped_size); }
+		
+		std::string_view const to_string_view() const { return std::string_view(m_content, m_mapped_size); }
+		std::span <char> const to_span() const { return std::span(m_content, m_mapped_size); }
+		
+		operator std::string_view() const { return to_string_view(); }
+		operator std::span <char>() const { return to_span(); }
 	};
 }
 
