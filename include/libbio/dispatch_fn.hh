@@ -289,6 +289,20 @@ namespace libbio {
 		helper.apply();
 #endif
 	}
+
+
+	template <typename Fn, typename t_range>
+	void for_each(
+		t_range &&range,
+		Fn &&fn
+	)
+	{
+		std::for_each(
+			range.begin(),
+			range.end(),
+			std::forward <Fn>(fn)
+		);
+	}
 	
 	
 	template <typename t_dispatch>
