@@ -5,6 +5,7 @@ all:
 	$(MAKE) -C src all
 
 tests: all
+	cd lib/Catch2 && $(PYTHON) scripts/generateSingleHeader.py
 	$(MAKE) -C tests all
 
 clean:
