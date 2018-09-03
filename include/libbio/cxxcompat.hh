@@ -20,9 +20,12 @@ namespace std {
 
 #if __cplusplus < 202000L
 // XXX hack.
-#include <boost/beast/core.hpp>
+#include <gsl/span>
 namespace std {
-	using boost::beast::span;
+	using gsl::span;
+	
+	template <class t_element, std::ptrdiff_t t_extent>
+	span <gsl::byte const, gsl::details::calculate_byte_size <t_element, t_extent>::value> as_bytes(span <t_element, t_extent> s) noexcept { return gsl::as_bytes(s); }
 }
 #endif
 

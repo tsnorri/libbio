@@ -22,6 +22,7 @@ CXX				?= c++
 DOT				?= dot
 GENGETOPT		?= gengetopt
 MKDIR			?= mkdir
+PYTHON			?= python
 RAGEL			?= ragel
 RM				?= rm
 
@@ -29,7 +30,7 @@ BOOST_INCLUDE	?= /usr/include
 
 CFLAGS			+= -std=c99   $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CFLAGS)
 CXXFLAGS		+= -std=c++17 $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CXXFLAGS)
-CPPFLAGS		+= $(SYSTEM_CPPFLAGS) $(BOOST_INCLUDE) -I../include
+CPPFLAGS		+= $(SYSTEM_CPPFLAGS) $(BOOST_INCLUDE) -I../include -I../lib/GSL/include
 
 %.o: %.cc
 	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) -o $@ $<
