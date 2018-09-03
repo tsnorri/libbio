@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <libbio/array_list.hh>
-#include <numeric>
+#include <range/v3/all.hpp>
 
 
 namespace libbio { namespace pbwt {
@@ -21,7 +21,8 @@ namespace libbio { namespace pbwt {
 		typename t_string_index_vector,
 		typename t_character_index_vector,
 		typename t_ci_rmq,
-		typename t_count_vector
+		typename t_count_vector,
+		typename t_previous_position_vector
 	>
 	void build_prefix_and_divergence_arrays(
 		t_input_vector const &inputs,						// Vector of input vectors.
@@ -33,7 +34,7 @@ namespace libbio { namespace pbwt {
 		t_string_index_vector &sorted_permutation,			// Sorted indexes, a_{k + 1}.
 		t_character_index_vector &output_divergence,		// Output divergence, d_{k + 1}.
 		t_count_vector &counts,								// Character counts.
-		t_string_index_vector &previous_positions			// Previous position of each character.
+		t_previous_position_vector &previous_positions		// Previous position of each character.
 	)
 	{
 		auto const input_count(inputs.size());
@@ -153,198 +154,95 @@ namespace libbio { namespace pbwt {
 				count_list.erase(input_it, false);
 		}
 	}
-
 	
-#	define LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL \
-	template < \
-		typename t_string_index_vector, \
-		typename t_character_index_vector, \
-		typename t_ci_rmq, \
-		typename t_count_vector, \
-		typename t_sequence_vector, \
-		typename t_alphabet_type, \
-		typename t_divergence_count_type \
-	>
-#	define LIBBIO_PBWT_CONTEXT_CLASS_DECL pbwt_context < \
-		t_string_index_vector, \
-		t_character_index_vector, \
-		t_ci_rmq, \
-		t_count_vector, \
-		t_sequence_vector, \
-		t_alphabet_type, \
-		t_divergence_count_type \
-	>
 	
-	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
-	class pbwt_context
+	template <
+		typename t_position,
+		typename t_divergence
+	>
+	std::size_t unique_substring_count(t_position const lb, t_divergence const &divergence)
 	{
-	protected:
-		typedef t_string_index_vector					string_index_vector;
-		typedef t_character_index_vector				character_index_vector;
-		typedef t_ci_rmq								character_index_vector_rmq;
-		typedef t_count_vector							count_vector;
-		typedef t_sequence_vector						sequence_vector;
-		typedef t_alphabet_type							alphabet_type;
-		typedef array_list <t_divergence_count_type>	count_list;
-		
-	protected:
-		sequence_vector const							*m_sequences{nullptr};
-		alphabet_type const								*m_alphabet{nullptr};
-		
-		string_index_vector								m_input_permutation;
-		string_index_vector								m_output_permutation;
-		string_index_vector								m_inverse_input_permutation;
-		character_index_vector							m_input_divergence;
-		character_index_vector							m_output_divergence;
-		count_vector									m_character_counts;
-		string_index_vector								m_previous_positions;
-		count_list										m_divergence_value_counts;
-		
-	public:
-		pbwt_context(
-			sequence_vector const &sequences,
-			alphabet_type const &alphabet
-		):
-			m_sequences(&sequences),
-			m_alphabet(&alphabet),
-			m_input_permutation(m_sequences->size(), 0),
-			m_output_permutation(m_sequences->size(), 0),
-			m_inverse_input_permutation(m_sequences->size(), 0),
-			m_input_divergence(m_sequences->size(), 0),
-			m_output_divergence(m_sequences->size(), 0),
-			m_character_counts(m_alphabet->sigma(), 0),
-			m_previous_positions(m_alphabet->sigma(), 0)
+		std::size_t retval(0);
+		for (auto const dd : divergence)
 		{
+			if (lb < dd)
+				++retval;
+		}
+	
+		return retval;
+	}
+	
+	
+	template <
+		typename t_position,
+		typename t_string_indices,
+		typename t_divergence,
+		typename t_counts
+	>
+	std::size_t unique_substring_count(t_position const lb, t_string_indices const &permutation, t_divergence const &divergence, t_counts &substring_copy_numbers)
+	{
+		substring_copy_numbers.clear();
+		
+		std::size_t retval(0);
+		std::size_t idx(1);
+		std::size_t run_start_idx(0);
+		std::size_t run_cn(1);
+		for (auto const dd : divergence | ranges::view::drop(1))
+		{
+			if (dd <= lb)
+				++run_cn;
+			else
+			{
+				auto const string_idx(permutation[run_start_idx]);
+				substring_copy_numbers.emplace_back(string_idx, run_cn);
+				run_start_idx = idx;
+				run_cn = 1;
+				++retval;
+			}
+			
+			++idx;
 		}
 		
-		string_index_vector const &input_permutation() const { return m_input_permutation; }
-		string_index_vector const &output_permutation() const { return m_output_permutation; }
-		string_index_vector const &inverse_input_permutation() const { return m_inverse_input_permutation; }
-		character_index_vector const &input_divergence() const { return m_input_divergence; }
-		character_index_vector const &output_divergence() const { return m_output_divergence; }
-		count_vector const &character_counts() const { return m_character_counts; }
-		string_index_vector const &previous_positions() const { return m_previous_positions; }
-		count_list const &divergence_value_counts() const { return m_divergence_value_counts; }
-		std::size_t const size() const { return m_sequences->size(); }
+		auto const string_idx(permutation[run_start_idx]);
+		substring_copy_numbers.emplace_back(string_idx, run_cn);
+		return retval;
+	}
+	
+	
+	template <
+		typename t_position,
+		typename t_string_positions,
+		typename t_divergence,
+		typename t_unique_indices
+	>
+	void unique_substring_indices(
+		t_position const lb,
+		t_string_positions const &permutation,
+		t_divergence const &divergences,
+		t_unique_indices &output_indices
+	)
+	{
+		auto current_run_idx(permutation.front());
+		std::size_t run_start(0);
+		std::size_t run_end(0); // [ )
+		for (auto const &pair : ranges::view::zip(permutation, divergences) | ranges::view::drop(1))
+		{
+			++run_end;
+			auto const idx(std::get <0>(pair));
+			auto const divergence(std::get <1>(pair));
+			if (lb < divergence)
+			{
+				std::fill(output_indices.begin() + run_start, output_indices.end() + run_end, current_run_idx);
+				run_start = run_end;
+				current_run_idx = idx;
+			}
+			else
+			{
+				current_run_idx = std::min(idx, current_run_idx);
+			}
+		}
 		
-		void prepare();
-		void build_prefix_and_divergence_arrays(std::size_t const col);
-		void update_inverse_input_permutation();
-		void update_divergence_value_counts();
-		void swap_input_and_output();
-		
-		// For debugging.
-		void print_vectors() const;
-		
-	protected:
-		template <typename t_vector>
-		void print_vector(char const *name, t_vector const &vec) const;
-		
-		template <typename t_value>
-		void print_count_list(char const *name, array_list <t_value> const &list) const;
-	};
-	
-	
-	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
-	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::prepare()
-	{
-		// Fill the initial permutation and divergence.
-		std::iota(m_input_permutation.begin(), m_input_permutation.end(), 0);
-		std::fill(m_input_divergence.begin(), m_input_divergence.end(), 0);
-		
-		m_divergence_value_counts.resize(1 + m_sequences->front().size());
-		m_divergence_value_counts.link(m_sequences->size(), 0);
-		m_divergence_value_counts.set_first_element(0);
-		m_divergence_value_counts.set_last_element(0);
-	}
-	
-	
-	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
-	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::build_prefix_and_divergence_arrays(std::size_t const idx)
-	{
-		// Prepare input_divergence for Range Maximum Queries.
-		character_index_vector_rmq input_divergence_rmq(&m_input_divergence);
-		
-		pbwt::build_prefix_and_divergence_arrays(
-			*m_sequences,
-			idx,
-			*m_alphabet,
-			m_input_permutation,
-			m_input_divergence,
-			input_divergence_rmq,
-			m_output_permutation,
-			m_output_divergence,
-			m_character_counts,
-			m_previous_positions
-		);
-	}
-	
-	
-	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
-	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::update_inverse_input_permutation()
-	{
-		pbwt::update_inverse_input_permutation(
-			m_input_permutation,
-			m_inverse_input_permutation
-		);
-	}
-	
-	
-	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
-	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::update_divergence_value_counts()
-	{
-		pbwt::update_divergence_value_counts(
-			m_input_divergence,
-			m_output_divergence,
-			m_divergence_value_counts
-		);
-	}
-	
-	
-	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
-	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::swap_input_and_output()
-	{
-		using std::swap;
-		swap(m_input_permutation, m_output_permutation);
-		swap(m_input_divergence, m_output_divergence);
-	}
-	
-	
-	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
-	template <typename t_vector>
-	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::print_vector(char const *name, t_vector const &vec) const
-	{
-		std::cerr << name << ":";
-		for (auto const val : vec)
-			std::cerr << ' ' << +val;
-		std::cerr << "\n";
-	}
-	
-	
-	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
-	template <typename t_value>
-	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::print_count_list(char const *name, array_list <t_value> const &list) const
-	{
-		std::cerr << name << ":";
-		for (auto const &kv : list.const_pair_iterator_proxy())
-			std::cerr << ' ' << kv.first << ": " << kv.second;
-		std::cerr << "\n";
-	}
-	
-	
-	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
-	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::print_vectors() const
-	{
-		std::cerr << "\n*** Current state\n";
-		print_vector("input_permutation", m_input_permutation);
-		print_vector("inverse_input_permutation", m_inverse_input_permutation);
-		print_vector("output_permutation", m_output_permutation);
-		print_vector("input_divergence", m_input_divergence);
-		print_vector("output_divergence", m_output_divergence);
-		print_vector("character_counts", m_character_counts);
-		print_vector("previous_positions", m_previous_positions);
-		print_count_list("divergence_value_counts", m_divergence_value_counts);
-		std::cerr << std::flush;
+		std::fill(output_indices.begin() + run_start, output_indices.end() + run_end, current_run_idx);
 	}
 }}
 
