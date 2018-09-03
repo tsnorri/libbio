@@ -85,6 +85,14 @@ namespace libbio {
 	
 	template <typename t_type>
 	using smallest_unsigned_lockfree_type_gte_t = typename smallest_unsigned_lockfree_type_gte <t_type>::type;
+	
+	
+	template <typename t_src, typename t_dst>
+	void resize_and_copy(t_src const &src, t_dst &dst)
+	{
+		dst.resize(src.size());
+		std::copy(src.begin(), src.end(), dst.begin());
+	}
 }
 
 #endif
