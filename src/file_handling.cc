@@ -36,13 +36,19 @@ namespace libbio {
 	
 	void open_file_for_reading(char const *fname, file_istream &stream)
 	{
-		int fd(open(fname, O_RDONLY));
-		if (-1 == fd)
-			handle_file_error(fname);
-
+		int const fd(open_file_for_reading(fname));
 		ios::file_descriptor_source source(fd, ios::close_handle);
 		stream.open(source);
 		stream.exceptions(std::istream::badbit);
+	}
+	
+	
+	int open_file_for_reading(char const *fname)
+	{
+		int fd(open(fname, O_RDONLY));
+		if (-1 == fd)
+			handle_file_error(fname);
+		return fd;
 	}
 	
 	
