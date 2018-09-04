@@ -231,6 +231,7 @@ namespace libbio {
 	void consecutive_alphabet_as_builder <t_char>::init()
 	{
 		m_seen.resize(1 + alphabet_type::ALPHABET_MAX, 0);
+		m_found_characters.push_back('\0');
 	}
 	
 	
@@ -239,11 +240,12 @@ namespace libbio {
 	{
 		m_found_characters.resize(1 + alphabet_type::ALPHABET_MAX, '\0');
 		
-		std::vector <std::atomic_flag> temp_locks(1 + alphabet_type::ALPHABET_MAX);
-		for (auto &flag : temp_locks)
+		std::vector <std::atomic_flag> temp_flags(1 + alphabet_type::ALPHABET_MAX);
+		for (auto &flag : temp_flags)
 			flag.clear();
+		temp_flags[0].test_and_set();
 		
-		m_flags = std::move(temp_locks);
+		m_flags = std::move(temp_flags);
 	}
 	
 	
