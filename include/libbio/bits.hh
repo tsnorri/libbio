@@ -12,38 +12,38 @@
 namespace libbio { namespace bits {
 	
 	
-	inline std::uint32_t trailing_zeros(unsigned int const i)
+	inline std::uint8_t trailing_zeros(unsigned int const i)
 	{
 		if (0 == i) return 0;
 		return __builtin_ctz(i);
 	}
 	
-	inline std::uint32_t trailing_zeros(unsigned long const l)
+	inline std::uint8_t trailing_zeros(unsigned long const l)
 	{
 		if (0 == l) return 0;
 		return __builtin_ctzl(l);
 	}
 	
-	inline std::uint32_t trailing_zeros(unsigned long long const ll)
+	inline std::uint8_t trailing_zeros(unsigned long long const ll)
 	{
 		if (0 == ll) return 0;
 		return __builtin_ctzll(ll);
 	}
 	
 	
-	inline std::uint32_t leading_zeros(unsigned int const i)
+	inline std::uint8_t leading_zeros(unsigned int const i)
 	{
 		if (0 == i) return (CHAR_BIT * sizeof(unsigned int));
 		return __builtin_clz(i);
 	}
 	
-	inline std::uint32_t leading_zeros(unsigned long const l)
+	inline std::uint8_t leading_zeros(unsigned long const l)
 	{
 		if (0 == l) return (CHAR_BIT * sizeof(unsigned long));
 		return __builtin_clzl(l);
 	}
 	
-	inline std::uint32_t leading_zeros(unsigned long long const ll)
+	inline std::uint8_t leading_zeros(unsigned long long const ll)
 	{
 		if (0 == ll) return (CHAR_BIT * sizeof(unsigned long long));
 		return __builtin_clzll(ll);
@@ -51,7 +51,7 @@ namespace libbio { namespace bits {
 	
 	
 	template <typename t_integer>
-	inline std::uint32_t highest_bit_set(t_integer const val)
+	inline std::uint8_t highest_bit_set(t_integer const val)
 	{
 		// Return the 1-based index.
 		return CHAR_BIT * sizeof(t_integer) - leading_zeros(val);
