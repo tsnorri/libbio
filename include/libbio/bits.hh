@@ -9,7 +9,7 @@
 #include <cstdint>
 
 
-namespace libbio {
+namespace libbio { namespace bits {
 	
 	
 	inline std::uint32_t trailing_zeros(unsigned int const i)
@@ -48,6 +48,14 @@ namespace libbio {
 		if (0 == ll) return (CHAR_BIT * sizeof(unsigned long long));
 		return __builtin_clzll(ll);
 	}
-}
+	
+	
+	template <typename t_integer>
+	inline std::uint32_t highest_bit_set(t_integer const val)
+	{
+		// Return the 1-based index.
+		return CHAR_BIT * sizeof(t_integer) - leading_zeros(val);
+	}
+}}
 
 #endif
