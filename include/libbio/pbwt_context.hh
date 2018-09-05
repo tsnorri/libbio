@@ -189,11 +189,11 @@ namespace libbio { namespace pbwt {
 			typedef sample_context_type context_type;
 			
 			context_type	context;
-			t_string_index	index{};
+			t_string_index	rb{};		// Right bound; equal to the 1-based PBWT array index.
 			
 			sample_type() = default;
-			sample_type(t_string_index const index_):
-				index(index_)
+			sample_type(t_string_index const rb_):
+				rb(rb_)
 			{
 			}
 		};
@@ -456,7 +456,7 @@ namespace libbio { namespace pbwt {
 			
 			if (0 == m_sequence_idx % m_sample_rate)
 			{
-				auto &sample(m_samples.emplace_back(m_sequence_idx));
+				auto &sample(m_samples.emplace_back(1 + m_sequence_idx));
 				copy_sample(sample.context);
 				sample.context.swap_input_and_output();
 			}
