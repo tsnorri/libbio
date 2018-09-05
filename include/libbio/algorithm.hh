@@ -20,6 +20,17 @@ namespace libbio {
 	}
 	
 	
+	template <typename t_type_1, typename t_type_2>
+	constexpr std::common_type_t <t_type_1, t_type_2> const min_ct(t_type_1 const &val_1, t_type_2 const &val_2)
+	{
+		typedef std::common_type_t <t_type_1, t_type_2> return_type;
+		return_type retval(std::min <return_type>(val_1, val_2));
+		assert(retval <= val_1);
+		assert(retval <= val_2);
+		return retval;
+	}
+	
+	
 	// FIXME: constexpr in C++20?
 	template <typename t_input_it_1, typename t_input_it_2>
 	std::size_t set_symmetric_difference_size(
