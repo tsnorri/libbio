@@ -6,6 +6,7 @@
 #ifndef LIBBIO_RADIX_SORT_HH
 #define LIBBIO_RADIX_SORT_HH
 
+#include <libbio/algorithm.hh>
 #include <libbio/bits.hh>
 
 
@@ -57,9 +58,9 @@ namespace libbio {
 		t_container &buffer
 	)
 	{
-		std::uint32_t lz_count(sizeof(typename t_container::value_type) * CHAR_BIT);
+		std::uint8_t lz_count(sizeof(typename t_container::value_type) * CHAR_BIT);
 		for (auto const val : container)
-			lz_count = std::min(lz_count, leading_zeros(val));
+			lz_count = std::min(lz_count, bits::leading_zeros(val));
 		
 		radix_sort(container, buffer, (sizeof(typename t_container::value_type) * CHAR_BIT) - lz_count);
 	}
