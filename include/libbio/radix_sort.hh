@@ -8,16 +8,31 @@
 
 #include <libbio/algorithm.hh>
 #include <libbio/bits.hh>
+#include <type_traits>
+
+
+namespace libbio { namespace detail {
+	
+	template <typename t_value>
+	struct identity_access
+	{
+		t_value operator()(t_value value) { return value; }
+	};
+	
+	template <typename t_fn, typename t_arg>
+	constexpr std::size_t return_type_size() { return sizeof(std::invoke_result_t <t_fn, t_arg>); }
+}}
 
 
 namespace libbio {
 	
 	// Stable LSB radix sort, requires n + O(1) extra space.
-	template <typename t_container>
+	template <typename t_container, typename t_access>
 	void radix_sort(
 		t_container &container,
 		t_container &buffer,
-		std::size_t const bit_limit = CHAR_BIT * sizeof(typename t_container::value_type)
+		t_access &&access,
+		std::size_t const bit_limit = CHAR_BIT * detail::return_type_size <t_access, typename t_container::value_type>()
 	)
 	{
 		auto const size(container.size());
@@ -25,6 +40,7 @@ namespace libbio {
 		if (0 == size)
 			return;
 		
+		buffer.clear();
 		buffer.resize(container.size());
 		
 		using std::swap;
@@ -35,12 +51,13 @@ namespace libbio {
 			std::size_t fidx(0);
 			std::size_t ridx_1(size);
 			
-			for (auto const val : container)
+			for (auto it(container.cbegin()), end(container.cend()); it != end; ++it)
 			{
+				auto const val(access(*it));
 				if ((val >> shift_amt) & 0x1)
-					buffer[--ridx_1] = val;
+					buffer[--ridx_1] = std::move(*it);
 				else
-					buffer[fidx++] = val;
+					buffer[fidx++] = std::move(*it);
 			}
 			
 			assert(fidx = ridx_1);
@@ -51,18 +68,42 @@ namespace libbio {
 	}
 	
 	
+	template <typename t_container>
+	void radix_sort(
+		t_container &container,
+		t_container &buffer,
+		std::size_t const bit_limit = CHAR_BIT * sizeof(typename t_container::value_type)
+	)
+	{
+		detail::identity_access <typename t_container::value_type> access;
+		radix_sort(container, buffer, access, bit_limit);
+	}
+	
+	
 	// Iterate one time to determine the highest bit set.
+	template <typename t_container, typename t_access>
+	void radix_sort_check_bits_set(
+		t_container &container,
+		t_container &buffer,
+		t_access &&access
+	)
+	{
+		std::uint8_t lz_count(sizeof(typename t_container::value_type) * CHAR_BIT);
+		for (auto it(container.cbegin()), end(container.cend()); it != end; ++it)
+			lz_count = std::min(lz_count, bits::leading_zeros(access(*it)));
+		
+		radix_sort(container, buffer, std::forward <t_access>(access), (sizeof(typename t_container::value_type) * CHAR_BIT) - lz_count);
+	}
+	
+	
 	template <typename t_container>
 	void radix_sort_check_bits_set(
 		t_container &container,
 		t_container &buffer
 	)
 	{
-		std::uint8_t lz_count(sizeof(typename t_container::value_type) * CHAR_BIT);
-		for (auto const val : container)
-			lz_count = std::min(lz_count, bits::leading_zeros(val));
-		
-		radix_sort(container, buffer, (sizeof(typename t_container::value_type) * CHAR_BIT) - lz_count);
+		detail::identity_access <typename t_container::value_type> access;
+		radix_sort(container, buffer, access);
 	}
 }
 
