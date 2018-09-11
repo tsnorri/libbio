@@ -60,7 +60,7 @@ namespace libbio {
 					buffer[fidx++] = std::move(*it);
 			}
 			
-			assert(fidx = ridx_1);
+			assert(fidx == ridx_1);
 			std::reverse(buffer.begin() + ridx_1, buffer.end());
 			swap(container, buffer);
 			++shift_amt;
