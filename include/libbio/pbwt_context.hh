@@ -9,6 +9,18 @@
 #include <libbio/matrix.hh>
 #include <libbio/pbwt.hh>
 #include <numeric>
+#include <ostream>
+
+
+namespace libbio { namespace pbwt { namespace detail {
+	// For some reason, operator<< cannot deduce the template arguments
+	// for buffering_pbwt_context when given a sample_type.
+	struct buffering_pbwt_context_sample_type_base
+	{
+		virtual ~buffering_pbwt_context_sample_type_base() {}
+		virtual std::ostream &output_description(std::ostream &os) const = 0;
+	};
+}}}
 
 
 namespace libbio { namespace pbwt {
@@ -136,15 +148,18 @@ namespace libbio { namespace pbwt {
 		
 		std::size_t unique_substring_count_lhs(std::size_t const lb) const { return libbio::pbwt::unique_substring_count(lb, m_input_divergence); }
 		std::size_t unique_substring_count_rhs(std::size_t const lb) const { return libbio::pbwt::unique_substring_count(lb, m_output_divergence); }
+
+		template <typename t_counts>
+		std::size_t unique_substring_count_lhs(std::size_t const lb, t_counts &counts) const { return libbio::pbwt::unique_substring_count(lb, m_input_divergence, counts); }
 		
 		template <typename t_counts>
-		std::size_t unique_substring_count_lhs(std::size_t const lb, t_counts &counts) const { return libbio::pbwt::unique_substring_count(lb, m_input_permutation, m_input_divergence, counts); }
+		std::size_t unique_substring_count_rhs(std::size_t const lb, t_counts &counts) const { return libbio::pbwt::unique_substring_count(lb, m_output_divergence, counts); }
 		
 		template <typename t_counts>
-		std::size_t unique_substring_count_rhs(std::size_t const lb, t_counts &counts) const { return libbio::pbwt::unique_substring_count(lb, m_output_permutation, m_output_divergence, counts); }
+		std::size_t unique_substring_count_idxs_lhs(std::size_t const lb, t_counts &counts) const { return libbio::pbwt::unique_substring_count_idxs(lb, m_input_permutation, m_input_divergence, counts); }
 		
-		void unique_substring_indices_lhs(std::size_t const lb, string_index_vector &output_indices) const { return unique_substring_indices(lb, m_input_permutation, m_input_divergence, output_indices); }
-		void unique_substring_indices_rhs(std::size_t const lb, string_index_vector &output_indices) const { return unique_substring_indices(lb, m_output_permutation, m_output_divergence, output_indices); }
+		template <typename t_counts>
+		std::size_t unique_substring_count_idxs_rhs(std::size_t const lb, t_counts &counts) const { return libbio::pbwt::unique_substring_count_idxs(lb, m_output_permutation, m_output_divergence, counts); }
 		
 		// For debugging.
 		void print_vectors() const;
@@ -161,18 +176,18 @@ namespace libbio { namespace pbwt {
 	class buffering_pbwt_context
 	{
 	protected:
-		typedef detail::array_list_item <t_divergence_count>	divergence_count_item;
+		typedef libbio::detail::array_list_item <t_divergence_count>	divergence_count_item;
 		
 	public:
-		typedef t_sequence_vector								sequence_vector;
-		typedef t_alphabet_type									alphabet_type;
-		typedef t_ci_rmq										character_index_vector_rmq;
-		typedef matrix <t_string_index>							string_index_matrix;
-		typedef matrix <t_character_index>						character_index_matrix;
-		typedef array_list <t_divergence_count>					divergence_count_list;
-		typedef std::vector <divergence_count_list>				divergence_count_matrix;
-		typedef t_vector_tpl <t_character_count>				count_vector;
-		typedef t_vector_tpl <t_string_index>					string_index_vector;
+		typedef t_sequence_vector										sequence_vector;
+		typedef t_alphabet_type											alphabet_type;
+		typedef t_ci_rmq												character_index_vector_rmq;
+		typedef matrix <t_string_index>									string_index_matrix;
+		typedef matrix <t_character_index>								character_index_matrix;
+		typedef array_list <t_divergence_count>							divergence_count_list;
+		typedef std::vector <divergence_count_list>						divergence_count_matrix;
+		typedef t_vector_tpl <t_character_count>						count_vector;
+		typedef t_vector_tpl <t_string_index>							string_index_vector;
 		
 		typedef pbwt_context <
 			sequence_vector,
@@ -184,7 +199,7 @@ namespace libbio { namespace pbwt {
 			t_divergence_count
 		> sample_context_type;
 		
-		struct sample_type
+		struct sample_type : public detail::buffering_pbwt_context_sample_type_base
 		{
 			typedef sample_context_type context_type;
 			
@@ -196,6 +211,8 @@ namespace libbio { namespace pbwt {
 				rb(rb_)
 			{
 			}
+			
+			std::ostream &output_description(std::ostream &os) const override { os << "rb: " << rb; return os; }
 		};
 		
 		typedef std::vector <sample_type> sample_vector;
@@ -268,6 +285,12 @@ namespace libbio { namespace pbwt {
 	protected:
 		void copy_sample(sample_context_type &dst);
 	};
+	
+	
+	inline std::ostream &operator<<(std::ostream &os, detail::buffering_pbwt_context_sample_type_base const &sample)
+	{
+		return sample.output_description(os);
+	}
 	
 	
 	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
