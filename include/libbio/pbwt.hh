@@ -173,13 +173,41 @@ namespace libbio { namespace pbwt {
 	}
 	
 	
+	// Index by occurrence (0, 1, 2, …) in PBWT order.
+	template <
+		typename t_position,
+		typename t_divergence,
+		typename t_counts
+	>
+	std::size_t unique_substring_count(t_position const lb, t_divergence const &divergence, t_counts &substring_copy_numbers)
+	{
+		substring_copy_numbers.clear();
+		
+		std::size_t run_cn(1);
+		std::size_t idx(0);
+		for (auto const dd : divergence | ranges::view::drop(1))
+		{
+			if (dd <= lb)
+				++run_cn;
+			else
+			{
+				substring_copy_numbers.emplace_back(idx++, run_cn);
+				run_cn = 1;
+			}
+		}
+		substring_copy_numbers.emplace_back(idx++, run_cn);
+		return idx;
+	}
+	
+	
+	// Index by string number in PBWT order.
 	template <
 		typename t_position,
 		typename t_string_indices,
 		typename t_divergence,
 		typename t_counts
 	>
-	std::size_t unique_substring_count(t_position const lb, t_string_indices const &permutation, t_divergence const &divergence, t_counts &substring_copy_numbers)
+	std::size_t unique_substring_count_idxs(t_position const lb, t_string_indices const &permutation, t_divergence const &divergence, t_counts &substring_copy_numbers)
 	{
 		substring_copy_numbers.clear();
 		
@@ -207,7 +235,7 @@ namespace libbio { namespace pbwt {
 		substring_copy_numbers.emplace_back(string_idx, run_cn);
 		return retval;
 	}
-	
+
 	
 	template <
 		typename t_position,
