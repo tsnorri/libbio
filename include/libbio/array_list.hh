@@ -290,6 +290,7 @@ namespace libbio {
 		void set_last_element(size_type last) { m_last_1 = 1 + last; }
 		
 		size_type const size() const { return m_items.size(); }
+		size_type const first_index() const { return m_first; }
 		size_type const last_index() const { return m_last_1 - 1; }	// Valid if 0 < size().
 		size_type const last_index_1() const { return m_last_1; }
 		
@@ -360,6 +361,22 @@ namespace libbio {
 		void add_item(item_type &&item);
 		void link_item(item_type &&item, size_type const idx);
 	};
+	
+	
+	template <typename t_value>
+	std::ostream &operator<<(std::ostream &os, array_list <t_value> const &list)
+	{
+		bool first(true);
+		os << '[' << list.first_index() << ", " << list.last_index_1() << ") ";
+		for (auto const &kv : list.const_pair_iterator_proxy())
+		{
+			if (!first)
+				os << ' ';
+			os << kv.first << ": " << kv.second;
+			first = false;
+		}
+		return os;
+	}
 	
 	
 	template <typename t_value>
