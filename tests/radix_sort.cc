@@ -88,7 +88,7 @@ SCENARIO("Radix sort can sort a sequence of numbers")
 			auto v(vec);
 			decltype(v) buf;
 		
-			lb::radix_sort_check_bits_set(v, buf);
+			lb::radix_sort <false>::sort_check_bits_set(v, buf);
 			
 			THEN("the sequence is sorted")
 			{
