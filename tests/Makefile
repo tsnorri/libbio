@@ -5,8 +5,9 @@ include ../common.mk
 # but set a configuration option instead for now.
 CPPFLAGS += -DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS -I../lib/Catch2/single_include
 
-OBJECTS	=	main.o \
+OBJECTS	=	algorithm.o \
 			bit_rle_codec.o \
+			main.o \
 			radix_sort.o
 
 all: tests
