@@ -211,7 +211,7 @@ namespace libbio {
 	
 	// Transient in the sense that strings point to the working
 	// buffer of the reader.
-	class transient_variant : public variant_tpl <std::string_view>
+	class transient_variant final : public variant_tpl <std::string_view>
 	{
 		friend class vcf_reader;
 		
@@ -224,7 +224,7 @@ namespace libbio {
 	};
 	
 	
-	class variant : public variant_tpl <std::string>
+	class variant final : public variant_tpl <std::string>
 	{
 		friend class vcf_reader;
 

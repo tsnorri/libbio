@@ -14,7 +14,7 @@ namespace lb	= libbio;
 
 namespace {
 	
-	struct test
+	struct test final
 	{
 		char c;
 		unsigned short s;

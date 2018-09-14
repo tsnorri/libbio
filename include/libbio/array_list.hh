@@ -102,7 +102,7 @@ namespace libbio { namespace detail {
 	};
 	
 	template <typename t_list>
-	class array_list_value_iterator : public array_list_value_iterator_detail <t_list>::base_class
+	class array_list_value_iterator final : public array_list_value_iterator_detail <t_list>::base_class
 	{
 		friend class boost::iterator_core_access;
 		
@@ -131,7 +131,7 @@ namespace libbio { namespace detail {
 	};
 	
 	template <typename t_list>
-	class array_list_item_iterator : public array_list_item_iterator_detail <t_list>::base_class
+	class array_list_item_iterator final : public array_list_item_iterator_detail <t_list>::base_class
 	{
 		friend class boost::iterator_core_access;
 	
@@ -163,7 +163,7 @@ namespace libbio { namespace detail {
 	};
 	
 	template <typename t_list>
-	class array_list_pair_iterator : public array_list_pair_iterator_detail <t_list>::base_class
+	class array_list_pair_iterator final : public array_list_pair_iterator_detail <t_list>::base_class
 	{
 		friend class boost::iterator_core_access;
 		

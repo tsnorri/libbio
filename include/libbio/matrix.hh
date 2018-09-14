@@ -17,7 +17,7 @@
 namespace libbio { namespace detail {
 	
 	template <typename t_iterator>
-	class matrix_iterator : public boost::iterator_facade <
+	class matrix_iterator final : public boost::iterator_facade <
 		matrix_iterator <t_iterator>,
 		std::remove_reference_t <typename std::iterator_traits <t_iterator>::reference>,
 		boost::random_access_traversal_tag
@@ -73,7 +73,7 @@ namespace libbio { namespace detail {
 	
 	
 	template <typename t_matrix>
-	class matrix_slice
+	class matrix_slice final
 	{
 	public:
 		typedef t_matrix										matrix_type;
@@ -114,7 +114,7 @@ namespace libbio { namespace detail {
 	
 	
 	template <typename t_matrix>
-	class matrix_element_reference
+	class matrix_element_reference final
 	{
 	protected:
 		typedef typename t_matrix::size_type size_type;
@@ -271,7 +271,7 @@ namespace libbio {
 	// Store elements of 2^k bits where k = 0, 1, 2.
 	// Specialize only operator() for now.
 	template <std::uint8_t t_bits>
-	class compressed_atomic_matrix : public matrix <std::atomic_uint64_t>
+	class compressed_atomic_matrix final : public matrix <std::atomic_uint64_t>
 	{
 		static_assert(1 == t_bits || 2 == t_bits || 4 == t_bits);
 		

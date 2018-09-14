@@ -133,7 +133,7 @@ namespace libbio {
 	
 	// Create a compressed alphabet.
 	template <typename t_char>
-	class consecutive_alphabet_as_builder : public consecutive_alphabet_mt_builder <consecutive_alphabet_as <t_char>>
+	class consecutive_alphabet_as_builder final : public consecutive_alphabet_mt_builder <consecutive_alphabet_as <t_char>>
 	{
 	protected:
 		typedef consecutive_alphabet_as <t_char>	alphabet_type;
@@ -156,7 +156,7 @@ namespace libbio {
 	
 	// Create a compressed alphabet, parallelize where possible.
 	template <typename t_char>
-	class consecutive_alphabet_as_parallel_builder : public consecutive_alphabet_mt_builder <consecutive_alphabet_as <t_char>>
+	class consecutive_alphabet_as_parallel_builder final : public consecutive_alphabet_mt_builder <consecutive_alphabet_as <t_char>>
 	{
 		template <bool>
 		friend struct detail::consecutive_alphabet_as_parallel_builder_helper;

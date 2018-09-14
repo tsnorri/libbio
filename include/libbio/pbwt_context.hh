@@ -199,7 +199,7 @@ namespace libbio { namespace pbwt {
 			t_divergence_count
 		> sample_context_type;
 		
-		struct sample_type : public detail::buffering_pbwt_context_sample_type_base
+		struct sample_type final : public detail::buffering_pbwt_context_sample_type_base
 		{
 			typedef sample_context_type context_type;
 			

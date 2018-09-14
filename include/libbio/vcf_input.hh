@@ -72,7 +72,7 @@ namespace libbio {
 	
 	
 	template <typename t_stream>
-	class vcf_stream_input : public vcf_stream_input_base
+	class vcf_stream_input final : public vcf_stream_input_base
 	{
 	protected:
 		t_stream					m_stream;
@@ -109,7 +109,7 @@ namespace libbio {
 	};
 
 
-	class vcf_mmap_input : public vcf_input
+	class vcf_mmap_input final : public vcf_input
 	{
 	protected:
 		mmap_handle const			*m_handle{nullptr};

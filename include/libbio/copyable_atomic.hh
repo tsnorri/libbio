@@ -12,7 +12,7 @@
 namespace libbio {
 	
 	template <typename t_value>
-	class copyable_atomic : public std::atomic <t_value>
+	class copyable_atomic final : public std::atomic <t_value>
 	{
 	public:
 		using std::atomic <t_value>::atomic;

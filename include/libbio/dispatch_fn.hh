@@ -34,7 +34,7 @@ namespace libbio { namespace detail {
 	};
 	
 	template <typename Fn>
-	class dispatch_fn_context : public dispatch_fn_context_base
+	class dispatch_fn_context final : public dispatch_fn_context_base
 	{
 	public:
 		typedef Fn function_type;
