@@ -211,7 +211,7 @@ namespace libbio { namespace pbwt {
 	{
 		substring_copy_numbers.clear();
 		
-		std::size_t retval(0);
+		std::size_t retval(1);
 		std::size_t idx(1);
 		std::size_t run_start_idx(0);
 		std::size_t run_cn(1);
