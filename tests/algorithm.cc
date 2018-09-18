@@ -72,6 +72,37 @@ SCENARIO("Set symmetric difference can be determined")
 }
 
 
+SCENARIO("Set intersection size can be determined")
+{
+	GIVEN("Two collections")
+	{
+		auto const vectors = GENERATE(gen::table({
+			std::make_tuple(2, std::vector <unsigned int>({1, 3, 5, 81}), std::vector <unsigned int>({2, 3, 4, 5, 6})),
+			std::make_tuple(4, std::vector <unsigned int>({2, 4, 6, 8}), std::vector <unsigned int>({2, 4, 6, 8})),
+			std::make_tuple(3, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({1, 2, 3})),
+			std::make_tuple(0, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({4, 5, 6})),
+			std::make_tuple(0, std::vector <unsigned int>({1, 3, 5}), std::vector <unsigned int>({2, 4, 6}))
+		}));
+
+		
+		WHEN("the collections are compared")
+		{
+			auto const &tup(vectors);
+			auto const expected_count(std::get <0>(tup));
+			auto const &lhs(std::get <1>(tup));
+			auto const &rhs(std::get <2>(tup));
+			
+			auto const actual_count(lb::set_intersection_size(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend()));
+
+			THEN("the difference size matches the expected")
+			{
+				REQUIRE(expected_count == actual_count);
+			}
+		}
+	}
+}
+
+
 SCENARIO("Unique items can be counted")
 {
 	GIVEN("A collection of items")

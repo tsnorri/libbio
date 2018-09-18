@@ -85,6 +85,38 @@ namespace libbio {
 	}
 	
 	
+	// FIXME: constexpr in C++20?
+	template <typename t_input_it_1, typename t_input_it_2>
+	std::size_t set_intersection_size(
+		t_input_it_1 first_1,
+		t_input_it_1 last_1,
+		t_input_it_2 first_2,
+		t_input_it_2 last_2
+	)
+	{
+		std::size_t retval(0);
+		while (first_1 != last_1)
+		{
+			if (first_2 == last_2)
+				return retval;
+			
+			if (*first_1 < *first_2)
+				++first_1;
+			else if (*first_2 < *first_1)
+				++first_2;
+			else
+			{
+				// *first_1 == *first_2.
+				++retval;
+				++first_1;
+				++first_2;
+			}
+		}
+		
+		return retval;
+	}
+	
+	
 	template <typename t_iterator, typename t_dst, typename t_increment_count>
 	void unique_count(t_iterator &&begin, t_iterator const &&end, t_dst &dst, t_increment_count &&increment)
 	{
