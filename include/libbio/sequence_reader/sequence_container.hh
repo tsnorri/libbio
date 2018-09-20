@@ -18,6 +18,7 @@ namespace libbio { namespace sequence_reader {
 	class sequence_container
 	{
 	public:
+		virtual ~sequence_container() {}
 		virtual void to_spans(sequence_vector &dst) = 0;
 		
 	protected:
