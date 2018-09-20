@@ -7,6 +7,7 @@
 #define LIBBIO_UTIL_HH
 
 #include <atomic>
+#include <ostream>
 
 
 namespace libbio { namespace detail {
@@ -93,6 +94,9 @@ namespace libbio {
 		dst.resize(src.size());
 		std::copy(src.begin(), src.end(), dst.begin());
 	}
+	
+	
+	void log_time(std::ostream &stream);
 }
 
 #endif
