@@ -6,6 +6,7 @@
 #ifndef LIBBIO_LINE_READER_HH
 #define LIBBIO_LINE_READER_HH
 
+#include <algorithm>
 #include <boost/iostreams/concepts.hpp>
 #include <iostream>
 #include <iterator>
