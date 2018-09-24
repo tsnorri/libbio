@@ -20,6 +20,27 @@ namespace libbio { namespace pbwt { namespace detail {
 		virtual ~buffering_pbwt_context_sample_type_base() {}
 		virtual std::ostream &output_description(std::ostream &os) const = 0;
 	};
+	
+	
+	template <bool t_use_semaphore>
+	struct callback_function_helper
+	{
+		template <typename t_fn>
+		static inline void call(t_fn &&fn, std::size_t sequence_idx, std::size_t buffer_idx, dispatch_semaphore_t process_sema)
+		{
+			fn(sequence_idx);
+		}
+	};
+	
+	template <>
+	struct callback_function_helper <true>
+	{
+		template <typename t_fn>
+		static inline void call(t_fn &&fn, std::size_t sequence_idx, std::size_t buffer_idx, dispatch_semaphore_t process_sema)
+		{
+			fn(sequence_idx, buffer_idx, process_sema);
+		}
+	};
 }}}
 
 
@@ -220,6 +241,7 @@ namespace libbio { namespace pbwt {
 	protected:
 		sequence_vector const									*m_sequences{};
 		alphabet_type const										*m_alphabet{};
+		libbio::dispatch_ptr <dispatch_semaphore_t>				m_process_sema{};
 		std::uint64_t											m_sample_rate{std::numeric_limits <std::uint64_t>::max()};
 		std::size_t												m_buffer_count{};
 		std::size_t												m_sequence_size{};
@@ -242,6 +264,7 @@ namespace libbio { namespace pbwt {
 		):
 			m_sequences(&sequences),
 			m_alphabet(&alphabet),
+			m_process_sema(dispatch_semaphore_create(buffer_count)),
 			m_buffer_count(buffer_count),
 			m_sequence_size(m_sequences->front().size()),
 			m_permutations(m_sequences->size(), m_buffer_count, 0),
@@ -261,6 +284,9 @@ namespace libbio { namespace pbwt {
 		sample_vector &samples() { return m_samples; }
 		sample_vector const &samples() const { return m_samples; }
 		
+		typename string_index_matrix::const_slice_type const &permutation(std::size_t const idx) const { return m_permutations.column(idx); }
+		typename character_index_matrix::const_slice_type const &divergence(std::size_t const idx) const { return m_divergences.column(idx); }
+		divergence_count_list const &divergence_value_counts(std::size_t const idx) const { return m_divergence_value_counts[idx]; }
 		
 		std::size_t src_buffer_idx() const { return (m_buffer_count + m_sequence_idx - 1) % m_buffer_count; }
 		std::size_t dst_buffer_idx() const { return m_sequence_idx % m_buffer_count; }
@@ -268,14 +294,14 @@ namespace libbio { namespace pbwt {
 		void set_sample_rate(std::uint64_t const rate);
 	
 		void prepare();
-	
-		template <typename t_callback_fn, typename t_continue_fn>
+		
+		template <bool t_use_semaphore, typename t_callback_fn, typename t_continue_fn>
 		void process(
 			t_callback_fn callback_fn,
 			t_continue_fn continue_fn
-		) { process(SIZE_MAX, callback_fn, continue_fn); }
+		) { process <t_use_semaphore>(SIZE_MAX, callback_fn, continue_fn); }
 			
-		template <typename t_callback_fn, typename t_continue_fn>
+		template <bool t_use_semaphore, typename t_callback_fn, typename t_continue_fn>
 		void process(
 			std::size_t const caller_limit,
 			t_callback_fn callback_fn,
@@ -427,7 +453,7 @@ namespace libbio { namespace pbwt {
 	
 	
 	LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_TEMPLATE_DECL
-	template <typename t_callback_fn, typename t_continue_fn>
+	template <bool t_use_semaphore, typename t_callback_fn, typename t_continue_fn>
 	void LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_CLASS_DECL::process(
 		std::size_t const caller_limit,
 		t_callback_fn callback_fn,
@@ -435,7 +461,7 @@ namespace libbio { namespace pbwt {
 	)
 	{
 		// First src is the rightmost vector.
-		std::size_t const limit(std::min({caller_limit, m_sequence_idx + m_buffer_count, m_sequence_size}));
+		std::size_t const limit(std::min({caller_limit, m_sequence_size}));
 		auto src_idx(src_buffer_idx());
 		auto dst_idx(dst_buffer_idx());
 		
@@ -443,6 +469,10 @@ namespace libbio { namespace pbwt {
 		{
 			assert(src_idx < m_buffer_count);
 			assert(dst_idx < m_buffer_count);
+			
+			// Wait until the consumer thread has processed the buffered arrays.
+			if (t_use_semaphore)
+				dispatch_semaphore_wait(*m_process_sema, DISPATCH_TIME_FOREVER);
 			
 			auto input_permutation(m_permutations.column(src_idx));
 			auto output_permutation(m_permutations.column(dst_idx));
@@ -475,7 +505,8 @@ namespace libbio { namespace pbwt {
 				output_divergence_value_counts
 			);
 			
-			callback_fn(m_sequence_idx, output_divergence_value_counts);
+			// Callback should take different arguments if m_process_sema is to be used.
+			detail::callback_function_helper <t_use_semaphore>::call(callback_fn, m_sequence_idx, dst_idx, *m_process_sema);
 			
 			if (0 == m_sequence_idx % m_sample_rate)
 			{
@@ -497,7 +528,7 @@ namespace libbio { namespace pbwt {
 	LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_TEMPLATE_DECL
 	void LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_CLASS_DECL::set_sample_rate(std::uint64_t const sample_rate)
 	{
-		libbio_always_assert(0 == (sample_rate & (sample_rate - 1)), "Expected sample rate to be a power of two.");
+		//libbio_always_assert(0 == (sample_rate & (sample_rate - 1)), "Expected sample rate to be a power of two.");
 		m_sample_rate = sample_rate;
 	}
 	
