@@ -7,6 +7,7 @@
 #define LIBBIO_SEQUENCE_READER_SEQUENCE_CONTAINER_HH
 
 #include <libbio/mmap_handle.hh>
+#include <iostream>
 #include <vector>
 
 
@@ -40,6 +41,8 @@ namespace libbio { namespace sequence_reader {
 	
 	class vector_sequence_container final : public sequence_container
 	{
+		friend std::ostream &operator<<(std::ostream &, vector_sequence_container const &);
+
 	public:
 		typedef std::vector <std::vector <std::uint8_t>>	buffer_type;
 		
@@ -54,6 +57,8 @@ namespace libbio { namespace sequence_reader {
 	
 	class mmap_sequence_container final : public sequence_container
 	{
+		friend std::ostream &operator<<(std::ostream &, mmap_sequence_container const &);
+
 	protected:
 		libbio::mmap_handle									m_handle;
 		std::size_t											m_sequence_length;
@@ -67,13 +72,20 @@ namespace libbio { namespace sequence_reader {
 	
 	class multiple_mmap_sequence_container final : public sequence_container
 	{
+		friend std::ostream &operator<<(std::ostream &, multiple_mmap_sequence_container const &);
+
 	protected:
 		std::vector <libbio::mmap_handle>					m_handles;
 		
 	public:
-		void open_file(char const *path) { auto &handle(m_handles.emplace_back()); handle.open(path); }
+		void open_file(std::string const &path) { auto &handle(m_handles.emplace_back()); handle.open(path); }
 		virtual void to_spans(sequence_vector &dst) override { sequence_container::to_spans(m_handles, dst); }
 	};
+	
+	
+	std::ostream &operator<<(std::ostream &stream, vector_sequence_container const &);
+	std::ostream &operator<<(std::ostream &stream, mmap_sequence_container const &);
+	std::ostream &operator<<(std::ostream &stream, multiple_mmap_sequence_container const &);
 }}
 
 #endif

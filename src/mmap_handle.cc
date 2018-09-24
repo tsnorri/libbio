@@ -3,6 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <fcntl.h>
@@ -58,14 +59,28 @@ namespace libbio {
 	}
 	
 	
-	void mmap_handle::open(char const *path)
+	void mmap_handle::open(std::string const &path)
 	{
-		int fd(::open(path, O_RDONLY));
+		char const *c_str(path.c_str());
+		int fd(::open(c_str, O_RDONLY));
 		if (-1 == fd)
 			throw std::runtime_error(strerror(errno));
 			
 		open(fd);
 		if (-1 == ::close(fd))
 			throw std::runtime_error(strerror(errno));
+		
+		m_path = path;
+	}
+	
+	
+	std::ostream &operator<<(std::ostream &stream, mmap_handle const &handle)
+	{
+		std::string_view const sv(handle.m_content, std::min(16UL, handle.m_mapped_size));
+		stream << "path: '" << handle.m_path << "' mapped size: " << handle.m_mapped_size << " content: '" << sv;
+		if (16 < handle.m_mapped_size)
+			stream << "…";
+		stream << '\'';
+		return stream;
 	}
 }

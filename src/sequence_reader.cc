@@ -17,7 +17,7 @@ namespace libbio { namespace sequence_reader { namespace detail {
 		// Read the input file names and handle each file.
 		std::string path;
 		while (std::getline(stream, path))
-			container->open_file(path.c_str());
+			container->open_file(path);
 	}
 	
 	

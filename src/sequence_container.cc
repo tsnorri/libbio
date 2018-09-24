@@ -4,6 +4,7 @@
  */
 
 #include <libbio/sequence_reader/sequence_container.hh>
+#include <ostream>
 
 
 namespace libbio { namespace sequence_reader {
@@ -23,5 +24,28 @@ namespace libbio { namespace sequence_reader {
 			
 			pos = next_pos;
 		}
+	}
+	
+	
+	std::ostream &operator<<(std::ostream &stream, vector_sequence_container const &container)
+	{
+		stream << container.m_sequences.size() << " sequence vectors";
+		return stream;
+	}
+	
+	
+	std::ostream &operator<<(std::ostream &stream, mmap_sequence_container const &container)
+	{
+		stream << "Handle: " << container.m_handle << " sequence length: " << container.m_sequence_length << " sequence count: " << container.m_sequence_count;
+		return stream;
+	}
+	
+	
+	std::ostream &operator<<(std::ostream &stream, multiple_mmap_sequence_container const &container)
+	{
+		stream << "Mapped files:\n";
+		for (auto const &handle : container.m_handles)
+			stream << '\t' << handle << '\n';
+		return stream;
 	}
 }}
