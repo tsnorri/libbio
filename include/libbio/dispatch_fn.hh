@@ -125,8 +125,12 @@ namespace libbio { namespace detail {
 			// Call *m_fn for the current subrange.
 			auto const start(idx * m_stride);
 			auto const end(std::min(start + m_stride, m_count));
-			for (std::size_t i(start); i < end; ++i)
-				(*m_fn)(*(m_range->begin() + i));
+			if (start < end)
+			{
+				auto it(m_range->begin() + start);
+				for (std::size_t i(start); i < end; ++i)
+					(*m_fn)(*(m_range->begin() + i));
+			}
 		}
 		
 	public:
@@ -141,17 +145,31 @@ namespace libbio { namespace detail {
 		void apply()
 		{
 			typedef parallel_for_each_helper helper_type;
-			
-			dispatch_apply_f(
-				m_count,
+			auto const iterations(m_count / m_stride);
+
+			if (1 < iterations)
+			{
+				dispatch_apply_f(
+					iterations,
 #ifdef DISPATCH_APPLY_AUTO
-				DISPATCH_APPLY_AUTO,
+					DISPATCH_APPLY_AUTO,
 #else
-				dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
+					dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
 #endif
-				this,
-				&call_member_function_dispatch_apply <helper_type, &helper_type::do_apply>
-			);
+					this,
+					&call_member_function_dispatch_apply <helper_type, &helper_type::do_apply>
+				);
+			}
+			else
+			{
+				auto it(m_range->begin());
+				auto const end(m_range->end());
+				while (it != end)
+				{
+					(*m_fn)(*it);
+					++it;
+				}
+			}
 		}
 	};
 }}
