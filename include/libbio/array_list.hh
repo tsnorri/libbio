@@ -285,6 +285,13 @@ namespace libbio {
 		size_type		m_last_1{0};
 		
 	public:
+		array_list() = default;
+		array_list(array_list &&) = default;
+		array_list(array_list const &other) { copy(other); }
+
+		array_list &operator=(array_list &&other) & = default;
+		array_list &operator=(array_list const &other) { copy(other); return *this; }
+
 		void reset() { m_first = SIZE_MAX; m_last_1 = 0; }
 		void set_first_element(size_type first) { m_first = first; }
 		void set_last_element(size_type last) { m_last_1 = 1 + last; }
@@ -358,6 +365,8 @@ namespace libbio {
 		const_pair_iterator_proxy_type const_pair_iterator_proxy() const { return const_pair_iterator_proxy_type(*this); }
 		
 	protected:
+		void copy(array_list const &other);
+
 		void add_item(item_type &&item);
 		void link_item(item_type &&item, size_type const idx);
 	};
@@ -377,8 +386,26 @@ namespace libbio {
 		}
 		return os;
 	}
-	
-	
+
+
+	template <typename t_value>
+	void array_list <t_value>::copy(array_list const &other)
+	{
+		m_items.resize(other.m_items.size());
+		m_first = other.m_first;
+		m_last_1 = other.m_last_1;
+
+		// Try to save time by copying only the items that are set.
+		auto idx(m_first);
+		while (SIZE_MAX != idx)
+		{
+			auto const &item(other.m_items[idx]);
+			m_items[idx] = item;
+			idx = item.next;
+		}
+	}
+
+
 	template <typename t_value>
 	void array_list <t_value>::erase(iterator it, bool const change_size)
 	{
