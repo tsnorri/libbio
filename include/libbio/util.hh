@@ -8,6 +8,7 @@
 
 #include <atomic>
 #include <ostream>
+#include <vector>
 
 
 namespace libbio { namespace detail {
