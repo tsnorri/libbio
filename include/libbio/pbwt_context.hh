@@ -279,7 +279,7 @@ namespace libbio { namespace pbwt {
 		):
 			m_sequences(&sequences),
 			m_alphabet(&alphabet),
-			m_process_sema(dispatch_semaphore_create(buffer_count)),
+			m_process_sema(dispatch_semaphore_create(buffer_count - 1)),
 			m_buffer_count(buffer_count),
 			m_sequence_size(m_sequences->front().size()),
 			m_permutations(m_sequences->size(), m_buffer_count, 0),
@@ -310,21 +310,23 @@ namespace libbio { namespace pbwt {
 	
 		void prepare();
 		
-		template <bool t_use_semaphore, typename t_callback_fn, typename t_continue_fn>
+		template <bool t_use_semaphore, typename t_callback_fn, typename t_continue_fn, typename t_dispatch_copy_sample_fn>
 		void process(
 			t_callback_fn callback_fn,
-			t_continue_fn continue_fn
-		) { process <t_use_semaphore>(SIZE_MAX, callback_fn, continue_fn); }
+			t_continue_fn continue_fn,
+			t_dispatch_copy_sample_fn dispatch_copy_sample_fn
+		) { process <t_use_semaphore>(SIZE_MAX, callback_fn, continue_fn, dispatch_copy_sample_fn); }
 			
-		template <bool t_use_semaphore, typename t_callback_fn, typename t_continue_fn>
+		template <bool t_use_semaphore, typename t_callback_fn, typename t_continue_fn, typename t_dispatch_copy_sample_fn>
 		void process(
 			std::size_t const caller_limit,
 			t_callback_fn callback_fn,
-			t_continue_fn continue_fn
+			t_continue_fn continue_fn,
+			t_dispatch_copy_sample_fn dispatch_copy_sample_fn
 		);
 		
 	protected:
-		void copy_sample(sample_context_type &dst);
+		void copy_sample(std::size_t src_idx, std::size_t dst_idx, sample_context_type &dst) const;
 	};
 	
 	
@@ -484,13 +486,22 @@ namespace libbio { namespace pbwt {
 	
 	
 	LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_TEMPLATE_DECL
-	template <bool t_use_semaphore, typename t_callback_fn, typename t_continue_fn>
+	template <bool t_use_semaphore, typename t_callback_fn, typename t_continue_fn, typename t_dispatch_copy_sample_fn>
 	void LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_CLASS_DECL::process(
 		std::size_t const caller_limit,
 		t_callback_fn callback_fn,
-		t_continue_fn continue_fn
+		t_continue_fn continue_fn,
+		t_dispatch_copy_sample_fn dispatch_copy_sample_fn
 	)
 	{
+		// The algorithm does not work if the number of the source buffer for copying a sample
+		// cannot be stored for the duration of filling all the buffers in-between.
+		assert(m_buffer_count < m_sample_rate);
+		
+		// Create a semaphore and a counter for copying the samples.
+		dispatch_ptr <dispatch_semaphore_t> copy_sample_sema(dispatch_semaphore_create(0));
+		std::size_t copy_sample_src_idx(SIZE_MAX);
+		
 		// First src is the rightmost vector.
 		std::size_t const limit(std::min({caller_limit, m_sequence_size}));
 		auto src_idx(src_buffer_idx());
@@ -504,6 +515,13 @@ namespace libbio { namespace pbwt {
 			// Wait until the consumer thread has processed the buffered arrays.
 			if (t_use_semaphore)
 				dispatch_semaphore_wait(*m_process_sema, DISPATCH_TIME_FOREVER);
+			
+			// Wait until the copying task is complete.
+			if (copy_sample_src_idx == dst_idx)
+			{
+				dispatch_semaphore_wait(*copy_sample_sema, DISPATCH_TIME_FOREVER);
+				copy_sample_src_idx = SIZE_MAX;
+			}
 			
 			auto input_permutation(m_permutations.column(src_idx));
 			auto output_permutation(m_permutations.column(dst_idx));
@@ -539,11 +557,23 @@ namespace libbio { namespace pbwt {
 			// Callback should take different arguments if m_process_sema is to be used.
 			detail::callback_function_helper <t_use_semaphore>::call(callback_fn, m_sequence_idx, dst_idx, *m_process_sema);
 			
+			// Check if a sample needs to be copied.
 			if (0 == m_sequence_idx % m_sample_rate)
 			{
+				// Remember the position.
+				copy_sample_src_idx = src_idx;
+				
+				// Variables for the block.
 				auto &sample(m_samples.emplace_back(1 + m_sequence_idx));
-				copy_sample(sample.context);
-				sample.context.swap_input_and_output();
+				auto sema(*copy_sample_sema); // Get the stored pointer.
+				
+				dispatch_copy_sample_fn(^{
+					// sample will be a reference.
+					copy_sample(src_idx, dst_idx, sample.context);
+					sample.context.swap_input_and_output();
+					
+					dispatch_semaphore_signal(sema);
+				});
 			}
 			
 			src_idx = dst_idx;
@@ -565,13 +595,10 @@ namespace libbio { namespace pbwt {
 	
 	
 	LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_TEMPLATE_DECL
-	void LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_CLASS_DECL::copy_sample(sample_context_type &dst)
+	void LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_CLASS_DECL::copy_sample(std::size_t const src_idx, std::size_t const dst_idx, sample_context_type &dst) const
 	{
 		dst.m_sequences = m_sequences;
 		dst.m_alphabet = m_alphabet;
-		
-		auto const src_idx(src_buffer_idx());
-		auto const dst_idx(dst_buffer_idx());
 		
 		auto const &input_permutation(m_permutations.column(src_idx));
 		auto const &output_permutation(m_permutations.column(dst_idx));
