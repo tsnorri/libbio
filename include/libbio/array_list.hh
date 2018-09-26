@@ -312,7 +312,7 @@ namespace libbio {
 		item_type &item(size_type const idx) { return m_items[idx]; }
 		item_type const &item(size_type const idx) const { return m_items[idx]; }
 		
-		void clear() { m_items.clear(); reset(); }
+		void clear(bool release_memory = false) { (release_memory ? clear_and_resize_vector(m_items) : m_items.clear()); reset(); }
 		void resize(size_type const size) { m_items.resize(size); }
 		void resize(size_type const size, value_type const &value) { m_items.resize(size, value); }
 		void reserve(size_type const capacity) { m_items.reserve(capacity); }
