@@ -46,6 +46,21 @@ namespace libbio { namespace pbwt { namespace detail {
 
 namespace libbio { namespace pbwt {
 	
+	enum pbwt_context_field : std::uint8_t
+	{
+		NONE						= 0,
+		INPUT_PERMUTATION			= 0x1,
+		OUTPUT_PERMUTATION			= 0x2,
+		INVERSE_INPUT_PERMUTATION	= 0x4,
+		INPUT_DIVERGENCE			= 0x8,
+		OUTPUT_DIVERGENCE			= 0x10,
+		CHARACTER_COUNTS			= 0x20,
+		PREVIOUS_POSITIONS			= 0x40,
+		DIVERGENCE_VALUE_COUNTS		= 0x80,
+		ALL							= 0xff
+	};
+	
+	
 #	define LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL \
 	template < \
 		typename t_sequence_vector, \
@@ -165,7 +180,7 @@ namespace libbio { namespace pbwt {
 		void update_inverse_input_permutation();
 		void update_divergence_value_counts();
 		void swap_input_and_output();
-		void clear();
+		void clear(pbwt_context_field fields = pbwt_context_field::ALL);
 		
 		std::size_t unique_substring_count_lhs(std::size_t const lb) const { return libbio::pbwt::unique_substring_count(lb, m_input_divergence); }
 		std::size_t unique_substring_count_rhs(std::size_t const lb) const { return libbio::pbwt::unique_substring_count(lb, m_output_divergence); }
@@ -333,19 +348,35 @@ namespace libbio { namespace pbwt {
 	
 	
 	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
-	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::clear()
+	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::clear(pbwt_context_field fields)
 	{
 		m_sequences = nullptr;
 		m_alphabet = nullptr;
 		
-		m_input_permutation.clear();
-		m_output_permutation.clear();
-		m_inverse_input_permutation.clear();
-		m_input_divergence.clear();
-		m_output_divergence.clear();
-		m_character_counts.clear();
-		m_previous_positions.clear();
-		m_divergence_value_counts.clear();
+		// FIXME: this is slightly problematic since the vectors need not be std::vectors.
+		if (pbwt_context_field::INPUT_PERMUTATION & fields)
+			clear_and_resize_vector(m_input_permutation);
+		
+		if (pbwt_context_field::OUTPUT_PERMUTATION & fields)
+			clear_and_resize_vector(m_output_permutation);
+		
+		if (pbwt_context_field::INVERSE_INPUT_PERMUTATION & fields)
+			clear_and_resize_vector(m_inverse_input_permutation);
+		
+		if (pbwt_context_field::INPUT_DIVERGENCE & fields)
+			clear_and_resize_vector(m_input_divergence);
+		
+		if (pbwt_context_field::OUTPUT_DIVERGENCE & fields)
+			clear_and_resize_vector(m_output_divergence);
+		
+		if (pbwt_context_field::CHARACTER_COUNTS & fields)
+			clear_and_resize_vector(m_character_counts);
+		
+		if (pbwt_context_field::PREVIOUS_POSITIONS & fields)
+			clear_and_resize_vector(m_previous_positions);
+		
+		if (pbwt_context_field::DIVERGENCE_VALUE_COUNTS & fields)
+			m_divergence_value_counts.clear(true);
 	}
 	
 	
