@@ -97,6 +97,17 @@ namespace libbio {
 	
 	
 	void log_time(std::ostream &stream);
+	
+	
+	template <typename t_value, typename t_allocator>
+	void clear_and_resize_vector(std::vector <t_value, t_allocator> &vec)
+	{
+		// Swap with an empty vector.
+		std::vector <t_value, t_allocator> empty_vec;
+		
+		using std::swap;
+		swap(vec, empty_vec);
+	}
 }
 
 #endif
