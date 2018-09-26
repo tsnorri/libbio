@@ -279,7 +279,7 @@ namespace libbio { namespace pbwt {
 		):
 			m_sequences(&sequences),
 			m_alphabet(&alphabet),
-			m_process_sema(dispatch_semaphore_create(buffer_count - 1)),
+			m_process_sema(dispatch_semaphore_create(buffer_count)),
 			m_buffer_count(buffer_count),
 			m_sequence_size(m_sequences->front().size()),
 			m_permutations(m_sequences->size(), m_buffer_count, 0),
