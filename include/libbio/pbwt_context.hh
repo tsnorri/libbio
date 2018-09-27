@@ -6,6 +6,7 @@
 #ifndef LIBBIO_PBWT_CONTEXT_HH
 #define LIBBIO_PBWT_CONTEXT_HH
 
+#include <libbio/algorithm.hh>
 #include <libbio/matrix.hh>
 #include <libbio/pbwt.hh>
 #include <numeric>
@@ -496,7 +497,7 @@ namespace libbio { namespace pbwt {
 	{
 		// The algorithm does not work if the number of the source buffer for copying a sample
 		// cannot be stored for the duration of filling all the buffers in-between.
-		assert(m_buffer_count < m_sample_rate);
+		assert(m_buffer_count <= m_sample_rate);
 		
 		// Create a semaphore and a counter for copying the samples.
 		dispatch_ptr <dispatch_semaphore_t> copy_sample_sema(dispatch_semaphore_create(0));
@@ -590,7 +591,7 @@ namespace libbio { namespace pbwt {
 	void LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_CLASS_DECL::set_sample_rate(std::uint64_t const sample_rate)
 	{
 		//libbio_always_assert(0 == (sample_rate & (sample_rate - 1)), "Expected sample rate to be a power of two.");
-		m_sample_rate = sample_rate;
+		m_sample_rate = max_ct(m_buffer_count, sample_rate);
 	}
 	
 	
