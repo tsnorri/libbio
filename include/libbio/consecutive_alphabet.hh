@@ -99,6 +99,9 @@ namespace libbio {
 		template <typename>
 		friend class consecutive_alphabet_mt_builder;
 		
+		template <typename t_archive>
+		friend void serialize(t_archive &ar, consecutive_alphabet_mt &alphabet, unsigned int const version);
+		
 	public:
 		enum { ALPHABET_MAX = std::numeric_limits <t_char>::max() };
 		
@@ -119,6 +122,10 @@ namespace libbio {
 		void print();
 		
 		void swap(consecutive_alphabet_mt &other);
+		
+	protected:
+		template <typename t_archive>
+		void boost_serialize(t_archive &ar, unsigned int const version);
 	};
 	
 	
@@ -224,6 +231,15 @@ namespace libbio {
 			assert(comp == i);
 #endif
 		}
+	}
+	
+	
+	template <typename t_char, template <typename> typename t_map>
+	template <typename t_archive>
+	void consecutive_alphabet_mt <t_char, t_map>::boost_serialize(t_archive &ar, unsigned int const version)
+	{
+		ar & m_to_comp;
+		ar & m_to_char;
 	}
 	
 	
@@ -385,6 +401,16 @@ namespace libbio { namespace detail {
 				builder.m_found_characters[builder.m_found_char_idx++] = c;
 			}
 		}
+	}
+}}
+
+
+namespace boost { namespace serialization {
+	
+	template <typename t_archive, typename t_char, template <typename> typename t_map>
+	void serialize(t_archive &ar, libbio::consecutive_alphabet_mt <t_char, t_map> &alphabet, unsigned int const version)
+	{
+		alphabet.boost_serialize(ar, version);
 	}
 }}
 

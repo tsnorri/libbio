@@ -255,6 +255,12 @@ namespace libbio {
 	template <typename t_value>
 	class array_list
 	{
+		template <typename t_archive>
+		friend void save(t_archive &, array_list const &, unsigned int const);
+		
+		template <typename t_archive>
+		friend void load(t_archive &, array_list &, unsigned int const);
+		
 	public:
 		typedef detail::array_list_item <t_value>									item_type;
 		
@@ -369,6 +375,12 @@ namespace libbio {
 
 		void add_item(item_type &&item);
 		void link_item(item_type &&item, size_type const idx);
+		
+		template <typename t_archive>
+		void boost_load(t_archive &ar, unsigned int const version);
+	
+		template <typename t_archive>
+		void boost_save(t_archive &ar, unsigned int const version);
 	};
 	
 	
@@ -515,6 +527,69 @@ namespace libbio {
 		m_items[idx] = std::move(item);
 		m_last_1 = std::max(m_last_1, 1 + idx);
 	}
+	
+	
+	template <typename t_value>
+	template <typename t_archive>
+	void array_list <t_value>::boost_load(t_archive &ar, unsigned int const version)
+	{
+		ar & m_first;
+		ar & m_last_1;
+		
+		typedef typename detail::array_list_pair_iterator_detail <array_list <t_value>>::pair_type pair_type;
+		std::vector <pair_type> buffer;
+		ar & buffer;
+	}
+	
+	
+	template <typename t_value>
+	template <typename t_archive>
+	void array_list <t_value>::boost_save(t_archive &ar, unsigned int const version)
+	{
+		ar & m_first;
+		ar & m_last_1;
+		
+		typedef typename detail::array_list_pair_iterator_detail <array_list <t_value>>::pair_type pair_type;
+		std::vector <pair_type> buffer;
+		for (auto const &pair : this->const_pair_iterator_proxy())
+			buffer.emplace_back(pair);
+		
+		ar & buffer;
+		
+		m_items.resize(m_last_1);
+		size_type prev_idx(SIZE_MAX);
+		for (auto &pair : buffer)
+		{
+			this->link(std::move(pair.second), pair.first, prev_idx);
+			prev_idx = pair.first;
+		}
+	}
 }
+
+
+namespace boost { namespace serialization {
+	
+	template <typename t_archive, typename t_value>
+	void save(t_archive &ar, libbio::array_list <t_value> const &array_list, unsigned int const version)
+	{
+		array_list.boost_save(ar, version);
+	}
+	
+	
+	template <typename t_archive, typename t_value>
+	void load(t_archive &ar, libbio::array_list <t_value> &array_list, unsigned int const version)
+	{
+		array_list.boost_load(ar, version);
+	}
+	
+	
+	template <typename t_archive, typename t_value>
+	void serialize(t_archive &ar, libbio::array_list <t_value> &array_list, unsigned int version)
+	{
+		// See <boost/serialization/split_free.hpp>; the definition of BOOST_SERIALIZATION_SPLIT_FREE
+		// is essentially the same as this function.
+		split_free(ar, array_list, version);
+	}
+}}
 
 #endif

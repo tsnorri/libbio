@@ -69,18 +69,21 @@ namespace libbio { namespace pbwt {
 		DIVERGENCE_VALUE_COUNTS		= 0x80,
 		ALL							= 0xff
 	};
-	
+
+#	define LIBBIO_PBWT_CONTEXT_TEMPLATE_ARGS \
+	typename t_sequence_vector, \
+	typename t_alphabet_type, \
+	typename t_ci_rmq, \
+	typename t_string_index_vector, \
+	typename t_character_index_vector, \
+	typename t_count_vector, \
+	typename t_divergence_count_type
 	
 #	define LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL \
 	template < \
-		typename t_sequence_vector, \
-		typename t_alphabet_type, \
-		typename t_ci_rmq, \
-		typename t_string_index_vector, \
-		typename t_character_index_vector, \
-		typename t_count_vector, \
-		typename t_divergence_count_type \
+		LIBBIO_PBWT_CONTEXT_TEMPLATE_ARGS \
 	>
+	
 #	define LIBBIO_PBWT_CONTEXT_CLASS_DECL pbwt_context < \
 		t_sequence_vector, \
 		t_alphabet_type, \
@@ -207,6 +210,10 @@ namespace libbio { namespace pbwt {
 		
 		template <typename t_counts>
 		std::size_t unique_substring_count_idxs_rhs(std::size_t const lb, t_counts &counts) const { return libbio::pbwt::unique_substring_count_idxs(lb, m_output_permutation, m_output_divergence, counts); }
+		
+		// For Boost.Serialization.
+		template <typename t_archive>
+		void boost_serialize(t_archive &ar, unsigned int version);
 		
 		// For debugging.
 		void print_vectors() const;
@@ -458,6 +465,22 @@ namespace libbio { namespace pbwt {
 		std::cerr << std::flush;
 	}
 	
+	
+	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
+	template <typename t_archive>
+	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::boost_serialize(t_archive &ar, unsigned int version)
+	{
+		ar & m_input_permutation;
+		ar & m_output_permutation;
+		ar & m_inverse_input_permutation;
+		ar & m_input_divergence;
+		ar & m_output_divergence;
+		ar & m_character_counts;
+		ar & m_previous_positions;
+		ar & m_divergence_value_counts;
+	}
+	
+	
 	LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_TEMPLATE_DECL
 	auto LIBBIO_PBWT_BUFFERING_PBWT_CONTEXT_CLASS_DECL::last_divergence_value_counts() const -> divergence_count_list const &
 	{
@@ -618,5 +641,32 @@ namespace libbio { namespace pbwt {
 		dst.m_divergence_value_counts = divergence_value_counts;
 	}
 }}
+
+
+namespace boost { namespace serialization {
+	
+	template <typename t_archive, typename t_sample_context_type>
+	void serialize(
+		t_archive &ar,
+		libbio::pbwt::detail::buffering_pbwt_context_sample_type <t_sample_context_type> const &sample,
+		unsigned int const version
+	)
+	{
+		ar & sample.context;
+		ar & sample.rb;
+	}
+	
+	
+	template <typename t_archive, LIBBIO_PBWT_CONTEXT_TEMPLATE_ARGS>
+	void serialize(
+		t_archive &ar,
+		libbio::pbwt::LIBBIO_PBWT_CONTEXT_CLASS_DECL const &context,
+		unsigned int version
+	)
+	{
+		context.boost_serialize(ar, version);
+	}
+}}
+
 
 #endif
