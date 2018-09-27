@@ -14,12 +14,21 @@
 
 
 namespace libbio { namespace pbwt { namespace detail {
-	// For some reason, operator<< cannot deduce the template arguments
-	// for buffering_pbwt_context when given a sample_type.
-	struct buffering_pbwt_context_sample_type_base
+	
+	template <typename t_sample_context_type>
+	struct buffering_pbwt_context_sample_type final
 	{
-		virtual ~buffering_pbwt_context_sample_type_base() {}
-		virtual std::ostream &output_description(std::ostream &os) const = 0;
+		typedef t_sample_context_type						context_type;
+		typedef typename context_type::string_index_type	string_index;
+		
+		context_type	context;
+		string_index	rb{};		// Right bound; equal to the 1-based PBWT array index.
+		
+		buffering_pbwt_context_sample_type() = default;
+		buffering_pbwt_context_sample_type(string_index const rb_):
+			rb(rb_)
+		{
+		}
 	};
 	
 	
@@ -125,26 +134,27 @@ namespace libbio { namespace pbwt {
 		friend class buffering_pbwt_context;
 		
 	public:
-		typedef t_string_index_vector					string_index_vector;
-		typedef t_character_index_vector				character_index_vector;
-		typedef t_ci_rmq								character_index_vector_rmq;
-		typedef t_count_vector							count_vector;
-		typedef t_sequence_vector						sequence_vector;
-		typedef t_alphabet_type							alphabet_type;
-		typedef array_list <t_divergence_count_type>	divergence_count_list;
+		typedef t_string_index_vector						string_index_vector;
+		typedef typename string_index_vector::value_type	string_index_type;
+		typedef t_character_index_vector					character_index_vector;
+		typedef t_ci_rmq									character_index_vector_rmq;
+		typedef t_count_vector								count_vector;
+		typedef t_sequence_vector							sequence_vector;
+		typedef t_alphabet_type								alphabet_type;
+		typedef array_list <t_divergence_count_type>		divergence_count_list;
 		
 	protected:
-		sequence_vector const							*m_sequences{};
-		alphabet_type const								*m_alphabet{};
+		sequence_vector const								*m_sequences{};
+		alphabet_type const									*m_alphabet{};
 		
-		string_index_vector								m_input_permutation;
-		string_index_vector								m_output_permutation;
-		string_index_vector								m_inverse_input_permutation;
-		character_index_vector							m_input_divergence;
-		character_index_vector							m_output_divergence;
-		count_vector									m_character_counts;
-		string_index_vector								m_previous_positions;
-		divergence_count_list							m_divergence_value_counts;
+		string_index_vector									m_input_permutation;
+		string_index_vector									m_output_permutation;
+		string_index_vector									m_inverse_input_permutation;
+		character_index_vector								m_input_divergence;
+		character_index_vector								m_output_divergence;
+		count_vector										m_character_counts;
+		string_index_vector									m_previous_positions;
+		divergence_count_list								m_divergence_value_counts;
 		
 	public:
 		pbwt_context() = default;
@@ -236,23 +246,8 @@ namespace libbio { namespace pbwt {
 			t_divergence_count
 		> sample_context_type;
 		
-		struct sample_type final : public detail::buffering_pbwt_context_sample_type_base
-		{
-			typedef sample_context_type context_type;
-			
-			context_type	context;
-			t_string_index	rb{};		// Right bound; equal to the 1-based PBWT array index.
-			
-			sample_type() = default;
-			sample_type(t_string_index const rb_):
-				rb(rb_)
-			{
-			}
-			
-			std::ostream &output_description(std::ostream &os) const override { os << "rb: " << rb; return os; }
-		};
-		
-		typedef std::vector <sample_type> sample_vector;
+		typedef detail::buffering_pbwt_context_sample_type <sample_context_type>	sample_type;
+		typedef std::vector <sample_type>											sample_vector;
 	
 	protected:
 		sequence_vector const									*m_sequences{};
@@ -296,6 +291,7 @@ namespace libbio { namespace pbwt {
 		std::size_t sequence_idx() const { return m_sequence_idx; }
 		std::size_t const size() const { return m_sequences->size(); }
 		std::size_t const sequence_size() const { return m_sequences->front().size(); }
+		std::size_t const buffer_count() const { return m_buffer_count; }
 		divergence_count_list const &last_divergence_value_counts() const;
 		sample_vector &samples() { return m_samples; }
 		sample_vector const &samples() const { return m_samples; }
@@ -331,9 +327,11 @@ namespace libbio { namespace pbwt {
 	};
 	
 	
-	inline std::ostream &operator<<(std::ostream &os, detail::buffering_pbwt_context_sample_type_base const &sample)
+	template <typename t_sample_context_type>
+	std::ostream &operator<<(std::ostream &os, detail::buffering_pbwt_context_sample_type <t_sample_context_type> const &sample)
 	{
-		return sample.output_description(os);
+		os << sample.rb;
+		return os;
 	}
 	
 	
