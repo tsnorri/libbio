@@ -6,6 +6,7 @@
 #ifndef LIBBIO_RADIX_SORT_HH
 #define LIBBIO_RADIX_SORT_HH
 
+#include <cassert>
 #include <libbio/algorithm.hh>
 #include <libbio/bits.hh>
 #include <type_traits>

@@ -6,6 +6,7 @@
 #ifndef LIBBIO_BITS_HH
 #define LIBBIO_BITS_HH
 
+#include <climits>
 #include <cstdint>
 
 
