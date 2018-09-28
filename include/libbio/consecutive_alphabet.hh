@@ -17,6 +17,18 @@
 #include <vector>
 
 
+namespace libbio {
+	template <typename t_char, template <typename> typename t_map>
+	class consecutive_alphabet_mt;
+}
+
+// Forward declaration needed for template friends.
+namespace boost { namespace serialization {
+	template <typename t_archive, typename t_char, template <typename> typename t_map>
+	void serialize(t_archive &, libbio::consecutive_alphabet_mt <t_char, t_map> &, unsigned int const);
+}}
+
+
 namespace libbio { namespace detail {
 
 	// Map characters to consecutive integers using arrays.
@@ -99,8 +111,8 @@ namespace libbio {
 		template <typename>
 		friend class consecutive_alphabet_mt_builder;
 		
-		template <typename t_archive>
-		friend void serialize(t_archive &ar, consecutive_alphabet_mt &alphabet, unsigned int const version);
+		template <typename t_archive, typename t_tpl_char, template <typename> typename t_tpl_map>
+		friend void boost::serialization::serialize(t_archive &ar, consecutive_alphabet_mt <t_tpl_char, t_tpl_map> &alphabet, unsigned int const version);
 		
 	public:
 		enum { ALPHABET_MAX = std::numeric_limits <t_char>::max() };
@@ -413,6 +425,5 @@ namespace boost { namespace serialization {
 		alphabet.boost_serialize(ar, version);
 	}
 }}
-
 
 #endif
