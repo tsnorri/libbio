@@ -16,7 +16,7 @@
 namespace libbio { namespace pbwt { namespace detail {
 	
 	template <typename t_sample_context_type>
-	struct buffering_pbwt_context_sample_type final
+	struct buffering_pbwt_context_sample final
 	{
 		typedef t_sample_context_type						context_type;
 		typedef typename context_type::string_index_type	string_index;
@@ -24,8 +24,8 @@ namespace libbio { namespace pbwt { namespace detail {
 		context_type	context;
 		string_index	rb{};		// Right bound; equal to the 1-based PBWT array index.
 		
-		buffering_pbwt_context_sample_type() = default;
-		buffering_pbwt_context_sample_type(string_index const rb_):
+		buffering_pbwt_context_sample() = default;
+		buffering_pbwt_context_sample(string_index const rb_):
 			rb(rb_)
 		{
 		}
@@ -253,8 +253,8 @@ namespace libbio { namespace pbwt {
 			t_divergence_count
 		> sample_context_type;
 		
-		typedef detail::buffering_pbwt_context_sample_type <sample_context_type>	sample_type;
-		typedef std::vector <sample_type>											sample_vector;
+		typedef detail::buffering_pbwt_context_sample <sample_context_type>	sample_type;
+		typedef std::vector <sample_type>									sample_vector;
 	
 	protected:
 		sequence_vector const									*m_sequences{};
@@ -335,7 +335,7 @@ namespace libbio { namespace pbwt {
 	
 	
 	template <typename t_sample_context_type>
-	std::ostream &operator<<(std::ostream &os, detail::buffering_pbwt_context_sample_type <t_sample_context_type> const &sample)
+	std::ostream &operator<<(std::ostream &os, detail::buffering_pbwt_context_sample <t_sample_context_type> const &sample)
 	{
 		os << sample.rb;
 		return os;
@@ -648,7 +648,7 @@ namespace boost { namespace serialization {
 	template <typename t_archive, typename t_sample_context_type>
 	void serialize(
 		t_archive &ar,
-		libbio::pbwt::detail::buffering_pbwt_context_sample_type <t_sample_context_type> const &sample,
+		libbio::pbwt::detail::buffering_pbwt_context_sample <t_sample_context_type> &sample,
 		unsigned int const version
 	)
 	{
@@ -660,7 +660,7 @@ namespace boost { namespace serialization {
 	template <typename t_archive, LIBBIO_PBWT_CONTEXT_TEMPLATE_ARGS>
 	void serialize(
 		t_archive &ar,
-		libbio::pbwt::LIBBIO_PBWT_CONTEXT_CLASS_DECL const &context,
+		libbio::pbwt::LIBBIO_PBWT_CONTEXT_CLASS_DECL &context,
 		unsigned int version
 	)
 	{
