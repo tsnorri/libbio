@@ -3,11 +3,16 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <boost/format.hpp>
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <libbio/file_handling.hh>
 #include <string>
+
+#ifdef __linux__
+#include <linux/limits.h>
+#endif
 
 
 namespace ios	= boost::iostreams;
@@ -76,7 +81,7 @@ namespace libbio {
 
 #ifdef __linux__
 		auto const readlink_path(boost::str(boost::format("/proc/self/fd/%d") % fd));
-		auto const size(readlink(readlink_path.c_str(), buffer.data(), PATH_MAX))
+		auto const size(readlink(readlink_path.c_str(), buffer.data(), PATH_MAX));
 		if (-1 == size)
 			return false;
 		
