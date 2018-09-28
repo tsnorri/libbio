@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include <libbio/file_handling.hh>
+#include <string>
 
 
 namespace ios	= boost::iostreams;
@@ -65,5 +66,34 @@ namespace libbio {
 		
 		ios::file_descriptor_sink sink(fd, ios::close_handle);
 		stream.open(sink);
+	}
+	
+	
+	bool get_file_path(int fd, std::string &buffer)
+	{
+		buffer.resize(1 + PATH_MAX);
+		buffer[PATH_MAX] = '\0';
+
+#ifdef __linux__
+		auto const readlink_path(boost::str(boost::format("/proc/self/fd/%d") % fd));
+		auto const size(readlink(readlink_path.c_str(), buffer.data(), PATH_MAX))
+		if (-1 == size)
+			return false;
+		
+		buffer[size] = '\0';
+		return true;
+#else
+		auto const status(fcntl(fd, F_GETPATH, buffer.data()));
+		if (-1 == status)
+			return false;
+		
+		auto const pos(buffer.find('\0'));
+		if (std::string::npos == pos)
+			buffer[PATH_MAX] = '\0';
+		else
+			buffer[pos] = '\0';
+		
+		return true;
+#endif
 	}
 }
