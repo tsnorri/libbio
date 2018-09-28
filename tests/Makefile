@@ -6,6 +6,7 @@ include ../common.mk
 CPPFLAGS += -DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS -I../lib/Catch2/single_include
 
 OBJECTS	=	algorithm.o \
+			array_list.o \
 			bit_rle_codec.o \
 			main.o \
 			radix_sort.o
@@ -14,7 +15,7 @@ all: tests
 
 
 tests: $(OBJECTS)
-	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) ../src/libbio.a
+	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) ../src/libbio.a $(BOOST_LIBS)
 
 
 clean:
