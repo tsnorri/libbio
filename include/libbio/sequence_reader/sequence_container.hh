@@ -18,9 +18,15 @@ namespace libbio { namespace sequence_reader {
 	
 	class sequence_container
 	{
+	protected:
+		std::string		m_path;
+		
 	public:
 		virtual ~sequence_container() {}
 		virtual void to_spans(sequence_vector &dst) = 0;
+		std::string const &path() const { return m_path; }
+		void set_path(std::string const &path) { m_path = path; }
+		void set_path(char const *path) { m_path = std::string(path); }
 		
 	protected:
 		template <typename t_sequences>

@@ -42,6 +42,8 @@ namespace libbio { namespace sequence_reader {
 			open_file_for_reading(path, stream);
 			read_input_from_stream(stream, format, container);
 		}
+		
+		container->set_path(path);
 	}
 	
 	
