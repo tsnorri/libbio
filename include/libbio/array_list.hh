@@ -7,6 +7,8 @@
 #define LIBBIO_ARRAY_LIST_HH
 
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/serialization/utility.hpp>
+#include <iostream>
 #include <libbio/util.hh>
 #include <type_traits>
 #include <vector>
@@ -15,6 +17,16 @@
 namespace libbio {
 	template <typename t_item> class array_list;
 }
+
+// Forward declaration needed for template friends.
+namespace boost { namespace serialization {
+	
+	template <typename t_archive, typename t_value>
+	void load(t_archive &, libbio::array_list <t_value> &, unsigned int const);
+	
+	template <typename t_archive, typename t_value>
+	void save(t_archive &, libbio::array_list <t_value> const &, unsigned int const);
+}}
 
 
 namespace libbio { namespace detail {
@@ -194,6 +206,13 @@ namespace libbio { namespace detail {
 		bool const has_next() const { return SIZE_MAX != next; }
 	};
 	
+	template <typename t_value>
+	std::ostream &operator<<(std::ostream &stream, array_list_item <t_value> const &item)
+	{
+		stream << "prev: " << item.prev << " next: " << item.next << " value: " << item.value;
+		return stream;
+	}
+	
 	
 	template <typename t_array_list>
 	class array_list_item_iterator_proxy
@@ -255,11 +274,11 @@ namespace libbio {
 	template <typename t_value>
 	class array_list
 	{
-		template <typename t_archive>
-		friend void save(t_archive &, array_list const &, unsigned int const);
+		template <typename t_archive, typename t_tpl_value>
+		friend void boost::serialization::save(t_archive &, array_list <t_tpl_value> const &, unsigned int const);
 		
-		template <typename t_archive>
-		friend void load(t_archive &, array_list &, unsigned int const);
+		template <typename t_archive, typename t_tpl_value>
+		friend void boost::serialization::load(t_archive &, array_list <t_tpl_value> &, unsigned int const);
 		
 	public:
 		typedef detail::array_list_item <t_value>									item_type;
@@ -294,10 +313,13 @@ namespace libbio {
 		array_list() = default;
 		array_list(array_list &&) = default;
 		array_list(array_list const &other) { copy(other); }
-
+		explicit array_list(
+			std::initializer_list <std::pair <size_type, t_value>> list
+		);
+		
 		array_list &operator=(array_list &&other) & = default;
 		array_list &operator=(array_list const &other) { copy(other); return *this; }
-
+		
 		void reset() { m_first = SIZE_MAX; m_last_1 = 0; }
 		void set_first_element(size_type first) { m_first = first; }
 		void set_last_element(size_type last) { m_last_1 = 1 + last; }
@@ -380,7 +402,7 @@ namespace libbio {
 		void boost_load(t_archive &ar, unsigned int const version);
 	
 		template <typename t_archive>
-		void boost_save(t_archive &ar, unsigned int const version);
+		void boost_save(t_archive &ar, unsigned int const version) const;
 	};
 	
 	
@@ -398,8 +420,31 @@ namespace libbio {
 		}
 		return os;
 	}
-
-
+	
+	
+	template <typename t_value>
+	array_list <t_value>::array_list(
+		std::initializer_list <std::pair <size_type, t_value>> list
+	)
+	{
+		if (list.size())
+		{
+			auto begin(std::begin(list));
+			auto rbegin(std::rbegin(list));
+			m_first = begin->first;
+			m_last_1 = rbegin->first;
+			m_items.resize(1 + m_last_1);
+			
+			size_type prev_idx(SIZE_MAX);
+			for (auto const &pair : list)
+			{
+				link(pair.second, pair.first, prev_idx);
+				prev_idx = pair.first;
+			}
+		}
+	}
+	
+	
 	template <typename t_value>
 	void array_list <t_value>::copy(array_list const &other)
 	{
@@ -536,33 +581,40 @@ namespace libbio {
 		ar & m_first;
 		ar & m_last_1;
 		
+		// pair_type has a reference type as the second element, which prevents default initialization of the type.
+		// The reference isn’t serialized, though, so we can substitute it with the actual type.
 		typedef typename detail::array_list_pair_iterator_detail <array_list <t_value>>::pair_type pair_type;
-		std::vector <pair_type> buffer;
+		typedef std::pair <
+			typename pair_type::first_type,
+			std::remove_reference_t <typename pair_type::second_type>
+		> stored_pair_type;
+		
+		std::vector <stored_pair_type> buffer;
 		ar & buffer;
+		
+		m_items.resize(1 + m_last_1);
+		size_type prev_idx(SIZE_MAX);
+		for (auto &pair : buffer)
+		{
+			link(std::move(pair.second), pair.first, prev_idx);
+			prev_idx = pair.first;
+		}
 	}
 	
 	
 	template <typename t_value>
 	template <typename t_archive>
-	void array_list <t_value>::boost_save(t_archive &ar, unsigned int const version)
+	void array_list <t_value>::boost_save(t_archive &ar, unsigned int const version) const
 	{
 		ar & m_first;
 		ar & m_last_1;
 		
-		typedef typename detail::array_list_pair_iterator_detail <array_list <t_value>>::pair_type pair_type;
+		typedef typename detail::array_list_pair_iterator_detail <array_list <t_value> const>::pair_type pair_type;
 		std::vector <pair_type> buffer;
 		for (auto const &pair : this->const_pair_iterator_proxy())
 			buffer.emplace_back(pair);
 		
 		ar & buffer;
-		
-		m_items.resize(m_last_1);
-		size_type prev_idx(SIZE_MAX);
-		for (auto &pair : buffer)
-		{
-			this->link(std::move(pair.second), pair.first, prev_idx);
-			prev_idx = pair.first;
-		}
 	}
 }
 
@@ -570,16 +622,16 @@ namespace libbio {
 namespace boost { namespace serialization {
 	
 	template <typename t_archive, typename t_value>
-	void save(t_archive &ar, libbio::array_list <t_value> const &array_list, unsigned int const version)
+	void load(t_archive &ar, libbio::array_list <t_value> &array_list, unsigned int const version)
 	{
-		array_list.boost_save(ar, version);
+		array_list.boost_load(ar, version);
 	}
 	
 	
 	template <typename t_archive, typename t_value>
-	void load(t_archive &ar, libbio::array_list <t_value> &array_list, unsigned int const version)
+	void save(t_archive &ar, libbio::array_list <t_value> const &array_list, unsigned int const version)
 	{
-		array_list.boost_load(ar, version);
+		array_list.boost_save(ar, version);
 	}
 	
 	
