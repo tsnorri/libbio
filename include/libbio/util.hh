@@ -100,6 +100,10 @@ namespace libbio {
 	void log_time(std::ostream &stream);
 	
 	
+	// Calculate the printed length of a UTF-8 string by checking the first two bits of each byte.
+	std::size_t strlen_utf8(std::string const &str);
+	
+	
 	template <typename t_value, typename t_allocator>
 	void clear_and_resize_vector(std::vector <t_value, t_allocator> &vec)
 	{
