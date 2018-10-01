@@ -175,7 +175,7 @@ namespace libbio { namespace pbwt {
 			m_input_divergence(m_sequences->size(), 0),
 			m_output_divergence(m_sequences->size(), 0),
 			m_character_counts(m_alphabet->sigma(), 0),
-			m_previous_positions(m_alphabet->sigma(), 0)
+			m_previous_positions(1 + m_alphabet->sigma(), 0)
 		{
 		}
 		
@@ -289,7 +289,7 @@ namespace libbio { namespace pbwt {
 			m_divergences(m_sequences->size(), m_buffer_count, 0),
 			m_divergence_value_counts(m_buffer_count),
 			m_character_counts(m_alphabet->sigma(), 0),
-			m_previous_positions(m_alphabet->sigma(), 0)
+			m_previous_positions(1 + m_alphabet->sigma(), 0)
 		{
 			for (auto &list : m_divergence_value_counts)
 				list.resize(1 + m_sequence_size);
