@@ -5,6 +5,8 @@ include ../common.mk
 
 OBJECTS		=	file_handling.o \
 				mmap_handle.o \
+				progress_bar.o \
+				progress_indicator.o \
 				sequence_container.o \
 				sequence_reader.o \
 				types.o \
