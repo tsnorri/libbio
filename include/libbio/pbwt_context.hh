@@ -586,6 +586,9 @@ namespace libbio { namespace pbwt {
 				copy_sample_src_idx = src_idx;
 				
 				// Variables for the block.
+				// Having a reference to an element of m_samples should be safe
+				// b.c. the next copying task will wait in the beginning of the
+				// while loop for dispatch_semaphore_signal below.
 				auto &sample(m_samples.emplace_back(1 + m_sequence_idx));
 				auto sema(*copy_sample_sema); // Get the stored pointer.
 				
@@ -603,6 +606,10 @@ namespace libbio { namespace pbwt {
 			dst_idx %= m_buffer_count;
 			++m_sequence_idx;
 		}
+		
+		// Wait for copying if needed.
+		if (SIZE_MAX != copy_sample_src_idx)
+			dispatch_semaphore_wait(*copy_sample_sema, DISPATCH_TIME_FOREVER);
 		
 		continue_fn();
 	}
