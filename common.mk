@@ -32,6 +32,12 @@ CFLAGS			+= -std=c99   $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CFLAGS)
 CXXFLAGS		+= -std=c++17 $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CXXFLAGS)
 CPPFLAGS		+= $(SYSTEM_CPPFLAGS) $(BOOST_INCLUDE) -I../include -I../lib/GSL/include
 
+# Assume that swift-corelibs-libdispatch is a submodule of the containing project (for now).
+ifeq ($(shell uname -s),Linux)
+	CPPFLAGS    += -I../../swift-corelibs-libdispatch
+endif
+
+
 %.o: %.cc
 	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) -o $@ $<
 
