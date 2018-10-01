@@ -70,6 +70,8 @@ namespace libbio { namespace pbwt {
 		}
 		
 		// Sort the strings by the k-th column and build the arrays.
+		if (previous_positions.size() < 1 + sigma)
+			previous_positions.resize(1 + sigma);
 		std::fill(previous_positions.begin(), 1 + sigma + previous_positions.begin(), 0);
 		{
 			std::size_t i(0);
