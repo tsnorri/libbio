@@ -57,6 +57,8 @@ namespace libbio {
 		
 			dispatch_source_cancel(*m_message_timer);
 			dispatch_source_cancel(*m_signal_source);
+
+			m_is_installed = false;
 		}
 	}
 	
