@@ -144,7 +144,7 @@ namespace libbio { namespace detail {
 		void apply()
 		{
 			typedef parallel_for_each_helper helper_type;
-			auto const iterations(m_count / m_stride);
+			std::size_t const iterations(std::ceil(1.0 * m_count / m_stride));
 
 			if (1 < iterations)
 			{
