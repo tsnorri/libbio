@@ -520,6 +520,8 @@ namespace libbio { namespace pbwt {
 		// cannot be stored for the duration of filling all the buffers in-between.
 		assert(m_buffer_count <= m_sample_rate);
 		
+		m_samples.reserve(1 + m_sequence_size / m_sample_rate);
+		
 		// Create a semaphore and a counter for copying the samples.
 		dispatch_ptr <dispatch_semaphore_t> copy_sample_sema(dispatch_semaphore_create(0));
 		std::size_t copy_sample_src_idx(SIZE_MAX);
