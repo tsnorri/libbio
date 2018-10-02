@@ -12,6 +12,12 @@
 #define libbio_fail(MESSAGE) do { ::libbio::detail::do_fail(__FILE__, __LINE__, MESSAGE); } while (false)
 #define libbio_always_assert(...) do { ::libbio::detail::do_always_assert(__FILE__, __LINE__, __VA_ARGS__); } while (false)
 
+#ifdef NDEBUG
+#	define libbio_assert_eq(LHS, RHS)
+#else
+#	define libbio_assert_eq(LHS, RHS) do { ::libbio::detail::assert_eq(__FILE__, __LINE__, (LHS), (RHS)); } while (false)
+#endif
+
 
 namespace libbio { namespace detail {
 
@@ -23,7 +29,7 @@ namespace libbio { namespace detail {
 
 	inline void do_fail(char const *file, int const line, char const *message)
 	{
-		detail::log_assertion_failure(file, line);
+		log_assertion_failure(file, line);
 		std::cerr << message << std::endl;
 		abort();
 	}
@@ -33,7 +39,7 @@ namespace libbio { namespace detail {
 	{
 		if (!check)
 		{
-			detail::log_assertion_failure(file, line);
+			log_assertion_failure(file, line);
 			abort();
 		}
 	}
@@ -52,8 +58,20 @@ namespace libbio { namespace detail {
 	{
 		if (!check)
 		{
-			detail::log_assertion_failure(file, line);
+			log_assertion_failure(file, line);
 			fn();
+			abort();
+		}
+	}
+
+
+	template <typename t_lhs, typename t_rhs>
+	inline void assert_eq(char const *file, int const line, t_lhs &&lhs, t_rhs &&rhs)
+	{
+		if (! (lhs == rhs))
+		{
+			log_assertion_failure(file, line);
+			std::cerr << "Equality comparison failed for '" << lhs << "' and '" << rhs << "'." << std::endl;
 			abort();
 		}
 	}
