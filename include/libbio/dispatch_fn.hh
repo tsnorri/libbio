@@ -7,6 +7,7 @@
 #define LIBBIO_DISPATCH_FN_HH
 
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <dispatch/dispatch.h>
