@@ -14,6 +14,46 @@
 
 namespace libbio { namespace pbwt {
 	
+	template <typename t_character_index_vector, typename t_divergence_vector>
+	class dynamic_pbwt_rmq
+	{
+	public:
+		typedef typename t_divergence_vector::size_type	size_type;
+		
+	protected:
+		t_character_index_vector	*m_permutation{};
+		t_divergence_vector			*m_divergence{};
+		
+	public:
+		dynamic_pbwt_rmq() = default;
+		dynamic_pbwt_rmq(t_character_index_vector &prev_permutation, t_divergence_vector &prev_divergence):
+			m_permutation(&prev_permutation),
+			m_divergence(&prev_divergence)
+		{
+		}
+		
+		size_type operator()(size_type j, size_type i)
+		{
+			(*m_permutation)[i] = i + 1;
+			return maxd(j, i);
+		}
+		
+		size_type size() const { return m_divergence->size(); }
+		
+	protected:
+		size_type maxd(size_type j, size_type i)
+		{
+			if (j != i)
+			{
+				(*m_divergence)[j] = std::max((*m_divergence)[j], maxd((*m_permutation)[j], i));
+				(*m_permutation)[j] = i + 1;
+			}
+			
+			return (*m_divergence)[j];
+		}
+	};
+	
+	
 	// Build prefix and divergence arrays for PBWT.
 	template <
 		typename t_input_vector,
@@ -90,7 +130,7 @@ namespace libbio { namespace pbwt {
 					output_divergence[dst_idx] = 1 + column_idx;
 				else
 				{
-					auto const max_div_idx(input_divergence_rmq(prev_idx ?: 1, i));
+					auto const max_div_idx(input_divergence_rmq(prev_idx, i));
 					auto const max_div(input_divergence[max_div_idx]);
 					output_divergence[dst_idx] = max_div;
 				}
