@@ -104,11 +104,11 @@ namespace libbio {
 	std::size_t strlen_utf8(std::string const &str);
 	
 	
-	template <typename t_value, typename t_allocator>
-	void clear_and_resize_vector(std::vector <t_value, t_allocator> &vec)
+	template <typename t_vector>
+	void clear_and_resize_vector(t_vector &vec)
 	{
 		// Swap with an empty vector.
-		std::vector <t_value, t_allocator> empty_vec;
+		t_vector empty_vec;
 		
 		using std::swap;
 		swap(vec, empty_vec);
