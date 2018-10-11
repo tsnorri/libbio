@@ -22,7 +22,7 @@ namespace libbio { namespace sequence_reader {
 			
 			dst.emplace_back(reinterpret_cast <std::uint8_t const *>(sv.data() + pos), next_pos - pos);
 			
-			pos = next_pos;
+			pos = 1 + next_pos;
 		}
 	}
 	
