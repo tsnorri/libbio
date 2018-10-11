@@ -15,23 +15,6 @@
 
 namespace libbio { namespace pbwt { namespace detail {
 	
-	template <typename t_sample_context_type>
-	struct pbwt_context_sample final
-	{
-		typedef t_sample_context_type						context_type;
-		typedef typename context_type::string_index_type	string_index;
-		
-		context_type	context;
-		string_index	rb{};		// Right bound; equal to the 1-based PBWT array index.
-		
-		pbwt_context_sample() = default;
-		pbwt_context_sample(string_index const rb_):
-			rb(rb_)
-		{
-		}
-	};
-	
-	
 	template <typename t_buffering_context>
 	class buffering_context_callback_proxy
 	{
@@ -53,9 +36,9 @@ namespace libbio { namespace pbwt { namespace detail {
 		{
 		}
 		
-		string_index_vector const &output_permutation() { return m_context->m_permutations.column(m_buffer_idx); };
-		character_index_vector const &output_divergence() { return m_context->m_divergences.column(m_buffer_idx); };
-		divergence_count_list const &output_divergence_value_counts() { return m_context->m_divergence_value_counts[m_buffer_idx]; };
+		string_index_vector const &output_permutation() const { return m_context->m_permutations.column(m_buffer_idx); };
+		character_index_vector const &output_divergence() const { return m_context->m_divergences.column(m_buffer_idx); };
+		divergence_count_list const &output_divergence_value_counts() const { return m_context->m_divergence_value_counts[m_buffer_idx]; };
 	};
 	
 	
@@ -240,8 +223,8 @@ namespace libbio { namespace pbwt {
 		typedef t_sequence_vector							sequence_vector;
 		typedef t_alphabet_type								alphabet_type;
 		typedef array_list <t_divergence_count_type>		divergence_count_list;
-		typedef detail::pbwt_context_sample <pbwt_context>	sample_type;
-		typedef std::vector <sample_type>					sample_vector;
+		typedef pbwt_context								sample_context_type;
+		typedef std::vector <pbwt_context>					sample_vector;
 		
 	protected:
 		sequence_vector const								*m_sequences{};
@@ -302,7 +285,7 @@ namespace libbio { namespace pbwt {
 		
 		std::size_t sequence_length() const { return m_sequences->front().size(); }
 		std::size_t size() const { return m_sequences->size(); }
-		std::size_t sequence_idx() const { return m_sequence_idx; }
+		std::size_t sequence_idx() const { return m_sequence_idx; } // Right bound.
 		sample_vector &samples() { return m_samples; }
 		sample_vector const &samples() const { return m_samples; }
 		void set_sample_rate(std::uint64_t const sample_rate) { m_sample_rate = sample_rate; }
@@ -403,6 +386,7 @@ namespace libbio { namespace pbwt {
 		typedef std::vector <divergence_count_list>						divergence_count_matrix;
 		typedef t_vector_tpl <t_character_count>						count_vector;
 		typedef t_vector_tpl <t_string_index>							string_index_vector;
+		typedef typename character_index_matrix::const_slice_type		character_index_vector;
 		
 		typedef pbwt_context <
 			sequence_vector,
@@ -414,8 +398,7 @@ namespace libbio { namespace pbwt {
 			t_divergence_count
 		> sample_context_type;
 		
-		typedef detail::pbwt_context_sample <sample_context_type>	sample_type;
-		typedef std::vector <sample_type>							sample_vector;
+		typedef std::vector <sample_context_type>					sample_vector;
 	
 	protected:
 		sequence_vector const										*m_sequences{};
@@ -458,7 +441,7 @@ namespace libbio { namespace pbwt {
 			m_previous_positions(1 + m_alphabet->sigma(), 0)
 		{
 			auto const seq_length(sequence_length());
-			m_fields_in_use |= extra_fields;
+			m_fields_in_use = static_cast <context_field const>(m_fields_in_use | extra_fields);
 			for (auto &list : m_divergence_value_counts)
 				list.resize(1 + seq_length);
 		}
@@ -472,7 +455,7 @@ namespace libbio { namespace pbwt {
 		sample_vector const &samples() const { return m_samples; }
 		
 		typename string_index_matrix::const_slice_type const &permutation(std::size_t const idx) const { return m_permutations.column(idx); }
-		typename character_index_matrix::const_slice_type const &divergence(std::size_t const idx) const { return m_divergences.column(idx); }
+		character_index_vector const &divergence(std::size_t const idx) const { return m_divergences.column(idx); }
 		divergence_count_list const &divergence_value_counts(std::size_t const idx) const { return m_divergence_value_counts[idx]; }
 		
 		std::size_t src_buffer_idx() const { return (m_buffer_count + m_sequence_idx - 1) % m_buffer_count; }
@@ -516,14 +499,6 @@ namespace libbio { namespace pbwt {
 		template <context_field t_extra_fields>
 		void copy_sample(std::size_t src_idx, std::size_t dst_idx, sample_context_type &dst) const;
 	};
-	
-	
-	template <typename t_sample_context_type>
-	std::ostream &operator<<(std::ostream &os, detail::pbwt_context_sample <t_sample_context_type> const &sample)
-	{
-		os << sample.rb;
-		return os;
-	}
 	
 	
 	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
@@ -733,11 +708,11 @@ namespace libbio { namespace pbwt {
 			// Check if a sample needs to be copied.
 			if (0 == m_sequence_idx % m_sample_rate)
 			{
-				auto &sample(m_samples.emplace_back(1 + m_sequence_idx));
-				sample.context.set_fields_in_use(m_fields_in_use);
-				sample.context.copy_fields_in_use(*this);
-				++sample.context.m_sequence_idx;
-				sample.context.swap_input_and_output();
+				auto &sample(m_samples.emplace_back());
+				sample.set_fields_in_use(m_fields_in_use);
+				sample.copy_fields_in_use(*this);
+				++sample.m_sequence_idx;
+				sample.swap_input_and_output();
 			}
 
 			swap_input_and_output();
@@ -866,14 +841,15 @@ namespace libbio { namespace pbwt {
 				// Having a reference to an element of m_samples should be safe
 				// b.c. the next copying task will wait in the beginning of the
 				// while loop for dispatch_semaphore_signal below.
-				auto &sample(m_samples.emplace_back(1 + m_sequence_idx));
+				auto &sample(m_samples.emplace_back());
+				auto sample_ptr(&sample);
 				auto sema(*copy_sample_sema); // Get the stored pointer.
 				
 				dispatch_copy_sample_fn(^{
 					// sample will be a reference.
-					copy_sample <t_extra_fields>(src_idx, dst_idx, sample.context);
-					++sample.context.m_sequence_idx;
-					sample.context.swap_input_and_output();
+					copy_sample <t_extra_fields>(src_idx, dst_idx, *sample_ptr);
+					++sample_ptr->m_sequence_idx;
+					sample_ptr->swap_input_and_output();
 					
 					dispatch_semaphore_signal(sema);
 				});
@@ -932,18 +908,6 @@ namespace libbio { namespace pbwt {
 
 
 namespace boost { namespace serialization {
-	
-	template <typename t_archive, typename t_sample_context_type>
-	void serialize(
-		t_archive &ar,
-		libbio::pbwt::detail::pbwt_context_sample <t_sample_context_type> &sample,
-		unsigned int const version
-	)
-	{
-		ar & sample.context;
-		ar & sample.rb;
-	}
-	
 	
 	template <typename t_archive, LIBBIO_PBWT_CONTEXT_TEMPLATE_ARGS>
 	void serialize(
