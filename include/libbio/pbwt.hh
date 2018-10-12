@@ -14,38 +14,37 @@
 
 namespace libbio { namespace pbwt {
 	
-	template <typename t_character_index_vector, typename t_divergence_vector>
+	template <typename t_permutation_vector, typename t_divergence_vector>
 	class dynamic_pbwt_rmq
 	{
 	public:
 		typedef typename t_divergence_vector::size_type	size_type;
 		
 	protected:
-		t_character_index_vector	*m_permutation{};
-		t_divergence_vector			*m_divergence{};
+		t_permutation_vector	*m_permutation{};
+		t_divergence_vector		*m_divergence{};
 		
 	public:
 		dynamic_pbwt_rmq() = default;
-		dynamic_pbwt_rmq(t_character_index_vector &prev_permutation, t_divergence_vector &prev_divergence):
-			m_permutation(&prev_permutation),
-			m_divergence(&prev_divergence)
+		dynamic_pbwt_rmq(t_permutation_vector &input_permutation, t_divergence_vector &input_divergence):
+			m_permutation(&input_permutation),
+			m_divergence(&input_divergence)
 		{
 		}
-		
-		size_type operator()(size_type j, size_type i)
-		{
-			(*m_permutation)[i] = i + 1;
-			return maxd(j, i);
-		}
-		
+
 		size_type size() const { return m_divergence->size(); }
+		void update(std::size_t i) { (*m_permutation)[i] = i + 1; }
+		size_type operator()(size_type j, size_type i) { return maxd(j, i); }
 		
 	protected:
 		size_type maxd(size_type j, size_type i)
 		{
 			if (j != i)
 			{
-				(*m_divergence)[j] = std::max((*m_divergence)[j], maxd((*m_permutation)[j], i));
+				auto const lhs((*m_divergence)[j]);
+				auto const p((*m_permutation)[j]);
+				auto const rhs(maxd(p, i));
+				(*m_divergence)[j] = max_ct(lhs, rhs);
 				(*m_permutation)[j] = i + 1;
 			}
 			
@@ -70,7 +69,7 @@ namespace libbio { namespace pbwt {
 		t_alphabet const &alphabet,							// Object for converting the input characters to consecutive integers.
 		t_string_index_vector const &input_permutation,		// Order in which the input is iterated, a_k.
 		t_character_index_vector const &input_divergence,	// Input divergence, d_k.
-		t_ci_rmq const &input_divergence_rmq,				// Range maximum query support for d_k.
+		t_ci_rmq &input_divergence_rmq,						// Range maximum query support for d_k. dynamic_pbwt_rmq requires mutability.
 		t_string_index_vector &sorted_permutation,			// Sorted indexes, a_{k + 1}.
 		t_character_index_vector &output_divergence,		// Output divergence, d_{k + 1}.
 		t_count_vector &counts,								// Character counts.
@@ -122,6 +121,9 @@ namespace libbio { namespace pbwt {
 				auto const comp(alphabet.char_to_comp(c));
 				auto const dst_idx(counts[comp]++);				// j' in Algorithm 2.1.
 				sorted_permutation[dst_idx] = vec_idx;			// Store the identifier of the current string to a_{k + 1}.
+
+				// Update the RMQ data structure if needed.
+				input_divergence_rmq.update(i);
 			
 				// Next value for d_{k + 1}.
 				auto const prev_idx(previous_positions[comp]);	// i in Algorithm 2.1.
@@ -130,8 +132,7 @@ namespace libbio { namespace pbwt {
 					output_divergence[dst_idx] = 1 + column_idx;
 				else
 				{
-					auto const max_div_idx(input_divergence_rmq(prev_idx, i));
-					auto const max_div(input_divergence[max_div_idx]);
+					auto const max_div(input_divergence_rmq(input_divergence, prev_idx, i));
 					output_divergence[dst_idx] = max_div;
 				}
 				previous_positions[comp] = 1 + i;

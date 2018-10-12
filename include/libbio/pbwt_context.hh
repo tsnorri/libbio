@@ -17,57 +17,61 @@ namespace libbio { namespace pbwt { namespace detail {
 	
 	// Adapt RMQ support’s constructor.
 	// Assume SDSL’s constructor parameters.
-	template <typename t_rmq>
+	template <typename t_permutation_vector, typename t_divergence_vector, typename t_rmq>
 	class rmq_adapter
 	{
 	public:
-		typedef typename t_rmq::size_type	size_type;
+		typedef t_rmq										rmq_type;
+		typedef typename t_divergence_vector::value_type	value_type;
+		typedef typename rmq_type::size_type				size_type;
 		
 	protected:
-		t_rmq	m_rmq;
+		rmq_type					m_rmq;
 		
 	public:
 		rmq_adapter() = default;
-		
-		template <typename t_character_index_vector, typename t_divergence_vector>
-		rmq_adapter(
-			t_divergence_vector const &input_divergence,
-			t_divergence_vector const &,
-			t_character_index_vector const &
-		):
-			m_rmq(&input_divergence)
-		{
-		}
-		
-		size_type operator()(size_type j, size_type i) const { return m_rmq(j, i); }
 		size_type size() const { return m_rmq.size(); }
+		
+		void prepare(t_permutation_vector const &input_permutation, t_divergence_vector const &input_divergence) { m_rmq = rmq_type(&input_divergence); }
+		void update(std::size_t i) const {} // No-op.
+
+		value_type operator()(t_divergence_vector const &vec, size_type j, size_type i) const
+		{
+			auto const idx(m_rmq(j, i));
+			auto const retval(vec[idx]);
+			return retval;
+		}
+
+		void reset() { m_rmq = rmq_type(); }
 	};
 	
 	// Specialization for libbio::pbwt::dynamic_pbwt_rmq, which uses the previous arrays.
-	template <typename t_character_index_vector, typename t_divergence_vector>
-	class rmq_adapter <::libbio::pbwt::dynamic_pbwt_rmq <t_character_index_vector, t_divergence_vector>>
+	template <typename t_divergence_vector, typename t_permutation_vector>
+	class rmq_adapter <t_permutation_vector, t_divergence_vector, ::libbio::pbwt::dynamic_pbwt_rmq <t_permutation_vector, t_divergence_vector>>
 	{
 	public:
-		typedef ::libbio::pbwt::dynamic_pbwt_rmq <t_character_index_vector, t_divergence_vector>	rmq_type;
-		typedef typename rmq_type::size_type														size_type;
+		typedef ::libbio::pbwt::dynamic_pbwt_rmq <t_permutation_vector, t_divergence_vector>	rmq_type;
+		typedef typename t_divergence_vector::value_type										value_type;
+		typedef typename rmq_type::size_type													size_type;
 		
 	protected:
-		rmq_type m_rmq;
+		rmq_type					m_rmq;
+		t_divergence_vector			m_divergence_buffer;
 		
 	public:
 		rmq_adapter() = default;
+		size_type size() const { return m_rmq.size(); }
 		
-		rmq_adapter(
-			t_divergence_vector const &,
-			t_divergence_vector &prev_divergence,
-			t_character_index_vector &prev_permutation
-		):
-			m_rmq(prev_divergence, prev_permutation)
+		// Call the functions below in this order.
+		void prepare(t_permutation_vector &permutation_vector, t_divergence_vector const &input_divergence)
 		{
+			m_divergence_buffer = input_divergence;
+			m_rmq = rmq_type(permutation_vector, m_divergence_buffer);
 		}
-		
-		size_type operator()(size_type j, size_type i) { return m_rmq(j, i); }	// Not const.
-		size_type size() const { return m_rmq.siz(); }
+
+		void update(std::size_t i) { m_rmq.update(i); }
+		value_type operator()(t_divergence_vector const &, size_type j, size_type i) { return m_rmq(j, i); }	// Not const.
+		void reset() { m_rmq = rmq_type(); }
 	};
 }}}
 
@@ -111,8 +115,8 @@ namespace libbio { namespace pbwt {
 		t_count_vector, \
 		t_divergence_count_type \
 	>
-	
-	
+
+
 	LIBBIO_PBWT_CONTEXT_TEMPLATE_DECL
 	class pbwt_context
 	{
@@ -141,6 +145,11 @@ namespace libbio { namespace pbwt {
 		string_index_vector									m_previous_positions;
 		divergence_count_list								m_divergence_value_counts;
 		sample_vector										m_samples;
+		detail::rmq_adapter <
+			string_index_vector,
+			character_index_vector,
+			character_index_vector_rmq
+		>													m_rmq_adapter;
 		
 		std::uint64_t										m_sample_rate{std::numeric_limits <std::uint64_t>::max()};
 		std::size_t											m_sequence_idx{};
@@ -328,24 +337,24 @@ namespace libbio { namespace pbwt {
 	void LIBBIO_PBWT_CONTEXT_CLASS_DECL::build_prefix_and_divergence_arrays()
 	{
 		// Prepare input_divergence for Range Maximum Queries.
-		detail::rmq_adapter <character_index_vector_rmq> input_divergence_rmq(
-			m_input_divergence,
-			m_output_divergence,
-			m_output_permutation
-		);
-		
+		// FIXME: use a different (non-copying) adapter if divergence value counts need not be calculated?
+		// FIXME: the adapter does not copy input permutation, which dynamic_pbwt_rmq modifies. m_fields_in_use should be checked to see if the permutation, too, needs to be copied.
+		m_rmq_adapter.prepare(m_input_permutation, m_input_divergence);
+
 		pbwt::build_prefix_and_divergence_arrays(
 			*m_sequences,
 			m_sequence_idx,
 			*m_alphabet,
 			m_input_permutation,
 			m_input_divergence,
-			input_divergence_rmq,
+			m_rmq_adapter,
 			m_output_permutation,
 			m_output_divergence,
 			m_character_counts,
 			m_previous_positions
 		);
+
+		m_rmq_adapter.reset();
 	}
 	
 	
