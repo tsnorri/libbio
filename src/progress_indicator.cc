@@ -73,6 +73,7 @@ namespace libbio {
 		m_message_length = message_len;
 		m_indicator_type = indicator;
 		m_start_time = ch::steady_clock::now();
+		m_current_max = m_delegate->progress_step_max();
 		
 		dispatch(this).async <&progress_indicator::resume_timer_mt>(dispatch_get_main_queue());
 	}
@@ -149,7 +150,7 @@ namespace libbio {
 			{
 				std::lock_guard <std::mutex> guard(m_message_mutex);
 				
-				float const step_max(m_delegate->progress_step_max());
+				float const step_max(m_current_max);
 				float const current_step(m_delegate->progress_current_step());
 				float const progress_val(current_step / step_max);
 				auto const half(m_window_width / 2);

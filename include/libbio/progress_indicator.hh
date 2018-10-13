@@ -40,7 +40,7 @@ namespace libbio {
 			COUNTER,
 			PROGRESS_BAR
 		};
-		
+
 	protected:
 		dispatch_ptr <dispatch_source_t>	m_message_timer{};
 		dispatch_ptr <dispatch_source_t>	m_signal_source{};
@@ -51,6 +51,7 @@ namespace libbio {
 		time_point_type						m_start_time{};
 		std::size_t							m_window_width{};
 		std::size_t							m_message_length{};
+		std::size_t							m_current_max{};
 		std::atomic <indicator_type>		m_indicator_type{indicator_type::NONE};
 		std::atomic_bool					m_timer_active{};
 		bool								m_is_installed{};
