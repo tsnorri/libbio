@@ -14,8 +14,10 @@
 
 #ifdef NDEBUG
 #	define libbio_assert_eq(LHS, RHS)
+#	define libbio_assert_lte(LHS, RHS)
 #else
 #	define libbio_assert_eq(LHS, RHS) do { ::libbio::detail::assert_eq(__FILE__, __LINE__, (LHS), (RHS)); } while (false)
+#	define libbio_assert_lte(LHS, RHS) do { ::libbio::detail::assert_lte(__FILE__, __LINE__, (LHS), (RHS)); } while (false)
 #endif
 
 
@@ -72,6 +74,19 @@ namespace libbio { namespace detail {
 		{
 			log_assertion_failure(file, line);
 			std::cerr << "Equality comparison failed for '" << lhs << "' and '" << rhs << "'." << std::endl;
+			abort();
+		}
+	}
+
+
+	// FIXME: make the operator a template parameter and combine with _eq.
+	template <typename t_lhs, typename t_rhs>
+	inline void assert_lte(char const *file, int const line, t_lhs &&lhs, t_rhs &&rhs)
+	{
+		if (! (lhs <= rhs))
+		{
+			log_assertion_failure(file, line);
+			std::cerr << "Lte comparison failed for '" << lhs << "' and '" << rhs << "'." << std::endl;
 			abort();
 		}
 	}
