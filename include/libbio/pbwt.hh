@@ -113,8 +113,8 @@ namespace libbio { namespace pbwt {
 			previous_positions.resize(1 + sigma);
 		std::fill(previous_positions.begin(), 1 + sigma + previous_positions.begin(), 0);
 		{
-			std::size_t i(0);
-			for (auto const vec_idx : input_permutation)		// j in Algorithm 2.1.
+			std::size_t i(0);									// j in Algorithm 2.1.
+			for (auto const vec_idx : input_permutation)		// a_k[j] in Algorithm 2.1.
 			{
 				auto const &vec(inputs[vec_idx]);
 				auto const c(vec[column_idx]);
