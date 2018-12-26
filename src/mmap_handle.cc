@@ -4,7 +4,6 @@
  */
 
 #include <algorithm>
-#include <cassert>
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
@@ -22,7 +21,7 @@ namespace libbio {
 	{
 		if (m_mapped_size)
 		{
-			assert(m_content);
+			libbio_assert(m_content);
 			if (-1 == munmap(m_content, m_mapped_size))
 				std::cerr << "munmap: " << strerror(errno) << std::endl;
 		}
@@ -33,7 +32,7 @@ namespace libbio {
 	{
 		if (m_mapped_size)
 		{
-			assert(m_content);
+			libbio_assert(m_content);
 			if (-1 == munmap(m_content, m_mapped_size))
 				throw std::runtime_error(strerror(errno));
 			

@@ -8,16 +8,19 @@
 
 #include <iostream>
 
+
 // Contracts not yet available in either Clang or GCC.
 #define libbio_fail(MESSAGE) do { ::libbio::detail::do_fail(__FILE__, __LINE__, MESSAGE); } while (false)
 #define libbio_always_assert(...) do { ::libbio::detail::do_always_assert(__FILE__, __LINE__, __VA_ARGS__); } while (false)
 
-#ifdef NDEBUG
+#ifdef LIBBIO_NDEBUG
 #	define libbio_assert_eq(LHS, RHS)
 #	define libbio_assert_lte(LHS, RHS)
+#	define libbio_assert(...)
 #else
 #	define libbio_assert_eq(LHS, RHS) do { ::libbio::detail::assert_eq(__FILE__, __LINE__, (LHS), (RHS)); } while (false)
 #	define libbio_assert_lte(LHS, RHS) do { ::libbio::detail::assert_lte(__FILE__, __LINE__, (LHS), (RHS)); } while (false)
+#	define libbio_assert(...) libbio_always_assert(__VA_ARGS__)
 #endif
 
 

@@ -96,7 +96,6 @@ namespace libbio {
 	)
 	{
 		typedef decltype(std::declval <t_access>().operator()(std::declval <typename t_vector::value_type>())) identifier_type;
-		typedef typename t_count_vector::value count_value;
 		
 		if (0 == src.size())
 			return;

@@ -6,7 +6,7 @@
 #ifndef LIBBIO_RADIX_SORT_HH
 #define LIBBIO_RADIX_SORT_HH
 
-#include <cassert>
+#include <libbio/assert.hh>
 #include <libbio/algorithm.hh>
 #include <libbio/bits.hh>
 #include <type_traits>
@@ -77,7 +77,7 @@ namespace libbio {
 						buffer[fidx++] = std::move(*it);
 				}
 				
-				assert(fidx == ridx_1);
+				libbio_assert(fidx == ridx_1);
 				std::reverse(buffer.begin() + ridx_1, buffer.end());
 				swap(container, buffer);
 				++shift_amt;

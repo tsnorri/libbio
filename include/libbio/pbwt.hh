@@ -80,11 +80,11 @@ namespace libbio { namespace pbwt {
 		auto const sigma(alphabet.sigma());
 		
 		// Sanity checks.
-		assert(input_count == input_permutation.size());
-		assert(input_count == input_divergence.size());
-		assert(input_count == input_divergence_rmq.size());
-		assert(sigma <= previous_positions.size());
-		assert(sigma <= counts.size());
+		libbio_assert(input_count == input_permutation.size());
+		libbio_assert(input_count == input_divergence.size());
+		libbio_assert(input_count == input_divergence_rmq.size());
+		libbio_assert(sigma <= previous_positions.size());
+		libbio_assert(sigma <= counts.size());
 		
 		// Count the instances of each character after zero-filling the count array.
 		std::fill(counts.begin(), sigma + counts.begin(), 0);
@@ -127,7 +127,7 @@ namespace libbio { namespace pbwt {
 			
 				// Next value for d_{k + 1}.
 				auto const prev_idx(previous_positions[comp]);	// i in Algorithm 2.1.
-				assert(prev_idx <= i);
+				libbio_assert(prev_idx <= i);
 				if (0 == prev_idx)
 					output_divergence[dst_idx] = 1 + column_idx;
 				else
@@ -166,33 +166,33 @@ namespace libbio { namespace pbwt {
 	{
 		for (auto const output_val : output_divergence)
 		{
-			assert(output_val < count_list.size());
+			libbio_assert(output_val < count_list.size());
 			
 			// Add the new value. If the value did not occur in the list before,
 			// it comes from the current column.
 			auto const last_idx_1(count_list.last_index_1());
 			if (last_idx_1 <= output_val)
 			{
-				assert(0 == count_list[output_val]);
+				libbio_assert(0 == count_list[output_val]);
 				count_list.link(1, output_val, last_idx_1 - 1);
 			}
 			else
 			{
 				auto &count(count_list[output_val]);
-				assert(count);
+				libbio_assert(count);
 				++count;
 			}
 		}
 		
 		for (auto const input_val : input_divergence)
 		{
-			assert(input_val < count_list.size());
+			libbio_assert(input_val < count_list.size());
 			
 			// Decrement the old value and remove if necessary.
 			auto input_it(count_list.find(input_val));
-			assert(count_list.end() != input_it);
+			libbio_assert(count_list.end() != input_it);
 			auto &count(*input_it);
-			assert(0 < count);
+			libbio_assert(0 < count);
 			if (0 == --count)
 				count_list.erase(input_it, false);
 		}

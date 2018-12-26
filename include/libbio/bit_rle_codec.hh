@@ -21,7 +21,7 @@ namespace libbio {
 	// Sp. t_word has B bits.
 	//
 	// Decoding:
-	// 1. Read word w1 from the stream convert to native endianness. The value is determined by doing w1 >> (B - 1).
+	// 1. Read word w1 from the stream, convert to native endianness. The value is determined by doing w1 >> (B - 1).
 	// 2. Read words w2, w3… from the stream until the highest bit of the word changes or the total amount of count bits exceeds 64 by reading the next word.
 	// 3. Calculate the count value: set the highest bit of w1, w2, w3… to zero. Then do (w1 | (w2 << (B - 1)) | (w3 << 2 * (B - 1)) | …).
 	//

@@ -4,7 +4,10 @@
  */
 
 #ifndef LIBBIO_GENGETOPT_PARSER_WRAPPER_HH
-#define LIBBIO_GENGETOPT_PARSER_WRAPPER_HH
+#	define LIBBIO_GENGETOPT_PARSER_WRAPPER_HH
+
+// Required.
+#	ifdef CMDLINE_H
 
 
 namespace libbio {
@@ -36,4 +39,7 @@ namespace libbio {
 	}
 }
 
+#	else
+#		pragma message("cmdline.h not included before gengetopt_parser_wrapper.hh.")
+#	endif
 #endif

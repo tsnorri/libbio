@@ -99,7 +99,7 @@ namespace libbio {
 		void set_buffer_start(char const *p) { m_fsm.p = p; }
 		void set_buffer_end(char const *pe) { m_fsm.pe = pe; }
 		void set_eof(char const *eof) { m_fsm.eof = eof; }
-		void set_lineno(std::size_t const lineno) { assert(lineno); m_lineno = lineno - 1; }
+		void set_lineno(std::size_t const lineno) { libbio_assert(lineno); m_lineno = lineno - 1; }
 	};
 }
 

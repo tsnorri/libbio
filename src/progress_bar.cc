@@ -5,6 +5,7 @@
 
 #include <boost/format.hpp>
 #include <cmath>
+#include <libbio/assert.hh>
 #include <libbio/progress_bar.hh>
 
 
@@ -32,8 +33,8 @@ namespace libbio {
 	{
 		std::string const blocks[]{u8"▏", u8"▎", u8"▍", u8"▌", u8"▋", u8"▊", u8"▉", u8"█"};
 		
-		assert(0.0f <= value);
-		assert(value <= 1.0f);
+		libbio_assert(0.0f <= value);
+		libbio_assert(value <= 1.0f);
 		
 		if (PERCENT_WIDTH < length)
 		{

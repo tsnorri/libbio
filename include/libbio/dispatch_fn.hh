@@ -6,12 +6,12 @@
 #ifndef LIBBIO_DISPATCH_FN_HH
 #define LIBBIO_DISPATCH_FN_HH
 
-#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <dispatch/dispatch.h>
 #include <iostream>
+#include <libbio/assert.hh>
 #include <string>
 #include <stdexcept>
 
@@ -69,21 +69,21 @@ namespace libbio { namespace detail {
 		
 		static void cleanup(void *dispatch_context)
 		{
-			assert(dispatch_context);
+			libbio_assert(dispatch_context);
 			auto *ctx(reinterpret_cast <dispatch_fn_context *>(dispatch_context));
 			delete ctx;
 		}
 		
 		static void call_fn_no_delete(void *dispatch_context)
 		{
-			assert(dispatch_context);
+			libbio_assert(dispatch_context);
 			auto *ctx(reinterpret_cast <dispatch_fn_context *>(dispatch_context));
 			do_call_fn(*ctx);
 		}
 		
 		static void call_fn(void *dispatch_context)
 		{
-			assert(dispatch_context);
+			libbio_assert(dispatch_context);
 			auto *ctx(reinterpret_cast <dispatch_fn_context *>(dispatch_context));
 			do_call_fn(*ctx);
 			delete ctx;
@@ -184,7 +184,7 @@ namespace libbio {
 		t_owner	*m_owner{nullptr};
 		
 	public:
-		dispatch_caller(t_owner *owner): m_owner(owner) { assert(m_owner); }
+		dispatch_caller(t_owner *owner): m_owner(owner) { libbio_assert(m_owner); }
 		
 		template <void(t_owner::*t_fn)()>
 		void async(dispatch_queue_t queue)
@@ -271,7 +271,7 @@ namespace libbio {
 		typedef detail::dispatch_fn_context <Fn> context_type;
 		
 		// If the source has been cancelled, dispatch_get_context will return a dangling pointer.
-		assert(!dispatch_source_testcancel(source));
+		libbio_assert(!dispatch_source_testcancel(source));
 		
 		{
 			// If there is an old context, deallocate it.

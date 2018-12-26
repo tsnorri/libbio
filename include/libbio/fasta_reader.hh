@@ -92,9 +92,9 @@ namespace libbio {
 						current_identifier.assign(1 + seq_data + seq_length);
 						if (seq_length)
 						{
-							assert(seq.get());
+							libbio_assert(seq.get());
 							cb.handle_sequence(prev_identifier, seq, seq_length, vector_source);
-							assert(nullptr == seq.get());
+							libbio_assert(nullptr == seq.get());
 							seq_length = 0;
 							
 							vector_source.get_vector(seq);
@@ -113,9 +113,9 @@ namespace libbio {
 				
 				if (seq_length)
 				{
-					assert(seq.get());
+					libbio_assert(seq.get());
 					cb.handle_sequence(current_identifier, seq, seq_length, vector_source);
-					assert(nullptr == seq.get());
+					libbio_assert(nullptr == seq.get());
 				}
 			}
 			catch (std::ios_base::failure &exc)
@@ -124,7 +124,7 @@ namespace libbio {
 				{
 					if (seq_length)
 					{
-						assert(seq.get());
+						libbio_assert(seq.get());
 						cb.handle_sequence(current_identifier, seq, seq_length, vector_source);
 					}
 				}
@@ -176,9 +176,9 @@ namespace libbio {
 						// Reset the sequence length and get a new vector.
 						if (seq_length)
 						{
-							assert(seq.get());
+							libbio_assert(seq.get());
 							cb.handle_sequence(current_identifier, seq, seq_length, vector_source);
-							assert(nullptr == seq.get());
+							libbio_assert(nullptr == seq.get());
 							seq_length = 0;
 							
 							vector_source.get_vector(seq);
@@ -221,9 +221,9 @@ namespace libbio {
 				
 				if (seq_length)
 				{
-					assert(seq.get());
+					libbio_assert(seq.get());
 					cb.handle_sequence(current_identifier, seq, seq_length, vector_source);
-					assert(nullptr == seq.get());
+					libbio_assert(nullptr == seq.get());
 				}
 			}
 			catch (std::ios_base::failure const &exc)
@@ -232,7 +232,7 @@ namespace libbio {
 				{
 					if (seq_length)
 					{
-						assert(seq.get());
+						libbio_assert(seq.get());
 						cb.handle_sequence(current_identifier, seq, seq_length, vector_source);
 					}
 				}

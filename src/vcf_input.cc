@@ -101,7 +101,7 @@ namespace libbio {
 	bool vcf_mmap_input::getline(std::string_view &dst)
 	{
 		auto const size(m_handle->size());
-		assert(m_pos <= size);
+		libbio_assert(m_pos <= size);
 		
 		auto const sv(m_handle->operator std::string_view());
 		auto const nl_pos(sv.find('\n', m_pos));

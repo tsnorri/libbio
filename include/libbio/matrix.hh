@@ -192,7 +192,7 @@ namespace libbio {
 		
 	protected:
 		vector_type					m_values;
-#ifndef NDEBUG
+#ifndef LIBBIO_NDEBUG
 		size_type					m_columns{0};
 #endif
 		size_type					m_stride{1};
@@ -204,32 +204,32 @@ namespace libbio {
 		matrix() = default;
 		matrix(size_type const rows, size_type const columns, value_type const val):
 			m_values(columns * rows, val),
-#ifndef NDEBUG
+#ifndef LIBBIO_NDEBUG
 			m_columns(columns),
 #endif
 			m_stride(rows)
 		{
-			assert(m_stride);
+			libbio_assert(m_stride);
 		}
 		
 		matrix(size_type const rows, size_type const columns):
 			m_values(columns * rows),
-#ifndef NDEBUG
+#ifndef LIBBIO_NDEBUG
 			m_columns(columns),
 #endif
 			m_stride(rows)
 		{
-			assert(m_stride);
+			libbio_assert(m_stride);
 		}
 		
 		inline size_type idx(size_type const y, size_type const x) const
 		{
 			/* Column major order. */
-			assert(y < m_stride);
-			assert(x < m_columns);
-			assert(x < m_values.size() / m_stride);
+			libbio_assert(y < m_stride);
+			libbio_assert(x < m_columns);
+			libbio_assert(x < m_values.size() / m_stride);
 			size_type const retval(x * m_stride + y);
-			assert(retval < m_values.size());
+			libbio_assert(retval < m_values.size());
 			return retval;
 		}
 		
@@ -239,7 +239,7 @@ namespace libbio {
 		size_type const stride() const { return m_stride; }
 		void resize(size_type const rows, size_type const cols) { resize_if_needed(rows, cols); }
 		void resize(size_type const size) { m_values.resize(size); }
-		void set_stride(size_type const stride) { always_assert(0 == m_values.size() % m_stride); m_stride = stride; }
+		void set_stride(size_type const stride) { libbio_always_assert(0 == m_values.size() % m_stride); m_stride = stride; }
 		value_type &operator()(size_type const y, size_type const x) { return m_values[idx(y, x)]; }
 		value_type const &operator()(size_type const y, size_type const x) const { return m_values[idx(y, x)]; }
 		slice_type row(size_type const row, size_type const first = 0)												{ return detail::row <matrix>			(*this, row, first, this->column_size()); }
@@ -401,7 +401,7 @@ namespace libbio {
 	)
 	{
 		auto const length(dst.size());
-		assert(src.size() <= length);
+		libbio_assert(src.size() <= length);
 		std::transform(src.cbegin(), src.cend(), dst.begin(), [](auto &atomic){ return atomic.load(); });
 	}
 	
@@ -413,7 +413,7 @@ namespace libbio {
 	)
 	{
 		auto const length(dst.size());
-		assert(src.size() <= length);
+		libbio_assert(src.size() <= length);
 		std::copy(src.cbegin(), src.cend(), dst.begin());
 	}
 	
@@ -431,12 +431,12 @@ namespace libbio {
 		--mask;
 		
 		auto const length(dst.size());
-		assert(src.size() * (64 / t_bits) <= length);
+		libbio_assert(src.size() * (64 / t_bits) <= length);
 		auto src_it(src.cbegin());
 		for (size_type i(0); i < length; ++i)
 		{
 			auto const val(*src_it++);
-			assert(0 == val >> t_bits);
+			libbio_assert(0 == val >> t_bits);
 			dst[i].fetch_or(val);
 		}
 	}
@@ -455,7 +455,7 @@ namespace libbio {
 		--mask;
 		
 		auto const length(dst.size());
-		assert(src.size() * (64 / t_bits) <= length);
+		libbio_assert(src.size() * (64 / t_bits) <= length);
 		auto src_it(src.cbegin());
 		uint64_t val(0);
 		for (size_type i(0); i < length; ++i)
@@ -492,7 +492,7 @@ namespace libbio {
 				resize(rows * columns);
 
 			set_stride(rows);
-#ifndef NDEBUG
+#ifndef LIBBIO_NDEBUG
 			m_columns = columns;
 #endif
 		}
@@ -505,7 +505,7 @@ namespace libbio {
 		using std::swap;
 		swap(m_values, rhs.m_values);
 		swap(m_stride, rhs.m_stride);
-#ifndef NDEBUG
+#ifndef LIBBIO_NDEBUG
 		swap(m_columns, rhs.m_columns);
 #endif
 	}
@@ -535,7 +535,7 @@ namespace libbio {
 	template <std::uint8_t t_bits>
 	std::uint64_t compressed_atomic_matrix <t_bits>::fetch_or(size_type const row, size_type const col, std::uint64_t val)
 	{
-		assert(val <= SUBELEMENT_MASK);
+		libbio_assert(val <= SUBELEMENT_MASK);
 		auto const shift_amt(row % SUBELEMENT_COUNT * t_bits);
 		auto const y(row / SUBELEMENT_COUNT);
 		val <<= shift_amt;

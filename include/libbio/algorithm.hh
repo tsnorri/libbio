@@ -6,6 +6,9 @@
 #ifndef LIBBIO_ALGORITHM_HH
 #define LIBBIO_ALGORITHM_HH
 
+#include <algorithm>
+#include <type_traits>
+
 
 namespace libbio { namespace detail {
 	
@@ -27,8 +30,8 @@ namespace libbio {
 	{
 		typedef std::common_type_t <t_type_1, t_type_2> return_type;
 		return_type retval(std::max <return_type>(val_1, val_2));
-		assert(val_1 <= retval);
-		assert(val_2 <= retval);
+		libbio_assert(val_1 <= retval);
+		libbio_assert(val_2 <= retval);
 		return retval;
 	}
 	
@@ -38,8 +41,8 @@ namespace libbio {
 	{
 		typedef std::common_type_t <t_type_1, t_type_2> return_type;
 		return_type retval(std::min <return_type>(val_1, val_2));
-		assert(retval <= val_1);
-		assert(retval <= val_2);
+		libbio_assert(retval <= val_1);
+		libbio_assert(retval <= val_2);
 		return retval;
 	}
 	
@@ -133,7 +136,7 @@ namespace libbio {
 			// Determine the size of the run. We already determined that there is one copy.
 			auto val(*it); // Copy.
 			increment(val);
-			assert(it + 1 != end);
+			libbio_assert(it + 1 != end);
 			auto next(it + 2);
 			while (next != end && val == *next)
 			{

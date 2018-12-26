@@ -164,7 +164,7 @@ namespace libbio {
 	// Seek to the beginning of the records.
 	void vcf_reader::reset()
 	{
-		assert(m_input);
+		libbio_assert(m_input);
 		m_input->reset_to_first_variant_offset();
 		m_lineno = m_input->last_header_lineno();
 		m_fsm.eof = nullptr;
@@ -234,7 +234,7 @@ namespace libbio {
 	
 	void vcf_reader::fill_buffer()
 	{
-		assert(m_input);
+		libbio_assert(m_input);
 		m_input->fill_buffer(*this);
 	}
 	

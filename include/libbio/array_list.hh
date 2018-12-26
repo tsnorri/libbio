@@ -466,7 +466,7 @@ namespace libbio {
 	template <typename t_value>
 	void array_list <t_value>::erase(iterator it, bool const change_size)
 	{
-		assert(end() != it);
+		libbio_assert(end() != it);
 		
 		auto &item(it.item());
 		if (item.has_prev())
@@ -558,7 +558,7 @@ namespace libbio {
 	template <typename t_value>
 	void array_list <t_value>::link_item(item_type &&item, size_type const idx)
 	{
-		assert(idx < m_items.size());
+		libbio_assert(idx < m_items.size());
 		
 		if (SIZE_MAX != item.prev)
 			m_items[item.prev].next = idx;

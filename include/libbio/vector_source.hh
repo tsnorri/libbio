@@ -7,8 +7,8 @@
 #define LIBBIO_VECTOR_SOURCE_HH
 
 #include <atomic>
-#include <cassert>
 #include <iostream>
+#include <libbio/assert.hh>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -90,7 +90,7 @@ namespace libbio {
 	template <typename t_vector>
 	void vector_source <t_vector>::get_vector(std::unique_ptr <vector_type> &target_ptr)
 	{
-		assert(nullptr == target_ptr.get());
+		libbio_assert(nullptr == target_ptr.get());
 		
 		std::lock_guard <std::mutex> lock_guard(m_mutex);
 		auto total(m_store.size());
@@ -104,7 +104,7 @@ namespace libbio {
 				
 			resize(new_size);
 			if (m_in_use)
-				assert(m_store[m_in_use - 1].get());
+				libbio_assert(m_store[m_in_use - 1].get());
 			total = new_size;
 		}
 		
@@ -117,15 +117,15 @@ namespace libbio {
 	template <typename t_vector>
 	void vector_source <t_vector>::put_vector(std::unique_ptr <vector_type> &source_ptr)
 	{
-		assert(source_ptr.get());
+		libbio_assert(source_ptr.get());
 		
 		std::lock_guard <std::mutex> lock_guard(m_mutex);
 		auto const total(m_store.size());
-		assert(total);
-		assert(m_in_use);
+		libbio_assert(total);
+		libbio_assert(m_in_use);
 		
 		auto &ptr(m_store[total - m_in_use]);
-		assert(nullptr == ptr.get());
+		libbio_assert(nullptr == ptr.get());
 		source_ptr.swap(ptr);
 		--m_in_use;
 	}

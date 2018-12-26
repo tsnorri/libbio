@@ -12,7 +12,6 @@ namespace libbio { namespace sequence_reader {
 	void mmap_sequence_container::to_spans(sequence_vector &dst)
 	{	
 		auto const sv(m_handle.to_string_view());
-		auto const limit(sv.size());
 		decltype(sv)::size_type pos(0), next_pos(0);
 		while (true)
 		{

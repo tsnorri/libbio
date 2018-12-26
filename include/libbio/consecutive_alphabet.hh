@@ -238,9 +238,9 @@ namespace libbio {
 			std::cerr << "[" << i << "]: '" << c << "' ("
 			<< std::hex << +c << std::dec << ")\n";
 
-#ifndef NDEBUG
+#ifndef LIBBIO_NDEBUG
 			auto const comp(m_to_comp[c]);
-			assert(comp == i);
+			libbio_assert(comp == i);
 #endif
 		}
 	}
@@ -317,7 +317,7 @@ namespace libbio {
 		std::size_t char_idx(0);
 		for (auto const c : m_found_characters)
 		{
-			assert(1 == m_seen[c]);
+			libbio_assert(1 == m_seen[c]);
 			
 			to_comp[c] = char_idx;
 			to_char[char_idx] = c;
@@ -344,7 +344,7 @@ namespace libbio {
 		for (std::size_t i(0); i < count; ++i)
 		{
 			auto const c(m_found_characters[i]);
-			assert(m_flags[c].test_and_set());
+			libbio_assert(m_flags[c].test_and_set());
 			to_comp[c] = char_idx;
 			to_char[char_idx] = c;
 			++char_idx;

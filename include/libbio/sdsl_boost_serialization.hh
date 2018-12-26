@@ -4,11 +4,14 @@
  */
 
 #ifndef LIBBIO_SDSL_BOOST_SERIALIZATION_HH
-#define LIBBIO_SDSL_BOOST_SERIALIZATION_HH
+#	define LIBBIO_SDSL_BOOST_SERIALIZATION_HH
 
-#include <boost/serialization/binary_object.hpp>
-#include <climits>
-#include <sdsl/int_vector.hpp>
+#	ifdef LIBBIO_HAVE_SDSL
+
+
+#		include <boost/serialization/binary_object.hpp>
+#		include <climits>
+#		include <sdsl/int_vector.hpp>
 
 
 // Boost.Serialize requirements for sdsl::int_vector.
@@ -61,4 +64,5 @@ namespace boost { namespace serialization {
 	}
 }}
 
+#	endif
 #endif

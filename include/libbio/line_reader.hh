@@ -51,7 +51,6 @@ namespace libbio {
 		void read_from_stream(std::istream &stream, vector_source &vector_source, t_callback &cb) const
 		{
 			std::size_t const size(1024 * 1024);
-			std::size_t seq_length(0);
 			vector_type buffer(size, 0);
 			std::unique_ptr <vector_type> seq;
 			uint32_t line_no(0);
@@ -111,9 +110,9 @@ namespace libbio {
 					// If there was data, handle it.
 					if (count)
 					{
-						assert(seq.get());
+						libbio_assert(seq.get());
 						cb.handle_sequence(line_no, seq, count, vector_source);
-						assert(nullptr == seq.get());
+						libbio_assert(nullptr == seq.get());
 					}
 				}
 			}
