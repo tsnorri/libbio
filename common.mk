@@ -30,7 +30,7 @@ BOOST_INCLUDE	?= /usr/include
 
 CFLAGS			+= -std=c99   $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CFLAGS)
 CXXFLAGS		+= -std=c++17 $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CXXFLAGS)
-CPPFLAGS		+= $(SYSTEM_CPPFLAGS) $(BOOST_INCLUDE) -I../include -I../lib/GSL/include
+CPPFLAGS		+= $(SYSTEM_CPPFLAGS) $(BOOST_INCLUDE) -I../include -I../lib/GSL/include -I../lib/range-v3/include
 
 # Assume that swift-corelibs-libdispatch is a submodule of the containing project (for now).
 ifeq ($(shell uname -s),Linux)
