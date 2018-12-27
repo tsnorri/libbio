@@ -7,6 +7,7 @@
 #define LIBBIO_PACKED_VECTOR_PACKED_WORD_RANGE_HH
 
 #include <boost/range/algorithm/for_each.hpp>
+#include <libbio/algorithm.hh>
 #include <libbio/packed_vector/packed_vector.hh>
 
 
@@ -167,7 +168,7 @@ namespace libbio { namespace detail {
 				word_type const mask((0x1 << right_bits) - 1);
 				auto last_word(m_mid.end()->load(order) & mask);
 				word |= last_word << left_bits;
-				unary_fn(word, min(ELEMENT_COUNT, left_size + right_size));
+				unary_fn(word, min_ct(ELEMENT_COUNT, left_size + right_size));
 				
 				if (WORD_BITS - left_bits < right_bits)
 					unary_fn(last_word >> (WORD_BITS - left_bits), left_size + right_size - ELEMENT_COUNT);
