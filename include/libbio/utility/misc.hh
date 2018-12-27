@@ -6,6 +6,7 @@
 #ifndef LIBBIO_UTILITY_MISC_HH
 #define LIBBIO_UTILITY_MISC_HH
 
+#include <array>
 #include <boost/format.hpp>
 #include <ostream>
 #include <string>
