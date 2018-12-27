@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <catch2/catch.hpp>
 #include <libbio/radix_sort.hh>
+#include <type_traits>
 #include <vector>
 
 namespace gen	= Catch::Generators;
@@ -50,7 +51,7 @@ SCENARIO("return_type_size() can return the correct size")
 {
 	GIVEN("a lambda function")
 	{
-		auto const functions = GENERATE(gen::table({
+		auto const &tuple = GENERATE(gen::table({
 			std::make_tuple(sizeof(char),			make_lambda_container([](test const &t) { return t.c; })),
 			std::make_tuple(sizeof(unsigned short),	make_lambda_container([](test const &t) { return t.s; })),
 			std::make_tuple(sizeof(int),			make_lambda_container([](test const &t) { return t.i; })),
@@ -60,9 +61,8 @@ SCENARIO("return_type_size() can return the correct size")
 		
 		WHEN("the function is called")
 		{
-			auto const &tup(functions);
-			auto const expected_size(std::get <0>(tup));
-			auto const determined_size(std::get <1>(tup)->return_type_size());
+			auto const expected_size(std::get <0>(tuple));
+			auto const determined_size(std::get <1>(tuple)->return_type_size());
 			
 			THEN("the return type size matches the expected size")
 			{
@@ -77,22 +77,21 @@ SCENARIO("Radix sort can sort a sequence of numbers")
 {
 	GIVEN("A sequence of numbers")
 	{
-		auto const vec = GENERATE(gen::values({
-			std::vector <unsigned int>({1, 5, 81, 22, 16, 55, 8}),
-			std::vector <unsigned int>({55, 12, 74878, 456, 24, 887, 56}),
-			std::vector <unsigned int>({123, 3924, 23, 904324, 2320, 99})
+		typedef std::vector <unsigned int> vector_type;
+		auto vec = GENERATE(gen::values({
+			vector_type({1, 5, 81, 22, 16, 55, 8}),
+			vector_type({55, 12, 74878, 456, 24, 887, 56}),
+			vector_type({123, 3924, 23, 904324, 2320, 99})
 		}));
 		
 		WHEN("the sorting function is called")
 		{
-			auto v(vec);
-			decltype(v) buf;
-		
-			lb::radix_sort <false>::sort_check_bits_set(v, buf);
+			vector_type buf;
+			lb::radix_sort <false>::sort_check_bits_set(vec, buf);
 			
 			THEN("the sequence is sorted")
 			{
-				REQUIRE(std::is_sorted(v.begin(), v.end()));
+				REQUIRE(std::is_sorted(vec.begin(), vec.end()));
 			}
 		}
 	}

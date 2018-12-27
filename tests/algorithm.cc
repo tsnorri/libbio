@@ -45,7 +45,7 @@ SCENARIO("Set symmetric difference can be determined")
 {
 	GIVEN("Two collections")
 	{
-		auto const vectors = GENERATE(gen::table({
+		auto const &tup = GENERATE(gen::table({
 			std::make_tuple(5, std::vector <unsigned int>({1, 3, 5, 81}), std::vector <unsigned int>({2, 3, 4, 5, 6})),
 			std::make_tuple(0, std::vector <unsigned int>({2, 4, 6, 8}), std::vector <unsigned int>({2, 4, 6, 8})),
 			std::make_tuple(0, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({1, 2, 3})),
@@ -56,7 +56,6 @@ SCENARIO("Set symmetric difference can be determined")
 		
 		WHEN("the collections are compared")
 		{
-			auto const &tup(vectors);
 			auto const expected_count(std::get <0>(tup));
 			auto const &lhs(std::get <1>(tup));
 			auto const &rhs(std::get <2>(tup));
@@ -76,7 +75,7 @@ SCENARIO("Set intersection size can be determined")
 {
 	GIVEN("Two collections")
 	{
-		auto const vectors = GENERATE(gen::table({
+		auto const &tup = GENERATE(gen::table({
 			std::make_tuple(2, std::vector <unsigned int>({1, 3, 5, 81}), std::vector <unsigned int>({2, 3, 4, 5, 6})),
 			std::make_tuple(4, std::vector <unsigned int>({2, 4, 6, 8}), std::vector <unsigned int>({2, 4, 6, 8})),
 			std::make_tuple(3, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({1, 2, 3})),
@@ -87,7 +86,6 @@ SCENARIO("Set intersection size can be determined")
 		
 		WHEN("the collections are compared")
 		{
-			auto const &tup(vectors);
 			auto const expected_count(std::get <0>(tup));
 			auto const &lhs(std::get <1>(tup));
 			auto const &rhs(std::get <2>(tup));
@@ -109,7 +107,7 @@ SCENARIO("Unique items can be counted")
 	{
 		typedef unique_count_test_input ti;
 		
-		auto const vectors = GENERATE(gen::table({
+		auto const &tup = GENERATE(gen::table({
 			std::make_tuple(std::vector <ti>({{1, 1}, {2, 1}, {2, 1}, {4, 1}, {4, 1}, {4, 1}, {5, 1}}), std::vector <ti>({{1, 1}, {2, 2}, {4, 3}, {5, 1}})),
 			std::make_tuple(std::vector <ti>({{1, 1}, {2, 1}, {4, 1}}), std::vector <ti>({{1, 1}, {2, 1}, {4, 1}})),
 			std::make_tuple(std::vector <ti>({{3, 1}, {3, 1}, {3, 1}}), std::vector <ti>({{3, 3}}))
@@ -117,7 +115,6 @@ SCENARIO("Unique items can be counted")
 		
 		WHEN("the unique items are counted")
 		{
-			auto const &tup(vectors);
 			auto &input(std::get <0>(tup));
 			auto const &expected(std::get <1>(tup));
 			std::vector <ti> output;

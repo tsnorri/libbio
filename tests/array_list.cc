@@ -28,7 +28,7 @@ SCENARIO("Array list can be instantiated")
 {
 	GIVEN("Array list items")
 	{
-		auto const lists = GENERATE(gen::values({
+		auto const &il = GENERATE(gen::values({
 			initializer_list({{1, 2}, {3, 4}, {5, 6}}),
 			initializer_list({{2, -1}, {5, -2}, {10, -6}})
 		}));
@@ -36,7 +36,6 @@ SCENARIO("Array list can be instantiated")
 		
 		WHEN("the collection is instantiated")
 		{
-			auto const &il(lists);
 			array_list list(il);
 			
 			THEN("the contents match the initializer list")
@@ -53,7 +52,7 @@ SCENARIO("Array list can be serialized")
 {
 	GIVEN("Array list items")
 	{
-		auto const lists = GENERATE(gen::values({
+		auto const &il = GENERATE(gen::values({
 			initializer_list({{1, 2}, {3, 4}, {5, 6}}),
 			initializer_list({{2, -1}, {5, -2}, {10, -6}})
 		}));
@@ -61,7 +60,6 @@ SCENARIO("Array list can be serialized")
 		
 		WHEN("the collection is serialized and deserialized")
 		{
-			auto const &il(lists);
 			array_list list(il);
 			
 			THEN("the deserialized contents match the original")
