@@ -6,7 +6,7 @@
 #include <chrono>
 #include <ctime>
 #include <iomanip>
-#include <libbio/util.hh>
+#include <libbio/utility.hh>
 
 
 namespace libbio {
@@ -32,6 +32,9 @@ namespace libbio {
 		std::size_t retval(0);
 		for (auto const c : str)
 		{
+			// Count the first bytes of each code point.
+			// Byte 1 will have either 0b0 or 0b11 in the most significant end
+			// while bytes 2, 3 and 4 will have 0b10.
 			if (0x80 != (0xc0 & c))
 				++retval;
 		}

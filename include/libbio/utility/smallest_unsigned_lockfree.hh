@@ -3,12 +3,10 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_UTIL_HH
-#define LIBBIO_UTIL_HH
+#ifndef LIBBIO_UTILITY_SMALLEST_UNSIGNED_LOCKFREE_HH
+#define LIBBIO_UTILITY_SMALLEST_UNSIGNED_LOCKFREE_HH
 
 #include <atomic>
-#include <ostream>
-#include <vector>
 
 
 namespace libbio { namespace detail {
@@ -49,34 +47,6 @@ namespace libbio { namespace detail {
 
 namespace libbio {
 	
-	// Make a type const conditionally.
-	template <typename t_type, bool t_make_const>
-	struct make_const
-	{
-		typedef t_type type;
-	};
-	
-	template <typename t_type>
-	struct make_const <t_type, true>
-	{
-		typedef t_type const type;
-	};
-	
-	template <typename t_type, bool t_make_const>
-	using make_const_t = typename make_const <t_type, t_make_const>::type;
-	
-	
-	// Comparison helper.
-	template <typename t_lhs, typename t_rhs>
-	struct compare_lhs_first_lt
-	{
-		bool operator()(t_lhs const &lhs, t_rhs const &rhs) const
-		{
-			return lhs.first < rhs;
-		}
-	};
-	
-	
 	template <typename t_type>
 	struct smallest_unsigned_lockfree_type_gte
 	{
@@ -87,32 +57,6 @@ namespace libbio {
 	
 	template <typename t_type>
 	using smallest_unsigned_lockfree_type_gte_t = typename smallest_unsigned_lockfree_type_gte <t_type>::type;
-	
-	
-	template <typename t_src, typename t_dst>
-	void resize_and_copy(t_src const &src, t_dst &dst)
-	{
-		dst.resize(src.size());
-		std::copy(src.begin(), src.end(), dst.begin());
-	}
-	
-	
-	void log_time(std::ostream &stream);
-	
-	
-	// Calculate the printed length of a UTF-8 string by checking the first two bits of each byte.
-	std::size_t strlen_utf8(std::string const &str);
-	
-	
-	template <typename t_vector>
-	void clear_and_resize_vector(t_vector &vec)
-	{
-		// Swap with an empty vector.
-		t_vector empty_vec;
-		
-		using std::swap;
-		swap(vec, empty_vec);
-	}
 }
 
 #endif

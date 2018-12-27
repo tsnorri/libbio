@@ -12,7 +12,7 @@
 #include <iostream>
 #include <libbio/assert.hh>
 #include <libbio/dispatch_fn.hh>
-#include <libbio/util.hh>
+#include <libbio/utility.hh>
 #include <map>
 #include <vector>
 

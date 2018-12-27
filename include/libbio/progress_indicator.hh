@@ -12,7 +12,7 @@
 #include <cstdio>
 #include <mutex>
 #include <libbio/dispatch_fn.hh>
-#include <libbio/util.hh>
+#include <libbio/utility.hh>
 #include <unistd.h>
 
 

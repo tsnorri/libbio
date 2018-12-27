@@ -10,7 +10,7 @@ OBJECTS		=	file_handling.o \
 				sequence_container.o \
 				sequence_reader.o \
 				types.o \
-				util.o \
+				utility.o \
 				variant.o \
 				vcf_input.o \
 				vcf_reader.o

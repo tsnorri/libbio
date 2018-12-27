@@ -10,7 +10,7 @@
 #include <iostream>
 #include <iterator>
 #include <libbio/assert.hh>
-#include <libbio/util.hh>
+#include <libbio/utility.hh>
 #include <libbio/vector_source.hh>
 
 
