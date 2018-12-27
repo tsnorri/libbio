@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+#define libbio_stringify(X) (#X)
+
 
 // Contracts not yet available in either Clang or GCC.
 #define libbio_fail(MESSAGE) do { ::libbio::detail::do_fail(__FILE__, __LINE__, MESSAGE); } while (false)
@@ -21,6 +23,18 @@
 #	define libbio_assert_eq(LHS, RHS) do { ::libbio::detail::assert_eq(__FILE__, __LINE__, (LHS), (RHS)); } while (false)
 #	define libbio_assert_lte(LHS, RHS) do { ::libbio::detail::assert_lte(__FILE__, __LINE__, (LHS), (RHS)); } while (false)
 #	define libbio_assert(...) libbio_always_assert(__VA_ARGS__)
+#endif
+
+
+// FIXME: add prefix to do_and_assert_eq, fail_assertion.
+#ifndef LIBBIO_NDEBUG
+#	define do_and_assert_eq(X, Y) \
+		do { \
+			if ((X) != (Y)) \
+				::libbio::detail::do_fail(__FILE__, __LINE__, libbio_stringify(X == Y)); \
+		} while (false)
+#else
+#	define do_and_assert_eq(X, Y) do { (X); } while (false)
 #endif
 
 
