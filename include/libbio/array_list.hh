@@ -9,6 +9,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/serialization/utility.hpp>
 #include <iostream>
+#include <libbio/assert.hh>
 #include <libbio/utility.hh>
 #include <type_traits>
 #include <vector>
