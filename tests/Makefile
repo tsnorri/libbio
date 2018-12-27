@@ -8,8 +8,14 @@ CPPFLAGS += -DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS -I../lib/Catch2/single_i
 OBJECTS	=	algorithm.o \
 			array_list.o \
 			bit_rle_codec.o \
+			int_vector.o \
 			main.o \
-			radix_sort.o
+			matrix.o \
+			packed_matrix.o \
+			packed_vector.o \
+			radix_sort.o \
+			reverse_word.o \
+			rle_bit_vector.o
 
 all: tests
 
