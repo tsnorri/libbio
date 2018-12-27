@@ -9,6 +9,7 @@
 #include <atomic>
 #include <climits>
 #include <cmath>
+#include <libbio/assert.hh>
 #include <libbio/packed_vector/iterator.hh>
 #include <range/v3/algorithm/copy.hpp>
 #include <range/v3/view/transform.hpp>
