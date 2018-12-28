@@ -138,7 +138,7 @@ TEMPLATE_TEST_CASE(
 						for (std::size_t j(0); j < 4; ++j)
 						{
 							auto const expected(j * 3 + i);
-							REQUIRE(expected == *it++);
+							REQUIRE(lb::is_equal(expected, *it++));
 						}
 					
 						REQUIRE(it == end);

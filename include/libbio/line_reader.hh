@@ -87,7 +87,7 @@ namespace libbio {
 					while (true)
 					{
 						auto capacity(seq->size());
-						if (count <= capacity)
+						if (is_lte(count, capacity))
 							break;
 						else
 						{
