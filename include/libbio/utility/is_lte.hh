@@ -7,37 +7,38 @@
 #define LIBBIO_UTILITY_IS_LTE_HH
 
 #include <libbio/type_traits.hh>
+#include <type_traits>
 
 
 namespace libbio { namespace detail {
 	
-	template <typename t_lhs, typename t_rhs, bool t_lhs_signed = std::is_signed_v <t_lhs>, bool t_rhs_signed = std::is_signed_v <t_rhs>>
-	struct lte_integral // Both signed or unsigned b.c. of the specializations below.
+	template <typename t_lhs, typename t_rhs, bool t_lhs_signed = is_signed_ref_v <t_lhs>, bool t_rhs_signed = is_signed_ref_v <t_rhs>>
+	struct lte_arithmetic // Both signed or unsigned b.c. of the specializations below.
 	{
-		static_assert(is_integral_ref_v <t_lhs>);
-		static_assert(is_integral_ref_v <t_rhs>);
+		static_assert(is_arithmetic_ref_v <t_lhs>);
+		static_assert(is_arithmetic_ref_v <t_rhs>);
 		
 		static inline bool check(t_lhs &&lhs, t_rhs &&rhs) { return lhs <= rhs; }
 	};
 	
 	
 	template <typename t_lhs, typename t_rhs>
-	struct lte_integral <t_lhs, t_rhs, true, false> // lhs is signed, rhs unsigned.
+	struct lte_arithmetic <t_lhs, t_rhs, true, false> // lhs is signed, rhs unsigned.
 	{
-		static_assert(is_integral_ref_v <t_lhs>);
-		static_assert(is_integral_ref_v <t_rhs>);
+		static_assert(is_arithmetic_ref_v <t_lhs>);
+		static_assert(is_arithmetic_ref_v <t_rhs>);
 		
-		static inline bool check(t_lhs &&lhs, t_rhs &&rhs) { return lhs < 0 || static_cast <t_rhs>(lhs) <= rhs; }
+		static inline bool check(t_lhs &&lhs, t_rhs &&rhs) { return (lhs <= 0) || (make_unsigned_rr_t <t_lhs>(lhs) <= rhs); }
 	};
 	
 	
 	template <typename t_lhs, typename t_rhs>
-	struct lte_integral <t_lhs, t_rhs, false, true> // lhs is unsigned, rhs signed.
+	struct lte_arithmetic <t_lhs, t_rhs, false, true> // lhs is unsigned, rhs signed.
 	{
-		static_assert(is_integral_ref_v <t_lhs>);
-		static_assert(is_integral_ref_v <t_rhs>);
+		static_assert(is_arithmetic_ref_v <t_lhs>);
+		static_assert(is_arithmetic_ref_v <t_rhs>);
 		
-		static inline bool check(t_lhs &&lhs, t_rhs &&rhs) { return 0 < rhs && lhs <= static_cast <t_lhs>(rhs); }
+		static inline bool check(t_lhs &&lhs, t_rhs &&rhs) { return (0 <= rhs) && (lhs <= make_unsigned_rr_t <t_rhs>(rhs)); }
 	};
 	
 	
@@ -46,8 +47,8 @@ namespace libbio { namespace detail {
 	{
 		static inline bool check(t_lhs &&lhs, t_rhs &&rhs)
 		{
-			if constexpr (is_integral_ref_v <t_lhs> && is_integral_ref_v <t_rhs>)
-				return lte_integral <t_lhs, t_rhs>::check(std::forward <t_lhs>(lhs), std::forward <t_rhs>(rhs));
+			if constexpr (is_arithmetic_ref_v <t_lhs> && is_arithmetic_ref_v <t_rhs>)
+				return lte_arithmetic <t_lhs, t_rhs>::check(std::forward <t_lhs>(lhs), std::forward <t_rhs>(rhs));
 			else
 				return lhs <= rhs;
 		}

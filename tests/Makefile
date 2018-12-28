@@ -9,6 +9,8 @@ OBJECTS	=	algorithm.o \
 			array_list.o \
 			bit_rle_codec.o \
 			int_vector.o \
+			is_lte.o \
+			is_equal.o \
 			main.o \
 			matrix.o \
 			packed_matrix.o \
@@ -16,6 +18,8 @@ OBJECTS	=	algorithm.o \
 			radix_sort.o \
 			reverse_word.o \
 			rle_bit_vector.o
+
+CATCH2_HEADERS	= $(shell find ../lib/Catch2/include)
 
 all: tests
 
@@ -26,3 +30,7 @@ tests: $(OBJECTS)
 
 clean:
 	$(RM) $(OBJECTS) tests
+
+
+../lib/Catch2/single_include/catch2/catch.hpp: $(CATCH2_HEADERS)
+	cd ../lib/Catch2 && $(PYTHON) scripts/generateSingleHeader.py
