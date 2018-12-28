@@ -7,6 +7,7 @@
 #define LIBBIO_UTILITY_MISC_HH
 
 #include <array>
+#include <boost/core/demangle.hpp>
 #include <boost/format.hpp>
 #include <ostream>
 #include <string>
@@ -21,6 +22,10 @@ namespace libbio {
 	
 	// Calculate the printed length of a UTF-8 string by checking the first two bits of each byte.
 	std::size_t strlen_utf8(std::string const &str);
+	
+	
+	template <typename t_type>
+	std::string type_name() { return boost::core::demangle(typeid(t_type).name()); }
 	
 	
 	template <typename t_enum>
