@@ -9,6 +9,7 @@
 #include <array>
 #include <boost/core/demangle.hpp>
 #include <boost/format.hpp>
+#include <cstring>
 #include <ostream>
 #include <string>
 #include <utility>
