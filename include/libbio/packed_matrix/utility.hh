@@ -110,13 +110,13 @@ namespace libbio { namespace matrices {
 		pattern = ::libbio::fill_bit_pattern <t_pattern_length>(pattern);
 		auto word_range(column.to_word_range());
 		word_range.apply_parts(
-			[pattern](auto &atomic){ do_and_assert_eq(atomic.fetch_or(pattern), 0); },
+			[pattern](auto &atomic){ libbio_do_and_assert_eq(atomic.fetch_or(pattern), 0); },
 			[pattern](auto &atomic, std::size_t const offset, std::size_t const length){
 				libbio_assert(length);
 				auto p(pattern);
 				p >>= (t_matrix::WORD_BITS - length);
 				p <<= offset;
-				do_and_assert_eq(atomic.fetch_or(p), 0);
+				libbio_do_and_assert_eq(atomic.fetch_or(p), 0);
 			}
 		);
 	}

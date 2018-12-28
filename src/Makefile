@@ -3,7 +3,8 @@ include ../common.mk
 
 .PRECIOUS: vcf_reader.cc
 
-OBJECTS		=	file_handling.o \
+OBJECTS		=	assert.o \
+				file_handling.o \
 				mmap_handle.o \
 				progress_bar.o \
 				progress_indicator.o \

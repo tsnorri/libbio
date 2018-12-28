@@ -7,106 +7,102 @@
 #define LIBBIO_ASSERT_HH
 
 #include <iostream>
+#include <libbio/buffer.hh>
+#include <libbio/utility/is_equal.hh>
+#include <libbio/utility/is_lte.hh>
+#include <libbio/utility/misc.hh>
+#include <stdexcept>
 
 #define libbio_stringify(X) (#X)
 
 
 // Contracts not yet available in either Clang or GCC.
-#define libbio_fail(MESSAGE) do { ::libbio::detail::do_fail(__FILE__, __LINE__, MESSAGE); } while (false)
-#define libbio_always_assert(...) do { ::libbio::detail::do_always_assert(__FILE__, __LINE__, __VA_ARGS__); } while (false)
+#define libbio_fail(MESSAGE)				do { ::libbio::detail::fail(__FILE__, __LINE__, MESSAGE); } while (false)
+#define libbio_always_assert(X)				do { \
+		if (!(X)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, #X); \
+	} while (false)
 
 #ifdef LIBBIO_NDEBUG
-#	define libbio_assert_eq(LHS, RHS)
-#	define libbio_assert_lte(LHS, RHS)
 #	define libbio_assert(...)
+#	define libbio_assert_lte(X, Y)
+#	define libbio_assert_eq(X, Y)
+#	define libbio_do_and_assert_eq(X, Y)	do { (X); } while (false)
 #else
-#	define libbio_assert_eq(LHS, RHS) do { ::libbio::detail::assert_eq(__FILE__, __LINE__, (LHS), (RHS)); } while (false)
-#	define libbio_assert_lte(LHS, RHS) do { ::libbio::detail::assert_lte(__FILE__, __LINE__, (LHS), (RHS)); } while (false)
-#	define libbio_assert(...) libbio_always_assert(__VA_ARGS__)
-#endif
-
-
-// FIXME: add prefix to do_and_assert_eq, fail_assertion.
-#ifndef LIBBIO_NDEBUG
-#	define do_and_assert_eq(X, Y) \
-		do { \
-			if ((X) != (Y)) \
-				::libbio::detail::do_fail(__FILE__, __LINE__, libbio_stringify(X == Y)); \
-		} while (false)
-#else
-#	define do_and_assert_eq(X, Y) do { (X); } while (false)
+#	define libbio_assert(X)					do { \
+		if (!(X)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, #X); \
+	} while (false)
+#	define libbio_assert_lte(X, Y)			do { \
+		if (!::libbio::is_lte(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X <= Y)); \
+	} while (false)
+#	define libbio_assert_eq(X, Y)			do { \
+		if (!::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X == Y)); \
+	} while (false)
+#	define libbio_do_and_assert_eq(X, Y)	do { \
+		if (!::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X == Y)); \
+	} while (false)
 #endif
 
 
 namespace libbio { namespace detail {
 
-	inline void log_assertion_failure(char const *file, int const line)
+	// Copying a standard library class derived from std::exception
+	// is not permitted to throw exceptions, so try to avoid it here, too.
+	struct assertion_failure_cause
 	{
-		std::cerr << "Assertion failed at " << file << ':' << line << ": ";
-	}
+		std::string		reason;
+		std::string		file;
+		buffer <char>	what;
+		int				line{};
 
+		assertion_failure_cause() = default;
 
-	inline void do_fail(char const *file, int const line, char const *message)
-	{
-		log_assertion_failure(file, line);
-		std::cerr << message << std::endl;
-		abort();
-	}
-	
-	
-	inline void do_always_assert(char const *file, int const line, bool check)
-	{
-		if (!check)
+		assertion_failure_cause(char const *file_, int line_):
+			file(file_),
+			what(copy_format_cstr(boost::format("%s:%d") % file % line_)),
+			line(line_)
 		{
-			log_assertion_failure(file, line);
-			abort();
 		}
-	}
-	
-	
-	inline void do_always_assert(char const *file, int const line, bool check, char const *message)
-	{
-		if (!check)
-			do_fail(file, line, message);
-	}
-	
-	
-	// If the check fails, call the given function and then call fail().
-	template <typename t_fn>
-	inline void do_always_assert(char const *file, int const line, bool check, t_fn fn)
-	{
-		if (!check)
+
+		assertion_failure_cause(char const *file_, int line_, std::string &&reason_):
+			reason(std::move(reason_)),
+			file(file_),
+			what(copy_format_cstr(boost::format("%s:%d: %s") % file % line_ % reason)),
+			line(line_)
 		{
-			log_assertion_failure(file, line);
-			fn();
-			abort();
 		}
-	}
-
-
-	template <typename t_lhs, typename t_rhs>
-	inline void assert_eq(char const *file, int const line, t_lhs &&lhs, t_rhs &&rhs)
-	{
-		if (! (lhs == rhs))
-		{
-			log_assertion_failure(file, line);
-			std::cerr << "Equality comparison failed for '" << lhs << "' and '" << rhs << "'." << std::endl;
-			abort();
-		}
-	}
-
-
-	// FIXME: make the operator a template parameter and combine with _eq.
-	template <typename t_lhs, typename t_rhs>
-	inline void assert_lte(char const *file, int const line, t_lhs &&lhs, t_rhs &&rhs)
-	{
-		if (! (lhs <= rhs))
-		{
-			log_assertion_failure(file, line);
-			std::cerr << "Lte comparison failed for '" << lhs << "' and '" << rhs << "'." << std::endl;
-			abort();
-		}
-	}
+	};
+	
+	
+	void assertion_failure(char const *file, long const line, char const *assertion);
+	void fail(char const *file, long const line);
 }}
+
+
+namespace libbio {
+	
+	class assertion_failure_exception final : public std::exception
+	{
+	protected:
+		std::shared_ptr <detail::assertion_failure_cause>	m_cause;
+
+	public:
+		assertion_failure_exception() = default;
+
+		assertion_failure_exception(char const *file, int line, std::string &&reason):
+			m_cause(new detail::assertion_failure_cause(file, line, std::move(reason)))
+		{
+		}
+
+		assertion_failure_exception(char const *file, int line):
+			m_cause(new detail::assertion_failure_cause(file, line))
+		{
+		}
+
+		virtual char const *what() const noexcept override { return m_cause->what.get(); }
+		std::string const &file() const noexcept { return m_cause->file; }
+		std::string const &reason() const noexcept { return m_cause->reason; }
+		int line() const noexcept { return m_cause->line; }
+	};
+}
 
 #endif
