@@ -69,7 +69,7 @@ namespace libbio {
 	template <typename t_vector>
 	void vector_source <t_vector>::resize(std::size_t const size)
 	{
-		libbio_always_assert(m_allow_resize, "Trying to allocate more vectors than allowed");
+		libbio_always_assert_msg(m_allow_resize, "Trying to allocate more vectors than allowed");
 		
 		// Fill from the beginning so that m_in_use slots in the end remain empty.
 		m_store.resize(size);

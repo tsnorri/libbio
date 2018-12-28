@@ -11,7 +11,7 @@ namespace libbio {
 
 	std::size_t variant_base::zero_based_pos() const
 	{
-		libbio_always_assert(0 != m_pos, "Unexpected position");
+		libbio_always_assert_msg(0 != m_pos, "Unexpected position");
 		return m_pos - 1;
 	}
 	

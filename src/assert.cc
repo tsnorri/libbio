@@ -14,7 +14,7 @@ namespace libbio { namespace detail {
 	}
 	
 	
-	void fail(char const *file, long const line)
+	void assertion_failure(char const *file, long const line)
 	{
 		throw assertion_failure_exception(file, line);
 	}

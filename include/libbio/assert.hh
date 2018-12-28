@@ -17,13 +17,18 @@
 
 
 // Contracts not yet available in either Clang or GCC.
-#define libbio_fail(MESSAGE)				do { ::libbio::detail::fail(__FILE__, __LINE__, MESSAGE); } while (false)
+#define libbio_fail(MESSAGE)				do { \
+		::libbio::detail::assertion_failure(__FILE__, __LINE__, MESSAGE); \
+	} while (false)
 #define libbio_always_assert(X)				do { \
 		if (!(X)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, #X); \
 	} while (false)
+#define libbio_always_assert_msg(X, MSG)	do { \
+		if (!(X)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, MSG); \
+	} while (false)
 
 #ifdef LIBBIO_NDEBUG
-#	define libbio_assert(...)
+#	define libbio_assert(X)
 #	define libbio_assert_lte(X, Y)
 #	define libbio_assert_eq(X, Y)
 #	define libbio_do_and_assert_eq(X, Y)	do { (X); } while (false)
@@ -74,7 +79,7 @@ namespace libbio { namespace detail {
 	
 	
 	void assertion_failure(char const *file, long const line, char const *assertion);
-	void fail(char const *file, long const line);
+	void assertion_failure(char const *file, long const line);
 }}
 
 

@@ -300,7 +300,7 @@ namespace libbio {
 	template <typename t_string>
 	void variant_tpl <t_string>::set_alt(std::string_view const &alt, std::size_t const pos, bool const is_complex)
 	{
-		libbio_always_assert(!is_complex, "Only simple ALTs are handled");
+		libbio_always_assert_msg(!is_complex, "Only simple ALTs are handled");
 		
 		if (! (pos < m_alts.size()))
 			m_alts.resize(pos + 1);
