@@ -11,8 +11,21 @@
 
 namespace libbio {
 
+	// FIXME: rename everything ref -> rr.
 	template <typename t_type>
 	inline constexpr bool is_integral_ref_v = std::is_integral_v <std::remove_reference_t <t_type>>;
+
+	template <typename t_type>
+	inline constexpr bool is_arithmetic_ref_v = std::is_arithmetic_v <std::remove_reference_t <t_type>>;
+	
+	template <typename t_type>
+	inline constexpr bool is_signed_ref_v = std::is_signed_v <std::remove_reference_t <t_type>>;
+
+	template <typename t_type>
+	inline constexpr bool is_unsigned_ref_v = std::is_unsigned_v <std::remove_reference_t <t_type>>;
+	
+	template <typename t_type>
+	using make_unsigned_rr_t = typename std::make_unsigned_t <std::remove_reference_t <t_type>>;
 }
 
 #endif
