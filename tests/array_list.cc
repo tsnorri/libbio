@@ -48,6 +48,7 @@ SCENARIO("Array list can be instantiated")
 }
 
 
+#ifdef LIBBIO_BOOST_SERIALIZATION
 SCENARIO("Array list can be serialized")
 {
 	GIVEN("Array list items")
@@ -90,3 +91,4 @@ SCENARIO("Array list can be serialized")
 		}
 	}
 }
+#endif

@@ -7,12 +7,15 @@
 #define LIBBIO_ARRAY_LIST_HH
 
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/serialization/utility.hpp>
 #include <iostream>
 #include <libbio/assert.hh>
 #include <libbio/utility.hh>
 #include <type_traits>
 #include <vector>
+
+#ifdef LIBBIO_BOOST_SERIALIZATION
+#	include <boost/serialization/utility.hpp>
+#endif
 
 
 namespace libbio {
@@ -20,6 +23,7 @@ namespace libbio {
 }
 
 // Forward declaration needed for template friends.
+#ifdef LIBBIO_BOOST_SERIALIZATION
 namespace boost { namespace serialization {
 	
 	template <typename t_archive, typename t_value>
@@ -28,6 +32,7 @@ namespace boost { namespace serialization {
 	template <typename t_archive, typename t_value>
 	void save(t_archive &, libbio::array_list <t_value> const &, unsigned int const);
 }}
+#endif
 
 
 namespace libbio { namespace detail {
@@ -275,11 +280,13 @@ namespace libbio {
 	template <typename t_value>
 	class array_list
 	{
+#ifdef LIBBIO_BOOST_SERIALIZATION
 		template <typename t_archive, typename t_tpl_value>
 		friend void boost::serialization::save(t_archive &, array_list <t_tpl_value> const &, unsigned int const);
 		
 		template <typename t_archive, typename t_tpl_value>
 		friend void boost::serialization::load(t_archive &, array_list <t_tpl_value> &, unsigned int const);
+#endif
 		
 	public:
 		typedef detail::array_list_item <t_value>									item_type;
@@ -399,11 +406,13 @@ namespace libbio {
 		void add_item(item_type &&item);
 		void link_item(item_type &&item, size_type const idx);
 		
+#ifdef LIBBIO_BOOST_SERIALIZATION
 		template <typename t_archive>
 		void boost_load(t_archive &ar, unsigned int const version);
 	
 		template <typename t_archive>
 		void boost_save(t_archive &ar, unsigned int const version) const;
+#endif
 	};
 	
 	
@@ -575,6 +584,7 @@ namespace libbio {
 	}
 	
 	
+#ifdef LIBBIO_BOOST_SERIALIZATION
 	template <typename t_value>
 	template <typename t_archive>
 	void array_list <t_value>::boost_load(t_archive &ar, unsigned int const version)
@@ -617,9 +627,11 @@ namespace libbio {
 		
 		ar & buffer;
 	}
+#endif
 }
 
 
+#ifdef LIBBIO_BOOST_SERIALIZATION
 namespace boost { namespace serialization {
 	
 	template <typename t_archive, typename t_value>
@@ -644,5 +656,6 @@ namespace boost { namespace serialization {
 		split_free(ar, array_list, version);
 	}
 }}
+#endif
 
 #endif
