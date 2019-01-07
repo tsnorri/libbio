@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <libbio/assert.hh>
 
 
 namespace libbio {
