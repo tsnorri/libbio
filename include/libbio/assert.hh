@@ -11,6 +11,7 @@
 #include <libbio/utility/is_equal.hh>
 #include <libbio/utility/is_lte.hh>
 #include <libbio/utility/misc.hh>
+#include <sstream>
 #include <stdexcept>
 
 #define libbio_stringify(X) (#X)
@@ -25,6 +26,12 @@
 	} while (false)
 #define libbio_always_assert_msg(X, MSG)	do { \
 		if (!(X)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, MSG); \
+	} while (false)
+#define libbio_always_assert_eq_msg(X, Y, ...)	do { \
+		if (!::libbio::is_equal(X, Y)) { \
+			std::stringstream stream; \
+			::libbio::detail::assertion_failure(__FILE__, __LINE__, stream, __VA_ARGS__, ": ", libbio_stringify(X == Y), '.'); \
+		} \
 	} while (false)
 
 #ifdef LIBBIO_NDEBUG
@@ -80,6 +87,23 @@ namespace libbio { namespace detail {
 	
 	void assertion_failure(char const *file, long const line, char const *assertion);
 	void assertion_failure(char const *file, long const line);
+	
+	// Concatenate the arguments and call assertion_failure.
+	template <typename t_arg>
+	void assertion_failure(char const *file, long const line, std::stringstream &stream, t_arg const &arg)
+	{
+		stream << arg;
+		auto const &string(stream.str()); // Keep the result of str() here to prevent a dangling pointer.
+		assertion_failure(file, line, string.c_str()); // Copies the result of c_str().
+	}
+	
+	// Concatenate the arguments and call assertion_failure.
+	template <typename t_arg, typename ... t_rest>
+	void assertion_failure(char const *file, long const line, std::stringstream &stream, t_arg const &first, t_rest ... rest)
+	{
+		stream << first;
+		assertion_failure(file, line, stream, rest...);
+	}
 }}
 
 
