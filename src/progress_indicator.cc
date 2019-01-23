@@ -3,6 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#if !(defined(LIBBIO_NO_PROGRESS_INDICATOR) && LIBBIO_NO_PROGRESS_INDICATOR)
+
 #include <algorithm>
 #include <boost/format.hpp>
 #include <cmath>
@@ -168,3 +170,5 @@ namespace libbio {
 		}
 	}
 }
+
+#endif

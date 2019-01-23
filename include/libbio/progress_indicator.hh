@@ -6,6 +6,8 @@
 #ifndef LIBBIO_PROGRESS_INDICATOR_HH
 #define LIBBIO_PROGRESS_INDICATOR_HH
 
+#if !(defined(LIBBIO_NO_PROGRESS_INDICATOR) && LIBBIO_NO_PROGRESS_INDICATOR)
+
 #include <atomic>
 #include <boost/format.hpp>
 #include <chrono>
@@ -84,4 +86,5 @@ namespace libbio {
 	
 }
 
+#endif
 #endif
