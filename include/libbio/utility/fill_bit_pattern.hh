@@ -6,6 +6,7 @@
 #ifndef LIBBIO_UTILITY_FILL_BIT_PATTERN_HH
 #define LIBBIO_UTILITY_FILL_BIT_PATTERN_HH
 
+#include <climits>
 #include <libbio/utility/misc.hh>
 
 
