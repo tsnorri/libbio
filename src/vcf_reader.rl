@@ -3,6 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <libbio/utility.hh>
 #include <libbio/vcf_reader.hh>
 
 
@@ -18,14 +19,7 @@
 
 
 namespace libbio { namespace detail {
-
-	template <typename t_enum>
-	constexpr typename std::underlying_type <t_enum>::type to_underlying(t_enum e)
-	{
-		return static_cast <typename std::underlying_type <t_enum>::type>(e);
-	}
 	
-
 	// Split a t_string into string_views.
 	template <bool t_emplace_back, typename t_string, typename t_invalid_pos>
 	std::size_t read_fields(
@@ -214,7 +208,7 @@ namespace libbio {
 		std::vector <std::string_view> header_names;
 		detail::read_fields <true>(line, "\t", -1, header_names);
 		std::size_t i(1);
-		for (auto it(header_names.cbegin() + detail::to_underlying(vcf_field::ALL)), end(header_names.cend()); it != end; ++it)
+		for (auto it(header_names.cbegin() + to_underlying(vcf_field::ALL)), end(header_names.cend()); it != end; ++it)
 		{
 			std::string str(*it);
 			auto const res(m_sample_names.emplace(std::move(str), i));
