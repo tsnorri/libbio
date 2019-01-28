@@ -8,6 +8,7 @@ CPPFLAGS += -DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS -I../lib/Catch2/single_i
 OBJECTS	=	algorithm.o \
 			array_list.o \
 			bit_rle_codec.o \
+			fasta_reader.o \
 			int_vector.o \
 			is_lte.o \
 			is_equal.o \

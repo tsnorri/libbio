@@ -9,6 +9,38 @@
 
 namespace libbio { namespace sequence_reader { namespace detail {
 	
+	class delegate : public libbio::fasta_reader_delegate
+	{
+	protected:
+		std::vector <std::vector <std::uint8_t>>	*m_sequences{};
+		
+	public:
+		delegate(std::vector <std::vector <std::uint8_t>> &sequences):
+			m_sequences(&sequences)
+		{
+		}
+		
+		virtual bool handle_comment_line(fasta_reader &reader, std::string_view const &sv) override
+		{
+			return true;
+		}
+		
+		virtual bool handle_identifier(fasta_reader &reader, std::string_view const &sv) override
+		{
+			// Append a new sequence.
+			m_sequences->emplace_back();
+			return true;
+		}
+		
+		virtual bool handle_sequence_line(fasta_reader &reader, std::string_view const &sv) override
+		{
+			// Copy the current line to the end of the last sequence.
+			std::copy(sv.begin(), sv.end(), std::back_inserter(m_sequences->back()));
+			return true;
+		}
+	};
+	
+	
 	void load_list_input(std::istream &stream, std::unique_ptr <sequence_container> &container_ptr)
 	{
 		auto *container(new multiple_mmap_sequence_container());
@@ -27,6 +59,21 @@ namespace libbio { namespace sequence_reader { namespace detail {
 		container_ptr.reset(container);
 		container->open_file(path);
 	}
+	
+	
+	void load_fasta_input(char const *path, std::unique_ptr <sequence_container> &container_ptr)
+	{
+		auto *container(new vector_sequence_container());
+		container_ptr.reset(container);
+		container->sequences().clear();
+		
+		fasta_reader reader;
+		delegate cb(container->sequences());
+		
+		mmap_handle fasta_handle;
+		fasta_handle.open(path);
+		reader.parse(fasta_handle, cb);
+	}
 }}}
 
 
@@ -34,14 +81,26 @@ namespace libbio { namespace sequence_reader {
 	
 	void read_input_from_path(char const *path, input_format const format, bool prefer_mmap, std::unique_ptr <sequence_container> &container)
 	{
-		if (prefer_mmap && format == input_format::TEXT)
-			detail::load_line_input(path, container);
-		else
+		if (prefer_mmap)
 		{
-			file_istream stream;
-			open_file_for_reading(path, stream);
-			read_input_from_stream(stream, format, container);
+			if (input_format::TEXT == format)
+			{
+				detail::load_line_input(path, container);
+				container->set_path(path);
+				return;
+			}
+			
+			if (input_format::FASTA == format)
+			{
+				detail::load_fasta_input(path, container);
+				container->set_path(path);
+				return;
+			}
 		}
+
+		file_istream stream;
+		open_file_for_reading(path, stream);
+		read_input_from_stream(stream, format, container);
 		
 		container->set_path(path);
 	}
@@ -52,24 +111,12 @@ namespace libbio { namespace sequence_reader {
 		switch (format)
 		{
 			case input_format::FASTA:
-			{
-				auto *container(new vector_sequence_container);
-				container_ptr.reset(container);
-		
-				typedef vector_source <std::vector <std::uint8_t>> vector_source;
-				typedef fasta_reader_cb <vector_source> fasta_reader_cb;
-				typedef fasta_reader <vector_source, fasta_reader_cb, 0> fasta_reader;
-		
-				vector_source vs;
-				fasta_reader reader;
-				fasta_reader_cb cb(container->sequences());
-				reader.read_from_stream(stream, vs, cb);
+				libbio_fail("Unable to read FASTA input without mmap.");
 				break;
-			}
 				
 			case input_format::TEXT:
 			{
-				auto *container(new vector_sequence_container);
+				auto *container(new vector_sequence_container());
 				container_ptr.reset(container);
 		
 				typedef vector_source <std::vector <std::uint8_t>> vector_source;

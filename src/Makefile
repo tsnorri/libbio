@@ -4,6 +4,7 @@ include ../common.mk
 .PRECIOUS: vcf_reader.cc
 
 OBJECTS		=	assert.o \
+				fasta_reader.o \
 				file_handling.o \
 				mmap_handle.o \
 				progress_bar.o \

@@ -1,0 +1,8 @@
+; This is a comment line.
+>test-1
+GATTACA
+>test-2
+; Comment line between an identifier and a sequence.
+AAAA
+CCCC
+; Comment after a sequence.
