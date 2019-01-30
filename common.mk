@@ -26,7 +26,8 @@ PYTHON			?= python
 RAGEL			?= ragel
 RM				?= rm
 
-BOOST_INCLUDE	?= /usr/include
+BOOST_ROOT		?= /usr
+BOOST_INCLUDE	?= -I$(BOOST_ROOT)/include
 
 CFLAGS			+= -std=c99   $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CFLAGS)
 CXXFLAGS		+= -std=c++17 $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CXXFLAGS)
