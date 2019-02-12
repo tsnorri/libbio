@@ -43,6 +43,27 @@ namespace libbio { namespace detail {
 		
 		operator word_type() const { return load(); }
 	};
+	
+	
+	template <typename t_vector>
+	class packed_vector_word_iterator_proxy
+	{
+	public:
+		typedef typename packed_vector_iterator_traits <t_vector>::word_iterator	word_iterator;
+
+	protected:
+		t_vector	*m_vector{};
+		
+	public:
+		packed_matrix_word_iterator_proxy() = default;
+		packed_matrix_word_iterator_proxy(t_vector &vec):
+			m_vector(&vec)
+		{
+		}
+		
+		word_iterator begin() const { return m_vector->word_begin(); }
+		word_iterator end() const { return m_vector->word_end(); }
+	};
 }}
 
 
@@ -128,6 +149,9 @@ namespace libbio {
 		const_word_iterator word_end() const { return m_values.end(); }
 		const_word_iterator word_cbegin() const { return m_values.cbegin(); }
 		const_word_iterator word_cend() const { return m_values.cend(); }
+		word_iterator_proxy word_range() { return word_iterator_proxy(m_values); }
+		const_word_iterator_proxy word_range() const { return const_word_iterator_proxy(m_values); }
+		const_word_iterator_proxy const_word_range() const { return const_word_iterator_proxy(m_values); }
 	};
 	
 	

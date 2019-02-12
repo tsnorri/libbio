@@ -14,31 +14,6 @@
 #include <libbio/packed_vector.hh>
 
 
-namespace libbio { namespace detail {
-	
-	// FIXME: add range functionality.
-	template <typename t_vector>
-	class packed_matrix_word_iterator_proxy
-	{
-	public:
-		typedef typename packed_vector_iterator_traits <t_vector>::word_iterator	word_iterator;
-
-	protected:
-		t_vector	*m_vector{};
-		
-	public:
-		packed_matrix_word_iterator_proxy() = default;
-		packed_matrix_word_iterator_proxy(t_vector &vec):
-			m_vector(&vec)
-		{
-		}
-		
-		word_iterator begin() const { return m_vector->word_begin(); }
-		word_iterator end() const { return m_vector->word_end(); }
-	};
-}}
-
-
 namespace libbio {
 	
 	template <unsigned int t_bits, typename t_word>
@@ -59,8 +34,8 @@ namespace libbio {
 		typedef typename vector_type::const_word_iterator						const_word_iterator;
 		typedef detail::packed_matrix_iterator <vector_type>					matrix_iterator;
 		typedef detail::packed_matrix_iterator <vector_type const>				const_matrix_iterator;
-		typedef detail::packed_matrix_word_iterator_proxy <vector_type>			word_iterator_proxy;
-		typedef detail::packed_matrix_word_iterator_proxy <vector_type const>	const_word_iterator_proxy;
+		typedef detail::packed_vector_word_iterator_proxy <vector_type>			word_iterator_proxy;
+		typedef detail::packed_vector_word_iterator_proxy <vector_type const>	const_word_iterator_proxy;
 
 		typedef detail::packed_matrix_slice <packed_matrix>						slice_type;
 		typedef detail::packed_matrix_slice <packed_matrix const>				const_slice_type;
