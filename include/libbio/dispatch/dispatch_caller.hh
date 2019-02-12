@@ -7,6 +7,7 @@
 #define LIBBIO_DISPATCH_DISPATCH_CALLER_HH
 
 #include <dispatch/dispatch.h>
+#include <libbio/assert.hh>
 
 
 namespace libbio { namespace detail {
