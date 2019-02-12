@@ -44,8 +44,8 @@ namespace libbio {
 	
 	struct genotype_field
 	{
-		std::size_t	alt{0};
-		bool		is_phased{false};
+		std::uint8_t	alt{0};
+		bool			is_phased{false};
 	};
 	
 	
@@ -58,12 +58,13 @@ namespace libbio {
 		
 	protected:
 		genotype_vector	m_genotype;
-		std::size_t		m_gt_count{0};
+		std::uint8_t	m_gt_count{0};
 		
 	public:
 		
-		std::size_t ploidy() const { return m_gt_count; }
-		boost::iterator_range <genotype_vector::const_iterator> get_genotype() const;
+		std::uint8_t ploidy() const { return m_gt_count; }
+		boost::iterator_range <genotype_vector::const_iterator> get_genotype_range() const;
+		genotype_field const &get_genotype(std::uint8_t chr_idx) const { libbio_assert(chr_idx < m_gt_count); return m_genotype[chr_idx]; }
 	};
 	
 	
@@ -99,8 +100,9 @@ namespace libbio {
 		void set_gt(std::size_t const alt, std::size_t const sample, std::size_t const idx, bool const is_phased);
 		void set_alt_sv_type(sv_type const svt, std::size_t const pos);
 		void reset() { m_sample_count = 0; m_alt_sv_types.clear(); }	// Try to prevent unneeded deallocation of samples.
-
+		
 		std::size_t variant_index() const								{ return m_variant_index; }
+		std::size_t sample_count() const								{ return m_sample_count; }
 		std::size_t lineno() const										{ return m_lineno; }
 		std::size_t pos() const											{ return m_pos; }
 		std::size_t zero_based_pos() const;
@@ -239,7 +241,7 @@ namespace libbio {
 	};
 	
 	
-	inline auto sample_field::get_genotype() const -> boost::iterator_range <genotype_vector::const_iterator>
+	inline auto sample_field::get_genotype_range() const -> boost::iterator_range <genotype_vector::const_iterator>
 	{
 		auto const begin(m_genotype.cbegin());
 		return boost::make_iterator_range(begin, begin + m_gt_count);
