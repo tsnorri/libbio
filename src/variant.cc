@@ -71,7 +71,7 @@ namespace libbio {
 	std::ostream &operator<<(std::ostream &os, sample_field const &sample_field)
 	{
 		bool is_first(true);
-		for (auto const &gt_field : sample_field.get_genotype())
+		for (auto const &gt_field : sample_field.get_genotype_range())
 		{
 			if (!is_first)
 				os << (gt_field.is_phased ? '|' : '/');
