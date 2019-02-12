@@ -170,11 +170,11 @@ TEMPLATE_PRODUCT_TEST_CASE(
 	{
 		auto const left = GENERATE(gen::values <left_type>({-5, -10, -20, -40, std::numeric_limits <left_type>::min()}));
 		INFO("left type: " << lb::type_name <left_type>());
+		INFO("right type: " << lb::type_name <right_type>());
 		INFO("left: " << +left);
 		GIVEN("a negative lhs value")
 		{
 			auto const right = GENERATE(gen::values <right_type>({0, 5, 10, 100, std::numeric_limits <right_type>::max()}));
-			INFO("right type: " << lb::type_name <right_type>());
 			INFO("right: " << +right);
 			WHEN("compared to a non-negative rhs value")
 			{
@@ -200,11 +200,11 @@ TEMPLATE_PRODUCT_TEST_CASE(
 	{
 		auto const left = GENERATE(gen::values <left_type>({0, 1, 5, 10, 15}));
 		INFO("left type: " << lb::type_name <left_type>());
+		INFO("right type: " << lb::type_name <right_type>());
 		INFO("left: " << +left);
 		GIVEN("a non-negative lhs value")
 		{
 			auto const right = GENERATE(gen::values <right_type>({20, 40, 100, std::numeric_limits <right_type>::max()}));
-			INFO("right type: " << lb::type_name <right_type>());
 			INFO("right: " << +right);
 			WHEN("compared to a greater rhs value")
 			{
@@ -275,11 +275,11 @@ TEMPLATE_PRODUCT_TEST_CASE(
 		
 		auto const left = GENERATE(gen::values <left_type>({-5, -10, -20, -100, std::numeric_limits <left_type>::min()}));
 		INFO("left type: " << lb::type_name <left_type>());
+		INFO("right type: " << lb::type_name <right_type>());
 		INFO("left: " << +left);
 		GIVEN("a negative left value")
 		{
 			auto const right = GENERATE(gen::values <right_type>({-4, 0, 10, 20, 100, std::numeric_limits <right_type>::max()}));
-			INFO("right type: " << lb::type_name <right_type>());
 			INFO("right: " << +right);
 			WHEN("compared to a greater rhs value")
 			{
