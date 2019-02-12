@@ -55,8 +55,8 @@ namespace libbio { namespace detail {
 		t_vector	*m_vector{};
 		
 	public:
-		packed_matrix_word_iterator_proxy() = default;
-		packed_matrix_word_iterator_proxy(t_vector &vec):
+		packed_vector_word_iterator_proxy() = default;
+		packed_vector_word_iterator_proxy(t_vector &vec):
 			m_vector(&vec)
 		{
 		}
@@ -82,19 +82,22 @@ namespace libbio {
 		static_assert(0 == t_bits || 0 == WORD_BITS % t_bits);
 		
 	protected:
-		typedef std::vector <std::atomic <word_type>>					value_vector;
+		typedef std::vector <std::atomic <word_type>>							value_vector;
 		
 	public:
-		typedef typename value_vector::reference						word_reference;
-		typedef typename value_vector::iterator							word_iterator;
-		typedef typename value_vector::const_iterator					const_word_iterator;
+		typedef typename value_vector::reference								word_reference;
+		typedef typename value_vector::iterator									word_iterator;
+		typedef typename value_vector::const_iterator							const_word_iterator;
+		typedef detail::packed_vector_word_iterator_proxy <packed_vector>		word_iterator_proxy;
+		typedef detail::packed_vector_word_iterator_proxy <packed_vector const>	const_word_iterator_proxy;
+
 		
-		typedef detail::packed_vector_value_reference <packed_vector>	reference_proxy;
-		typedef reference_proxy											reference;
-		typedef word_type												const_reference;
+		typedef detail::packed_vector_value_reference <packed_vector>			reference_proxy;
+		typedef reference_proxy													reference;
+		typedef word_type														const_reference;
 		
-		typedef detail::packed_vector_iterator <packed_vector>			iterator;
-		typedef detail::packed_vector_iterator <packed_vector const>	const_iterator;
+		typedef detail::packed_vector_iterator <packed_vector>					iterator;
+		typedef detail::packed_vector_iterator <packed_vector const>			const_iterator;
 		
 		enum {
 			ELEMENT_BITS		= t_bits,
