@@ -12,6 +12,8 @@
 
 namespace libbio {
 	
+	// Return the symmetric difference size.
+	// Precondition: input ranges are sorted.
 	// FIXME: constexpr in C++20?
 	template <typename t_input_it_1, typename t_input_it_2>
 	std::size_t set_symmetric_difference_size(
@@ -53,6 +55,8 @@ namespace libbio {
 	}
 	
 	
+	// Return the intersection size.
+	// Precondition: input ranges are sorted.
 	// FIXME: constexpr in C++20?
 	template <typename t_input_it_1, typename t_input_it_2>
 	std::size_t set_intersection_size(
@@ -82,6 +86,34 @@ namespace libbio {
 		}
 		
 		return retval;
+	}
+	
+	
+	// Determine whether the intersection is non-empty.
+	// Precondition: input ranges are sorted.
+	// FIXME: constexpr in C++20?
+	template <typename t_input_it_1, typename t_input_it_2>
+	bool set_nonempty_intersection(
+		t_input_it_1 first_1,
+		t_input_it_1 last_1,
+		t_input_it_2 first_2,
+		t_input_it_2 last_2
+	)
+	{
+		while (first_1 != last_1)
+		{
+			if (first_2 == last_2)
+				return false;
+			
+			if (*first_1 < *first_2)
+				++first_1;
+			else if (*first_2 < *first_1)
+				++first_2;
+			else // *first_1 == *first_2
+				return true;
+		}
+		
+		return false;
 	}
 }
 
