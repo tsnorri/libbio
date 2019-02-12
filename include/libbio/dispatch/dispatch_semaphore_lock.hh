@@ -30,7 +30,7 @@ namespace libbio {
 		
 		void lock()
 		{
-			dispatch_semaphore_wait(*m_sema);
+			dispatch_semaphore_wait(*m_sema, DISPATCH_TIME_FOREVER);
 		}
 		
 		void unlock()
