@@ -13,7 +13,7 @@
 #include <chrono>
 #include <cstdio>
 #include <mutex>
-#include <libbio/dispatch_fn.hh>
+#include <libbio/dispatch.hh>
 #include <libbio/utility.hh>
 #include <unistd.h>
 

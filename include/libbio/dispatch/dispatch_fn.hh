@@ -8,6 +8,7 @@
 
 #include <dispatch/dispatch.h>
 #include <iostream>
+#include <libbio/assert.hh>
 #include <stdexcept>
 
 

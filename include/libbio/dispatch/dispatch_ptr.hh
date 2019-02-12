@@ -7,6 +7,7 @@
 #define LIBBIO_DISPATCH_DISPATCH_PTR_HH
 
 #include <dispatch/dispatch.h>
+#include <utility>
 
 
 namespace libbio {
