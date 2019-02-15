@@ -24,6 +24,12 @@
 #define libbio_always_assert(X)				do { \
 		if (!(X)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, #X); \
 	} while (false)
+#define libbio_always_assert_lte(X, Y)		do { \
+		if (!::libbio::is_lte(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X <= Y)); \
+	} while (false)
+#define libbio_always_assert_eq(X, Y)		do { \
+		if (!::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X == Y)); \
+	} while (false)
 #define libbio_always_assert_msg(X, ...)	do { \
 		if (!(X)) { \
 			std::stringstream stream; \
