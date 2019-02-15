@@ -152,9 +152,9 @@ namespace libbio {
 		const_word_iterator word_end() const { return m_values.end(); }
 		const_word_iterator word_cbegin() const { return m_values.cbegin(); }
 		const_word_iterator word_cend() const { return m_values.cend(); }
-		word_iterator_proxy word_range() { return word_iterator_proxy(m_values); }
-		const_word_iterator_proxy word_range() const { return const_word_iterator_proxy(m_values); }
-		const_word_iterator_proxy const_word_range() const { return const_word_iterator_proxy(m_values); }
+		word_iterator_proxy word_range() { return word_iterator_proxy(*this); }
+		const_word_iterator_proxy word_range() const { return const_word_iterator_proxy(*this); }
+		const_word_iterator_proxy const_word_range() const { return const_word_iterator_proxy(*this); }
 	};
 	
 	
