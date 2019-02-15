@@ -9,6 +9,7 @@
 #include <iostream>
 #include <libbio/buffer.hh>
 #include <libbio/utility/is_equal.hh>
+#include <libbio/utility/is_lt.hh>
 #include <libbio/utility/is_lte.hh>
 #include <libbio/utility/misc.hh>
 #include <sstream>
@@ -45,18 +46,34 @@
 
 #ifdef LIBBIO_NDEBUG
 #	define libbio_assert(X)
+#	define libbio_assert_lt(X, Y)
 #	define libbio_assert_lte(X, Y)
+#	define libbio_assert_gt(X, Y)
+#	define libbio_assert_gte(X, Y)
 #	define libbio_assert_eq(X, Y)
+#	define libbio_assert_neq(X, Y)
 #	define libbio_do_and_assert_eq(X, Y)	do { (X); } while (false)
 #else
 #	define libbio_assert(X)					do { \
 		if (!(X)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, #X); \
 	} while (false)
+#	define libbio_assert_lt(X, Y)			do { \
+		if (!::libbio::is_lt(X, Y))		::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X < Y)); \
+	} while (false)
 #	define libbio_assert_lte(X, Y)			do { \
 		if (!::libbio::is_lte(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X <= Y)); \
 	} while (false)
+#	define libbio_assert_gt(X, Y)			do { \
+		if (!::libbio::is_lt(Y, X))		::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X > Y)); \
+	} while (false)
+#	define libbio_assert_gte(X, Y)			do { \
+		if (!::libbio::is_lte(Y, X))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X >= Y)); \
+	} while (false)
 #	define libbio_assert_eq(X, Y)			do { \
 		if (!::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X == Y)); \
+	} while (false)
+#	define libbio_assert_neq(X, Y)			do { \
+		if (::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X != Y)); \
 	} while (false)
 #	define libbio_do_and_assert_eq(X, Y)	do { \
 		if (!::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X == Y)); \

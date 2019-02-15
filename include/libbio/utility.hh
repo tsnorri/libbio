@@ -7,6 +7,8 @@
 #define LIBBIO_UTIL_HH
 
 #include <libbio/utility/fill_bit_pattern.hh>
+#include <libbio/utility/is_equal.hh>
+#include <libbio/utility/is_lt.hh>
 #include <libbio/utility/is_lte.hh>
 #include <libbio/utility/make_const.hh>
 #include <libbio/utility/misc.hh>

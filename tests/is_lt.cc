@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2019 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #include <catch2/catch.hpp>
-#include <libbio/utility/is_equal.hh>
+#include <libbio/utility/is_lt.hh>
 #include <libbio/utility/misc.hh>
 
 namespace gen	= Catch::Generators;
@@ -31,7 +31,7 @@ namespace {
 
 
 TEMPLATE_PRODUCT_TEST_CASE(
-	"Templated is_equal tests (all combinations)",
+	"Templated is_lt tests (all combinations)",
 	"[template]",
 	(
 		tpg <std::int8_t>::type,
@@ -66,25 +66,25 @@ TEMPLATE_PRODUCT_TEST_CASE(
 		{
 			WHEN("comparing")
 			{
-				auto const res(lb::is_equal(left, right));
-				THEN("is_equal returns true")
+				auto const res(lb::is_lt(left, right));
+				THEN("is_lt returns false")
 				{
-					REQUIRE(true == res);
+					REQUIRE(false == res);
 				}
 			}
 			
 			WHEN("the values are swapped")
 			{
-				auto const res(lb::is_equal(right, left));
-				THEN("is_equal returns true")
+				auto const res(lb::is_lt(right, left));
+				THEN("is_lt returns false")
 				{
-					REQUIRE(true == res);
+					REQUIRE(false == res);
 				}
 			}
 		}
 	}
 	
-	SECTION("Test comparison (left positive)")
+	SECTION("Test comparison (left non-negative)")
 	{
 		typedef typename TestType::left_type left_type;
 		typedef typename TestType::right_type right_type;
@@ -93,23 +93,23 @@ TEMPLATE_PRODUCT_TEST_CASE(
 		INFO("left type: " << lb::type_name <left_type>());
 		INFO("right type: " << lb::type_name <right_type>());
 		INFO("left: " << +left);
-		GIVEN("a non-negative left value, compared to a greater right value")
+		GIVEN("a non-negative left value")
 		{
 			auto const right = GENERATE(gen::values <right_type>({11, 15, 20, 100, std::numeric_limits <right_type>::max()}));
 			INFO("right: " << +right);
 			WHEN("compared to a greater rhs value")
 			{
-				auto const res(lb::is_equal(left, right));
-				THEN("is_equal returns false")
+				auto const res(lb::is_lt(left, right));
+				THEN("is_lt returns true")
 				{
-					REQUIRE(false == res);
+					REQUIRE(true == res);
 				}
 			}
 			
 			WHEN("the values are swapped")
 			{
-				auto const res(lb::is_equal(right, left));
-				THEN("is_equal returns false")
+				auto const res(lb::is_lt(right, left));
+				THEN("is_lt returns false")
 				{
 					REQUIRE(false == res);
 				}
@@ -122,19 +122,19 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			INFO("right: " << +right);
 			WHEN("compared to a the same rhs value")
 			{
-				auto const res(lb::is_equal(left, right));
-				THEN("is_equal returns true")
+				auto const res(lb::is_lt(left, right));
+				THEN("is_lt returns false")
 				{
-					REQUIRE(true == res);
+					REQUIRE(false == res);
 				}
 			}
 			
 			WHEN("the values are swapped")
 			{
-				auto const res(lb::is_equal(right, left));
-				THEN("is_equal returns true")
+				auto const res(lb::is_lt(right, left));
+				THEN("is_lt returns false")
 				{
-					REQUIRE(true == res);
+					REQUIRE(false == res);
 				}
 			}
 		}
@@ -143,7 +143,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 
 
 TEMPLATE_PRODUCT_TEST_CASE(
-	"Templated check_lte tests (signed and unsigned)",
+	"Templated is_lt tests (signed and unsigned)",
 	"[template]",
 	(
 		tpg <std::int8_t>::type,
@@ -178,17 +178,17 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			INFO("right: " << +right);
 			WHEN("compared to a non-negative rhs value")
 			{
-				auto const res(lb::is_equal(left, right));
-				THEN("is_equal returns false")
+				auto const res(lb::is_lt(left, right));
+				THEN("is_lt returns true")
 				{
-					REQUIRE(false == res);
+					REQUIRE(true == res);
 				}
 			}
 			
 			WHEN("the values are swapped")
 			{
-				auto const res(lb::is_equal(right, left));
-				THEN("is_equal returns false")
+				auto const res(lb::is_lt(right, left));
+				THEN("is_lt returns false")
 				{
 					REQUIRE(false == res);
 				}
@@ -208,17 +208,17 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			INFO("right: " << +right);
 			WHEN("compared to a greater rhs value")
 			{
-				auto const res(lb::is_equal(left, right));
-				THEN("is_equal returns equal")
+				auto const res(lb::is_lt(left, right));
+				THEN("is_lt returns true")
 				{
-					REQUIRE(false == res);
+					REQUIRE(true == res);
 				}
 			}
 			
 			WHEN("the values are swapped")
 			{
-				auto const res(lb::is_equal(right, left));
-				THEN("is_equal returns false")
+				auto const res(lb::is_lt(right, left));
+				THEN("is_lt returns false")
 				{
 					REQUIRE(false == res);
 				}
@@ -231,19 +231,19 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			INFO("right: " << +right);
 			WHEN("compared to the same rhs value")
 			{
-				auto const res(lb::is_equal(left, right));
-				THEN("is_equal returns true")
+				auto const res(lb::is_lt(left, right));
+				THEN("is_lt returns false")
 				{
-					REQUIRE(true == res);
+					REQUIRE(false == res);
 				}
 			}
 			
 			WHEN("the values are swapped")
 			{
-				auto const res(lb::is_equal(right, left));
-				THEN("is_equal returns true")
+				auto const res(lb::is_lt(right, left));
+				THEN("is_lt returns false")
 				{
-					REQUIRE(true == res);
+					REQUIRE(false == res);
 				}
 			}
 		}
@@ -252,7 +252,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 
 
 TEMPLATE_PRODUCT_TEST_CASE(
-	"Templated check_lte tests (signed)",
+	"Templated is_lt tests (signed)",
 	"[template]",
 	(
 		tpg <std::int8_t>::type,
@@ -283,17 +283,17 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			INFO("right: " << +right);
 			WHEN("compared to a greater rhs value")
 			{
-				auto const res(lb::is_equal(left, right));
-				THEN("is_equal returns false")
+				auto const res(lb::is_lt(left, right));
+				THEN("is_lt returns true")
 				{
-					REQUIRE(false == res);
+					REQUIRE(true == res);
 				}
 			}
 			
 			WHEN("the values are swapped")
 			{
-				auto const res(lb::is_equal(right, left));
-				THEN("is_equal returns false")
+				auto const res(lb::is_lt(right, left));
+				THEN("is_lt returns false")
 				{
 					REQUIRE(false == res);
 				}
@@ -314,19 +314,19 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			INFO("right: " << +right);
 			WHEN("compared to the same rhs value")
 			{
-				auto const res(lb::is_equal(left, right));
-				THEN("is_equal returns true")
+				auto const res(lb::is_lt(left, right));
+				THEN("is_lt returns false")
 				{
-					REQUIRE(true == res);
+					REQUIRE(false == res);
 				}
 			}
 			
 			WHEN("the values are swapped")
 			{
-				auto const res(lb::is_equal(right, left));
-				THEN("is_equal returns true")
+				auto const res(lb::is_lt(right, left));
+				THEN("is_lt returns false")
 				{
-					REQUIRE(true == res);
+					REQUIRE(false == res);
 				}
 			}
 		}

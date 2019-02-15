@@ -10,6 +10,7 @@ OBJECTS	=	algorithm.o \
 			bit_rle_codec.o \
 			fasta_reader.o \
 			int_vector.o \
+			is_lt.o \
 			is_lte.o \
 			is_equal.o \
 			main.o \
