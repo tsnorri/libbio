@@ -51,7 +51,7 @@ namespace libbio { namespace detail {
 			{
 				auto it(m_range->begin() + start);
 				for (std::size_t i(start); i < end; ++i)
-					(*m_fn)(*(m_range->begin() + i));
+					(*m_fn)(*(m_range->begin() + i), i);
 			}
 		}
 		
@@ -86,9 +86,10 @@ namespace libbio { namespace detail {
 			{
 				auto it(m_range->begin());
 				auto const end(m_range->end());
+				std::size_t idx(0);
 				while (it != end)
 				{
-					(*m_fn)(*it);
+					(*m_fn)(*it, idx++);
 					++it;
 				}
 			}
