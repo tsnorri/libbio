@@ -29,6 +29,62 @@ namespace libbio { namespace detail {
 	}
 	
 	
+	template <typename Fn>
+	class parallel_for_helper
+	{
+	protected:
+		Fn			*m_fn{};
+		std::size_t	m_count{};
+		std::size_t	m_stride{};
+		
+	protected:
+		void do_apply(std::size_t const idx)
+		{
+			// Call *m_fn for the current subrange.
+			auto const start(idx * m_stride);
+			auto const end(std::min(start + m_stride, m_count));
+			if (start < end)
+			{
+				for (std::size_t i(start); i < end; ++i)
+					(*m_fn)(i);
+			}
+		}
+		
+	public:
+		parallel_for_helper(Fn &fn, std::size_t count, std::size_t stride = 8):
+			m_fn(&fn),
+			m_count(count),
+			m_stride(stride)
+		{
+		}
+		
+		void apply()
+		{
+			typedef parallel_for_helper helper_type;
+			std::size_t const iterations(std::ceil(1.0 * m_count / m_stride));
+			
+			if (1 < iterations)
+			{
+				dispatch_apply_f(
+					iterations,
+#ifdef DISPATCH_APPLY_AUTO
+					DISPATCH_APPLY_AUTO,
+#else
+					dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
+#endif
+					this,
+					&call_member_function_dispatch_apply <helper_type, &helper_type::do_apply>
+				);
+			}
+			else
+			{
+				for (std::size_t i(0); i < m_count; ++i)
+					(*m_fn)(i);
+			}
+		}
+	};
+	
+	
 	template <
 		typename t_range,
 		typename Fn
@@ -138,6 +194,29 @@ namespace libbio {
 		detail::parallel_for_each_helper helper(range, fn, stride);
 		helper.apply();
 #endif
+	}
+	
+	
+	template <typename Fn>
+	void parallel_for(
+		std::size_t const count,
+		Fn && fn
+	)
+	{
+		detail::parallel_for_helper helper(fn, count);
+		helper.apply();
+	}
+	
+	
+	template <typename Fn>
+	void parallel_for(
+		std::size_t const count,
+		std::size_t const stride,
+		Fn && fn
+	)
+	{
+		detail::parallel_for_helper helper(fn, count, stride);
+		helper.apply();
 	}
 	
 	
