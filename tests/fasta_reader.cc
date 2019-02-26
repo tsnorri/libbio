@@ -45,7 +45,7 @@ SCENARIO("FASTA files can be parsed")
 {
 	GIVEN("A test file")
 	{
-		libbio::mmap_handle handle;
+		libbio::mmap_handle <char> handle;
 		handle.open("test-files/test.fa");
 		
 		WHEN("the file is parsed")

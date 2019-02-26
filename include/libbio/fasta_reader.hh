@@ -30,6 +30,9 @@ namespace libbio {
 	
 	class fasta_reader
 	{
+	public:
+		typedef mmap_handle <char> handle_type;
+		
 	protected:
 		struct fsm
 		{
@@ -47,7 +50,7 @@ namespace libbio {
 		void report_unexpected_character(char const *current_character, int const current_state);
 		
 	public:
-		bool parse(mmap_handle &handle, fasta_reader_delegate &delegate);
+		bool parse(handle_type &handle, fasta_reader_delegate &delegate);
 	};
 }
 

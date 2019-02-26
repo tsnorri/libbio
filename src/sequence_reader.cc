@@ -70,7 +70,7 @@ namespace libbio { namespace sequence_reader { namespace detail {
 		fasta_reader reader;
 		delegate cb(container->sequences());
 		
-		mmap_handle fasta_handle;
+		mmap_handle <char> fasta_handle;
 		fasta_handle.open(path);
 		reader.parse(fasta_handle, cb);
 	}

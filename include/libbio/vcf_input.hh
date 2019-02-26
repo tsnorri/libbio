@@ -111,23 +111,26 @@ namespace libbio {
 
 	class vcf_mmap_input final : public vcf_input
 	{
+	public:
+		typedef mmap_handle <char> handle_type;
+		
 	protected:
-		mmap_handle const			*m_handle{nullptr};
-		std::size_t					m_pos{0};
-		std::size_t					m_range_start_lineno{0};
-		std::size_t					m_range_start_offset{0};
-		std::size_t					m_range_length{0};
+		handle_type const	*m_handle{nullptr};
+		std::size_t			m_pos{0};
+		std::size_t			m_range_start_lineno{0};
+		std::size_t			m_range_start_offset{0};
+		std::size_t			m_range_length{0};
 	
 	public:
 		vcf_mmap_input() = default;
 		
-		vcf_mmap_input(mmap_handle const &handle):
+		vcf_mmap_input(handle_type const &handle):
 			m_handle(&handle)
 		{
 			reset_range();
 		}
 		
-		mmap_handle const &handle() const { return *m_handle; }
+		handle_type const &handle() const { return *m_handle; }
 		
 		virtual bool getline(std::string_view &dst) override;
 		virtual void store_first_variant_offset(std::size_t const lineno) override;

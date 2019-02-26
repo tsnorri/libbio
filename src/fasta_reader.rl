@@ -27,7 +27,7 @@ namespace libbio
 	}
 	
 	
-	bool fasta_reader::parse(mmap_handle &handle, fasta_reader_delegate &delegate)
+	bool fasta_reader::parse(handle_type &handle, fasta_reader_delegate &delegate)
 	{
 		bool retval(true);
 		int cs(0);

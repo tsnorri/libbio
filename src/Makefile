@@ -6,7 +6,6 @@ include ../common.mk
 OBJECTS		=	assert.o \
 				fasta_reader.o \
 				file_handling.o \
-				mmap_handle.o \
 				progress_bar.o \
 				progress_indicator.o \
 				sequence_container.o \

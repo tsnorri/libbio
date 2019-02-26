@@ -65,8 +65,11 @@ namespace libbio { namespace sequence_reader {
 	{
 		friend std::ostream &operator<<(std::ostream &, mmap_sequence_container const &);
 
+	public:
+		typedef libbio::mmap_handle <char> handle_type;
+
 	protected:
-		libbio::mmap_handle									m_handle;
+		handle_type											m_handle;
 		std::size_t											m_sequence_length;
 		std::size_t											m_sequence_count;
 		
@@ -79,9 +82,12 @@ namespace libbio { namespace sequence_reader {
 	class multiple_mmap_sequence_container final : public sequence_container
 	{
 		friend std::ostream &operator<<(std::ostream &, multiple_mmap_sequence_container const &);
-
+		
+	public:
+		typedef libbio::mmap_handle <char> handle_type;
+		
 	protected:
-		std::vector <libbio::mmap_handle>					m_handles;
+		std::vector <handle_type>							m_handles;
 		
 	public:
 		void open_file(std::string const &path) { auto &handle(m_handles.emplace_back()); handle.open(path); }
