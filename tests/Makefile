@@ -15,6 +15,7 @@ OBJECTS	=	algorithm.o \
 			is_equal.o \
 			main.o \
 			matrix.o \
+			merge_projected.o \
 			packed_matrix.o \
 			packed_vector.o \
 			radix_sort.o \

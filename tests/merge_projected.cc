@@ -1,0 +1,52 @@
+/*
+ * Copyright (c) 2019 Tuukka Norri
+ * This code is licensed under MIT license (see LICENSE for details).
+ */
+
+#include <catch2/catch.hpp>
+#include <libbio/algorithm/merge_projected.hh>
+#include <range/v3/all.hpp>
+
+namespace gen	= Catch::Generators;
+namespace lb	= libbio;
+
+
+SCENARIO("merge_projected can merge containers")
+{
+	GIVEN("two vectors of values")
+	{
+		typedef std::uint32_t				input_type;
+		typedef input_type					output_type;
+		typedef std::vector <input_type>	input_vector;
+		typedef input_vector				output_vector;
+		
+		auto const &tup = GENERATE(gen::table({
+			std::make_tuple(input_vector({1, 3, 5, 7, 9}),	input_vector({0, 2, 4, 6, 8}),	output_vector({0, 1, 2, 3, 4, 5, 6, 7, 8, 9})),
+			std::make_tuple(input_vector({1, 3, 10, 7}),	input_vector({0, 2, 4, 6, 8}),	output_vector({0, 1, 2, 3, 4, 6, 8}))
+		}));
+		
+		WHEN("the function is called")
+		{
+			auto const & [lhs, rhs, expected] = tup;
+			output_vector dst;
+			
+			lb::merge_projected(
+				lhs,
+				rhs,
+				std::back_inserter(dst),
+				[](input_type val, bool &should_continue) -> output_type {
+					if (val < 10)
+						return val;
+					
+					should_continue = false;
+					return 0;
+				}
+			);
+			
+			THEN("the return type size matches the expected size")
+			{
+				REQUIRE(dst == expected);
+			}
+		}
+	}
+}

@@ -6,6 +6,7 @@
 #ifndef LIBBIO_ALGORITHM_HH
 #define LIBBIO_ALGORITHM_HH
 
+#include <libbio/algorithm/merge_projected.hh>
 #include <libbio/algorithm/min_max.hh>
 #include <libbio/algorithm/reverse_bits.hh>
 #include <libbio/algorithm/set_count.hh>
