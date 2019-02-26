@@ -16,10 +16,6 @@ namespace libbio { namespace detail {
 	template <typename t_lhs_proj_type, typename t_rhs_proj_type>
 	class merge_projected_helper
 	{
-	protected:
-		t_lhs_proj_type m_prev_l{};
-		t_rhs_proj_type m_prev_r{};
-		
 	public:
 		merge_projected_helper() = default;
 		
@@ -65,7 +61,7 @@ namespace libbio { namespace detail {
 				{
 					if (next_l < next_r)
 					{
-						output_lhs(next_l, output_it);
+						*output_it = *l_begin;
 						++l_begin;
 						if (l_begin == l_end)
 						{
@@ -76,7 +72,7 @@ namespace libbio { namespace detail {
 					}
 					else
 					{
-						output_rhs(next_r, output_it);
+						*output_it = *r_begin;
 						++r_begin;
 						if (r_begin == r_end)
 						{
@@ -90,7 +86,7 @@ namespace libbio { namespace detail {
 			
 			while (continue_l)
 			{
-				output_lhs(next_l, output_it);
+				*output_it = *l_begin;
 				++l_begin;
 				if (l_begin == l_end)
 					break;
@@ -100,34 +96,13 @@ namespace libbio { namespace detail {
 			
 			while (continue_r)
 			{
-				output_rhs(next_r, output_it);
+				*output_it = *r_begin;
 				++r_begin;
 				if (r_begin == r_end)
 					break;
 				
 				next_r = proj_rhs(*r_begin, continue_r);
 			}
-		}
-		
-		
-	protected:
-		template <typename t_output_it>
-		inline void output_lhs(t_lhs_proj_type const &value, t_output_it &output_it)
-		{
-			*output_it = value;
-			libbio_assert_lte(m_prev_l, value);
-			libbio_assert_lte(m_prev_r, value);
-			m_prev_l = value;
-		}
-		
-		
-		template <typename t_output_it>
-		inline void output_rhs(t_rhs_proj_type const &value, t_output_it &output_it)
-		{
-			*output_it = value;
-			libbio_assert_lte(m_prev_l, value);
-			libbio_assert_lte(m_prev_r, value);
-			m_prev_r = value;
 		}
 	};
 }}
