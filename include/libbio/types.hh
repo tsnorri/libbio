@@ -32,7 +32,9 @@ namespace libbio {
 		GQ,
 		PS,
 		PQ,
-		MQ
+		MQ,
+		DS,
+		GL
 	};
 	
 	enum { NULL_ALLELE = std::numeric_limits <std::uint8_t>::max() };

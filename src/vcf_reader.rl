@@ -133,7 +133,7 @@ namespace libbio {
 	void vcf_reader::report_unexpected_character(char const *current_character, int const current_state)
 	{
 		std::cerr
-		<< "Unexpected character '" << *current_character << "' at " << m_lineno << ':' << (current_character - m_line_start)
+		<< "Unexpected character '" << *current_character << "' (" << +(*current_character) << ") at " << m_lineno << ':' << (current_character - m_line_start)
 		<< ", state " << current_state << '.' << std::endl;
 
 		auto const start(m_fsm.pe - m_fsm.p < 128 ? m_fsm.p : m_fsm.pe - 128);
@@ -284,7 +284,7 @@ namespace libbio {
 					{
 						libbio_always_assert_msg(m_format.size() == m_format_idx, "Not all fields present in the sample");
 						m_format_idx = 0;
-						fgoto sample_rec_f;
+						fgoto sample_rec_start_f;
 					}
 					
 					case '\n':
@@ -399,14 +399,16 @@ namespace libbio {
 			info_missing	= '.';
 			info			= info_missing | (info_part (';' info_part)*);
 			
-			# FIXME: handle other formats.
+			# FIXME: handle other formats. Also the handling should be based on the headers since the types may be redefined.
 			format_gt	= ('GT') @{ m_format.emplace_back(format_field::GT); };
 			format_dp	= ('DP') @{ m_format.emplace_back(format_field::DP); };
 			format_gq	= ('GQ') @{ m_format.emplace_back(format_field::GQ); };
 			format_ps	= ('PS') @{ m_format.emplace_back(format_field::PS); };
 			format_pq	= ('PQ') @{ m_format.emplace_back(format_field::PQ); };
 			format_mq	= ('MQ') @{ m_format.emplace_back(format_field::MQ); };
-			format_part	= format_gt | format_dp | format_gq | format_ps | format_pq | format_mq;
+			format_ds	= ('DS') @{ m_format.emplace_back(format_field::DS); };
+			format_gl	= ('GL') @{ m_format.emplace_back(format_field::GL); };
+			format_part	= format_gt | format_dp | format_gq | format_ps | format_pq | format_mq | format_ds | format_gl;
 			format		= ((format_part (':' format_part)*) >{ m_format.clear(); });
 			
 			# Genotype field in sample.
@@ -431,6 +433,9 @@ namespace libbio {
 				>{
 					m_idx = 0;
 				};
+
+			float			= '-'? ((digit+) | (digit* '.' digit+ ('e' [+\-] digit+)?));
+			float_list		= float (',' float)*;
 			
 			# FIXME: add actions.
 			sample_dp		= (digit+);
@@ -438,6 +443,8 @@ namespace libbio {
 			sample_ps		= (digit+);
 			sample_pq		= (digit+);
 			sample_mq		= (digit+);
+			sample_ds		= (float);
+			sample_gl		= (float_list);
 			
 			sep				= '\t';		# Field separator
 			ssep			= [\t\n:];	# Sample separator
@@ -539,7 +546,7 @@ namespace libbio {
 			format_f :=
 				(format sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ALL, fentry(sample_rec_f), cb);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ALL, fentry(sample_rec_start_f), cb);
 				}
 				$err(error);
 			
@@ -550,13 +557,19 @@ namespace libbio {
 			sample_ps_f := ((sample_ps) ssep @(end_sample_field)) $err(error);
 			sample_pq_f := ((sample_pq) ssep @(end_sample_field)) $err(error);
 			sample_mq_f := ((sample_mq) ssep @(end_sample_field)) $err(error);
+			sample_ds_f := ((sample_ds) ssep @(end_sample_field)) $err(error);
+			sample_gl_f := ((sample_gl) ssep @(end_sample_field)) $err(error);
 			
 			# Sample record
+			sample_rec_start_f := "" >to{
+				// Update the sample index.
+				// Index 0 is reserved for the reference.
+				++m_sample_idx;
+				fgoto sample_rec_f;
+			};
+
 			sample_rec_f := "" >to{
 				libbio_always_assert_msg(m_format_idx < m_format.size(), "Format does not match the sample");
-
-				// Sample index 0 is reserved for the reference.
-				++m_sample_idx;
 
 				// Parse according to the format field.
 				auto const idx(m_format_idx);
@@ -581,6 +594,12 @@ namespace libbio {
 						
 					case format_field::MQ:
 						fgoto sample_mq_f;
+
+					case format_field::DS:
+						fgoto sample_ds_f;
+
+					case format_field::GL:
+						fgoto sample_gl_f;
 						
 					default:
 						libbio_fail("Unexpected format value");
@@ -610,6 +629,8 @@ namespace libbio {
 						fgoto sample_ps_f;
 						fgoto sample_pq_f;
 						fgoto sample_mq_f;
+						fgoto sample_ds_f;
+						fgoto sample_gl_f;
 					}
 				};
 			
