@@ -12,6 +12,8 @@
 #include <libbio/cxxcompat.hh>
 #include <libbio/infix_ostream_fn.hh>
 #include <libbio/types.hh>
+#include <ostream>
+#include <range/v3/all.hpp>
 #include <vector>
 
 
@@ -78,7 +80,7 @@ namespace libbio {
 		std::size_t					m_variant_index{0};
 		std::size_t					m_sample_count{0};
 		std::size_t					m_pos{0};
-		std::size_t					m_qual{0};
+		std::size_t					m_qual{SIZE_MAX};
 		std::size_t					m_lineno{0};
 		
 	public:
@@ -107,6 +109,7 @@ namespace libbio {
 		std::size_t pos() const											{ return m_pos; }
 		std::size_t zero_based_pos() const;
 		std::size_t qual() const										{ return m_qual; }
+		sv_type alt_sv_type(std::uint8_t const alt_idx)					{ return m_alt_sv_types[alt_idx]; }
 		std::vector <sv_type> const &alt_sv_types() const				{ return m_alt_sv_types; }
 		sample_field const &sample(std::size_t const sample_idx) const	{ libbio_always_assert(sample_idx <= m_sample_count); return m_samples.at(sample_idx); }
 		std::vector <sample_field> const &samples() const { return m_samples; }
@@ -163,12 +166,15 @@ namespace libbio {
 		std::vector <t_string> const &ids() const	{ return m_id; }
 		t_string const &chrom_id() const			{ return m_chrom_id; }
 		t_string const &ref() const					{ return m_ref; }
+		std::uint8_t const alt_count() const		{ return m_alts.size(); }
 		
 		void reset() { variant_base::reset(); m_alts.clear(); m_id.clear(); };
 		void set_chrom_id(std::string_view const &chrom_id) { m_chrom_id = chrom_id; }
 		void set_ref(std::string_view const &ref) { m_ref = ref; }
 		void set_id(std::string_view const &id, std::size_t const pos);
 		void set_alt(std::string_view const &alt, std::size_t const pos, bool const is_complex);
+		
+		void output_vcf_record(std::ostream &os) const;
 	};
 	
 	
@@ -208,6 +214,61 @@ namespace libbio {
 			os << '\t' << sample;
 		
 		return os;
+	}
+	
+	
+	template <typename t_string>
+	void variant_tpl <t_string>::output_vcf_record(std::ostream &os) const
+	{
+		// #CHROM, POS
+		os
+			<< m_chrom_id << '\t'
+			<< pos() << '\t';
+		
+		// ID
+		std::copy(
+			m_id.begin(),
+			m_id.end(),
+			boost::make_function_output_iterator(infix_ostream_fn <t_string>(os, ','))
+		);
+		os << '\t';
+		
+		// REF
+		os << m_ref << '\t';
+		
+		// ALT
+		std::copy(
+			m_alts.begin(),
+			m_alts.end(),
+			boost::make_function_output_iterator(infix_ostream_fn <t_string>(os, ','))
+		);
+		os << '\t';
+		
+		// QUAL
+		if (SIZE_MAX == m_qual)
+			os << ".\t";
+		else
+			os << m_qual << '\t';
+		
+		// FILTER
+		// FIXME: store the value.
+		os << "PASS\t";
+		
+		// FORMAT
+		// FIXME: store the format.
+		os << "GT";
+		
+		// Samples.
+		// FIXME: other fields in addition to GT.
+		for (auto const &sample : m_samples)
+		{
+			os << '\t';
+			auto const &gt_range(sample.get_genotype_range());
+			os << gt_range.front().alt;
+			for (auto const &gt_field : gt_range | ranges::view::drop(1))
+				os << (gt_field.is_phased ? '|' : '/') << gt_field.alt;
+		}
+		os << '\n';
 	}
 	
 	
