@@ -1,0 +1,11 @@
+# Copyright (c) 2019 Tuukka Norri
+# This code is licensed under MIT license (see LICENSE for details).
+
+package		"vcfcat"
+version		"0.1"
+purpose		"Read and output a VCF file; mainly for testing the VCF parser."
+description	"Outputs the input variant file as parsed. Not all field values are currently stored."
+usage		"vcfcat --input=input.vcf [ --output=output.vcf ]"
+
+option		"input"		i	"Variant call file path"				string	typestr = "filename"	required
+option		"output"	o	"Output file path, defaults to stdout"	string	typestr = "filename"	optional
