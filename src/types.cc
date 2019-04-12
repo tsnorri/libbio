@@ -45,4 +45,59 @@ namespace libbio {
 				return "(unexpected value)";
 		}
 	}
+	
+	
+	void output_vcf_value(std::ostream &stream, std::int32_t const value)
+	{
+		switch (value)
+		{
+			case VCF_NUMBER_UNKNOWN:
+				stream << '.';
+				break;
+			case VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE:
+				stream << 'A';
+				break;
+			case VCF_NUMBER_ONE_PER_ALLELE:
+				stream << 'R';
+				break;
+			case VCF_NUMBER_ONE_PER_GENOTYPE:
+				stream << 'G';
+				break;
+			default:
+				stream << value;
+				break;
+		}
+	}
+	
+	
+	void output_vcf_value(std::ostream &os, vcf_metadata_value_type const vt)
+	{
+		switch (vt)
+		{
+			case UNKNOWN:
+				os << '.';
+				break;
+			case NOT_PROCESSED:
+				os << "(Not processed)";
+				break;
+			case INTEGER:
+				os << "Integer";
+				break;
+			case FLOAT:
+				os << "Float";
+				break;
+			case CHARACTER:
+				os << "Character";
+				break;
+			case STRING:
+				os << "String";
+				break;
+			case FLAG:
+				os << "Flag";
+				break;
+			default:
+				os << "(Unknown value type)";
+				break;
+		}
+	}
 }
