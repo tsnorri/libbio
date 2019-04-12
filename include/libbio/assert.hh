@@ -108,7 +108,7 @@ namespace libbio { namespace detail {
 
 		assertion_failure_cause(char const *file_, int line_):
 			file(file_),
-			what(copy_format_cstr(boost::format("%s:%d") % file % line_)),
+			what(copy_format_cstr(boost::format("%s:%d") % file % line_), buffer_base::zero_terminated_tag()),
 			line(line_)
 		{
 		}
@@ -116,7 +116,7 @@ namespace libbio { namespace detail {
 		assertion_failure_cause(char const *file_, int line_, std::string &&reason_):
 			reason(std::move(reason_)),
 			file(file_),
-			what(copy_format_cstr(boost::format("%s:%d: %s") % file % line_ % reason)),
+			what(copy_format_cstr(boost::format("%s:%d: %s") % file % line_ % reason), buffer_base::zero_terminated_tag()),
 			line(line_)
 		{
 		}
