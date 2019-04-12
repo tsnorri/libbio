@@ -21,7 +21,7 @@ clean-all: clean
 smoke-test:
 	$(RM) -rf smoke-test
 	$(MKDIR) smoke-test
-	cd include/libbio && find . -name '*.hh' | while read x; \
+	cd include/libbio && find . -name '*.hh' ! -name '*_decl.hh' ! -name '*_def.hh' | while read x; \
 	do \
 		path="$${x:2}"; \
 		flattened="$${path//[\/]/_}"; \
