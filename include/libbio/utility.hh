@@ -6,6 +6,7 @@
 #ifndef LIBBIO_UTIL_HH
 #define LIBBIO_UTIL_HH
 
+#include <libbio/utility/compare_strings_transparent.hh>
 #include <libbio/utility/fill_bit_pattern.hh>
 #include <libbio/utility/is_equal.hh>
 #include <libbio/utility/is_lt.hh>
