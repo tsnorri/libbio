@@ -1,7 +1,7 @@
 -include ../local.mk
 include ../common.mk
 
-.PRECIOUS: vcf_reader.cc
+.PRECIOUS: vcf_reader_parser.cc vcf_reader_header_parser.cc vcf_genotype_field_gt_parser.cc
 
 OBJECTS		=	assert.o \
 				fasta_reader.o \
@@ -12,9 +12,13 @@ OBJECTS		=	assert.o \
 				sequence_reader.o \
 				types.o \
 				utility.o \
-				variant.o \
+				vcf_genotype_field_gt_parser.o \
 				vcf_input.o \
-				vcf_reader.o
+				vcf_metadata.o \
+				vcf_reader_header_parser.o \
+				vcf_reader_parser.o \
+				vcf_reader.o \
+				vcf_subfield.o
 
 all: libbio.a
 

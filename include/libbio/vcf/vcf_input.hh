@@ -19,7 +19,7 @@ namespace libbio {
 	{
 	protected:
 		std::size_t					m_first_variant_offset{0};
-		std::size_t					m_first_variant_lineno{0};
+		std::size_t					m_first_variant_lineno{1};
 		
 	public:
 		vcf_input() = default;
@@ -34,6 +34,7 @@ namespace libbio {
 		virtual char const *buffer_start() const { return nullptr; }
 		virtual char const *first_variant_start() const { return nullptr; }
 		virtual char const *buffer_end() const { return nullptr; }
+		virtual void set_position(std::size_t const pos) {}
 		virtual void set_range_start_lineno(std::size_t const lineno) {}
 		virtual void set_range_start_offset(std::size_t const offset) {}
 		virtual void set_range_length(std::size_t) {}
@@ -117,7 +118,7 @@ namespace libbio {
 	protected:
 		handle_type const	*m_handle{nullptr};
 		std::size_t			m_pos{0};
-		std::size_t			m_range_start_lineno{0};
+		std::size_t			m_range_start_lineno{1};
 		std::size_t			m_range_start_offset{0};
 		std::size_t			m_range_length{0};
 	
@@ -140,6 +141,7 @@ namespace libbio {
 		virtual char const *first_variant_start() const override { return m_handle->data() + m_first_variant_offset; }
 		virtual char const *buffer_end() const override { return m_handle->data() + m_handle->size(); }
 		void reset_range();
+		virtual void set_position(std::size_t const pos) override { m_pos = pos; }
 		virtual void set_range_start_lineno(std::size_t const lineno) override { m_range_start_lineno = lineno; }
 		virtual void set_range_start_offset(std::size_t const offset) override { m_range_start_offset = offset; }
 		virtual void set_range_length(std::size_t const length) override { m_range_length = length; }

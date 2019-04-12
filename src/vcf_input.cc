@@ -3,8 +3,9 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <libbio/vcf_input.hh>
-#include <libbio/vcf_reader.hh>
+#include <libbio/vcf/variant.hh>
+#include <libbio/vcf/vcf_input.hh>
+#include <libbio/vcf/vcf_reader.hh>
 
 
 namespace ios = boost::iostreams;
