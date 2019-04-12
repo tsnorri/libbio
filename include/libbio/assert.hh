@@ -34,10 +34,19 @@
 #define libbio_always_assert_eq(X, Y)		do { \
 		if (!::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X == Y)); \
 	} while (false)
+#define libbio_always_assert_neq(X, Y)		do { \
+		if (::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X != Y)); \
+	} while (false)
 #define libbio_always_assert_msg(X, ...)	do { \
 		if (!(X)) { \
 			std::stringstream stream; \
 			::libbio::detail::assertion_failure(__FILE__, __LINE__, stream, __VA_ARGS__); \
+		} \
+	} while (false)
+#define libbio_always_assert_lt_msg(X, Y, ...)	do { \
+		if (!::libbio::is_lt(X, Y)) { \
+			std::stringstream stream; \
+			::libbio::detail::assertion_failure(__FILE__, __LINE__, stream, __VA_ARGS__, ": ", libbio_stringify(X < Y), '.'); \
 		} \
 	} while (false)
 #define libbio_always_assert_eq_msg(X, Y, ...)	do { \
