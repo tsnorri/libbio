@@ -45,7 +45,7 @@ namespace libbio {
 	{
 		// Stable LSB radix sort, requires n + O(1) extra space.
 		template <typename t_container, typename t_access>
-		static void sort(
+		static std::enable_if_t <std::is_invocable_v <t_access, typename t_container::value_type>, void> sort(
 			t_container &container,
 			t_container &buffer,
 			t_access &&access,
@@ -93,7 +93,7 @@ namespace libbio {
 		)
 		{
 			detail::identity_access <typename t_container::value_type> access;
-			sort(container, buffer, access, bit_limit);
+			radix_sort::sort(container, buffer, access, bit_limit);
 		}
 		
 		
@@ -109,7 +109,7 @@ namespace libbio {
 			for (auto it(container.cbegin()), end(container.cend()); it != end; ++it)
 				lz_count = std::min(lz_count, bits::leading_zeros(access(*it)));
 			
-			sort(container, buffer, std::forward <t_access>(access), (sizeof(typename t_container::value_type) * CHAR_BIT) - lz_count);
+			radix_sort::sort(container, buffer, std::forward <t_access>(access), (sizeof(typename t_container::value_type) * CHAR_BIT) - lz_count);
 		}
 		
 		
@@ -120,7 +120,7 @@ namespace libbio {
 		)
 		{
 			detail::identity_access <typename t_container::value_type> access;
-			sort(container, buffer, access);
+			radix_sort::sort(container, buffer, access);
 		}
 	};
 }
