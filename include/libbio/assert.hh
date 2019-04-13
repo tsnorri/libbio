@@ -46,6 +46,12 @@
 			::libbio::detail::assertion_failure(__FILE__, __LINE__, stream, __VA_ARGS__, ": ", libbio_stringify(X == Y), '.'); \
 		} \
 	} while (false)
+#define libbio_always_assert_lte_msg(X, Y, ...)	do { \
+		if (!::libbio::is_lte(X, Y)) { \
+			std::stringstream stream; \
+			::libbio::detail::assertion_failure(__FILE__, __LINE__, stream, __VA_ARGS__, ": ", libbio_stringify(X <= Y), '.'); \
+		} \
+	} while (false)
 
 #ifdef LIBBIO_NDEBUG
 #	define libbio_assert(X)
