@@ -9,7 +9,7 @@ OBJECTS		=	cmdline.o \
 all: vcfcat
 
 clean:
-	$(RM) $(OBJECTS) vcfcat
+	$(RM) $(OBJECTS) vcfcat cmdline.h
 
 vcfcat: $(OBJECTS) ../src/libbio.a
 	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) ../src/libbio.a $(BOOST_LIBS)
