@@ -27,7 +27,7 @@ namespace {
 
 namespace libbio {
 	
-	bool vcf_info_field_interface::output_vcf_value(std::ostream &stream, variant_base const &var, char const *sep) const
+	bool vcf_info_field_base::output_vcf_value(std::ostream &stream, variant_base const &var, char const *sep) const
 	{
 		libbio_assert(m_metadata);
 		if (var.m_assigned_info_fields[m_metadata->get_index()])

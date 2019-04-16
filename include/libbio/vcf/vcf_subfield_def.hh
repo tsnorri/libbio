@@ -14,13 +14,13 @@
 
 namespace libbio {
 	
-	void vcf_info_field_interface::prepare(variant_base &dst) const
+	void vcf_info_field_base::prepare(variant_base &dst) const
 	{
 		reset(dst.m_info.get());
 	}
 	
 	
-	void vcf_info_field_interface::parse_and_assign(std::string_view const &sv, transient_variant &dst) const
+	void vcf_info_field_base::parse_and_assign(std::string_view const &sv, transient_variant &dst) const
 	{
 		libbio_assert(m_metadata);
 		auto const did_assign(parse_and_assign(sv, dst, dst.m_info.get()));
@@ -28,7 +28,7 @@ namespace libbio {
 	}
 	
 	
-	void vcf_info_field_interface::assign_flag(transient_variant &dst) const
+	void vcf_info_field_base::assign_flag(transient_variant &dst) const
 	{
 		auto const vt(value_type());
 		if (vcf_metadata_value_type::NOT_PROCESSED == vt)
@@ -43,13 +43,13 @@ namespace libbio {
 	}
 	
 	
-	void vcf_genotype_field_interface::prepare(variant_sample &dst) const
+	void vcf_genotype_field_base::prepare(variant_sample &dst) const
 	{
 		reset(dst.m_sample_data.get());
 	}
 	
 	
-	void vcf_genotype_field_interface::parse_and_assign(std::string_view const &sv, variant_sample &dst) const
+	void vcf_genotype_field_base::parse_and_assign(std::string_view const &sv, variant_sample &dst) const
 	{
 		parse_and_assign(sv, dst, dst.m_sample_data.get());
 	}
@@ -385,7 +385,7 @@ namespace libbio {
 	// Base classes for the generic field types, implement byte_size().
 	template <std::int32_t t_number, vcf_metadata_value_type t_metadata_value_type>
 	class vcf_generic_info_field_base :
-		public vcf_info_field_base,
+		public vcf_storable_info_field_base,
 		public vcf_generic_field_parser <t_number, t_metadata_value_type>
 	{
 	public:
@@ -402,14 +402,14 @@ namespace libbio {
 		// Handle boolean values.
 		virtual bool assign(std::byte *mem) const override
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, m_offset);
+			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, m_offset);
 			field_access::add_value(mem + m_offset, 0);
 			return true;
 		};
 		
 		virtual bool parse_and_assign(std::string_view const &sv, variant_base &var, std::byte *mem) const override
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, m_offset);
+			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, m_offset);
 			parser_type::parse_and_assign(sv, mem + m_offset);
 			return true;
 		}
@@ -417,7 +417,7 @@ namespace libbio {
 	
 	template <std::int32_t t_number, vcf_metadata_value_type t_metadata_value_type>
 	class vcf_generic_genotype_field_base :
-		public vcf_genotype_field_base,
+		public vcf_storable_genotype_field_base,
 		public vcf_generic_field_parser <t_number, t_metadata_value_type>
 	{
 	public:
@@ -432,7 +432,7 @@ namespace libbio {
 		
 		virtual bool parse_and_assign(std::string_view const &sv, variant_sample &var, std::byte *mem) const override
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, m_offset);
+			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, m_offset);
 			parser_type::parse_and_assign(sv, mem + m_offset);
 			return true;
 		}
@@ -460,33 +460,33 @@ namespace libbio {
 		// Construct the type in the memory block. The additional parameters are passed to the constructor if needed.
 		virtual void construct_ds(std::byte *mem, std::uint16_t const alt_count) const override
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::construct_ds(mem + this->m_offset, alt_count, *this->m_metadata);
 		}
 		
 		// Destruct the type in the memory block (if needed).
 		virtual void destruct_ds(std::byte *mem) const override
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::destruct_ds(mem + this->m_offset);
 		}
 		
 		// Copy the data structures.
 		virtual void copy_ds(std::byte const *src, std::byte *dst) const override
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::copy_ds(src + this->m_offset, dst + this->m_offset);
 		}
 		
 		typename field_access::value_type &access_ds(std::byte *mem) const
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			return field_access::access_ds(mem + this->m_offset);
 		}
 		
 		virtual void reset(std::byte *mem) const override
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::reset_ds(mem + this->m_offset);
 		}
 		
@@ -497,7 +497,7 @@ namespace libbio {
 
 		virtual void output_vcf_value(std::ostream &stream, typename base_class::container_type const &ct) const override
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::output_vcf_value(stream, this->buffer_start(ct) + this->m_offset);
 		}
 		
@@ -557,7 +557,7 @@ namespace libbio {
 	
 	
 	// Specialization for the GT field.
-	class vcf_genotype_field_gt final : public vcf_genotype_field_interface
+	class vcf_genotype_field_gt final : public vcf_genotype_field_base
 	{
 	protected:
 		typedef std::vector <sample_genotype> vector_type;

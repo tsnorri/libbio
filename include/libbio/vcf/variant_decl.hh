@@ -44,7 +44,7 @@ namespace libbio {
 	class variant_sample
 	{
 		friend class vcf_reader;
-		friend class vcf_genotype_field_interface;
+		friend class vcf_genotype_field_base;
 		friend class vcf_genotype_field_gt;
 		
 		template <std::int32_t, vcf_metadata_value_type>
@@ -60,7 +60,7 @@ namespace libbio {
 	class variant_base
 	{
 		friend class vcf_reader;
-		friend class vcf_info_field_interface;
+		friend class vcf_info_field_base;
 		friend class variant_format_access;
 		friend class transient_variant_format_access;
 		

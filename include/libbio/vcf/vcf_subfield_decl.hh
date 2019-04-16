@@ -21,13 +21,13 @@ namespace libbio {
 	
 	
 	// Base class and interface for field descriptions (specified by ##INFO, ##FORMAT).
-	class vcf_subfield_interface
+	class vcf_subfield_base
 	{
 		friend class vcf_metadata_format;
 		friend class vcf_metadata_formatted_field;
 		
 	public:
-		virtual ~vcf_subfield_interface() {}
+		virtual ~vcf_subfield_base() {}
 
 		// Value type according to the VCF header.
 		virtual vcf_metadata_value_type value_type() const = 0;
@@ -60,7 +60,7 @@ namespace libbio {
 		virtual void copy_ds(std::byte const *src, std::byte *dst) const = 0;
 		
 		// Create a clone of this object.
-		virtual vcf_subfield_interface *clone() const = 0;
+		virtual vcf_subfield_base *clone() const = 0;
 		
 		virtual inline std::uint16_t get_offset() const { return 0; }
 		virtual inline void set_offset(std::uint16_t) {};
@@ -68,8 +68,7 @@ namespace libbio {
 	
 	
 	// Interface for info field descriptions.
-	// FIXME: rename since this actually has non-virtual data members.
-	class vcf_info_field_interface : public virtual vcf_subfield_interface
+	class vcf_info_field_base : public virtual vcf_subfield_base
 	{
 		friend class vcf_reader;
 		
@@ -88,7 +87,7 @@ namespace libbio {
 		inline void prepare(variant_base &dst) const;
 		inline void parse_and_assign(std::string_view const &sv, transient_variant &dst) const;
 		inline void assign_flag(transient_variant &dst) const;
-		virtual vcf_info_field_interface *clone() const override = 0;
+		virtual vcf_info_field_base *clone() const override = 0;
 	public:
 		vcf_metadata_info *get_metadata() const override { return m_metadata; }
 		
@@ -101,8 +100,7 @@ namespace libbio {
 	
 	
 	// Interface for genotype field descriptions.
-	// FIXME: rename since this actually has non-virtual data members.
-	class vcf_genotype_field_interface : public virtual vcf_subfield_interface
+	class vcf_genotype_field_base : public virtual vcf_subfield_base
 	{
 		friend class vcf_reader;
 
@@ -117,7 +115,7 @@ namespace libbio {
 		// For use with vcf_reader and variant classes:
 		inline void prepare(variant_sample &dst) const;
 		inline void parse_and_assign(std::string_view const &sv, variant_sample &dst) const;
-		virtual vcf_genotype_field_interface *clone() const override = 0;
+		virtual vcf_genotype_field_base *clone() const override = 0;
 	public:
 		vcf_metadata_format *get_metadata() const override { return m_metadata; }
 		
@@ -127,7 +125,7 @@ namespace libbio {
 	
 	
 	// Base class for all field types that have an offset. (I.e. not GT.)
-	class vcf_subfield_base : public virtual vcf_subfield_interface
+	class vcf_storable_subfield_base : public virtual vcf_subfield_base
 	{
 		friend class vcf_reader;
 		
@@ -143,19 +141,19 @@ namespace libbio {
 	};
 	
 	// Base classes for the different field types.
-	class vcf_info_field_base : public vcf_subfield_base, public vcf_info_field_interface
+	class vcf_storable_info_field_base : public vcf_storable_subfield_base, public vcf_info_field_base
 	{
 		friend class vcf_metadata_info;
 	};
 	
-	class vcf_genotype_field_base : public vcf_subfield_base, public vcf_genotype_field_interface
+	class vcf_storable_genotype_field_base : public vcf_storable_subfield_base, public vcf_genotype_field_base
 	{
 		friend class vcf_metadata_format;
 	};
 	
 	
 	// Base class for placeholders.
-	class vcf_subfield_placeholder : public virtual vcf_subfield_interface
+	class vcf_subfield_placeholder : public virtual vcf_subfield_base
 	{
 	public:
 		virtual vcf_metadata_value_type value_type() const override { return vcf_metadata_value_type::NOT_PROCESSED; }
@@ -170,7 +168,7 @@ namespace libbio {
 		virtual void reset(std::byte *mem) const override { /* No-op. */ }
 	};
 	
-	class vcf_info_field_placeholder : public vcf_info_field_base, public vcf_subfield_placeholder
+	class vcf_info_field_placeholder : public vcf_storable_info_field_base, public vcf_subfield_placeholder
 	{
 		virtual bool parse_and_assign(std::string_view const &sv, variant_base &var, std::byte *mem) const override { /* No-op. */ return false; }
 		virtual vcf_info_field_placeholder *clone() const override { return new vcf_info_field_placeholder(*this); }
@@ -179,7 +177,7 @@ namespace libbio {
 		virtual void output_vcf_value(std::ostream &stream, variant_base const &var) const override { throw std::runtime_error("Should not be called; parse_and_assign returns false"); }
 	};
 	
-	class vcf_genotype_field_placeholder : public vcf_genotype_field_base, public vcf_subfield_placeholder
+	class vcf_genotype_field_placeholder : public vcf_storable_genotype_field_base, public vcf_subfield_placeholder
 	{
 		virtual bool parse_and_assign(std::string_view const &sv, variant_sample &sample, std::byte *mem) const override { /* No-op. */ return false; }
 		virtual vcf_genotype_field_placeholder *clone() const override { return new vcf_genotype_field_placeholder(*this); }
@@ -191,17 +189,17 @@ namespace libbio {
 	
 	typedef std::map <
 		std::string,
-		std::unique_ptr <vcf_info_field_interface>,
+		std::unique_ptr <vcf_info_field_base>,
 		libbio::compare_strings_transparent
 	>														vcf_info_field_map;
-	typedef std::vector <vcf_info_field_interface *>		vcf_info_field_ptr_vector;
+	typedef std::vector <vcf_info_field_base *>		vcf_info_field_ptr_vector;
 	typedef std::map <
 		std::string,
-		std::unique_ptr <vcf_genotype_field_interface>,
+		std::unique_ptr <vcf_genotype_field_base>,
 		libbio::compare_strings_transparent
 	>														vcf_genotype_field_map;
 	typedef std::shared_ptr <vcf_genotype_field_map>		vcf_genotype_field_map_ptr;
-	typedef std::vector <vcf_genotype_field_interface *>	vcf_genotype_ptr_vector;
+	typedef std::vector <vcf_genotype_field_base *>	vcf_genotype_ptr_vector;
 	
 	void add_reserved_info_keys(vcf_info_field_map &dst);
 	void add_reserved_genotype_keys(vcf_genotype_field_map &dst);

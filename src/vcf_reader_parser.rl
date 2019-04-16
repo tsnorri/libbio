@@ -40,7 +40,7 @@ namespace libbio {
 		m_current_format->clear();
 		m_current_format_vec.clear();
 		
-		vcf_info_field_interface		*current_info_field{};
+		vcf_info_field_base		*current_info_field{};
 		
 		std::string						format_string;				// Current format as a string.
 		char const						*start(nullptr);			// Current string start.

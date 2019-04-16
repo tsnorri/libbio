@@ -84,8 +84,8 @@ namespace libbio {
 	
 	class vcf_metadata_formatted_field : public vcf_metadata_base
 	{
-		friend class vcf_info_field_interface;
-		friend class vcf_genotype_field_interface;
+		friend class vcf_info_field_base;
+		friend class vcf_genotype_field_base;
 		
 	protected:
 		template <typename t_field>
