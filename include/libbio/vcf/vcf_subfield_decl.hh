@@ -168,7 +168,7 @@ namespace libbio {
 		virtual void reset(std::byte *mem) const override { /* No-op. */ }
 	};
 	
-	class vcf_info_field_placeholder : public vcf_storable_info_field_base, public vcf_subfield_placeholder
+	class vcf_info_field_placeholder : public vcf_info_field_base, public vcf_subfield_placeholder
 	{
 		virtual bool parse_and_assign(std::string_view const &sv, variant_base &var, std::byte *mem) const override { /* No-op. */ return false; }
 		virtual vcf_info_field_placeholder *clone() const override { return new vcf_info_field_placeholder(*this); }
@@ -177,7 +177,7 @@ namespace libbio {
 		virtual void output_vcf_value(std::ostream &stream, variant_base const &var) const override { throw std::runtime_error("Should not be called; parse_and_assign returns false"); }
 	};
 	
-	class vcf_genotype_field_placeholder : public vcf_storable_genotype_field_base, public vcf_subfield_placeholder
+	class vcf_genotype_field_placeholder : public vcf_genotype_field_base, public vcf_subfield_placeholder
 	{
 		virtual bool parse_and_assign(std::string_view const &sv, variant_sample &sample, std::byte *mem) const override { /* No-op. */ return false; }
 		virtual vcf_genotype_field_placeholder *clone() const override { return new vcf_genotype_field_placeholder(*this); }
