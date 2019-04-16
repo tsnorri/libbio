@@ -189,6 +189,7 @@ namespace libbio {
 			m_alignment = alignment;
 		}
 		
+		std::size_t alignment() const { return m_alignment; }
 		virtual t_type *get() const override { return m_content.get(); }
 	};
 	
