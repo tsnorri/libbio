@@ -289,7 +289,6 @@ namespace libbio {
 		
 		// Instantiate a variant.
 		transient_variant var(*this, sample_count(), info_size, info_max_alignment);
-		initialize_variant(var);
 		using std::swap;
 		swap(m_current_variant, var);
 	}
