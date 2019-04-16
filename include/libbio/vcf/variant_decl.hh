@@ -9,7 +9,8 @@
 #include <libbio/buffer.hh>
 #include <libbio/cxxcompat.hh>
 #include <libbio/types.hh>
-#include <libbio/vcf/vcf_metadata_decl.hh>
+#include <libbio/vcf/vcf_metadata.hh>
+#include <libbio/vcf/vcf_subfield_decl.hh>
 #include <ostream>
 #include <vector>
 
@@ -43,7 +44,7 @@ namespace libbio {
 	class variant_sample
 	{
 		friend class vcf_reader;
-		friend class vcf_metadata_format;
+		friend class vcf_genotype_field_interface;
 		friend class vcf_genotype_field_gt;
 		
 		template <std::int32_t, vcf_metadata_value_type>
@@ -56,12 +57,18 @@ namespace libbio {
 	
 	
 	// Declare the constructors here s.t. the initialization code may be written more easily.
-	class variant_data
+	class variant_base
 	{
 		friend class vcf_reader;
+		friend class vcf_info_field_interface;
+		friend class variant_format_access;
+		friend class transient_variant_format_access;
 		
 		template <std::int32_t, vcf_metadata_value_type>
 		friend class vcf_generic_info_field_base;
+		
+	public:
+		enum { UNKNOWN_QUALITY = SIZE_MAX };
 		
 	protected:
 		vcf_reader											*m_reader{};
@@ -74,10 +81,10 @@ namespace libbio {
 		std::size_t											m_qual{SIZE_MAX};
 		
 	public:
-		// Make sure that both m_info and m_samples have zero return value for size(), see ~variant_base().
-		variant_data() = default;
+		// Make sure that both m_info and m_samples have zero return value for size(), see the formatters’ destructors.
+		variant_base() = default;
 		
-		inline variant_data(vcf_reader &reader, std::size_t const sample_count, std::size_t const info_size, std::size_t const info_alignment);
+		inline variant_base(vcf_reader &reader, std::size_t const sample_count, std::size_t const info_size, std::size_t const info_alignment);
 		
 		void set_variant_index(std::size_t const idx)					{ m_variant_index = idx; }
 		void set_lineno(std::size_t const lineno)						{ m_lineno = lineno; }
@@ -97,38 +104,59 @@ namespace libbio {
 	};
 	
 	
-	class variant_base : public variant_data
+	// Use static polymorphism to delegate construction, destruction and copying.
+	class transient_variant_format_access
 	{
-		friend class vcf_reader;
-		friend class vcf_metadata_info;
+		template <typename>
+		friend class formatted_variant_base;
 		
+		transient_variant_format_access() = default;
+		transient_variant_format_access(vcf_reader const &reader) {};
+		inline vcf_genotype_field_map_ptr const &get_format_ptr(vcf_reader const &reader) const;
+	};
+	
+	class variant_format_access
+	{
+		template <typename t_base>
+		friend class formatted_variant_base;
+
+	protected:
+		vcf_genotype_field_map_ptr	m_format;
+		
+	protected:
+		variant_format_access() = default;
+		inline variant_format_access(vcf_reader const &reader);
+		vcf_genotype_field_map_ptr const &get_format_ptr(vcf_reader const &reader) const { return m_format; }
+	};
+	
+	
+	// Override constructors, destructor and copy assignment to delegate the operatrions.
+	// Destructors of base classes are called in reverse order of declaration, so t_format_access’s destructor is called before variant_base’s.
+	template <typename t_format_access>
+	class formatted_variant_base : public variant_base, protected t_format_access
+	{
 	public:
-		enum { UNKNOWN_QUALITY = SIZE_MAX };
+		formatted_variant_base() = default;
 		
-	public:
-		variant_base() = default;
-		
-		inline variant_base(
-			vcf_reader &reader,
-			std::size_t const sample_count,
-			std::size_t const info_size,
-			std::size_t const info_alignment
-		);
+		inline formatted_variant_base(vcf_reader &reader, std::size_t const sample_count, std::size_t const info_size, std::size_t const info_alignment);
 		
 		// Copy constructor.
-		inline variant_base(variant_base const &other);
+		inline formatted_variant_base(formatted_variant_base const &other);
 		
 		// Move constructor.
-		variant_base(variant_base &&) = default;
+		formatted_variant_base(formatted_variant_base &&) = default;
 		
 		// Copy assignment operator.
-		inline variant_base &operator=(variant_base &other) &;
+		inline formatted_variant_base &operator=(formatted_variant_base const &) &;
 		
 		// Move assignment operator.
-		variant_base &operator=(variant_base &&) & = default;
+		formatted_variant_base &operator=(formatted_variant_base &&) & = default;
 		
 		// Destructor.
-		inline virtual ~variant_base();
+		inline virtual ~formatted_variant_base();
+		
+		vcf_genotype_field_map_ptr const &get_format_ptr() const { return t_format_access::get_format_ptr(*this->m_reader); }
+		vcf_genotype_field_map const &get_format() const { return *get_format_ptr(); }
 	};
 	
 	
@@ -152,10 +180,13 @@ namespace libbio {
 	};
 	
 	
-	template <typename t_string>
-	class variant_tpl : public variant_base
+	// Store the string-type variant fields as t_string.
+	// This class is separated from formatted_variant_base mainly because maintaining
+	// constructors etc. with all these variables would be cumbersome.
+	template <typename t_string, typename t_formatter>
+	class variant_tpl : public formatted_variant_base <t_formatter>
 	{
-		template <typename>
+		template <typename, typename>
 		friend class variant_tpl;
 		
 		friend class vcf_reader;
@@ -167,12 +198,12 @@ namespace libbio {
 		std::vector <variant_alt <t_string>>	m_alts{};
 		
 	public:
-		using variant_base::variant_base;
+		using formatted_variant_base <t_formatter>::formatted_variant_base;
 		
 		// Allow copying from from another specialization of variant_tpl.
-		template <typename t_other_string>
-		variant_tpl(variant_tpl <t_other_string> const &other):
-			variant_base(other),
+		template <typename t_other_string, typename t_other_formatter>
+		variant_tpl(variant_tpl <t_other_string, t_other_formatter> const &other):
+			formatted_variant_base <t_formatter>(other),
 			m_chrom_id(other.m_chrom_id),
 			m_ref(other.m_ref),
 			m_id(other.m_id.cbegin(), other.m_id.cend()),
@@ -192,27 +223,26 @@ namespace libbio {
 	};
 	
 	
-	class transient_variant final : public variant_tpl <std::string_view>
+	class transient_variant final : public variant_tpl <std::string_view, transient_variant_format_access>
 	{
 		friend class variant;
 		
 	public:
-		using variant_tpl <std::string_view>::variant_tpl;
+		using variant_tpl <std::string_view, transient_variant_format_access>::variant_tpl;
 		
 		inline void reset();
 	};
 	
 	
-	// FIXME: store a copy of the fields here (with pointers to meta?).
-	class variant final : public variant_tpl <std::string>
+	class variant final : public variant_tpl <std::string, variant_format_access>
 	{
 	public:
-		using variant_tpl <std::string>::variant_tpl;
+		using variant_tpl <std::string, variant_format_access>::variant_tpl;
 	};
 	
 	
-	template <typename t_string>
-	void output_vcf(std::ostream &stream, variant_tpl <t_string> const &var, vcf_format_ptr_vector const &format);
+	template <typename t_string, typename t_formatter>
+	void output_vcf(std::ostream &stream, variant_tpl <t_string, t_formatter> const &var);
 }
 
 #endif

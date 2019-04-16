@@ -8,6 +8,26 @@
 
 namespace libbio {
 
+	void vcf_metadata_formatted_field::check_field(std::int32_t const number, vcf_metadata_value_type const vt) const
+	{
+		switch (vt)
+		{
+			case vcf_metadata_value_type::UNKNOWN:
+				throw std::runtime_error("Field contents were to be parsed but field value type was set to unknown");
+			
+			default:
+			{
+				if (vt != m_value_type)
+					throw std::runtime_error("Value type mismatch");
+				break;
+			}
+		}
+		
+		if (! (number == VCF_NUMBER_DETERMINED_AT_RUNTIME || number == m_number))
+			throw std::runtime_error("Cardinality mismatch");
+	}
+	
+	
 	// FIXME: refine the output formats.
 	
 	void vcf_metadata_info::output_vcf(std::ostream &stream) const
@@ -24,22 +44,6 @@ namespace libbio {
 	}
 	
 	
-	bool vcf_metadata_info::output_vcf_field(std::ostream &stream, variant_base const &var, char const *sep) const
-	{
-		if (var.m_assigned_info_fields[m_index])
-		{
-			stream << sep << get_id();
-			if (vcf_metadata_value_type::FLAG != get_value_type())
-			{
-				stream << '=';
-				m_field->output_vcf_value(stream, var);
-			}
-			return true;
-		}
-		return false;
-	}
-	
-	
 	void vcf_metadata_format::output_vcf(std::ostream &stream) const
 	{
 		stream << "##FORMAT=<ID=" << get_id() << ",Number=";
@@ -47,16 +51,6 @@ namespace libbio {
 		stream << ",Type=";
 		output_vcf_value(stream, get_value_type());
 		stream << ",Description=\"" << get_description() << "\">\n";
-	}
-	
-	
-	bool vcf_metadata_format::output_vcf_field(std::ostream &stream, variant_sample const &sample, char const *sep) const
-	{
-		if (vcf_metadata_value_type::NOT_PROCESSED == m_field->value_type())
-			return false;
-		stream << sep;
-		m_field->output_vcf_value(stream, sample);
-		return true;
 	}
 	
 	

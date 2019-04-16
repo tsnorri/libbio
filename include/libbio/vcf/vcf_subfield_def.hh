@@ -14,12 +14,54 @@
 
 namespace libbio {
 	
+	void vcf_info_field_interface::prepare(variant_base &dst) const
+	{
+		reset(dst.m_info.get());
+	}
+	
+	
+	void vcf_info_field_interface::parse_and_assign(std::string_view const &sv, transient_variant &dst) const
+	{
+		libbio_assert(m_metadata);
+		auto const did_assign(parse_and_assign(sv, dst, dst.m_info.get()));
+		dst.m_assigned_info_fields[m_metadata->get_index()] = did_assign;
+	}
+	
+	
+	void vcf_info_field_interface::assign_flag(transient_variant &dst) const
+	{
+		auto const vt(value_type());
+		if (vcf_metadata_value_type::NOT_PROCESSED == vt)
+			return;
+		
+		if (vcf_metadata_value_type::FLAG != vt)
+			throw std::runtime_error("Field type is not FLAG");
+		auto const did_assign(assign(dst.m_info.get()));
+		
+		libbio_assert(m_metadata);
+		dst.m_assigned_info_fields[m_metadata->get_index()] = did_assign;
+	}
+	
+	
+	void vcf_genotype_field_interface::prepare(variant_sample &dst) const
+	{
+		reset(dst.m_sample_data.get());
+	}
+	
+	
+	void vcf_genotype_field_interface::parse_and_assign(std::string_view const &sv, variant_sample &dst) const
+	{
+		parse_and_assign(sv, dst, dst.m_sample_data.get());
+	}
+	
+	
 	// Map VCF types to C++ types. Use a byte for FLAG since there are no means for using bit fields right now.
 	template <vcf_metadata_value_type t_metadata_value_type> struct vcf_field_type_mapping {};
 	template <> struct vcf_field_type_mapping <vcf_metadata_value_type::FLAG>		{ typedef std::uint8_t type; };
 	template <> struct vcf_field_type_mapping <vcf_metadata_value_type::INTEGER>	{ typedef std::int32_t type; };
 	template <> struct vcf_field_type_mapping <vcf_metadata_value_type::FLOAT>		{ typedef float type; };
 	template <> struct vcf_field_type_mapping <vcf_metadata_value_type::STRING>		{ typedef std::string_view type; };
+	template <> struct vcf_field_type_mapping <vcf_metadata_value_type::CHARACTER>	{ typedef std::string_view type; };
 	
 	template <vcf_metadata_value_type t_metadata_value_type>
 	using vcf_field_type_mapping_t = typename vcf_field_type_mapping <t_metadata_value_type>::type;
@@ -27,17 +69,24 @@ namespace libbio {
 	
 	// Helper for constructing a vector.
 	// Placement new is needed, so std::make_from_tuple cannot be used.
+	// Default implementation for various values including VCF_NUMBER_DETERMINED_AT_RUNTIME.
 	template <std::int32_t t_number>
 	struct vcf_vector_value_helper
 	{
 		// Construct a vector with placement new. Allocate the given amount of memory.
-		template <typename t_vector>
-		static void construct_ds(std::byte *mem, std::uint16_t const alt_count)
+		template <typename t_vector, typename t_metadata>
+		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, t_metadata const &metadata)
 		{
 			if constexpr (0 < t_number)
 				new (mem) t_vector(t_number);
 			else
-				new (mem) t_vector();
+			{
+				auto const number(metadata.get_number());
+				if (0 < number)
+					new (mem) t_vector(number);
+				else
+					new (mem) t_vector();
+			}
 		}
 	};
 	
@@ -46,7 +95,7 @@ namespace libbio {
 	struct vcf_vector_value_helper <VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE>
 	{
 		template <typename t_vector>
-		static void construct_ds(std::byte *mem, std::uint16_t const alt_count)
+		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, vcf_metadata_base const &)
 		{
 			new (mem) t_vector(alt_count);
 		}
@@ -56,7 +105,7 @@ namespace libbio {
 	struct vcf_vector_value_helper <VCF_NUMBER_ONE_PER_ALLELE>
 	{
 		template <typename t_vector>
-		static void construct_ds(std::byte *mem, std::uint16_t const alt_count)
+		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, vcf_metadata_base const &)
 		{
 			new (mem) t_vector(1 + alt_count);
 		}
@@ -72,7 +121,7 @@ namespace libbio {
 		//static_assert(std::is_trivially_move_assignable_v <t_type>);
 		
 		// Construct t_type with placement new.
-		static void construct_ds(std::byte *mem, std::uint16_t const alt_count)
+		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, vcf_metadata_base const &)
 		{
 			libbio_always_assert_eq(0, reinterpret_cast <std::uintptr_t>(mem) % alignof(t_type));
 			new (mem) t_type{};
@@ -150,10 +199,11 @@ namespace libbio {
 		
 		using vcf_object_value_access <std::vector <t_element_type>>::access_ds;
 		
-		static void construct_ds(std::byte *mem, std::uint16_t const alt_count)
+		template <typename t_metadata>
+		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, t_metadata const &metadata)
 		{
 			libbio_always_assert_eq(0, reinterpret_cast <std::uintptr_t>(mem) % alignof(vector_type));
-			vcf_vector_value_helper <t_number>::template construct_ds <vector_type>(mem, alt_count);
+			vcf_vector_value_helper <t_number>::template construct_ds <vector_type>(mem, alt_count, metadata);
 		}
 		
 		static void reset_ds(std::byte *mem)
@@ -411,7 +461,7 @@ namespace libbio {
 		virtual void construct_ds(std::byte *mem, std::uint16_t const alt_count) const override
 		{
 			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
-			field_access::construct_ds(mem + this->m_offset, alt_count);
+			field_access::construct_ds(mem + this->m_offset, alt_count, *this->m_metadata);
 		}
 		
 		// Destruct the type in the memory block (if needed).
@@ -439,6 +489,8 @@ namespace libbio {
 			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::reset_ds(mem + this->m_offset);
 		}
+		
+		virtual vcf_generic_field *clone() const override { return new vcf_generic_field(*this); }
 		
 	public:
 		virtual vcf_metadata_value_type value_type() const override { return t_metadata_value_type; }
@@ -505,14 +557,14 @@ namespace libbio {
 	
 	
 	// Specialization for the GT field.
-	class vcf_genotype_field_gt final : public vcf_genotype_field_base
+	class vcf_genotype_field_gt final : public vcf_genotype_field_interface
 	{
 	protected:
 		typedef std::vector <sample_genotype> vector_type;
 			
 	protected:
-		virtual std::uint16_t alignment() const override { return alignof(vector_type); }
-		virtual std::uint16_t byte_size() const override { return sizeof(vector_type); }
+		virtual std::uint16_t alignment() const override { return 1; }
+		virtual std::uint16_t byte_size() const override { return 0; }
 		
 		virtual std::int32_t number() const override { return 1; }
 		
@@ -537,6 +589,8 @@ namespace libbio {
 		}
 		
 		virtual bool parse_and_assign(std::string_view const &sv, variant_sample &sample, std::byte *mem) const override;
+		
+		virtual vcf_genotype_field_gt *clone() const override { return new vcf_genotype_field_gt(*this); }
 		
 	public:
 		virtual vcf_metadata_value_type value_type() const override { return vcf_metadata_value_type::STRING; }

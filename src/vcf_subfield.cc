@@ -27,6 +27,23 @@ namespace {
 
 namespace libbio {
 	
+	bool vcf_info_field_interface::output_vcf_value(std::ostream &stream, variant_base const &var, char const *sep) const
+	{
+		libbio_assert(m_metadata);
+		if (var.m_assigned_info_fields[m_metadata->get_index()])
+		{
+			stream << sep << m_metadata->get_id();
+			if (vcf_metadata_value_type::FLAG != value_type())
+			{
+				stream << '=';
+				output_vcf_value(stream, var);
+			}
+			return true;
+		}
+		return false;
+	}
+	
+	
 	void vcf_subfield_parser <vcf_metadata_value_type::INTEGER>::parse(std::string_view const &sv, value_type &dst)
 	{
 		auto const *start(sv.data());

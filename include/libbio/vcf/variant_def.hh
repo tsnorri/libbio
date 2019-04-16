@@ -21,7 +21,7 @@
 
 namespace libbio {
 	
-	variant_data::variant_data(vcf_reader &reader, std::size_t const sample_count, std::size_t const info_size, std::size_t const info_alignment):
+	variant_base::variant_base(vcf_reader &reader, std::size_t const sample_count, std::size_t const info_size, std::size_t const info_alignment):
 		m_reader(&reader),
 		m_info(info_size, info_alignment),
 		m_samples(sample_count),
@@ -30,62 +30,85 @@ namespace libbio {
 	}
 	
 	
-	std::size_t variant_data::zero_based_pos() const
+	std::size_t variant_base::zero_based_pos() const
 	{
 		libbio_always_assert_msg(0 != m_pos, "Unexpected position");
 		return m_pos - 1;
 	}
 	
 	
-	variant_base::variant_base(
+	vcf_genotype_field_map_ptr const &transient_variant_format_access::get_format_ptr(vcf_reader const &reader) const
+	{
+		return reader.get_variant_format_ptr();
+	}
+	
+	
+	variant_format_access::variant_format_access(vcf_reader const &reader):
+		m_format(reader.get_variant_format_ptr())
+	{
+	}
+	
+	
+	// Constructor.
+	template <typename t_format_access>
+	formatted_variant_base <t_format_access>::formatted_variant_base(
 		vcf_reader &reader,
 		std::size_t const sample_count,
 		std::size_t const info_size,
 		std::size_t const info_alignment
 	):
-		variant_data(reader, sample_count, info_size, info_alignment)
+		variant_base(reader, sample_count, info_size, info_alignment),
+		t_format_access(reader)
 	{
-		this->m_reader->initialize_variant(*this);
+		reader.initialize_variant(*this, this->get_format());
 	}
 	
+	
 	// Copy constructor.
-	variant_base::variant_base(variant_base const &other):
-		variant_data(other)
+	template <typename t_format_access>
+	formatted_variant_base <t_format_access>::formatted_variant_base(formatted_variant_base const &other):
+		variant_base(other)
 	{
 		if (this->m_info.size() || this->m_samples.size())
 		{
 			libbio_always_assert(this->m_reader);
 			
 			// Zeroed when copying.
-			this->m_reader->initialize_variant(*this);
-			this->m_reader->copy_variant(other, *this);
+			auto const &variant_format(this->get_variant_format());
+			this->m_reader->initialize_variant(*this, variant_format);
+			this->m_reader->copy_variant(*this, other, variant_format);
 		}
 	}
 	
-	
-	variant_base &variant_base::operator=(variant_base &other) &
+	// Copy assignment operator.
+	template <typename t_format_access>
+	auto formatted_variant_base <t_format_access>::operator=(formatted_variant_base const &other) & -> formatted_variant_base &
 	{
 		if (this->m_info.size() || this->m_samples.size())
 		{
 			libbio_always_assert(this->m_reader);
-			this->m_reader->copy_variant(other, *this);
+			auto const &variant_format(this->get_variant_format());
+			this->m_reader->copy_variant(*this, other, variant_format);
 		}
 		return *this;
 	}
 	
 	
-	variant_base::~variant_base()
+	// Destructor.
+	template <typename t_format_access>
+	formatted_variant_base <t_format_access>::~formatted_variant_base()
 	{
 		if (this->m_info.size() || this->m_samples.size())
 		{
 			libbio_always_assert(this->m_reader);
-			this->m_reader->deinitialize_variant(*this);
+			auto const &variant_format(this->get_format());
+			this->m_reader->deinitialize_variant(*this, variant_format);
 		}
 	}
 	
 	
-	template <typename t_string>
-	void variant_tpl <t_string>::set_id(std::string_view const &id, std::size_t const pos)
+	template <typename t_string, typename t_format_access>
+	void variant_tpl <t_string, t_format_access>::set_id(std::string_view const &id, std::size_t const pos)
 	{
 		if (! (pos < m_id.size()))
 			m_id.resize(pos + 1);
@@ -94,8 +117,8 @@ namespace libbio {
 	}
 	
 	
-	template <typename t_string>
-	void variant_tpl <t_string>::set_alt(std::string_view const &alt, std::size_t const pos)
+	template <typename t_string, typename t_format_access>
+	void variant_tpl <t_string, t_format_access>::set_alt(std::string_view const &alt, std::size_t const pos)
 	{
 		if (! (pos < m_alts.size()))
 			m_alts.resize(pos + 1);
@@ -104,8 +127,8 @@ namespace libbio {
 	}
 	
 	
-	template <typename t_string>
-	void output_vcf(std::ostream &stream, variant_tpl <t_string> const &var, vcf_format_ptr_vector const &format)
+	template <typename t_string, typename t_format_access>
+	void output_vcf(std::ostream &stream, variant_tpl <t_string, t_format_access> const &var)
 	{
 		auto const *reader(var.reader());
 		if (!reader)
@@ -113,6 +136,8 @@ namespace libbio {
 			stream << "# Empty variant\n";
 			return;
 		}
+		
+		auto const &format(var.get_format());
 		
 		// CHROM, POS
 		stream << var.chrom_id() << '\t' << var.pos();
@@ -142,9 +167,9 @@ namespace libbio {
 		{
 			stream << '\t';
 			bool is_first(true);
-			for (auto const &[key, info] : reader->metadata().info())
+			for (auto const *field_ptr : reader->info_fields_in_headers())
 			{
-				if (info.output_vcf_field(stream, var, (is_first ? "" : ";")) && is_first)
+				if (field_ptr->output_vcf_value(stream, var, (is_first ? "" : ";")))
 					is_first = false;
 			}
 		}
@@ -152,10 +177,14 @@ namespace libbio {
 		// FORMAT
 		stream << '\t';
 		ranges::copy(
-			format	|	ranges::view::remove_if([](auto const &format_ptr) -> bool {
-							return (vcf_metadata_value_type::NOT_PROCESSED == format_ptr->get_field().value_type());
+			format	|	ranges::view::remove_if([](auto const &kv) -> bool {
+							return (vcf_metadata_value_type::NOT_PROCESSED == kv.second->value_type());
 						})
-					|	ranges::view::transform([](auto const &format_ptr) -> std::string const & { return format_ptr->get_id(); }),
+					|	ranges::view::transform([](auto const &kv) -> std::string const & {
+							auto const *meta(kv.second->get_metadata());
+							libbio_assert(meta);
+							return meta->get_id(); 
+						}),
 			ranges::make_ostream_joiner(stream, ":")
 		);
 		
@@ -164,10 +193,12 @@ namespace libbio {
 		{
 			stream << '\t';
 			bool is_first(true);
-			for (auto const &format_ptr : format)
+			for (auto const &kv : format)
 			{
-				if (format_ptr->output_vcf_field(stream, sample, (is_first ? "" : ":")) && is_first)
-					is_first = false;
+				if (!is_first)
+					stream << ':';
+				kv.second->output_vcf_value(stream, sample);
+				is_first = false;
 			}
 		}
 	}
@@ -175,7 +206,7 @@ namespace libbio {
 	
 	void transient_variant::reset()
 	{
-		variant_tpl <std::string_view>::reset();
+		variant_tpl <std::string_view, transient_variant_format_access>::reset();
 		
 		// Try to avoid deallocating the samples.
 		m_id.clear();

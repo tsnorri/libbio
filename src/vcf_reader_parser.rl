@@ -5,8 +5,8 @@
 
 #include <libbio/assert.hh>
 #include <libbio/vcf/variant.hh>
-#include <libbio/vcf/vcf_metadata.hh>
 #include <libbio/vcf/vcf_reader.hh>
+#include <libbio/vcf/vcf_subfield.hh>
 #include "vcf_reader_private.hh"
 
 
@@ -33,13 +33,14 @@ namespace libbio {
 	
 	bool vcf_reader::parse(parsing_delegate &cb)
 	{
-		typedef variant_tpl <std::string_view>		var_t;
-		typedef variant_alt <std::string_view>		alt_t;
+		typedef variant_tpl <std::string_view, transient_variant_format_access>	var_t;
+		typedef variant_alt <std::string_view>									alt_t;
 		
 		bool retval(true);
-		m_current_format.clear();
+		m_current_format->clear();
+		m_current_format_vec.clear();
 		
-		vcf_metadata_info				*current_metadata_info{};
+		vcf_info_field_interface		*current_info_field{};
 		
 		std::string						format_string;				// Current format as a string.
 		char const						*start(nullptr);			// Current string start.
@@ -88,20 +89,23 @@ namespace libbio {
 			action end_info_key {
 				// Find the listed key.
 				std::string_view const key_sv(start, fpc - start);
-				auto const it(m_metadata.m_info.find(key_sv));
-				if (m_metadata.m_info.cend() == it)
+				auto const it(m_info_fields.find(key_sv));
+				if (m_info_fields.cend() == it)
 					throw std::runtime_error("Unknown INFO key");
-				current_metadata_info = &(it->second);
+				current_info_field = it->second.get();
+				if (!current_info_field->m_metadata)
+					throw std::runtime_error("Found INFO field not declared in the VCF header");
 			}
 			
 			action end_info_val {
 				libbio_assert_eq(false, info_is_flag);
-				
-				if (!current_metadata_info->check_subfield_index(subfield_idx))
+				libbio_assert(current_info_field);
+				libbio_assert(current_info_field->m_metadata);
+				if (!current_info_field->m_metadata->check_subfield_index(subfield_idx))
 					throw std::runtime_error("More values in INFO field than declared");
 				
 				std::string_view const val_sv(start, fpc - start);
-				current_metadata_info->parse_and_assign(val_sv, m_current_variant);
+				current_info_field->parse_and_assign(val_sv, m_current_variant);
 				++subfield_idx;
 			}
 			
@@ -122,9 +126,9 @@ namespace libbio {
 			
 			action end_info_kv {
 				if (info_is_flag)
-					current_metadata_info->assign_flag(m_current_variant);
+					current_info_field->assign_flag(m_current_variant);
 				
-				current_metadata_info = nullptr;
+				current_info_field = nullptr;
 			}
 			
 			action start_info_kv {
@@ -133,8 +137,8 @@ namespace libbio {
 			}
 			
 			action start_info {
-				for (auto const &[key, info_meta] : m_metadata.m_info)
-					info_meta.prepare(m_current_variant);
+				for (auto const *field_ptr : m_info_fields_in_headers)
+					field_ptr->prepare(m_current_variant);
 			}
 			
 			action end_info {
@@ -145,32 +149,27 @@ namespace libbio {
 				if (new_format != format_string)
 				{
 					cb.reader_will_update_format(*this);
+					deinitialize_variant_samples(m_current_variant, *m_current_format);
 					
-					deinitialize_variant_samples(m_current_variant);
-					
-					m_current_format.clear();
 					format_string = new_format;
-					
 					parse_format(format_string);
 					auto const [size, alignment] = assign_format_field_offsets();
 					reserve_memory_for_samples_in_current_variant(size, alignment);
 					
-					initialize_variant_samples(m_current_variant);
-					
+					initialize_variant_samples(m_current_variant, *m_current_format);
 					cb.reader_did_update_format(*this);
 				}
 			}
 			
 			action end_sample_field {
 				std::string_view const field_value(start, fpc - start);
-				if (! (subfield_idx < m_current_format.size()))
+				if (! (subfield_idx < m_current_format_vec.size()))
 					throw std::runtime_error("More fields in current sample than specified in FORMAT");
 				
-				auto const meta(m_current_format[subfield_idx]);
-				libbio_always_assert(meta);
+				auto const &format_ptr(m_current_format_vec[subfield_idx]);
 				auto &samples(m_current_variant.m_samples);
 				libbio_always_assert_lt_msg(sample_idx, samples.size(), "Samples should be preallocated.");
-				meta->parse_and_assign(field_value, samples[sample_idx]);
+				format_ptr->parse_and_assign(field_value, samples[sample_idx]);
 				
 				++subfield_idx;
 			}
@@ -178,17 +177,16 @@ namespace libbio {
 			action start_sample {
 				subfield_idx = 0;
 				
-				for (auto const *meta_ptr : m_current_format)
+				for (auto const *field_ptr : m_current_format_vec)
 				{
-					auto const &meta(*meta_ptr);
 					auto &samples(m_current_variant.m_samples);
 					libbio_always_assert_lt_msg(sample_idx, samples.size(), "Samples should be preallocated.");
-					meta.prepare(samples[sample_idx]);
+					field_ptr->prepare(samples[sample_idx]);
 				}
 			}
 			
 			action end_sample {
-				if (m_current_format.size() != subfield_idx)
+				if (m_current_format_vec.size() != subfield_idx)
 					throw std::runtime_error("Number of sample fields differs from FORMAT");
 				
 				++sample_idx;

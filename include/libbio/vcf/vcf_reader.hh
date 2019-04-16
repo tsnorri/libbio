@@ -12,7 +12,7 @@
 #include <libbio/copyable_atomic.hh>
 #include <libbio/vcf/variant_decl.hh>
 #include <libbio/vcf/vcf_input.hh>
-#include <libbio/vcf/vcf_metadata_decl.hh>
+#include <libbio/vcf/vcf_metadata.hh>
 
 
 namespace libbio {
@@ -26,6 +26,11 @@ namespace libbio {
 		friend class vcf_stream_input_base;
 		friend class vcf_mmap_input;
 		friend class variant_base;
+		friend class variant_format_access;
+		friend class transient_variant_format_access;
+		
+		template <typename>
+		friend class formatted_variant_base;
 		
 	public:
 		typedef std::map <std::string, std::size_t>			sample_name_map;
@@ -59,8 +64,10 @@ namespace libbio {
 		fsm								m_fsm;
 		vcf_metadata					m_metadata;
 		vcf_info_field_map				m_info_fields;
+		vcf_info_field_ptr_vector		m_info_fields_in_headers;
 		vcf_genotype_field_map			m_genotype_fields;
-		vcf_format_ptr_vector			m_current_format;
+		vcf_genotype_field_map_ptr		m_current_format{new vcf_genotype_field_map()};
+		vcf_genotype_ptr_vector			m_current_format_vec;
 		sample_name_map					m_sample_names;
 		transient_variant				m_current_variant;
 		copyable_atomic <std::size_t>	m_counter{0};
@@ -90,8 +97,12 @@ namespace libbio {
 		
 		vcf_metadata const &metadata() const { return m_metadata; }
 		vcf_info_field_map &info_fields() { return m_info_fields; }
+		vcf_info_field_map const &info_fields() const { return m_info_fields; }
+		vcf_info_field_ptr_vector const &info_fields_in_headers() const { return m_info_fields_in_headers; }
 		vcf_genotype_field_map &genotype_fields() { return m_genotype_fields; }
-		vcf_format_ptr_vector const &current_format() { return m_current_format; }
+		vcf_genotype_field_map const &genotype_fields() const { return m_genotype_fields; }
+		vcf_genotype_field_map const &get_variant_format() const { return *m_current_format; }
+		vcf_genotype_field_map_ptr const &get_variant_format_ptr() const { return m_current_format; }
 		
 		std::size_t lineno() const { return m_lineno; }
 		std::size_t last_header_lineno() const { return m_input->last_header_lineno(); }
@@ -109,17 +120,27 @@ namespace libbio {
 		void set_lineno(std::size_t const lineno) { libbio_assert(lineno); m_lineno = lineno - 1; }
 
 		void associate_metadata_with_field_descriptions();
-		std::pair <std::uint16_t, std::uint16_t> assign_field_offsets(std::vector <vcf_subfield_base *> &field_vec) const;
-		std::pair <std::uint16_t, std::uint16_t> assign_info_field_offsets() const;
-		std::pair <std::uint16_t, std::uint16_t> assign_format_field_offsets() const;
+		
+		template <typename t_field>
+		std::pair <std::uint16_t, std::uint16_t> assign_field_offsets(std::vector <t_field *> &field_vec) const;
+		
+		std::pair <std::uint16_t, std::uint16_t> assign_info_field_offsets();
+		std::pair <std::uint16_t, std::uint16_t> assign_format_field_offsets();
 		void parse_format(std::string_view const &new_format);
 		
-		void initialize_variant(variant_base &variant);
-		void deinitialize_variant(variant_base &variant);
-		void initialize_variant_samples(variant_base &variant);
-		void deinitialize_variant_samples(variant_base &variant);
+		template <template <std::int32_t, vcf_metadata_value_type> typename t_field_tpl, vcf_metadata_value_type t_field_type, typename t_field_base_class>
+		auto instantiate_field(vcf_metadata_formatted_field const &meta) -> t_field_base_class *;
+		
+		template <template <std::int32_t, vcf_metadata_value_type> typename t_field_tpl, typename t_key, typename t_field_map>
+		auto find_or_add_field(vcf_metadata_formatted_field const &meta, t_key const &key, t_field_map &map, bool &did_add) ->
+			typename t_field_map::mapped_type::element_type &;
+		
+		void initialize_variant(variant_base &variant, vcf_genotype_field_map const &format);
+		void deinitialize_variant(variant_base &variant, vcf_genotype_field_map const &format);
+		void initialize_variant_samples(variant_base &variant, vcf_genotype_field_map const &format);
+		void deinitialize_variant_samples(variant_base &variant, vcf_genotype_field_map const &format);
 		void reserve_memory_for_samples_in_current_variant(std::uint16_t const size, std::uint16_t const alignment);
-		void copy_variant(variant_base const &src, variant_base &dst);
+		void copy_variant(variant_base const &src, variant_base &dst, vcf_genotype_field_map const &format);
 	};
 }
 
