@@ -29,7 +29,7 @@ namespace {
 		
 		virtual bool handle_variant(lb::vcf_reader &reader, lb::transient_variant const &var) override
 		{
-			lb::output_vcf(*m_stream, var, reader.current_format());
+			lb::output_vcf(*m_stream, var);
 			*m_stream << '\n';
 			return true;
 		}
