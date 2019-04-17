@@ -108,6 +108,12 @@ namespace libbio {
 		void set_parsed_fields(vcf_field max_field) { m_max_parsed_field = max_field; }
 		std::size_t counter_value() const { return m_counter; } // Thread-safe.
 		
+		template <typename t_key, typename t_dst>
+		void get_info_field_ptr(t_key const &key, t_dst &dst) const;
+		
+		template <typename t_key, typename t_dst>
+		void get_genotype_field_ptr(t_key const &key, t_dst &dst) const;
+		
 	protected:
 		void skip_to_next_nl();
 		void set_buffer_start(char const *p) { m_fsm.p = p; }
@@ -138,6 +144,24 @@ namespace libbio {
 		void reserve_memory_for_samples_in_current_variant(std::uint16_t const size, std::uint16_t const alignment);
 		void copy_variant(variant_base const &src, variant_base &dst, vcf_genotype_field_map const &format);
 	};
+	
+	
+	template <typename t_key, typename t_dst>
+	void vcf_reader::get_info_field_ptr(t_key const &key, t_dst &dst) const
+	{
+		auto const it(m_info_fields.find(key));
+		libbio_always_assert_neq(it, m_info_fields.end());
+		dst = dynamic_cast <std::remove_reference_t <decltype(dst)>>(it->second.get());
+	}
+	
+	
+	template <typename t_key, typename t_dst>
+	void vcf_reader::get_genotype_field_ptr(t_key const &key, t_dst &dst) const
+	{
+		auto const it(m_genotype_fields.find(key));
+		libbio_always_assert_neq(it, m_genotype_fields.end());
+		dst = dynamic_cast <std::remove_reference_t <decltype(dst)>>(it->second.get());
+	}
 }
 
 #include <libbio/vcf/variant_def.hh>
