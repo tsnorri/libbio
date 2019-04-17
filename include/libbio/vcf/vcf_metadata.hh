@@ -221,6 +221,7 @@ namespace libbio {
 		
 	public:
 		info_map const &info() const { return m_info; }
+		contig_map const &contig() const { return m_contig; }
 		
 		template <typename t_fn>
 		void visit_all_metadata(t_fn &&cb) const
