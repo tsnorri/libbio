@@ -191,15 +191,14 @@ namespace libbio {
 		std::string,
 		std::unique_ptr <vcf_info_field_base>,
 		libbio::compare_strings_transparent
-	>														vcf_info_field_map;
-	typedef std::vector <vcf_info_field_base *>		vcf_info_field_ptr_vector;
+	>													vcf_info_field_map;
+	typedef std::vector <vcf_info_field_base *>			vcf_info_field_ptr_vector;
 	typedef std::map <
 		std::string,
 		std::unique_ptr <vcf_genotype_field_base>,
 		libbio::compare_strings_transparent
-	>														vcf_genotype_field_map;
-	typedef std::shared_ptr <vcf_genotype_field_map>		vcf_genotype_field_map_ptr;
-	typedef std::vector <vcf_genotype_field_base *>	vcf_genotype_ptr_vector;
+	>													vcf_genotype_field_map;
+	typedef std::vector <vcf_genotype_field_base *>		vcf_genotype_ptr_vector;
 	
 	void add_reserved_info_keys(vcf_info_field_map &dst);
 	void add_reserved_genotype_keys(vcf_genotype_field_map &dst);

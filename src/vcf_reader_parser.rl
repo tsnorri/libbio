@@ -17,13 +17,13 @@
 namespace libbio {
 	
 	template <int t_continue, int t_break>
-	int vcf_reader::check_max_field(vcf_field const field, int const target, parsing_delegate &cb)
+	int vcf_reader::check_max_field(vcf_field const field, int const target, callback_fn const &cb)
 	{
 		if (field <= m_max_parsed_field)
 			return target;
 		
 		skip_to_next_nl();
-		if (!cb.handle_variant(*this, m_current_variant))
+		if (!cb(m_current_variant))
 			return t_break;
 		
 		++m_counter;
@@ -31,13 +31,13 @@ namespace libbio {
 	}
 	
 	
-	bool vcf_reader::parse(parsing_delegate &cb)
+	bool vcf_reader::parse(callback_fn const &cb)
 	{
 		typedef variant_tpl <std::string_view, transient_variant_format_access>	var_t;
 		typedef variant_alt <std::string_view>									alt_t;
 		
 		bool retval(true);
-		m_current_format->clear();
+		m_current_format->m_fields_by_identifier.clear();
 		m_current_format_vec.clear();
 		
 		vcf_info_field_base		*current_info_field{};
@@ -148,16 +148,16 @@ namespace libbio {
 				std::string_view const new_format(start, fpc - start);
 				if (new_format != format_string)
 				{
-					cb.reader_will_update_format(*this);
-					deinitialize_variant_samples(m_current_variant, *m_current_format);
+					m_current_format->reader_will_update_format(*this);
+					deinitialize_variant_samples(m_current_variant, m_current_format->m_fields_by_identifier);
 					
 					format_string = new_format;
 					parse_format(format_string);
 					auto const [size, alignment] = assign_format_field_offsets();
 					reserve_memory_for_samples_in_current_variant(size, alignment);
 					
-					initialize_variant_samples(m_current_variant, *m_current_format);
-					cb.reader_did_update_format(*this);
+					initialize_variant_samples(m_current_variant, m_current_format->m_fields_by_identifier);
+					m_current_format->reader_did_update_format(*this);
 				}
 			}
 			
@@ -196,7 +196,7 @@ namespace libbio {
 				if (m_sample_names.size() != sample_idx)
 					throw std::runtime_error("Number of samples differs from VCF headers");
 				
-				if (!cb.handle_variant(*this, m_current_variant))
+				if (!cb(m_current_variant))
 				{
 					fhold;
 					fbreak;

@@ -37,7 +37,7 @@ namespace libbio {
 	}
 	
 	
-	vcf_genotype_field_map_ptr const &transient_variant_format_access::get_format_ptr(vcf_reader const &reader) const
+	variant_format_ptr const &transient_variant_format_access::get_format_ptr(vcf_reader const &reader) const
 	{
 		return reader.get_variant_format_ptr();
 	}
@@ -60,7 +60,7 @@ namespace libbio {
 		variant_base(reader, sample_count, info_size, info_alignment),
 		t_format_access(reader)
 	{
-		reader.initialize_variant(*this, this->get_format());
+		reader.initialize_variant(*this, this->get_format().fields_by_identifier());
 	}
 	
 	
@@ -101,8 +101,8 @@ namespace libbio {
 		if (this->m_info.size() || this->m_samples.size())
 		{
 			libbio_always_assert(this->m_reader);
-			auto const &variant_format(this->get_format());
-			this->m_reader->deinitialize_variant(*this, variant_format);
+			auto const &fields(this->get_format().fields_by_identifier());
+			this->m_reader->deinitialize_variant(*this, fields);
 		}
 	}
 	
@@ -137,7 +137,7 @@ namespace libbio {
 			return;
 		}
 		
-		auto const &format(var.get_format());
+		auto const &fields(var.get_format().fields_by_identifier());
 		
 		// CHROM, POS
 		stream << var.chrom_id() << '\t' << var.pos();
@@ -177,7 +177,7 @@ namespace libbio {
 		// FORMAT
 		stream << '\t';
 		ranges::copy(
-			format	|	ranges::view::remove_if([](auto const &kv) -> bool {
+			fields	|	ranges::view::remove_if([](auto const &kv) -> bool {
 							return (vcf_metadata_value_type::NOT_PROCESSED == kv.second->value_type());
 						})
 					|	ranges::view::transform([](auto const &kv) -> std::string const & {
@@ -193,7 +193,7 @@ namespace libbio {
 		{
 			stream << '\t';
 			bool is_first(true);
-			for (auto const &kv : format)
+			for (auto const &kv : fields)
 			{
 				if (!is_first)
 					stream << ':';

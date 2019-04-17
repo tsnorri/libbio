@@ -11,6 +11,7 @@
 #include <vector>
 #include <libbio/copyable_atomic.hh>
 #include <libbio/vcf/variant_decl.hh>
+#include <libbio/vcf/variant_format.hh>
 #include <libbio/vcf/vcf_input.hh>
 #include <libbio/vcf/vcf_metadata.hh>
 
@@ -33,15 +34,8 @@ namespace libbio {
 		friend class formatted_variant_base;
 		
 	public:
-		typedef std::map <std::string, std::size_t>			sample_name_map;
-		
-		struct parsing_delegate
-		{
-			virtual ~parsing_delegate() {}
-			virtual bool handle_variant(vcf_reader &reader, transient_variant const &var) = 0;
-			virtual void reader_will_update_format(vcf_reader &reader) {};
-			virtual void reader_did_update_format(vcf_reader &reader) {};
-		};
+		typedef std::function <bool(transient_variant const &var)>	callback_fn;
+		typedef std::map <std::string, std::size_t>					sample_name_map;
 		
 	protected:
 		struct fsm
@@ -55,7 +49,7 @@ namespace libbio {
 		template <typename> friend struct caller;
 		
 		template <int t_continue, int t_break>
-		int check_max_field(vcf_field const field, int const target, parsing_delegate &cb);
+		int check_max_field(vcf_field const field, int const target, callback_fn const &cb);
 
 		void report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state);
 
@@ -66,7 +60,7 @@ namespace libbio {
 		vcf_info_field_map				m_info_fields;
 		vcf_info_field_ptr_vector		m_info_fields_in_headers;
 		vcf_genotype_field_map			m_genotype_fields;
-		vcf_genotype_field_map_ptr		m_current_format{new vcf_genotype_field_map()};
+		variant_format_ptr				m_current_format{new variant_format()};
 		vcf_genotype_ptr_vector			m_current_format_vec;
 		sample_name_map					m_sample_names;
 		transient_variant				m_current_variant;
@@ -84,10 +78,12 @@ namespace libbio {
 		}
 		
 		void set_input(class vcf_input &input) { m_input = &input; }
+		void set_variant_format(variant_format *fmt) { libbio_always_assert(fmt); m_current_format.reset(fmt); }
 		void read_header();
 		void fill_buffer();
 		void reset();
-		bool parse(parsing_delegate &delegate);
+		bool parse(callback_fn const &callback);
+		bool parse(callback_fn &&callback) { return parse(callback); }
 		
 		class vcf_input &vcf_input() { return *m_input; }
 		class vcf_input const &vcf_input() const { return *m_input; }
@@ -101,8 +97,8 @@ namespace libbio {
 		vcf_info_field_ptr_vector const &info_fields_in_headers() const { return m_info_fields_in_headers; }
 		vcf_genotype_field_map &genotype_fields() { return m_genotype_fields; }
 		vcf_genotype_field_map const &genotype_fields() const { return m_genotype_fields; }
-		vcf_genotype_field_map const &get_variant_format() const { return *m_current_format; }
-		vcf_genotype_field_map_ptr const &get_variant_format_ptr() const { return m_current_format; }
+		variant_format const &get_variant_format() const { return *m_current_format; }
+		variant_format_ptr const &get_variant_format_ptr() const { return m_current_format; }
 		
 		std::size_t lineno() const { return m_lineno; }
 		std::size_t last_header_lineno() const { return m_input->last_header_lineno(); }

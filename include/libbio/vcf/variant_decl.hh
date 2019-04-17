@@ -9,6 +9,7 @@
 #include <libbio/buffer.hh>
 #include <libbio/cxxcompat.hh>
 #include <libbio/types.hh>
+#include <libbio/vcf/variant_format.hh>
 #include <libbio/vcf/vcf_metadata.hh>
 #include <libbio/vcf/vcf_subfield_decl.hh>
 #include <ostream>
@@ -112,7 +113,7 @@ namespace libbio {
 		
 		transient_variant_format_access() = default;
 		transient_variant_format_access(vcf_reader const &reader) {};
-		inline vcf_genotype_field_map_ptr const &get_format_ptr(vcf_reader const &reader) const;
+		inline variant_format_ptr const &get_format_ptr(vcf_reader const &reader) const;
 	};
 	
 	class variant_format_access
@@ -121,12 +122,12 @@ namespace libbio {
 		friend class formatted_variant_base;
 
 	protected:
-		vcf_genotype_field_map_ptr	m_format;
+		variant_format_ptr	m_format;
 		
 	protected:
 		variant_format_access() = default;
 		inline variant_format_access(vcf_reader const &reader);
-		vcf_genotype_field_map_ptr const &get_format_ptr(vcf_reader const &reader) const { return m_format; }
+		variant_format_ptr const &get_format_ptr(vcf_reader const &reader) const { return m_format; }
 	};
 	
 	
@@ -155,8 +156,8 @@ namespace libbio {
 		// Destructor.
 		inline virtual ~formatted_variant_base();
 		
-		vcf_genotype_field_map_ptr const &get_format_ptr() const { return t_format_access::get_format_ptr(*this->m_reader); }
-		vcf_genotype_field_map const &get_format() const { return *get_format_ptr(); }
+		variant_format_ptr const &get_format_ptr() const { return t_format_access::get_format_ptr(*this->m_reader); }
+		variant_format const &get_format() const { return *get_format_ptr(); }
 	};
 	
 	

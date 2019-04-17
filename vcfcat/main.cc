@@ -16,26 +16,6 @@ namespace lb	= libbio;
 
 namespace {
 	
-	class variant_handler : public lb::vcf_reader::parsing_delegate
-	{
-	protected:
-		std::ostream *m_stream{};
-		
-	public:
-		variant_handler(std::ostream &stream):
-			m_stream(&stream)
-		{
-		}
-		
-		virtual bool handle_variant(lb::vcf_reader &reader, lb::transient_variant const &var) override
-		{
-			lb::output_vcf(*m_stream, var);
-			*m_stream << '\n';
-			return true;
-		}
-	};
-	
-	
 	void output_header(lb::vcf_reader const &reader, std::ostream &stream)
 	{
 		auto const &metadata(reader.metadata());
@@ -56,6 +36,22 @@ namespace {
 		for (auto const ptr : sample_names)
 			stream << '\t' << *ptr;
 		stream << '\n';
+	}
+
+
+	void output_vcf(lb::vcf_reader &reader, std::ostream &stream)
+	{
+		output_header(reader, stream);
+		
+		bool should_continue(false);
+		do {
+			reader.fill_buffer();
+			should_continue = reader.parse([&stream](lb::transient_variant const &var){
+				lb::output_vcf(stream, var);
+				stream << '\n';
+				return true;
+			});
+		} while (should_continue);
 	}
 }
 
@@ -80,9 +76,6 @@ int main(int argc, char **argv)
 	// Create a VCF input.
 	lb::vcf_mmap_input vcf_input(input_handle);
 	
-	// Create a variant handler.
-	variant_handler handler(args_info.output_given ? output_stream : std::cout);
-	
 	// Create the parser and add the fields listed in the specification to the metadata.
 	lb::vcf_reader reader;
 	lb::add_reserved_info_keys(reader.info_fields());
@@ -93,13 +86,7 @@ int main(int argc, char **argv)
 	reader.set_input(vcf_input);
 	reader.fill_buffer();
 	reader.read_header();
-	output_header(reader, args_info.output_given ? output_stream : std::cout);
-	
-	bool should_continue(false);
-	do {
-		reader.fill_buffer();
-		should_continue = reader.parse(handler);
-	} while (should_continue);
+	output_vcf(reader, args_info.output_given ? output_stream : std::cout);
 	
 	return EXIT_SUCCESS;
 }
