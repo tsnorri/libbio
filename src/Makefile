@@ -12,6 +12,7 @@ OBJECTS		=	assert.o \
 				sequence_reader.o \
 				types.o \
 				utility.o \
+				variant.o \
 				vcf_genotype_field_gt_parser.o \
 				vcf_input.o \
 				vcf_metadata.o \

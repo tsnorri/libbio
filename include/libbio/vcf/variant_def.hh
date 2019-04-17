@@ -64,31 +64,34 @@ namespace libbio {
 	}
 	
 	
-	// Copy constructor.
+	// Copy constructors.
 	template <typename t_format_access>
 	formatted_variant_base <t_format_access>::formatted_variant_base(formatted_variant_base const &other):
-		variant_base(other)
+		variant_base(other),
+		t_format_access(other)
 	{
-		if (this->m_info.size() || this->m_samples.size())
-		{
-			libbio_always_assert(this->m_reader);
-			
-			// Zeroed when copying.
-			auto const &variant_format(this->get_variant_format());
-			this->m_reader->initialize_variant(*this, variant_format);
-			this->m_reader->copy_variant(*this, other, variant_format);
-		}
+		this->finish_copy(other, get_format(), true);
 	}
+	
+	template <typename t_format_access>
+	template <typename t_other_format_access>
+	formatted_variant_base <t_format_access>::formatted_variant_base(formatted_variant_base <t_other_format_access> const &other):
+		variant_base(other),
+		t_format_access(*this->m_reader, other)
+	{
+		this->finish_copy(other, get_format(), true);
+	}
+	
 	
 	// Copy assignment operator.
 	template <typename t_format_access>
 	auto formatted_variant_base <t_format_access>::operator=(formatted_variant_base const &other) & -> formatted_variant_base &
 	{
-		if (this->m_info.size() || this->m_samples.size())
+		if (this != &other)
 		{
-			libbio_always_assert(this->m_reader);
-			auto const &variant_format(this->get_variant_format());
-			this->m_reader->copy_variant(*this, other, variant_format);
+			variant_base::operator=(other);
+			t_format_access::operator=(other);
+			this->finish_copy(other, get_format(), false);
 		}
 		return *this;
 	}

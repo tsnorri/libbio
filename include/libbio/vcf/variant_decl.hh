@@ -102,12 +102,16 @@ namespace libbio {
 		
 	protected:
 		void reset() { m_assigned_info_fields.assign(m_assigned_info_fields.size(), false); }
+		void finish_copy(variant_base const &other, variant_format const &variant_format, bool should_initialize);
 	};
 	
 	
 	// Use static polymorphism to delegate construction, destruction and copying.
 	class transient_variant_format_access
 	{
+		friend class variant_base;
+		friend class variant_format_access;
+		
 		template <typename>
 		friend class formatted_variant_base;
 		
@@ -118,6 +122,8 @@ namespace libbio {
 	
 	class variant_format_access
 	{
+		friend class variant_base;
+		
 		template <typename t_base>
 		friend class formatted_variant_base;
 
@@ -127,6 +133,12 @@ namespace libbio {
 	protected:
 		variant_format_access() = default;
 		inline variant_format_access(vcf_reader const &reader);
+		
+		variant_format_access(vcf_reader const &reader, transient_variant_format_access const &other):
+			m_format(other.get_format_ptr(reader))
+		{
+		}
+		
 		variant_format_ptr const &get_format_ptr(vcf_reader const &reader) const { return m_format; }
 	};
 	
@@ -134,15 +146,18 @@ namespace libbio {
 	// Override constructors, destructor and copy assignment to delegate the operatrions.
 	// Destructors of base classes are called in reverse order of declaration, so t_format_access’s destructor is called before variant_base’s.
 	template <typename t_format_access>
-	class formatted_variant_base : public variant_base, protected t_format_access
+	class formatted_variant_base : public variant_base, public t_format_access
 	{
 	public:
 		formatted_variant_base() = default;
 		
 		inline formatted_variant_base(vcf_reader &reader, std::size_t const sample_count, std::size_t const info_size, std::size_t const info_alignment);
 		
-		// Copy constructor.
+		// Copy constructors.
 		inline formatted_variant_base(formatted_variant_base const &other);
+		
+		template <typename t_other_format_access>
+		inline formatted_variant_base(formatted_variant_base <t_other_format_access> const &other);
 		
 		// Move constructor.
 		formatted_variant_base(formatted_variant_base &&) = default;
@@ -161,19 +176,24 @@ namespace libbio {
 	};
 	
 	
+	struct variant_alt_base
+	{
+		sv_type		alt_sv_type{};
+	};
+	
+	
 	template <typename t_string>
-	struct variant_alt
+	struct variant_alt : public variant_alt_base
 	{
 		t_string	alt{};
-		sv_type		alt_sv_type{};
 		
 		variant_alt() = default;
 		
 		// Allow copying from another specialization of variant_alt.
 		template <typename t_other_string>
 		variant_alt(variant_alt <t_other_string> const &other):
-			alt(other.alt),
-			alt_sv_type(other.alt_sv_type)
+			variant_alt_base(other),
+			alt(other.alt)
 		{
 		}
 		
@@ -184,8 +204,8 @@ namespace libbio {
 	// Store the string-type variant fields as t_string.
 	// This class is separated from formatted_variant_base mainly because maintaining
 	// constructors etc. with all these variables would be cumbersome.
-	template <typename t_string, typename t_formatter>
-	class variant_tpl : public formatted_variant_base <t_formatter>
+	template <typename t_string, typename t_format_access>
+	class variant_tpl : public formatted_variant_base <t_format_access>
 	{
 		template <typename, typename>
 		friend class variant_tpl;
@@ -199,12 +219,12 @@ namespace libbio {
 		std::vector <variant_alt <t_string>>	m_alts{};
 		
 	public:
-		using formatted_variant_base <t_formatter>::formatted_variant_base;
+		using formatted_variant_base <t_format_access>::formatted_variant_base;
 		
 		// Allow copying from from another specialization of variant_tpl.
-		template <typename t_other_string, typename t_other_formatter>
-		variant_tpl(variant_tpl <t_other_string, t_other_formatter> const &other):
-			formatted_variant_base <t_formatter>(other),
+		template <typename t_other_string, typename t_other_format_access>
+		variant_tpl(variant_tpl <t_other_string, t_other_format_access> const &other):
+			formatted_variant_base <t_format_access>(other),
 			m_chrom_id(other.m_chrom_id),
 			m_ref(other.m_ref),
 			m_id(other.m_id.cbegin(), other.m_id.cend()),
@@ -241,7 +261,7 @@ namespace libbio {
 		using variant_tpl <std::string, variant_format_access>::variant_tpl;
 	};
 	
-	
+
 	template <typename t_string, typename t_formatter>
 	void output_vcf(std::ostream &stream, variant_tpl <t_string, t_formatter> const &var);
 }
