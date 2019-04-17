@@ -326,7 +326,7 @@ namespace libbio {
 		);
 		
 		array_list &operator=(array_list &&other) & = default;
-		array_list &operator=(array_list const &other) { copy(other); return *this; }
+		array_list &operator=(array_list const &other) { if (this != &other) copy(other); return *this; }
 		
 		void reset() { m_first = SIZE_MAX; m_last_1 = 0; }
 		void set_first_element(size_type first) { m_first = first; }

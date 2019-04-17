@@ -24,7 +24,8 @@ namespace libbio {
 		
 		copyable_atomic &operator=(copyable_atomic const &other) &
 		{
-			this->store(other.load(std::memory_order_acquire), std::memory_order_release);
+			if (this != &other)
+				this->store(other.load(std::memory_order_acquire), std::memory_order_release);
 			return *this;
 		}
 	};
