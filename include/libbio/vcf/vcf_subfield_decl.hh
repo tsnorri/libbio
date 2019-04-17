@@ -89,7 +89,7 @@ namespace libbio {
 		inline void assign_flag(transient_variant &dst) const;
 		virtual vcf_info_field_base *clone() const override = 0;
 	public:
-		vcf_metadata_info *get_metadata() const override { return m_metadata; }
+		vcf_metadata_info *get_metadata() const final { return m_metadata; }
 		
 		// Output the field contents to a stream. The value has to be present in the variant.
 		virtual void output_vcf_value(std::ostream &stream, variant_base const &var) const = 0;
@@ -117,7 +117,7 @@ namespace libbio {
 		inline void parse_and_assign(std::string_view const &sv, variant_sample &dst) const;
 		virtual vcf_genotype_field_base *clone() const override = 0;
 	public:
-		vcf_metadata_format *get_metadata() const override { return m_metadata; }
+		vcf_metadata_format *get_metadata() const final { return m_metadata; }
 		
 		// Output the field contents to a stream.
 		virtual void output_vcf_value(std::ostream &stream, variant_sample const &sample) const = 0;
@@ -156,34 +156,34 @@ namespace libbio {
 	class vcf_subfield_placeholder : public virtual vcf_subfield_base
 	{
 	public:
-		virtual vcf_metadata_value_type value_type() const override { return vcf_metadata_value_type::NOT_PROCESSED; }
+		virtual vcf_metadata_value_type value_type() const final { return vcf_metadata_value_type::NOT_PROCESSED; }
 		
 	protected:
-		virtual std::uint16_t byte_size() const override { return 0; }
-		virtual std::uint16_t alignment() const override { return 1; }
-		virtual std::int32_t number() const override { return 0; }
-		virtual void construct_ds(std::byte *mem, std::uint16_t const alt_count) const override { /* No-op. */ }
-		virtual void destruct_ds(std::byte *mem) const override { /* No-op. */ }
-		virtual void copy_ds(std::byte const *src, std::byte *dst) const override { /* No-op. */ }
-		virtual void reset(std::byte *mem) const override { /* No-op. */ }
+		virtual std::uint16_t byte_size() const final { return 0; }
+		virtual std::uint16_t alignment() const final { return 1; }
+		virtual std::int32_t number() const final { return 0; }
+		virtual void construct_ds(std::byte *mem, std::uint16_t const alt_count) const final { /* No-op. */ }
+		virtual void destruct_ds(std::byte *mem) const final { /* No-op. */ }
+		virtual void copy_ds(std::byte const *src, std::byte *dst) const final { /* No-op. */ }
+		virtual void reset(std::byte *mem) const final { /* No-op. */ }
 	};
 	
 	class vcf_info_field_placeholder : public vcf_info_field_base, public vcf_subfield_placeholder
 	{
-		virtual bool parse_and_assign(std::string_view const &sv, variant_base &var, std::byte *mem) const override { /* No-op. */ return false; }
-		virtual vcf_info_field_placeholder *clone() const override { return new vcf_info_field_placeholder(*this); }
+		virtual bool parse_and_assign(std::string_view const &sv, variant_base &var, std::byte *mem) const final { /* No-op. */ return false; }
+		virtual vcf_info_field_placeholder *clone() const final { return new vcf_info_field_placeholder(*this); }
 		
 	public:
-		virtual void output_vcf_value(std::ostream &stream, variant_base const &var) const override { throw std::runtime_error("Should not be called; parse_and_assign returns false"); }
+		virtual void output_vcf_value(std::ostream &stream, variant_base const &var) const final { throw std::runtime_error("Should not be called; parse_and_assign returns false"); }
 	};
 	
 	class vcf_genotype_field_placeholder : public vcf_genotype_field_base, public vcf_subfield_placeholder
 	{
-		virtual bool parse_and_assign(std::string_view const &sv, variant_sample &sample, std::byte *mem) const override { /* No-op. */ return false; }
-		virtual vcf_genotype_field_placeholder *clone() const override { return new vcf_genotype_field_placeholder(*this); }
+		virtual bool parse_and_assign(std::string_view const &sv, variant_sample &sample, std::byte *mem) const final { /* No-op. */ return false; }
+		virtual vcf_genotype_field_placeholder *clone() const final { return new vcf_genotype_field_placeholder(*this); }
 
 	public:
-		virtual void output_vcf_value(std::ostream &stream, variant_sample const &var) const override { throw std::runtime_error("Should not be called; parse_and_assign returns false"); }
+		virtual void output_vcf_value(std::ostream &stream, variant_sample const &var) const final { throw std::runtime_error("Should not be called; parse_and_assign returns false"); }
 	};
 	
 	
