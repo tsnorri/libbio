@@ -28,6 +28,13 @@ namespace libbio {
 	}
 	
 	
+	bool vcf_info_field_base::has_value(variant_base const &var) const
+	{
+		libbio_assert(m_metadata);
+		return var.m_assigned_info_fields[m_metadata->get_index()];
+	}
+	
+	
 	void vcf_info_field_base::assign_flag(transient_variant &dst) const
 	{
 		auto const vt(value_type());
@@ -502,7 +509,7 @@ namespace libbio {
 		}
 		
 		// Convenience function.
-		typename field_access::value_type &operator()(typename base_class::container_type const &ct)
+		typename field_access::value_type &operator()(typename base_class::container_type const &ct) const
 		{
 			return access_ds(this->buffer_start(ct));
 		}
@@ -594,7 +601,7 @@ namespace libbio {
 		
 	public:
 		virtual vcf_metadata_value_type value_type() const final { return vcf_metadata_value_type::STRING; }
-		virtual void output_vcf_value(std::ostream &stream, variant_sample const &var) const final;
+		virtual void output_vcf_value(std::ostream &stream, variant_sample const &sample) const final;
 
 		// Convenience function.
 		vector_type const &operator()(variant_sample const &ct) const
@@ -602,6 +609,16 @@ namespace libbio {
 			return ct.m_genotype;
 		}
 	};
+	
+	
+	template <typename t_string, typename t_formatter>
+	std::size_t variant_end_pos(variant_tpl <t_string, t_formatter> const &var, vcf_info_field_end const &end_field)
+	{
+		if (end_field.has_value(var))
+			return end_field(var);
+		else
+			return var.zero_based_pos() + var.ref().size();
+	}	
 }
 
 #endif

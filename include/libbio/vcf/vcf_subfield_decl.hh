@@ -67,7 +67,7 @@ namespace libbio {
 	};
 	
 	
-	// Interface for info field descriptions.
+	// Base class for info field descriptions.
 	class vcf_info_field_base : public virtual vcf_subfield_base
 	{
 		friend class vcf_reader;
@@ -96,10 +96,13 @@ namespace libbio {
 		
 		// Output the given separator and the field contents to a stream if the value in present in the variant.
 		bool output_vcf_value(std::ostream &stream, variant_base const &var, char const *sep) const;
+		
+		// Check whether the variant has a value for this INFO field.
+		inline bool has_value(variant_base const &var) const;
 	};
 	
 	
-	// Interface for genotype field descriptions.
+	// Base class for genotype field descriptions.
 	class vcf_genotype_field_base : public virtual vcf_subfield_base
 	{
 		friend class vcf_reader;
