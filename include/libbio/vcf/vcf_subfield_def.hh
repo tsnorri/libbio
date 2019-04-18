@@ -614,7 +614,7 @@ namespace libbio {
 	template <typename t_string, typename t_formatter>
 	std::size_t variant_end_pos(variant_tpl <t_string, t_formatter> const &var, vcf_info_field_end const &end_field)
 	{
-		if (end_field.has_value(var))
+		if (end_field.get_metadata() && end_field.has_value(var))
 			return end_field(var);
 		else
 			return var.zero_based_pos() + var.ref().size();
