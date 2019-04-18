@@ -256,7 +256,7 @@ namespace libbio { namespace detail {
 #else
 		if (size)
 		{
-			retval = std::aligned_alloc(alignement, size * sizeof(t_type));
+			retval = std::aligned_alloc(alignment, size * sizeof(t_type));
 			if (!retval)
 				throw std::bad_alloc();
 		}
