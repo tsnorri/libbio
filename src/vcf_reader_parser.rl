@@ -296,8 +296,8 @@ namespace libbio {
 			filter		= (filter_pass | (filter_part (';' filter_part)*));
 			
 			# Perform have_multiple_info_values before storing the current INFO value.
-			info_str		= (chr - [,;=]) +;
-			info_key		= (info_str)						>(start_string) %(end_info_key);
+			info_str		= (chr - [,;=])+;
+			info_key		= ([A-Za-z_][0-9A-Za-z_.]*|"1000G")	>(start_string) %(end_info_key);
 			info_val		= (info_str)						>(start_string) %(end_info_val);
 			info_values		= (info_val (',' info_val)*)		>(start_info_values) %(end_info_values);
 			info_assignment	=	(
