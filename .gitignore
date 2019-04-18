@@ -1,7 +1,6 @@
 .DS_Store
 
 # Generated files
-src/vcf_reader.cc
 tests/tests
 
 # Prerequisites
