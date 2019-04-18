@@ -32,7 +32,7 @@ namespace {
 			sample_names[number - 1] = &name;
 		}
 		
-		stream << "##CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
+		stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
 		for (auto const ptr : sample_names)
 			stream << '\t' << *ptr;
 		stream << '\n';
