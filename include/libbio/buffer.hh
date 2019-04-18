@@ -245,15 +245,21 @@ namespace libbio { namespace detail {
 	template <typename t_type>
 	t_type *aligned_alloc(std::size_t const size, std::size_t const alignment)
 	{
-#ifdef __APPLE__ // Apparently macOS does not have aligned_alloc.
 		void *retval{};
-		auto const st(posix_memalign(&retval, alignment, size * sizeof(t_type)));
-		if (0 != st)
-			throw std::bad_alloc();
+#ifdef __APPLE__ // Apparently macOS does not have aligned_alloc.
+		if (size)
+		{
+			auto const st(posix_memalign(&retval, alignment, size * sizeof(t_type)));
+			if (0 != st)
+				throw std::bad_alloc();
+		}
 #else
-		auto *retval(std::aligned_alloc(alignement, size * sizeof(t_type)));
-		if (!retval)
-			throw std::bad_alloc();
+		if (size)
+		{
+			retval = std::aligned_alloc(alignement, size * sizeof(t_type));
+			if (!retval)
+				throw std::bad_alloc();
+		}
 #endif
 		return reinterpret_cast <t_type *>(retval);
 	}
