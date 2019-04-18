@@ -68,6 +68,7 @@ namespace libbio {
 		std::size_t						m_lineno{1};				// Current line number.
 		std::size_t						m_variant_index{0};			// Current variant number (0-based).
 		vcf_field						m_max_parsed_field{};
+		bool							m_have_assigned_variant_format{};
 	
 	public:
 		vcf_reader() = default;
@@ -78,7 +79,7 @@ namespace libbio {
 		}
 		
 		void set_input(class vcf_input &input) { m_input = &input; }
-		void set_variant_format(variant_format *fmt) { libbio_always_assert(fmt); m_current_format.reset(fmt); }
+		void set_variant_format(variant_format *fmt) { libbio_always_assert(fmt); m_current_format.reset(fmt); m_have_assigned_variant_format = true; }
 		void read_header();
 		void fill_buffer();
 		void reset();
@@ -91,6 +92,7 @@ namespace libbio {
 		char const *buffer_end() const { return m_fsm.pe; }
 		char const *eof() const { return m_fsm.eof; }
 		
+		bool has_assigned_variant_format() const { return m_have_assigned_variant_format; }
 		vcf_metadata const &metadata() const { return m_metadata; }
 		vcf_info_field_map &info_fields() { return m_info_fields; }
 		vcf_info_field_map const &info_fields() const { return m_info_fields; }
