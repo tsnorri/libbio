@@ -155,7 +155,7 @@ namespace libbio {
 		// ALT
 		stream << '\t';
 		ranges::copy(
-			var.alts() | ranges::view::transform([](auto const &va) -> std::string_view const & { return va.alt; }),
+			var.alts() | ranges::view::transform([](auto const &va) -> t_string const & { return va.alt; }),
 			ranges::make_ostream_joiner(stream, ",")
 		);
 		
