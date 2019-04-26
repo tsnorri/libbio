@@ -190,7 +190,7 @@ namespace libbio {
 		// Determine the position of the given index
 		// inside a word and shift the given value.
 		libbio_assert(idx < m_size);
-		libbio_assert(val == (val & ELEMENT_MASK));
+		libbio_assert_eq_msg(val, (val & ELEMENT_MASK), "Attempted to fetch_or '", +val, "'.");
 
 		auto const word_idx(idx / ELEMENT_COUNT);
 		auto const el_idx(idx % ELEMENT_COUNT);
