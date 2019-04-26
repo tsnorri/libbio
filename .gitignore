@@ -2,6 +2,14 @@
 
 # Generated files
 tests/tests
+src/vcf_genotype_field_gt_parser.cc
+src/vcf_genotype_field_gt_parser.pdf
+src/vcf_reader.dot
+src/vcf_reader_header_parser.cc
+src/vcf_reader_header_parser.pdf
+src/vcf_reader_parser.cc
+vcfcat/cmdline.h
+vcfcat/vcfcat
 
 # Prerequisites
 *.d
