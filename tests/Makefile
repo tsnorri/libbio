@@ -5,7 +5,8 @@ include ../common.mk
 # but set a configuration option instead for now.
 CPPFLAGS += -DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS -I../lib/Catch2/single_include
 
-OBJECTS	=	algorithm.o \
+OBJECTS	=	assert.o \
+			algorithm.o \
 			array_list.o \
 			bit_rle_codec.o \
 			fasta_reader.o \

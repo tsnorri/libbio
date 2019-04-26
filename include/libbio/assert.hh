@@ -19,50 +19,39 @@
 
 #define libbio_stringify(X) (#X)
 
-
 // Contracts not yet available in either Clang or GCC.
-#define libbio_fail(MESSAGE)				do { \
-		::libbio::detail::assertion_failure(__FILE__, __LINE__, MESSAGE); \
+#define libbio_assert_test(TEST, MESSAGE)				do { \
+		if (!(TEST)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, MESSAGE); \
 	} while (false)
-#define libbio_always_assert(X)				do { \
-		if (!(X)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, #X); \
-	} while (false)
-#define libbio_always_assert_lt(X, Y)		do { \
-		if (!::libbio::is_lt(X, Y))		::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X < Y)); \
-	} while (false)
-#define libbio_always_assert_lte(X, Y)		do { \
-		if (!::libbio::is_lte(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X <= Y)); \
-	} while (false)
-#define libbio_always_assert_eq(X, Y)		do { \
-		if (!::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X == Y)); \
-	} while (false)
-#define libbio_always_assert_neq(X, Y)		do { \
-		if (::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X != Y)); \
-	} while (false)
-#define libbio_always_assert_msg(X, ...)	do { \
-		if (!(X)) { \
+
+#define libbio_assert_test_msg(TEST, ...)				do { \
+		if (!(TEST)) { \
 			std::stringstream stream; \
 			::libbio::detail::assertion_failure(__FILE__, __LINE__, stream, __VA_ARGS__); \
 		} \
 	} while (false)
-#define libbio_always_assert_lt_msg(X, Y, ...)	do { \
-		if (!::libbio::is_lt(X, Y)) { \
-			std::stringstream stream; \
-			::libbio::detail::assertion_failure(__FILE__, __LINE__, stream, __VA_ARGS__, ": ", libbio_stringify(X < Y), '.'); \
-		} \
+
+#define libbio_assert_test_rel_msg(TEST, REL_EXPR, ...)	libbio_assert_test_msg((TEST), __VA_ARGS__, ": ", (REL_EXPR), '.')
+
+#define libbio_fail(MESSAGE)					do { \
+		::libbio::detail::assertion_failure(__FILE__, __LINE__, MESSAGE); \
 	} while (false)
-#define libbio_always_assert_eq_msg(X, Y, ...)	do { \
-		if (!::libbio::is_equal(X, Y)) { \
-			std::stringstream stream; \
-			::libbio::detail::assertion_failure(__FILE__, __LINE__, stream, __VA_ARGS__, ": ", libbio_stringify(X == Y), '.'); \
-		} \
-	} while (false)
-#define libbio_always_assert_lte_msg(X, Y, ...)	do { \
-		if (!::libbio::is_lte(X, Y)) { \
-			std::stringstream stream; \
-			::libbio::detail::assertion_failure(__FILE__, __LINE__, stream, __VA_ARGS__, ": ", libbio_stringify(X <= Y), '.'); \
-		} \
-	} while (false)
+
+#define libbio_always_assert(X)					libbio_assert_test((X),										#X)
+#define libbio_always_assert_lt(X, Y)			libbio_assert_test(::libbio::is_lt((X), (Y)),				libbio_stringify(X < Y))
+#define libbio_always_assert_lte(X, Y)			libbio_assert_test(::libbio::is_lte((X), (Y)),				libbio_stringify(X <= Y))
+#define libbio_always_assert_gt(X, Y)			libbio_assert_test(::libbio::is_lt((Y), (X)),				libbio_stringify(X > Y))
+#define libbio_always_assert_gte(X, Y)			libbio_assert_test(::libbio::is_lte((Y), (X)),				libbio_stringify(X >= Y))
+#define libbio_always_assert_eq(X, Y)			libbio_assert_test(::libbio::is_equal((X), (Y)),			libbio_stringify(X == Y))
+#define libbio_always_assert_neq(X, Y)			libbio_assert_test(!::libbio::is_equal((X), (Y)),			libbio_stringify(X != Y))
+
+#define libbio_always_assert_msg(X, ...)		libbio_assert_test_msg((X),																__VA_ARGS__)
+#define libbio_always_assert_lt_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lt((X), (Y)),		libbio_stringify(X < Y),	__VA_ARGS__)
+#define libbio_always_assert_lte_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lte((X), (Y)),		libbio_stringify(X <= Y),	__VA_ARGS__)
+#define libbio_always_assert_gt_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lt((Y), (X)),		libbio_stringify(X > Y),	__VA_ARGS__)
+#define libbio_always_assert_gte_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lte((Y), (X)),		libbio_stringify(X >= Y),	__VA_ARGS__)
+#define libbio_always_assert_eq_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_equal((X), (Y)),	libbio_stringify(X == Y),	__VA_ARGS__)
+#define libbio_always_assert_neq_msg(X, Y, ...)	libbio_assert_test_rel_msg(!::libbio::is_equal((X), (Y)),	libbio_stringify(X != Y),	__VA_ARGS__)
 
 #ifdef LIBBIO_NDEBUG
 #	define libbio_assert(X)
@@ -72,32 +61,34 @@
 #	define libbio_assert_gte(X, Y)
 #	define libbio_assert_eq(X, Y)
 #	define libbio_assert_neq(X, Y)
+
 #	define libbio_do_and_assert_eq(X, Y)	do { (X); } while (false)
+
+#	define libbio_assert_msg(X, ...)
+#	define libbio_assert_lt_msg(X, Y, ...)
+#	define libbio_assert_lte_msg(X, Y, ...)
+#	define libbio_assert_gt_msg(X, Y, ...)
+#	define libbio_assert_gte_msg(X, Y, ...)
+#	define libbio_assert_eq_msg(X, Y, ...)
+#	define libbio_assert_neq_msg(X, Y, ...)
 #else
-#	define libbio_assert(X)					do { \
-		if (!(X)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, #X); \
-	} while (false)
-#	define libbio_assert_lt(X, Y)			do { \
-		if (!::libbio::is_lt(X, Y))		::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X < Y)); \
-	} while (false)
-#	define libbio_assert_lte(X, Y)			do { \
-		if (!::libbio::is_lte(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X <= Y)); \
-	} while (false)
-#	define libbio_assert_gt(X, Y)			do { \
-		if (!::libbio::is_lt(Y, X))		::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X > Y)); \
-	} while (false)
-#	define libbio_assert_gte(X, Y)			do { \
-		if (!::libbio::is_lte(Y, X))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X >= Y)); \
-	} while (false)
-#	define libbio_assert_eq(X, Y)			do { \
-		if (!::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X == Y)); \
-	} while (false)
-#	define libbio_assert_neq(X, Y)			do { \
-		if (::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X != Y)); \
-	} while (false)
-#	define libbio_do_and_assert_eq(X, Y)	do { \
-		if (!::libbio::is_equal(X, Y))	::libbio::detail::assertion_failure(__FILE__, __LINE__, libbio_stringify(X == Y)); \
-	} while (false)
+#	define libbio_assert(X)					libbio_always_assert((X))
+#	define libbio_assert_lt(X, Y)			libbio_always_assert_lt((X), (Y))
+#	define libbio_assert_lte(X, Y)			libbio_always_assert_lte((X), (Y))
+#	define libbio_assert_gt(X, Y)			libbio_always_assert_gt((X), (Y))
+#	define libbio_assert_gte(X, Y)			libbio_always_assert_gte((X), (Y))
+#	define libbio_assert_eq(X, Y)			libbio_always_assert_eq((X), (Y))
+#	define libbio_assert_neq(X, Y)			libbio_always_assert_neq((X), (Y))
+
+#	define libbio_do_and_assert_eq(X, Y)	libbio_always_assert_eq((X), (Y))
+		
+#	define libbio_assert_msg(X, ...)		libbio_always_assert_msg((X), __VA_ARGS__)
+#	define libbio_assert_lt_msg(X, Y, ...)	libbio_always_assert_lt_msg((X), (Y), __VA_ARGS__)
+#	define libbio_assert_lte_msg(X, Y, ...)	libbio_always_assert_lte_msg((X), (Y), __VA_ARGS__)
+#	define libbio_assert_gt_msg(X, Y, ...)	libbio_always_assert_gt_msg((X), (Y), __VA_ARGS__)
+#	define libbio_assert_gte_msg(X, Y, ...)	libbio_always_assert_gte_msg((X), (Y), __VA_ARGS__)
+#	define libbio_assert_eq_msg(X, Y, ...)	libbio_always_assert_eq_msg((X), (Y), __VA_ARGS__)
+#	define libbio_assert_neq_msg(X, Y, ...)	libbio_always_assert_neq_msg((X), (Y), __VA_ARGS__)
 #endif
 
 
