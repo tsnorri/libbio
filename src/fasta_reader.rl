@@ -63,6 +63,7 @@ namespace libbio
 			
 			action sequence {
 				std::string_view const sv(m_line_start, fpc - m_line_start);
+				libbio_assert_neq(*sv.rbegin(), '\n');
 				if (!delegate.handle_sequence_line(*this, sv))
 					return false;
 			}
