@@ -7,15 +7,22 @@
 
 
 namespace libbio { namespace detail {
+
+	template <typename t_exception>
+	void throw_with_trace(t_exception const &exc)
+	{
+		throw boost::enable_error_info(exc) << traced(boost::stacktrace::stacktrace());
+	}
+
 	
 	void assertion_failure(char const *file, long const line, char const *assertion)
 	{
-		throw assertion_failure_exception(file, line, assertion);
+		throw_with_trace(assertion_failure_exception(file, line, assertion));
 	}
 	
 	
 	void assertion_failure(char const *file, long const line)
 	{
-		throw assertion_failure_exception(file, line);
+		throw_with_trace(assertion_failure_exception(file, line));
 	}
 }}

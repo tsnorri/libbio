@@ -6,6 +6,8 @@
 #ifndef LIBBIO_ASSERT_HH
 #define LIBBIO_ASSERT_HH
 
+#include <boost/stacktrace.hpp>
+#include <boost/exception/all.hpp>
 #include <iostream>
 #include <libbio/buffer.hh>
 #include <libbio/utility/is_equal.hh>
@@ -152,8 +154,11 @@ namespace libbio { namespace detail {
 
 
 namespace libbio {
+
+	typedef boost::error_info <struct tag_stacktrace, boost::stacktrace::stacktrace> traced;
+
 	
-	class assertion_failure_exception final : public std::exception
+	class assertion_failure_exception : public std::exception
 	{
 	protected:
 		std::shared_ptr <detail::assertion_failure_cause>	m_cause;
