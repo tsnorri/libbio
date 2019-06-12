@@ -130,7 +130,7 @@ namespace libbio { namespace detail {
 				libbio_assert(bits < WORD_BITS);
 				
 				// end() is not past-the-end b.c. right_extent is not empty.
-				word_type const mask((0x1 << bits) - 1);
+				word_type const mask((word_type(0x1) << bits) - 1);
 				auto last_word(m_mid.end()->load(order) & mask);
 				unary_fn(last_word, size);
 			}
@@ -155,7 +155,7 @@ namespace libbio { namespace detail {
 			if (m_right_extent.empty())
 			{
 				// Just after the else before, we checked that left_bits < WORD_BITS. Hence, shifting is safe.
-				word_type const mask((0x1 << left_bits) - 1);
+				word_type const mask((word_type(0x1) << left_bits) - 1);
 				unary_fn(word & mask, left_size);
 			}
 			else
@@ -165,7 +165,7 @@ namespace libbio { namespace detail {
 				libbio_assert(right_bits < WORD_BITS);
 
 				// m_mid.end() is not past-the-end b.c. right_extent is not empty.
-				word_type const mask((0x1 << right_bits) - 1);
+				word_type const mask((word_type(0x1) << right_bits) - 1);
 				auto last_word(m_mid.end()->load(order) & mask);
 				word |= last_word << left_bits;
 				unary_fn(word, min_ct(ELEMENT_COUNT, left_size + right_size));
