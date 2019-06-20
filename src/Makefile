@@ -15,6 +15,8 @@ OBJECTS		=	assert.o \
 				variant.o \
 				vcf_input.o \
 				vcf_reader.o
+CFLAGS		+= -fPIC
+CXXFLAGS	+= -fPIC
 
 all: libbio.a
 
