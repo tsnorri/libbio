@@ -40,6 +40,12 @@ namespace libbio {
 	}
 	
 	
+	bool try_open_file_for_reading(std::string const &fname, file_istream &stream)
+	{
+		return try_open_file_for_reading(fname.c_str(), stream);
+	}
+	
+	
 	void open_file_for_reading(char const *fname, file_istream &stream)
 	{
 		int const fd(open_file_for_reading(fname));
@@ -49,12 +55,34 @@ namespace libbio {
 	}
 	
 	
+	bool try_open_file_for_reading(char const *fname, file_istream &stream)
+	{
+		auto const [fd, did_open] = try_open_file_for_reading(fname);
+		if (!did_open)
+			return false;
+		
+		ios::file_descriptor_source source(fd, ios::close_handle);
+		stream.open(source);
+		stream.exceptions(std::istream::badbit);
+		return true;
+	}
+	
+	
 	int open_file_for_reading(char const *fname)
 	{
 		int fd(open(fname, O_RDONLY));
 		if (-1 == fd)
 			handle_file_error(fname);
 		return fd;
+	}
+	
+	
+	std::pair <int, bool> try_open_file_for_reading(char const *fname)
+	{
+		int fd(open(fname, O_RDONLY));
+		if (-1 == fd)
+			return std::make_pair(-1, false);
+		return std::make_pair(fd, true);
 	}
 	
 	

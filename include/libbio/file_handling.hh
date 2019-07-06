@@ -34,11 +34,18 @@ namespace libbio {
 	typedef boost::iostreams::stream <boost::iostreams::file_descriptor_sink>	file_ostream;
 	
 	void handle_file_error(char const *fname);
+	
 	int open_file_for_reading(char const *fname);
 	void open_file_for_reading(char const *fname, file_istream &stream);
 	void open_file_for_reading(std::string const &fname, file_istream &stream);
+
+	bool try_open_file_for_reading(std::string const &fname, file_istream &stream);
+	bool try_open_file_for_reading(char const *fname, file_istream &stream);
+	std::pair <int, bool> try_open_file_for_reading(char const *fname);
+	
 	void open_file_for_writing(char const *fname, file_ostream &stream, writing_open_mode const mode);
 	void open_file_for_writing(std::string const &fname, file_ostream &stream, writing_open_mode const mode);
+	
 	bool get_file_path(int fd, std::string &buffer);
 	
 	
