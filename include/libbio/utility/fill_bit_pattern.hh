@@ -45,6 +45,33 @@ namespace libbio {
 		typedef detail::fill_bit_pattern_helper <CHAR_BIT * sizeof(t_word) - t_pattern_length> helper;
 		return helper::template fill_bit_pattern <t_pattern_length>(pattern);
 	}
+	
+	
+	template <typename t_word>
+	inline t_word fill_bit_pattern(t_word pattern, std::uint8_t const pattern_length)
+	{
+		switch (pattern_length)
+		{
+			case 0:
+				return pattern;
+			case 1:
+				return fill_bit_pattern <1>(pattern);
+			case 2:
+				return fill_bit_pattern <2>(pattern);
+			case 4:
+				return fill_bit_pattern <4>(pattern);
+			case 8:
+				return fill_bit_pattern <8>(pattern);
+			case 16:
+				return fill_bit_pattern <16>(pattern);
+			case 32:
+				return fill_bit_pattern <32>(pattern);
+			case 64:
+				return pattern;
+			default:
+				throw std::runtime_error("Unexpected pattern length");
+		}
+	}
 }
 
 #endif
