@@ -21,6 +21,68 @@
 
 namespace libbio { namespace detail {
 	
+	template <unsigned int t_bits, typename t_word>
+	struct int_vector_trait_base
+	{
+		constexpr inline t_word extent_mask(std::size_t const extent_size);
+	};
+	
+	template <unsigned int t_bits, typename t_word>
+	class int_vector_trait : public int_vector_trait_base <0, t_word>
+	{
+	public:
+		typedef t_word		word_type;
+		enum { WORD_BITS = CHAR_BIT * sizeof(word_type) };
+		
+		enum {
+			ELEMENT_BITS		= t_bits,
+			ELEMENT_COUNT		= WORD_BITS / t_bits,
+			ELEMENT_MASK		= (std::numeric_limits <word_type>::max() >> (WORD_BITS - t_bits))
+		};
+		
+		int_vector_trait() = default;
+		
+		int_vector_trait(std::uint8_t /* ignored */):
+			int_vector_trait()
+		{
+		}
+		
+		constexpr std::uint8_t element_bits() const { return ELEMENT_BITS; }
+		constexpr std::uint8_t element_count_in_word() const { return ELEMENT_COUNT; }
+		constexpr std::uint8_t bits_before_element(std::uint8_t const el_idx) const { return t_bits * el_idx; }
+		constexpr word_type element_mask() const { return ELEMENT_MASK; }
+		constexpr inline word_type extent_mask(std::size_t const extent_size, word_type const mask);
+	};
+	
+	// Specialization for runtime-defined element size.
+	template <typename t_word>
+	class int_vector_trait <0, t_word> : public int_vector_trait_base <0, t_word>
+	{
+	public:
+		typedef t_word		word_type;
+		enum { WORD_BITS = CHAR_BIT * sizeof(word_type) };
+		
+	protected:
+		std::uint8_t	m_bits{};
+		
+	public:
+		int_vector_trait() = default;
+		
+		int_vector_trait(std::uint8_t bits):
+			m_bits(bits)
+		{
+		}
+		
+		std::uint8_t element_bits() const { return m_bits; }
+		void set_element_bits(std::uint8_t const bits) { m_bits = bits; }
+		
+		std::uint8_t element_count_in_word() const { return WORD_BITS / m_bits; }
+		std::uint8_t bits_before_element(std::uint8_t const el_idx) const { return m_bits * el_idx; }
+		word_type element_mask() const { return (std::numeric_limits <word_type>::max() >> (WORD_BITS - m_bits)); }
+		inline word_type extent_mask(std::size_t const extent_size, word_type const mask);
+	};
+	
+	
 	template <typename t_vector>
 	class int_vector_value_reference
 	{
@@ -160,19 +222,22 @@ namespace libbio { namespace detail {
 namespace libbio {
 	
 	template <unsigned int t_bits, typename t_word = std::uint64_t>
-	class int_vector
+	class int_vector : public detail::int_vector_trait <t_bits, t_word>
 	{
 		static_assert(std::is_unsigned_v <t_word>);
 		
 	public:
 		typedef t_word		word_type;
-		enum { WORD_BITS = CHAR_BIT * sizeof(word_type) };
+		typedef detail::int_vector_trait <t_bits, t_word>				trait_type;
+		enum { WORD_BITS = trait_type::WORD_BITS };
 		
 		static_assert(t_bits <= WORD_BITS);
 		static_assert(0 == t_bits || 0 == WORD_BITS % t_bits);
 		
 	protected:
 		typedef std::vector <word_type>									value_vector;
+		
+		struct protected_tag {};
 		
 	public:
 		typedef typename value_vector::reference						word_reference;
@@ -188,36 +253,43 @@ namespace libbio {
 		typedef detail::int_vector_iterator <int_vector>				iterator;
 		typedef detail::int_vector_iterator <int_vector const>			const_iterator;
 		
-		enum {
-			ELEMENT_BITS		= t_bits,
-			ELEMENT_COUNT		= WORD_BITS / t_bits,
-			ELEMENT_MASK		= (std::numeric_limits <word_type>::max() >> (WORD_BITS - t_bits))
-		};
-	
 	protected:
 		value_vector	m_values;
 		std::size_t		m_size{};
 		
 	protected:
-		static inline word_type extent_mask(std::size_t const extent_size);
-		static inline word_type extent_mask(std::size_t const extent_size, word_type const mask);
-		
-	public:
-		int_vector() = default;
-		explicit int_vector(std::size_t const size):
-			m_values(std::ceil(1.0 * size / ELEMENT_COUNT), 0),
+		int_vector(std::size_t const size, std::uint8_t const bits, protected_tag const &):
+			trait_type(bits),
+			m_values(std::ceil(1.0 * size / this->element_count_in_word()), 0),
 			m_size(size)
 		{
 		}
 		
+	public:
+		int_vector() = default;
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
+		explicit int_vector(std::size_t const size):
+			int_vector(size, 0, protected_tag())
+		{
+		}
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 == t_bits, int> = 0>
+		int_vector(std::size_t const size, std::uint8_t const bits):
+			int_vector(size, bits, protected_tag())
+		{
+		}
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
 		int_vector(std::size_t const size, word_type const val):
-			m_values(std::ceil(1.0 * size / ELEMENT_COUNT), fill_bit_pattern <ELEMENT_BITS>(val)),
+			trait_type(),
+			m_values(std::ceil(1.0 * size / trait_type::element_count_in_word()), fill_bit_pattern <trait_type::ELEMENT_BITS>(val)),
 			m_size(size)
 		{
-			auto const extent_size(size % ELEMENT_COUNT);
+			auto const extent_size(size % this->element_count_in_word());
 			if (extent_size)
 			{
-				auto const last_element_mask(extent_mask(extent_size, val));
+				auto const last_element_mask(this->extent_mask(extent_size, val));
 				*m_values.rbegin() = last_element_mask;
 			}
 		}
@@ -236,20 +308,23 @@ namespace libbio {
 		word_type operator[](std::size_t const idx) const { return load(idx); }
 		reference_proxy operator[](std::size_t const idx) { return reference_proxy(*this, idx); }
 		
+		// Convenience functions.
+		word_type front() const { return (*this)[0]; }
+		reference_proxy front() { return (*this)[0]; }
+		word_type back() const { return (*this)[size() - 1]; }
+		reference_proxy back() { return (*this)[size() - 1]; }
+		
 		std::size_t size() const { return m_size; }											// Size in elements.
-		std::size_t available_size() const { return m_values.size() * ELEMENT_COUNT; }
+		std::size_t reserved_size() const { return m_values.size() * this->element_count_in_word(); } // FIXME: not completely true b.c. m_values may have more space allocated than its size().
 		std::size_t word_size() const { return m_values.size(); }
-		void set_size(std::size_t new_size) { libbio_assert(new_size <= available_size()); m_size = new_size; }
+		void set_size(std::size_t new_size) { libbio_assert(new_size <= reserved_size()); m_size = new_size; }
 		
 		// Since m_values does not contain std::atomic <...>, its contents can be moved and thus the vector can be resized.
-		void resize(std::size_t new_size) { m_values.resize(std::ceil(1.0 * new_size / ELEMENT_COUNT)); m_size = new_size; }
-		void resize(std::size_t new_size, word_type bit_pattern) { m_values.resize(std::ceil(1.0 * new_size / ELEMENT_COUNT)); m_size = new_size; }
-		void reserve(std::size_t new_size) { m_values.reserve(std::ceil(1.0 * new_size / ELEMENT_COUNT)); }
+		void resize(std::size_t new_size) { m_values.resize(std::ceil(1.0 * new_size / this->element_count_in_word())); m_size = new_size; }
+		void resize(std::size_t new_size, word_type bit_pattern) { m_values.resize(std::ceil(1.0 * new_size / this->element_count_in_word())); m_size = new_size; }
+		void reserve(std::size_t new_size) { m_values.reserve(std::ceil(1.0 * new_size / this->element_count_in_word())); }
 		
 		constexpr std::size_t word_bits() const { return WORD_BITS; }
-		constexpr std::size_t element_bits() const { return t_bits; }
-		constexpr std::size_t element_count_in_word() const { return ELEMENT_COUNT; }
-		constexpr word_type element_mask() const { return ELEMENT_MASK; }
 		
 		// Iterators to packed values.
 		iterator begin() { return iterator(*this, 0); }
@@ -274,8 +349,15 @@ namespace libbio {
 		const_reverse_word_iterator word_crend() const { return m_values.crend(); }
 		
 		// Additional helpers.
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 == t_bits, int> = 0>
+		void push_back(word_type val);
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
 		void push_back(word_type mask, std::size_t count = 1);
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
 		void reverse();
+		
 		void clear() { m_values.clear(); m_size = 0; }
 		
 		bool operator==(int_vector const &other) const;
@@ -283,7 +365,38 @@ namespace libbio {
 	
 	
 	typedef int_vector <1> bit_vector;
+}
+
+
+namespace libbio { namespace detail {
 	
+	template <unsigned int t_bits, typename t_word>
+	constexpr auto int_vector_trait_base <t_bits, t_word>::extent_mask(std::size_t const size) -> t_word
+	{
+		libbio_assert(size <= this->element_count_in_word());
+		t_word const mask(~t_word(0));
+		return mask >> ((this->element_count_in_word() - size) * this->element_bits());
+	}
+	
+	
+	template <unsigned int t_bits, typename t_word>
+	constexpr auto int_vector_trait <t_bits, t_word>::extent_mask(std::size_t const size, word_type const mask) -> word_type
+	{
+		libbio_assert(size <= this->element_count_in_word());
+		return fill_bit_pattern <ELEMENT_BITS>(mask) >> ((this->element_count_in_word() - size) * this->element_bits());
+	}
+	
+	
+	template <typename t_word>
+	auto int_vector_trait <0, t_word>::extent_mask(std::size_t const size, word_type const mask) -> word_type
+	{
+		libbio_assert(size <= this->element_count_in_word());
+		return fill_bit_pattern(mask, this->element_bits()) >> ((this->element_count_in_word() - size) * this->element_bits());
+	}
+}}
+
+
+namespace libbio {
 	
 	template <unsigned int t_bits, typename t_word>
 	std::ostream &operator<<(std::ostream &os, int_vector <t_bits, t_word> const &vec)
@@ -294,32 +407,15 @@ namespace libbio {
 	
 	
 	template <unsigned int t_bits, typename t_word>
-	auto int_vector <t_bits, t_word>::extent_mask(std::size_t const size) -> word_type
-	{
-		libbio_assert(size <= ELEMENT_COUNT);
-		word_type const mask(~word_type(0));
-		return mask >> ((ELEMENT_COUNT - size) * ELEMENT_BITS);
-	}
-	
-	
-	template <unsigned int t_bits, typename t_word>
-	auto int_vector <t_bits, t_word>::extent_mask(std::size_t const size, word_type const mask) -> word_type
-	{
-		libbio_assert(size <= ELEMENT_COUNT);
-		return fill_bit_pattern <ELEMENT_BITS>(mask) >> ((ELEMENT_COUNT - size) * ELEMENT_BITS);
-	}
-	
-	
-	template <unsigned int t_bits, typename t_word>
 	auto int_vector <t_bits, t_word>::load(
 		std::size_t const idx
 	) const -> word_type
 	{
 		libbio_assert(idx < m_size);
-		auto const word_idx(idx / ELEMENT_COUNT);
-		auto const el_idx(idx % ELEMENT_COUNT);
+		auto const word_idx(idx / this->element_count_in_word());
+		auto const el_idx(idx % this->element_count_in_word());
 		word_type const retval(m_values[word_idx]);
-		return ((retval >> (el_idx * t_bits)) & ELEMENT_MASK);
+		return ((retval >> (el_idx * t_bits)) & this->element_mask());
 	}
 	
 	
@@ -332,13 +428,13 @@ namespace libbio {
 		// Determine the position of the given index
 		// inside a word and shift the given value.
 		libbio_assert(idx < m_size);
-		libbio_assert(val == (val & ELEMENT_MASK));
+		libbio_assert(val == (val & this->element_mask()));
 
-		auto const word_idx(idx / ELEMENT_COUNT);
-		auto const el_idx(idx % ELEMENT_COUNT);
+		auto const word_idx(idx / this->element_count_in_word());
+		auto const el_idx(idx % this->element_count_in_word());
 		auto const shift_amt(t_bits * el_idx);
 	
-		val &= ELEMENT_MASK;
+		val &= this->element_mask();
 		val <<= shift_amt;
 		
 		m_values[word_idx] |= val;
@@ -354,11 +450,11 @@ namespace libbio {
 		// Create a mask that has all bits set except for the given value.
 		// Then use bitwise or with the given value and use fetch_and.
 		libbio_assert(idx < m_size);
-		libbio_assert(val == (val & ELEMENT_MASK));
+		libbio_assert(val == (val & this->element_mask()));
 		
-		word_type mask(ELEMENT_MASK);
-		auto const word_idx(idx / ELEMENT_COUNT);
-		auto const el_idx(idx % ELEMENT_COUNT);
+		word_type mask(this->element_mask());
+		auto const word_idx(idx / this->element_count_in_word());
+		auto const el_idx(idx % this->element_count_in_word());
 		auto const shift_amt(t_bits * el_idx);
 		
 		mask <<= shift_amt;
@@ -371,20 +467,34 @@ namespace libbio {
 	
 	
 	template <unsigned int t_bits, typename t_word>
+	template <bool t_dummy, std::enable_if_t <t_dummy && 0 == t_bits, int>>
+	void int_vector <t_bits, t_word>::push_back(word_type val)
+	{
+		val &= this->element_mask();
+		
+		if (size() == reserved_size())
+			m_values.push_back(val);
+		else
+			assign_or(this->size() - 1, val);
+	}
+	
+	
+	template <unsigned int t_bits, typename t_word>
+	template <bool t_dummy, std::enable_if_t <t_dummy && 0 != t_bits, int>>
 	void int_vector <t_bits, t_word>::push_back(word_type val, std::size_t count)
 	{
 		if (0 == count)
 			return;
 		
 		// Create a mask that repeats the given value.
-		val &= ELEMENT_MASK;
-		word_type const mask(fill_bit_pattern <ELEMENT_BITS>(val));
+		val &= this->element_mask();
+		word_type const mask(fill_bit_pattern <trait_type::ELEMENT_BITS>(val));
 		
-		// If m_size is not a multiple ELEMENT_COUNT, there’s space in the final word.
-		if (m_size % ELEMENT_COUNT)
+		// If m_size is not a multiple element_count_in_word(), there’s space in the final word.
+		if (m_size % this->element_count_in_word())
 		{
-			auto const last_word_elements(m_size % ELEMENT_COUNT);
-			auto const remaining_space_elements(ELEMENT_COUNT - last_word_elements);
+			auto const last_word_elements(m_size % this->element_count_in_word());
+			auto const remaining_space_elements(this->element_count_in_word() - last_word_elements);
 			word_type new_mask(mask);
 			
 			// Erase elements if needed.
@@ -392,31 +502,31 @@ namespace libbio {
 			if (count < remaining_space_elements)
 			{
 				inserted_count = count;
-				new_mask >>= (ELEMENT_COUNT - count) * ELEMENT_BITS;
+				new_mask >>= (this->element_count_in_word() - count) * this->element_bits();
 			}
 			
-			new_mask <<= last_word_elements * ELEMENT_BITS;
+			new_mask <<= last_word_elements * this->element_bits();
 			*m_values.rbegin() |= new_mask;
 			
 			m_size += inserted_count;
 			count -= inserted_count;
 		}
 		
-		while (ELEMENT_COUNT < count)
+		while (this->element_count_in_word() < count)
 		{
 			// Check that m_size is t_word aligned in order to append a word at a time.
-			libbio_assert(0 == m_size % ELEMENT_COUNT);
+			libbio_assert(0 == m_size % this->element_count_in_word());
 			
 			m_values.push_back(mask);
-			count -= ELEMENT_COUNT;
-			m_size += ELEMENT_COUNT;
+			count -= this->element_count_in_word();
+			m_size += this->element_count_in_word();
 		}
 		
 		// Append the extent if needed.
 		if (count)
 		{
 			// Erase elements from the mask.
-			word_type const new_mask(mask >> ((ELEMENT_COUNT - count) * ELEMENT_BITS));
+			word_type const new_mask(mask >> ((this->element_count_in_word() - count) * this->element_bits()));
 			m_values.push_back(new_mask);
 			m_size += count;
 		}
@@ -424,6 +534,7 @@ namespace libbio {
 	
 	
 	template <unsigned int t_bits, typename t_word>
+	template <bool t_dummy, std::enable_if_t <t_dummy && 0 != t_bits, int>>
 	void int_vector <t_bits, t_word>::reverse()
 	{
 		if (0 == m_values.size())
@@ -433,9 +544,9 @@ namespace libbio {
 		std::reverse(m_values.begin(), m_values.end());
 		
 		for (auto &val : m_values)
-			val = reverse_bits <ELEMENT_BITS>(val);
+			val = reverse_bits <trait_type::ELEMENT_BITS>(val);
 		
-		auto const shift_left((m_size % ELEMENT_COUNT) * ELEMENT_BITS);
+		auto const shift_left((m_size % this->element_count_in_word()) * this->element_bits());
 		auto const shift_right(WORD_BITS - shift_left);
 		for (auto const &pair : m_values | ranges::view::sliding(2))
 		{
@@ -452,7 +563,7 @@ namespace libbio {
 		if (m_size != other.m_size)
 			return false;
 		
-		auto const extent_size(m_size % ELEMENT_COUNT);
+		auto const extent_size(m_size % this->element_count_in_word());
 		if (0 == extent_size)
 			return m_values == other.m_values;
 		
@@ -462,7 +573,7 @@ namespace libbio {
 		if (!std::equal(m_values.cbegin(), m_values.cend() - 1, other.m_values.cbegin(), other.m_values.cend() - 1))
 			return false;
 		
-		auto const mask(extent_mask(extent_size));
+		auto const mask(this->extent_mask(extent_size));
 		return (*m_values.crbegin() & mask) == (*other.m_values.crbegin() & mask);
 	}
 }

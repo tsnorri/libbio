@@ -55,7 +55,7 @@ namespace libbio { namespace detail {
 	auto packed_matrix_slice <t_matrix>::to_word_range(t_caller &caller) const -> t_word_range
 	{
 		libbio_assert(1 == caller.m_slice.stride());
-		return t_word_range(caller.begin().to_vector_iterator(), caller.end().to_vector_iterator());
+		return t_word_range(caller.matrix().values(), caller.begin().to_vector_iterator(), caller.end().to_vector_iterator());
 	}
 }}
 

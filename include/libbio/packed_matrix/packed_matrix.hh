@@ -59,8 +59,20 @@ namespace libbio {
 		
 	public:
 		packed_matrix() = default;
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
 		packed_matrix(std::size_t const rows, std::size_t const columns):
 			m_data(columns * rows),
+#ifndef LIBBIO_NDEBUG
+			m_columns(columns),
+#endif
+			m_stride(rows)
+		{
+			libbio_assert(m_stride);
+		}
+		
+		packed_matrix(std::size_t const rows, std::size_t const columns, std::uint8_t const bits):
+			m_data(columns * rows, bits),
 #ifndef LIBBIO_NDEBUG
 			m_columns(columns),
 #endif
@@ -96,13 +108,29 @@ namespace libbio {
 		std::size_t const stride() const { return m_stride; }
 		void set_stride(std::size_t const stride) { m_stride = stride; }
 		
-		vector_type const &values() { return m_data; }
+		vector_type const &values() const { return m_data; }
 		
 		constexpr std::size_t word_bits() const { return m_data.word_bits(); }
+		
+		// The following are constexpr iff t_bits != 0.
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
 		constexpr std::size_t element_bits() const { return m_data.element_bits(); }
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
 		constexpr std::size_t element_count_in_word() const { return m_data.element_count_in_word(); }
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
 		constexpr word_type element_mask() const { return m_data.element_mask(); }
-
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 == t_bits, int> = 0>
+		std::size_t element_bits() const { return m_data.element_bits(); }
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 == t_bits, int> = 0>
+		std::size_t element_count_in_word() const { return m_data.element_count_in_word(); }
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 == t_bits, int> = 0>
+		word_type element_mask() const { return m_data.element_mask(); }
+		
 		// Iterators to packed values.
 		iterator begin() { return m_data.begin(); }
 		iterator end() { return m_data.end(); }

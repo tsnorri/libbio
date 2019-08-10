@@ -10,6 +10,7 @@
 #include <climits>
 #include <cmath>
 #include <libbio/assert.hh>
+#include <libbio/int_vector.hh>
 #include <libbio/packed_vector/iterator.hh>
 #include <range/v3/algorithm/copy.hpp>
 #include <range/v3/view/transform.hpp>
@@ -70,13 +71,14 @@ namespace libbio { namespace detail {
 namespace libbio {
 	
 	template <unsigned int t_bits, typename t_word = std::uint64_t>
-	class packed_vector
+	class packed_vector final : public detail::int_vector_trait <t_bits, t_word>
 	{
 		static_assert(std::is_unsigned_v <t_word>);
 		
 	public:
-		typedef t_word		word_type;
-		enum { WORD_BITS = CHAR_BIT * sizeof(word_type) };
+		typedef t_word	word_type;
+		typedef detail::int_vector_trait <t_bits, t_word>						trait_type;
+		enum { WORD_BITS = trait_type::WORD_BITS };
 		
 		static_assert(t_bits <= WORD_BITS);
 		static_assert(0 == t_bits || 0 == WORD_BITS % t_bits);
@@ -90,7 +92,6 @@ namespace libbio {
 		typedef typename value_vector::const_iterator							const_word_iterator;
 		typedef detail::packed_vector_word_iterator_proxy <packed_vector>		word_iterator_proxy;
 		typedef detail::packed_vector_word_iterator_proxy <packed_vector const>	const_word_iterator_proxy;
-
 		
 		typedef detail::packed_vector_value_reference <packed_vector>			reference_proxy;
 		typedef reference_proxy													reference;
@@ -99,20 +100,24 @@ namespace libbio {
 		typedef detail::packed_vector_iterator <packed_vector>					iterator;
 		typedef detail::packed_vector_iterator <packed_vector const>			const_iterator;
 		
-		enum {
-			ELEMENT_BITS		= t_bits,
-			ELEMENT_COUNT		= WORD_BITS / t_bits,
-			ELEMENT_MASK		= (std::numeric_limits <word_type>::max() >> (WORD_BITS - t_bits))
-		};
-	
 	protected:
 		value_vector	m_values;
 		std::size_t		m_size{};
 		
 	public:
 		packed_vector() = default;
+		
+		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
 		explicit packed_vector(std::size_t const size):
-			m_values(std::ceil(1.0 * size / ELEMENT_COUNT)),
+			trait_type(),
+			m_values(std::ceil(1.0 * size / this->element_count_in_word())),
+			m_size(size)
+		{
+		}
+		
+		explicit packed_vector(std::size_t const size, std::uint8_t const bits):
+			trait_type(bits),
+			m_values(std::ceil(1.0 * size / this->element_count_in_word())),
 			m_size(size)
 		{
 		}
@@ -128,14 +133,11 @@ namespace libbio {
 		word_reference word_at(std::size_t const idx) { return m_values[idx]; }
 		
 		std::size_t size() const { return m_size; }											// Size in elements.
-		std::size_t available_size() const { return m_values.size() * ELEMENT_COUNT; }
+		std::size_t reserved_size() const { return m_values.size() * this->element_count_in_word(); }
 		std::size_t word_size() const { return m_values.size(); }
-		void set_size(std::size_t new_size) { libbio_assert(new_size <= available_size()); m_size = new_size; }
+		void set_size(std::size_t new_size) { libbio_assert(new_size <= reserved_size()); m_size = new_size; }
 		
 		constexpr std::size_t word_bits() const { return WORD_BITS; }
-		constexpr std::size_t element_bits() const { return t_bits; }
-		constexpr std::size_t element_count_in_word() const { return ELEMENT_COUNT; }
-		constexpr word_type element_mask() const { return ELEMENT_MASK; }
 		
 		// Iterators to packed values.
 		iterator begin() { return iterator(*this, 0); }
@@ -173,10 +175,10 @@ namespace libbio {
 	) const -> word_type
 	{
 		libbio_assert(idx < m_size);
-		auto const word_idx(idx / ELEMENT_COUNT);
-		auto const el_idx(idx % ELEMENT_COUNT);
+		auto const word_idx(idx / this->element_count_in_word());
+		auto const el_idx(idx % this->element_count_in_word());
 		word_type const retval(m_values[word_idx].load(order));
-		return ((retval >> (el_idx * t_bits)) & ELEMENT_MASK);
+		return ((retval >> this->bits_before_element(el_idx)) & this->element_mask());
 	}
 	
 	
@@ -190,17 +192,17 @@ namespace libbio {
 		// Determine the position of the given index
 		// inside a word and shift the given value.
 		libbio_assert(idx < m_size);
-		libbio_assert_eq_msg(val, (val & ELEMENT_MASK), "Attempted to fetch_or '", +val, "'.");
+		libbio_assert_eq_msg(val, (val & this->element_mask()), "Attempted to fetch_or '", +val, "'.");
 
-		auto const word_idx(idx / ELEMENT_COUNT);
-		auto const el_idx(idx % ELEMENT_COUNT);
-		auto const shift_amt(t_bits * el_idx);
+		auto const word_idx(idx / this->element_count_in_word());
+		auto const el_idx(idx % this->element_count_in_word());
+		auto const shift_amt(this->bits_before_element(el_idx));
 	
-		val &= ELEMENT_MASK;
+		val &= this->element_mask();
 		val <<= shift_amt;
 		
 		word_type const retval(m_values[word_idx].fetch_or(val, order));
-		return ((retval >> shift_amt) & ELEMENT_MASK);
+		return ((retval >> shift_amt) & this->element_mask());
 	}
 		
 		
@@ -214,12 +216,12 @@ namespace libbio {
 		// Create a mask that has all bits set except for the given value.
 		// Then use bitwise or with the given value and use fetch_and.
 		libbio_assert(idx < m_size);
-		libbio_assert(val == (val & ELEMENT_MASK));
+		libbio_assert(val == (val & this->element_mask()));
 		
-		word_type mask(ELEMENT_MASK);
-		auto const word_idx(idx / ELEMENT_COUNT);
-		auto const el_idx(idx % ELEMENT_COUNT);
-		auto const shift_amt(t_bits * el_idx);
+		word_type mask(this->element_mask());
+		auto const word_idx(idx / this->element_count_in_word());
+		auto const el_idx(idx % this->element_count_in_word());
+		auto const shift_amt(this->bits_before_element(el_idx));
 		
 		mask <<= shift_amt;
 		val <<= shift_amt;
@@ -227,7 +229,7 @@ namespace libbio {
 		val |= mask;
 		
 		word_type const retval(m_values[word_idx].fetch_and(val, order));
-		return ((retval >> shift_amt) & ELEMENT_MASK);
+		return ((retval >> shift_amt) & this->element_mask());
 	}
 }
 
