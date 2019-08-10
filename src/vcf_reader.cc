@@ -342,7 +342,7 @@ namespace libbio {
 				for (auto const &[key, field_ptr] : format)
 				{
 					libbio_assert_lte(field_ptr->get_offset() + field_ptr->byte_size(), sample_data.size());
-					field_ptr->construct_ds(bytes, 16); // Assume that the REF + ALT count is at most 16.
+					field_ptr->construct_ds(bytes, 16); // Assume that the REF + ALT count is at most 16. Vector’s emplace_back is used for adding values, though.
 				}
 			}
 		}
