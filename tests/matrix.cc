@@ -39,7 +39,7 @@ namespace {
 
 TEMPLATE_TEST_CASE(
 	"Templated matrix tests",
-	"[template]",
+	"[template][matrix]",
 	std::int8_t,
 	std::int16_t,
 	std::int32_t,

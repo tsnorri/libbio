@@ -10,7 +10,7 @@ namespace gen	= Catch::Generators;
 namespace lb	= libbio;
 
 
-SCENARIO("int_vector can be initialized with the correct number of values")
+SCENARIO("int_vector can be initialized with the correct number of values", "[int_vector]")
 {
 	GIVEN("an int_vector <8>")
 	{
@@ -33,7 +33,7 @@ SCENARIO("int_vector can be initialized with the correct number of values")
 }
 
 
-SCENARIO("Values can be added to an int_vector with push_back()")
+SCENARIO("Values can be added to an int_vector with push_back()", "[int_vector]")
 {
 	GIVEN("an int_vector <8> with values added using push_back()")
 	{
@@ -65,7 +65,7 @@ SCENARIO("Values can be added to an int_vector with push_back()")
 }
 
 
-SCENARIO("Multiple copies of a value may be added to an int_vector with push_back()")
+SCENARIO("Multiple copies of a value may be added to an int_vector with push_back()", "[int_vector]")
 {
 	GIVEN("an int_vetor <8>")
 	{
@@ -92,7 +92,7 @@ SCENARIO("Multiple copies of a value may be added to an int_vector with push_bac
 }
 
 
-SCENARIO("An int_vector may be reversed using reverse()")
+SCENARIO("An int_vector may be reversed using reverse()", "[int_vector]")
 {
 	GIVEN("an int_vector <8> with values")
 	{

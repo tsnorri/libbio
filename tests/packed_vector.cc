@@ -11,7 +11,7 @@ namespace gen	= Catch::Generators;
 namespace lb	= libbio;
 
 
-SCENARIO("A packed_vector may be created")
+SCENARIO("A packed_vector may be created", "[packed_vector]")
 {
 	GIVEN("a packed_vector <4, std::uint16_t>")
 	{
@@ -31,7 +31,7 @@ SCENARIO("A packed_vector may be created")
 }
 
 
-SCENARIO("Values may be stored in a packed_vector")
+SCENARIO("Values may be stored in a packed_vector", "[packed_vector]")
 {
 	GIVEN("a packed_vector <4, std::uint16_t>")
 	{
@@ -76,7 +76,7 @@ SCENARIO("Values may be stored in a packed_vector")
 }
 
 
-SCENARIO("The vector returns the previous stored value correctly")
+SCENARIO("The vector returns the previous stored value correctly", "[packed_vector]")
 {
 	lb::packed_vector <4, std::uint16_t> vec(8);
 	REQUIRE(8 == vec.size());

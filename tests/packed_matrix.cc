@@ -49,7 +49,7 @@ namespace {
 }
 
 
-SCENARIO("A packed_matrix may be created")
+SCENARIO("A packed_matrix may be created", "[packed_matrix]")
 {
 	GIVEN("a packed_matrix <4, std::uint16_t>")
 	{
@@ -71,7 +71,7 @@ SCENARIO("A packed_matrix may be created")
 }
 
 
-SCENARIO("Values may be stored into a packed_matrix")
+SCENARIO("Values may be stored into a packed_matrix", "[packed_matrix]")
 {
 	GIVEN("a packed_matrix <4, std::uint16_t>")
 	{
@@ -105,7 +105,7 @@ SCENARIO("Values may be stored into a packed_matrix")
 }
 
 
-SCENARIO("Packed matrix slices return the correct values")
+SCENARIO("Packed matrix slices return the correct values", "[packed_matrix]")
 {
 	GIVEN("a packed_matrix <4, std::uint16_t>")
 	{
@@ -194,7 +194,7 @@ SCENARIO("Packed matrix slices return the correct values")
 }
 
 
-SCENARIO("Unaligned packed matrix slices return the correct values")
+SCENARIO("Unaligned packed matrix slices return the correct values", "[packed_matrix]")
 {
 	GIVEN("a packed_matrix <4, std::uint16_t>")
 	{
@@ -256,7 +256,7 @@ SCENARIO("Unaligned packed matrix slices return the correct values")
 }
 
 
-SCENARIO("Packed matrix columns may be filled using matrices::fill_Column_with_bit_pattern")
+SCENARIO("Packed matrix columns may be filled using matrices::fill_Column_with_bit_pattern", "[packed_matrix]")
 {
 	GIVEN("a packed_matrix <2, std::uint8_t> with two columns")
 	{
@@ -324,7 +324,7 @@ SCENARIO("Packed matrix columns may be filled using matrices::fill_Column_with_b
 }
 
 
-SCENARIO("Packed matrix columns may be transposed using matrices::transpose_column_to_row()")
+SCENARIO("Packed matrix columns may be transposed using matrices::transpose_column_to_row()", "[packed_matrix]")
 {
 	GIVEN("two packed_matrices <4, std::uint16_t>")
 	{
@@ -404,7 +404,7 @@ SCENARIO("Packed matrix columns may be transposed using matrices::transpose_colu
 }
 
 
-SCENARIO("Packed matrix contents may be copied with matrices::copy_to_word_aligned")
+SCENARIO("Packed matrix contents may be copied with matrices::copy_to_word_aligned", "[packed_matrix]")
 {
 	GIVEN("two packed_matrices <2, std::uint32_t>")
 	{
