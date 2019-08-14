@@ -5,7 +5,7 @@
 
 #include <catch2/catch.hpp>
 #include <cstdint>
-#include <libbio/packed_matrix.hh>
+#include <libbio/int_matrix.hh>
 #include <range/v3/view/zip.hpp>
 
 namespace gen	= Catch::Generators;
@@ -18,12 +18,12 @@ namespace {
 	constexpr std::uint16_t u16(t_val val) { return val; }
 	
 	
-	void create_packed_matrix_8(lb::packed_matrix <4, std::uint16_t> &dst)
+	void create_atomic_int_matrix_8(lb::atomic_int_matrix <4, std::uint16_t> &dst)
 	{
 		std::size_t const rows(4);
 		std::size_t const columns(2);
 	
-		lb::packed_matrix <4, std::uint16_t> temp(rows, columns);
+		lb::atomic_int_matrix <4, std::uint16_t> temp(rows, columns);
 		std::uint8_t val{};
 		for (auto ref : temp)
 			ref.fetch_or((val++) & 0xf);
@@ -33,12 +33,12 @@ namespace {
 	}
 	
 	
-	void create_packed_matrix_7x3(lb::packed_matrix <4, std::uint16_t> &dst)
+	void create_atomic_int_matrix_7x3(lb::atomic_int_matrix <4, std::uint16_t> &dst)
 	{
 		std::size_t const rows(7);
 		std::size_t const columns(3);
 	
-		lb::packed_matrix <4, std::uint16_t> temp(rows, columns);
+		lb::atomic_int_matrix <4, std::uint16_t> temp(rows, columns);
 		std::uint8_t val{};
 		for (auto ref : temp)
 			ref.fetch_or((val++) & 0xf);
@@ -49,12 +49,12 @@ namespace {
 }
 
 
-SCENARIO("A packed_matrix may be created", "[packed_matrix]")
+SCENARIO("A atomic_int_matrix may be created", "[atomic_int_matrix]")
 {
-	GIVEN("a packed_matrix <4, std::uint16_t>")
+	GIVEN("an atomic_int_matrix <4, std::uint16_t>")
 	{
-		lb::packed_matrix <4, std::uint16_t> matrix;
-		create_packed_matrix_8(matrix);
+		lb::atomic_int_matrix <4, std::uint16_t> matrix;
+		create_atomic_int_matrix_8(matrix);
 		
 		WHEN("queried for size")
 		{
@@ -71,12 +71,12 @@ SCENARIO("A packed_matrix may be created", "[packed_matrix]")
 }
 
 
-SCENARIO("Values may be stored into a packed_matrix", "[packed_matrix]")
+SCENARIO("Values may be stored into an atomic_int_matrix", "[atomic_int_matrix]")
 {
-	GIVEN("a packed_matrix <4, std::uint16_t>")
+	GIVEN("an atomic_int_matrix <4, std::uint16_t>")
 	{
-		lb::packed_matrix <4, std::uint16_t> matrix;
-		create_packed_matrix_8(matrix);
+		lb::atomic_int_matrix <4, std::uint16_t> matrix;
+		create_atomic_int_matrix_8(matrix);
 		
 		REQUIRE(matrix.size() == 8);
 		REQUIRE(matrix.number_of_rows() == 4);
@@ -105,12 +105,12 @@ SCENARIO("Values may be stored into a packed_matrix", "[packed_matrix]")
 }
 
 
-SCENARIO("Packed matrix slices return the correct values", "[packed_matrix]")
+SCENARIO("Packed matrix slices return the correct values", "[atomic_int_matrix]")
 {
-	GIVEN("a packed_matrix <4, std::uint16_t>")
+	GIVEN("an atomic_int_matrix <4, std::uint16_t>")
 	{
-		lb::packed_matrix <4, std::uint16_t> matrix;
-		create_packed_matrix_8(matrix);
+		lb::atomic_int_matrix <4, std::uint16_t> matrix;
+		create_atomic_int_matrix_8(matrix);
 		
 		REQUIRE(matrix.size() == 8);
 		REQUIRE(matrix.number_of_rows() == 4);
@@ -194,12 +194,12 @@ SCENARIO("Packed matrix slices return the correct values", "[packed_matrix]")
 }
 
 
-SCENARIO("Unaligned packed matrix slices return the correct values", "[packed_matrix]")
+SCENARIO("Unaligned packed matrix slices return the correct values", "[atomic_int_matrix]")
 {
-	GIVEN("a packed_matrix <4, std::uint16_t>")
+	GIVEN("an atomic_int_matrix <4, std::uint16_t>")
 	{
-		lb::packed_matrix <4, std::uint16_t> matrix;
-		create_packed_matrix_7x3(matrix);
+		lb::atomic_int_matrix <4, std::uint16_t> matrix;
+		create_atomic_int_matrix_7x3(matrix);
 		
 		REQUIRE(matrix.size() == 21);
 		REQUIRE(matrix.number_of_rows() == 7);
@@ -256,11 +256,11 @@ SCENARIO("Unaligned packed matrix slices return the correct values", "[packed_ma
 }
 
 
-SCENARIO("Packed matrix columns may be filled using matrices::fill_Column_with_bit_pattern", "[packed_matrix]")
+SCENARIO("Packed matrix columns may be filled using matrices::fill_Column_with_bit_pattern", "[atomic_int_matrix]")
 {
-	GIVEN("a packed_matrix <2, std::uint8_t> with two columns")
+	GIVEN("an atomic_int_matrix <2, std::uint8_t> with two columns")
 	{
-		lb::packed_matrix <2, std::uint8_t> mat(5, 2);
+		lb::atomic_int_matrix <2, std::uint8_t> mat(5, 2);
 		for (std::size_t i(0); i < mat.number_of_columns(); ++i)
 		{
 			for (auto const val : mat.column(i))
@@ -287,9 +287,9 @@ SCENARIO("Packed matrix columns may be filled using matrices::fill_Column_with_b
 		}
 	}
 	
-	GIVEN("a packed_matrix <2, std::uint8_t> with three columns")
+	GIVEN("an atomic_int_matrix <2, std::uint8_t> with three columns")
 	{
-		lb::packed_matrix <2, std::uint8_t> mat(5, 3);
+		lb::atomic_int_matrix <2, std::uint8_t> mat(5, 3);
 		for (std::size_t i(0); i < mat.number_of_columns(); ++i)
 		{
 			for (auto const val : mat.column(i))
@@ -324,13 +324,13 @@ SCENARIO("Packed matrix columns may be filled using matrices::fill_Column_with_b
 }
 
 
-SCENARIO("Packed matrix columns may be transposed using matrices::transpose_column_to_row()", "[packed_matrix]")
+SCENARIO("Packed matrix columns may be transposed using matrices::transpose_column_to_row()", "[atomic_int_matrix]")
 {
 	GIVEN("two packed_matrices <4, std::uint16_t>")
 	{
-		lb::packed_matrix <4, std::uint16_t> dst(2, 8);
-		lb::packed_matrix <4, std::uint16_t> src;
-		create_packed_matrix_7x3(src);
+		lb::atomic_int_matrix <4, std::uint16_t> dst(2, 8);
+		lb::atomic_int_matrix <4, std::uint16_t> src;
+		create_atomic_int_matrix_7x3(src);
 		
 		auto const col_idx = GENERATE(gen::values <std::size_t>({0, 1, 2}));
 		auto const &src_col(src.column(col_idx));
@@ -360,11 +360,11 @@ SCENARIO("Packed matrix columns may be transposed using matrices::transpose_colu
 	}
 	
 	
-	GIVEN("packed_matrix <2, std::uint16_t> as a source and packed_matrix <4, std::uint16_t> as a destination")
+	GIVEN("atomic_int_matrix <2, std::uint16_t> as a source and atomic_int_matrix <4, std::uint16_t> as a destination")
 	{
 		// Source smaller than word size but word-aligned.
-		lb::packed_matrix <2, std::uint16_t> src(4, 4);
-		lb::packed_matrix <4, std::uint16_t> dst(4, 4);
+		lb::atomic_int_matrix <2, std::uint16_t> src(4, 4);
+		lb::atomic_int_matrix <4, std::uint16_t> dst(4, 4);
 		
 		auto const col_idx = GENERATE(gen::values <std::size_t>({0, 1, 2, 3}));
 		src(0, col_idx).fetch_or(0x3);
@@ -404,12 +404,12 @@ SCENARIO("Packed matrix columns may be transposed using matrices::transpose_colu
 }
 
 
-SCENARIO("Packed matrix contents may be copied with matrices::copy_to_word_aligned", "[packed_matrix]")
+SCENARIO("Packed matrix contents may be copied with matrices::copy_to_word_aligned", "[atomic_int_matrix]")
 {
 	GIVEN("two packed_matrices <2, std::uint32_t>")
 	{
-		lb::packed_matrix <2, std::uint32_t> src(16, 1);
-		lb::packed_matrix <2, std::uint32_t> dst(16, 1);
+		lb::atomic_int_matrix <2, std::uint32_t> src(16, 1);
+		lb::atomic_int_matrix <2, std::uint32_t> dst(16, 1);
 	
 		WHEN("values are copied using copy_to_word_aligned()")
 		{

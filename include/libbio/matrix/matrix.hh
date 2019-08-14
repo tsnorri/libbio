@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018–2019 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,6 +7,7 @@
 #define LIBBIO_MATRIX_MATRIX_HH
 
 #include <libbio/assert.hh>
+#include <libbio/matrix/indexing.hh>
 #include <libbio/matrix/iterator.hh>
 #include <libbio/matrix/slice.hh>
 #include <libbio/matrix/utility.hh>
@@ -22,6 +23,9 @@ namespace libbio {
 	class matrix
 	{
 		friend class detail::matrix_slice <matrix>;
+		
+		template <typename t_matrix>
+		friend std::size_t detail::matrix_index(t_matrix const &, std::size_t const, std::size_t const);
 		
 	public:
 		typedef t_value											value_type;
@@ -64,16 +68,7 @@ namespace libbio {
 			libbio_assert(m_stride);
 		}
 		
-		inline std::size_t idx(std::size_t const y, std::size_t const x) const
-		{
-			/* Column major order. */
-			libbio_assert(y < m_stride);
-			libbio_assert(x < m_columns);
-			libbio_assert(x < m_data.size() / m_stride);
-			std::size_t const retval(x * m_stride + y);
-			libbio_assert(retval < m_data.size());
-			return retval;
-		}
+		inline std::size_t idx(std::size_t const y, std::size_t const x) const { return detail::matrix_index(*this, y, x); }
 		
 		value_type &operator()(std::size_t const y, std::size_t const x) { return m_data[idx(y, x)]; }
 		value_type const &operator()(std::size_t const y, std::size_t const x) const { return m_data[idx(y, x)]; }

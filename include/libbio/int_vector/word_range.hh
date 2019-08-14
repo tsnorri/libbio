@@ -1,26 +1,26 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018–2019 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_PACKED_VECTOR_PACKED_WORD_RANGE_HH
-#define LIBBIO_PACKED_VECTOR_PACKED_WORD_RANGE_HH
+#ifndef LIBBIO_INT_VECTOR_WORD_RANGE_HH
+#define LIBBIO_INT_VECTOR_WORD_RANGE_HH
 
 #include <boost/range/algorithm/for_each.hpp>
 #include <libbio/algorithm.hh>
-#include <libbio/packed_vector/packed_vector.hh>
+#include <libbio/int_vector/int_vector.hh>
 
 
 namespace libbio { namespace detail {
 	
 	template <typename t_vector>
-	class packed_word_range : public t_vector::trait_type
+	class int_vector_word_range : public t_vector::width_type
 	{
 	public:
 		typedef t_vector									vector_type;
 		typedef typename vector_type::word_type				word_type;
-		typedef typename t_vector::trait_type				trait_type;
-		typedef packed_vector_iterator_traits <t_vector>	iterator_trait_type;
+		typedef typename t_vector::width_type				width_type;
+		typedef int_vector_iterator_traits <t_vector>		iterator_trait_type;
 		typedef typename iterator_trait_type::iterator		iterator;
 		typedef typename iterator_trait_type::word_iterator	word_iterator;
 		typedef boost::iterator_range <iterator>			iterator_range;
@@ -34,8 +34,8 @@ namespace libbio { namespace detail {
 		iterator_range		m_right_extent;
 		
 	public:
-		packed_word_range() = default;
-		packed_word_range(trait_type const &trait, iterator begin, iterator end);
+		int_vector_word_range() = default;
+		int_vector_word_range(width_type const &trait, iterator begin, iterator end);
 		
 		word_iterator_range mid() { return m_mid; }
 		iterator_range left_extent() { return m_left_extent; }
@@ -46,8 +46,8 @@ namespace libbio { namespace detail {
 
 	
 	template <typename t_vector>
-	packed_word_range <t_vector>::packed_word_range(trait_type const &trait, iterator begin, iterator end):
-		t_vector::trait_type(trait)
+	int_vector_word_range <t_vector>::int_vector_word_range(width_type const &trait, iterator begin, iterator end):
+		t_vector::width_type(trait)
 	{
 		if (begin.word_index() == end.word_index())
 		{
@@ -81,7 +81,7 @@ namespace libbio { namespace detail {
 	
 	template <typename t_vector>
 	template <typename t_word_fn, typename t_extent_fn>
-	void packed_word_range <t_vector>::apply_parts(t_word_fn &&word_fn, t_extent_fn &&extent_fn)
+	void int_vector_word_range <t_vector>::apply_parts(t_word_fn &&word_fn, t_extent_fn &&extent_fn)
 	{
 		// Handle the left extent if not empty.
 		if (!m_left_extent.empty())
@@ -114,7 +114,7 @@ namespace libbio { namespace detail {
 	
 	template <typename t_vector>
 	template <typename t_unary_fn>
-	void packed_word_range <t_vector>::apply_aligned(t_unary_fn &&unary_fn, std::memory_order order) const
+	void int_vector_word_range <t_vector>::apply_aligned(t_unary_fn &&unary_fn, std::memory_order order) const
 	{
 		// Call unary_fn with each word s.t. the bits are word aligned.
 		if (m_left_extent.empty())

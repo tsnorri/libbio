@@ -1,19 +1,19 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018–2019 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_PACKED_MATRIX_SLICE_HH
-#define LIBBIO_PACKED_MATRIX_SLICE_HH
+#ifndef LIBBIO_INT_MATRIX_SLICE_HH
+#define LIBBIO_INT_MATRIX_SLICE_HH
 
 #include <libbio/matrix/slice.hh>
-#include <libbio/packed_vector/packed_word_range.hh>
+#include <libbio/int_vector/word_range.hh>
 
 
 namespace libbio { namespace detail {
 	
 	template <typename t_matrix>
-	class packed_matrix_slice final : public matrix_slice <t_matrix>
+	class int_matrix_slice final : public matrix_slice <t_matrix>
 	{
 	public:
 		typedef matrix_slice <t_matrix>							superclass;
@@ -30,8 +30,8 @@ namespace libbio { namespace detail {
 		typedef boost::iterator_range <word_iterator>			word_iterator_range;
 		typedef boost::iterator_range <const_word_iterator>		const_word_iterator_range;
 		
-		typedef packed_word_range <vector_type>					word_range;
-		typedef packed_word_range <vector_type const>			const_word_range;
+		typedef int_vector_word_range <vector_type>				word_range;
+		typedef int_vector_word_range <vector_type const>		const_word_range;
 		
 	protected:
 		template <typename t_word_range, typename t_caller>
@@ -41,7 +41,7 @@ namespace libbio { namespace detail {
 		using matrix_slice <t_matrix>::matrix_slice;
 		
 		// Check whether the starting position of the slice is word aligned.
-		bool is_word_aligned() const { return 0 == this->m_slice.start() % matrix_type::ELEMENT_COUNT; }
+		bool is_word_aligned() const { return 0 == this->m_slice.start() % this->matrix().element_count_in_word(); }
 		
 		word_range to_word_range() { return to_word_range <word_range>(*this); }
 		const_word_range to_word_range() const { return to_const_word_range(); }
@@ -52,7 +52,7 @@ namespace libbio { namespace detail {
 	
 	template <typename t_matrix>
 	template <typename t_word_range, typename t_caller>
-	auto packed_matrix_slice <t_matrix>::to_word_range(t_caller &caller) const -> t_word_range
+	auto int_matrix_slice <t_matrix>::to_word_range(t_caller &caller) const -> t_word_range
 	{
 		libbio_assert(1 == caller.m_slice.stride());
 		return t_word_range(caller.matrix().values(), caller.begin().to_vector_iterator(), caller.end().to_vector_iterator());

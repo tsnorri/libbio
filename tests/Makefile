@@ -5,9 +5,11 @@ include ../common.mk
 # but set a configuration option instead for now.
 CPPFLAGS += -DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS -I../lib/Catch2/single_include
 
-OBJECTS	=	assert.o \
-			algorithm.o \
+OBJECTS	=	algorithm.o \
 			array_list.o \
+			assert.o \
+			atomic_int_matrix.o \
+			atomic_int_vector.o \
 			bit_rle_codec.o \
 			fasta_reader.o \
 			int_vector.o \
@@ -17,8 +19,6 @@ OBJECTS	=	assert.o \
 			main.o \
 			matrix.o \
 			merge_projected.o \
-			packed_matrix.o \
-			packed_vector.o \
 			radix_sort.o \
 			reverse_word.o \
 			rle_bit_vector.o

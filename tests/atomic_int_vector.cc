@@ -1,21 +1,21 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018–2019 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #include <catch2/catch.hpp>
 #include <cstdint>
-#include <libbio/packed_vector.hh>
+#include <libbio/int_vector.hh>
 
 namespace gen	= Catch::Generators;
 namespace lb	= libbio;
 
 
-SCENARIO("A packed_vector may be created", "[packed_vector]")
+SCENARIO("An atomic_int_vector may be created", "[atomic_int_vector]")
 {
-	GIVEN("a packed_vector <4, std::uint16_t>")
+	GIVEN("an atomic_int_vector <4, std::uint16_t>")
 	{
-		lb::packed_vector <4, std::uint16_t> vec(8);
+		lb::atomic_int_vector <4, std::uint16_t> vec(8);
 		WHEN("queried for size")
 		{
 			THEN("it returns the correct values")
@@ -31,11 +31,11 @@ SCENARIO("A packed_vector may be created", "[packed_vector]")
 }
 
 
-SCENARIO("Values may be stored in a packed_vector", "[packed_vector]")
+SCENARIO("Values may be stored in a atomic_int_vector", "[atomic_int_vector]")
 {
-	GIVEN("a packed_vector <4, std::uint16_t>")
+	GIVEN("an atomic_int_vector <4, std::uint16_t>")
 	{
-		lb::packed_vector <4, std::uint16_t> vec(8);
+		lb::atomic_int_vector <4, std::uint16_t> vec(8);
 		REQUIRE(8 == vec.size());
 		REQUIRE(2 == vec.word_size());
 		
@@ -76,9 +76,9 @@ SCENARIO("Values may be stored in a packed_vector", "[packed_vector]")
 }
 
 
-SCENARIO("The vector returns the previous stored value correctly", "[packed_vector]")
+SCENARIO("The vector returns the previous stored value correctly", "[atomic_int_vector]")
 {
-	lb::packed_vector <4, std::uint16_t> vec(8);
+	lb::atomic_int_vector <4, std::uint16_t> vec(8);
 	REQUIRE(8 == vec.size());
 	REQUIRE(2 == vec.word_size());
 	

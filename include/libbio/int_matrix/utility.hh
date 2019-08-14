@@ -1,13 +1,13 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018–2019 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_PACKED_MATRIX_UTILITY_HH
-#define LIBBIO_PACKED_MATRIX_UTILITY_HH
+#ifndef LIBBIO_INT_MATRIX_UTILITY_HH
+#define LIBBIO_INT_MATRIX_UTILITY_HH
 
 #include <libbio/assert.hh>
-#include <libbio/packed_matrix/slice.hh>
+#include <libbio/int_matrix/slice.hh>
 #include <libbio/utility.hh>
 
 
@@ -38,8 +38,8 @@ namespace libbio { namespace matrices {
 	
 	template <typename t_matrix>
 	void copy_to_word_aligned(
-		::libbio::detail::packed_matrix_slice <t_matrix> const &src,
-		::libbio::detail::packed_matrix_slice <t_matrix> &dst
+		::libbio::detail::int_matrix_slice <t_matrix> const &src,
+		::libbio::detail::int_matrix_slice <t_matrix> &dst
 	)
 	{
 		libbio_assert(src.size() <= dst.size());
@@ -54,8 +54,8 @@ namespace libbio { namespace matrices {
 	
 	template <typename t_matrix>
 	void copy_to_word_aligned(
-		::libbio::detail::packed_matrix_slice <t_matrix> const &src,
-		::libbio::detail::packed_matrix_slice <t_matrix> &&dst	// Proxy, allow moving.
+		::libbio::detail::int_matrix_slice <t_matrix> const &src,
+		::libbio::detail::int_matrix_slice <t_matrix> &&dst	// Proxy, allow moving.
 	)
 	{
 		copy_to_word_aligned(src, dst);
@@ -64,8 +64,8 @@ namespace libbio { namespace matrices {
 	
 	template <typename t_src_matrix, typename t_dst_matrix>
 	void transpose_column_to_row(
-		::libbio::detail::packed_matrix_slice <t_src_matrix> const &src,
-		::libbio::detail::packed_matrix_slice <t_dst_matrix> &dst
+		::libbio::detail::int_matrix_slice <t_src_matrix> const &src,
+		::libbio::detail::int_matrix_slice <t_dst_matrix> &dst
 	)
 	{
 		libbio_assert(src.size() <= dst.size());
@@ -77,13 +77,16 @@ namespace libbio { namespace matrices {
 #ifndef LIBBIO_NDEBUG
 			 	&dst,
 #endif
-				&dst_it
+				&dst_it,
+				&src
 			](typename t_src_matrix::word_type word, std::size_t const element_count){ // FIXME: memory_order_acquire?
+				auto const element_mask(src.matrix().element_mask());
+				auto const element_bits(src.matrix().element_bits());
 				for (std::size_t i(0); i < element_count; ++i)
 				{
 					libbio_assert(dst_it != dst.end());
-					dst_it->fetch_or(word & t_src_matrix::ELEMENT_MASK); // FIXME: memory_order_release?
-					word >>= t_src_matrix::ELEMENT_BITS;
+					dst_it->fetch_or(word & element_mask); // FIXME: memory_order_release?
+					word >>= element_bits;
 					++dst_it;
 				}
 			}
@@ -93,8 +96,8 @@ namespace libbio { namespace matrices {
 	
 	template <typename t_src_matrix, typename t_dst_matrix>
 	void transpose_column_to_row(
-		::libbio::detail::packed_matrix_slice <t_src_matrix> const &src,
-		::libbio::detail::packed_matrix_slice <t_dst_matrix> &&dst	// Proxy, allow moving.
+		::libbio::detail::int_matrix_slice <t_src_matrix> const &src,
+		::libbio::detail::int_matrix_slice <t_dst_matrix> &&dst	// Proxy, allow moving.
 	)
 	{
 		transpose_column_to_row(src, dst);
@@ -103,7 +106,7 @@ namespace libbio { namespace matrices {
 	
 	template <unsigned int t_pattern_length, typename t_matrix>
 	void fill_column_with_bit_pattern(
-		::libbio::detail::packed_matrix_slice <t_matrix> &column,
+		::libbio::detail::int_matrix_slice <t_matrix> &column,
 		typename t_matrix::word_type pattern
 	)
 	{
@@ -124,7 +127,7 @@ namespace libbio { namespace matrices {
 	
 	template <unsigned int t_pattern_length, typename t_matrix>
 	void fill_column_with_bit_pattern(
-		::libbio::detail::packed_matrix_slice <t_matrix> &&column,	// Proxy, allow moving.
+		::libbio::detail::int_matrix_slice <t_matrix> &&column,	// Proxy, allow moving.
 		typename t_matrix::word_type pattern
 	)
 	{
