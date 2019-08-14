@@ -56,8 +56,8 @@ namespace libbio { namespace detail {
 		typedef t_word		word_type;
 		
 		enum {
-			WORD_BITS			= CHAR_BIT * sizeof(word_type),
-			ELEMENT_BITS		= 0
+			WORD_BITS		= CHAR_BIT * sizeof(word_type),
+			ELEMENT_BITS	= 0
 		};
 		
 	protected:
