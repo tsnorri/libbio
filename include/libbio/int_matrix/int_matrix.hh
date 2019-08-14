@@ -111,6 +111,15 @@ namespace libbio {
 		template <typename t_matrix>
 		friend std::size_t detail::matrix_index(t_matrix const &, std::size_t const, std::size_t const);
 		
+		template <typename t_matrix>
+		friend std::size_t detail::matrix_index(t_matrix const &, std::size_t const, std::size_t const);
+		
+		template <typename t_archive, unsigned int t_bits_1, typename t_word_1, template <typename, unsigned int, typename> typename t_trait_1>
+		friend void save(t_archive &, int_matrix_tpl <t_bits_1, t_word_1, t_trait_1> const &);
+		
+		template <typename t_archive, unsigned int t_bits_1, typename t_word_1, template <typename, unsigned int, typename> typename t_trait_1>
+		friend void load(t_archive &, int_matrix_tpl <t_bits_1, t_word_1, t_trait_1> &);
+		
 	public:
 		typedef detail::int_matrix_trait_t <t_bits, t_word, t_trait>				trait_type;
 		typedef typename trait_type::vector_type									vector_type;
@@ -138,9 +147,6 @@ namespace libbio {
 		friend trait_type;
 		friend matrix_iterator;
 		friend const_matrix_iterator;
-		
-		template <typename t_matrix>
-		friend std::size_t detail::matrix_index(t_matrix const &, std::size_t const, std::size_t const);
 		
 		enum {
 			WORD_BITS		= vector_type::WORD_BITS,

@@ -146,6 +146,9 @@ namespace libbio {
 	{
 		static_assert(std::is_unsigned_v <t_word>);
 		
+		template <typename t_archive, unsigned int t_bits_1, typename t_word_1, template <typename, unsigned int, typename> typename t_trait_1>
+		friend void serialize(t_archive &, int_vector_tpl <t_bits_1, t_word_1, t_trait_1> &);
+		
 	public:
 		typedef t_word																	word_type;
 		typedef detail::int_vector_width <t_bits, t_word>								width_type;
