@@ -30,8 +30,15 @@ namespace libbio { namespace detail {
 	
 	// Traits / mixins.
 	
+	struct int_vector_trait_base
+	{
+	protected:
+		std::size_t calculate_word_count(std::size_t const elements, std::size_t const element_count_in_word) const { return std::ceil(1.0 * elements / element_count_in_word); }
+	};
+	
+	
 	template <typename t_vector, unsigned int t_bits, typename t_word>
-	struct int_vector_trait
+	struct int_vector_trait : public int_vector_trait_base
 	{
 		typedef detail::int_vector_width <t_bits, t_word>		width_type;
 		typedef t_word											word_type;
@@ -85,14 +92,14 @@ namespace libbio { namespace detail {
 		void clear();
 		
 	protected:
-		value_vector make_value_vector(std::size_t const size) const { return value_vector(1.0 * size / as_vector().element_count_in_word(), 0); }
+		value_vector make_value_vector(std::size_t const size) const { return value_vector(calculate_word_count(size, as_vector().element_count_in_word()), 0); }
 		t_vector &as_vector() { return static_cast <t_vector &>(*this); }
 		t_vector const &as_vector() const { return static_cast <t_vector const &>(*this); }
 	};
 	
 	
 	template <typename t_vector, unsigned int t_bits, typename t_word>
-	struct atomic_int_vector_trait
+	struct atomic_int_vector_trait : public int_vector_trait_base
 	{
 		typedef detail::int_vector_width <t_bits, t_word>				width_type;
 		typedef t_word													word_type;
@@ -126,7 +133,7 @@ namespace libbio { namespace detail {
 		reference_proxy back() { return (*this)[as_vector().size() - 1]; }
 		
 	protected:
-		value_vector make_value_vector(std::size_t const size) const { return value_vector(1.0 * size / as_vector().element_count_in_word()); }
+		value_vector make_value_vector(std::size_t const size) const { return value_vector(calculate_word_count(size, as_vector().element_count_in_word())); }
 		t_vector &as_vector() { return static_cast <t_vector &>(*this); }
 		t_vector const &as_vector() const { return static_cast <t_vector const &>(*this); }
 	};
