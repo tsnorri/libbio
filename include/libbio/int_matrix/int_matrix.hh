@@ -174,6 +174,7 @@ namespace libbio {
 			libbio_assert(m_stride);
 		}
 		
+		// Enable even for 0 == t_bits in order to make writing constructors simpler in classes that make use of int_matrix.
 		int_matrix_tpl(std::size_t const rows, std::size_t const columns, std::uint8_t const bits):
 			m_data(columns * rows, bits),
 #ifndef LIBBIO_NDEBUG
@@ -285,10 +286,10 @@ namespace libbio { namespace detail {
 
 namespace libbio {
 	
-	template <unsigned int t_bits, typename t_word>
+	template <unsigned int t_bits, typename t_word = std::uint64_t>
 	using int_matrix = int_matrix_tpl <t_bits, t_word, detail::int_matrix_trait>;
 	
-	template <unsigned int t_bits, typename t_word>
+	template <unsigned int t_bits, typename t_word = std::uint64_t>
 	using atomic_int_matrix = int_matrix_tpl <t_bits, t_word, detail::atomic_int_matrix_trait>;
 	
 	
