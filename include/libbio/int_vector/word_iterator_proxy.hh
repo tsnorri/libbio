@@ -7,6 +7,7 @@
 #define LIBBIO_INT_VECTOR_WORD_ITERATOR_PROXY_HH
 
 #include <cstddef>
+#include <libbio/int_vector/iterator.hh>
 
 
 namespace libbio { namespace detail {

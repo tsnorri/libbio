@@ -6,6 +6,7 @@
 #ifndef LIBBIO_INT_VECTOR_VALUE_REFERENCE_HH
 #define LIBBIO_INT_VECTOR_VALUE_REFERENCE_HH
 
+#include <atomic>
 #include <cstddef>
 
 
