@@ -24,6 +24,12 @@
 		if (!(TEST)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, MESSAGE); \
 	} while (false)
 
+#define libbio_assert_test_bin(LHS, RHS, TEST, MESSAGE)	do { \
+		auto const &assert_lhs(LHS); \
+		auto const &assert_rhs(RHS); \
+		if (!(TEST(assert_lhs, assert_rhs))) ::libbio::detail::assertion_failure(__FILE__, __LINE__, MESSAGE); \
+	} while (false)
+
 #define libbio_assert_test_msg(TEST, ...)				do { \
 		if (!(TEST)) { \
 			std::stringstream stream; \
@@ -38,12 +44,12 @@
 	} while (false)
 
 #define libbio_always_assert(X)					libbio_assert_test((X),										#X)
-#define libbio_always_assert_lt(X, Y)			libbio_assert_test(::libbio::is_lt((X), (Y)),				libbio_stringify(X < Y))
-#define libbio_always_assert_lte(X, Y)			libbio_assert_test(::libbio::is_lte((X), (Y)),				libbio_stringify(X <= Y))
-#define libbio_always_assert_gt(X, Y)			libbio_assert_test(::libbio::is_lt((Y), (X)),				libbio_stringify(X > Y))
-#define libbio_always_assert_gte(X, Y)			libbio_assert_test(::libbio::is_lte((Y), (X)),				libbio_stringify(X >= Y))
-#define libbio_always_assert_eq(X, Y)			libbio_assert_test(::libbio::is_equal((X), (Y)),			libbio_stringify(X == Y))
-#define libbio_always_assert_neq(X, Y)			libbio_assert_test(!::libbio::is_equal((X), (Y)),			libbio_stringify(X != Y))
+#define libbio_always_assert_lt(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lt,			libbio_stringify(X < Y))
+#define libbio_always_assert_lte(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lte,			libbio_stringify(X <= Y))
+#define libbio_always_assert_gt(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lt,			libbio_stringify(X > Y))
+#define libbio_always_assert_gte(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lte,			libbio_stringify(X >= Y))
+#define libbio_always_assert_eq(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_equal,		libbio_stringify(X == Y))
+#define libbio_always_assert_neq(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_equal,		libbio_stringify(X != Y))
 
 #define libbio_always_assert_msg(X, ...)		libbio_assert_test_msg((X),																__VA_ARGS__)
 #define libbio_always_assert_lt_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lt((X), (Y)),		libbio_stringify(X < Y),	__VA_ARGS__)
