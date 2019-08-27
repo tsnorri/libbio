@@ -46,8 +46,8 @@
 #define libbio_always_assert(X)					libbio_assert_test((X),										#X)
 #define libbio_always_assert_lt(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lt,			libbio_stringify(X < Y))
 #define libbio_always_assert_lte(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lte,			libbio_stringify(X <= Y))
-#define libbio_always_assert_gt(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lt,			libbio_stringify(X > Y))
-#define libbio_always_assert_gte(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lte,			libbio_stringify(X >= Y))
+#define libbio_always_assert_gt(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lte,			libbio_stringify(X > Y))
+#define libbio_always_assert_gte(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lt,			libbio_stringify(X >= Y))
 #define libbio_always_assert_eq(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_equal,		libbio_stringify(X == Y))
 #define libbio_always_assert_neq(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_equal,		libbio_stringify(X != Y))
 
