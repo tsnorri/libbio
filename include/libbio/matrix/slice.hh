@@ -9,7 +9,7 @@
 #include <boost/range.hpp>
 #include <iostream>
 #include <range/v3/algorithm/copy.hpp>
-#include <range/v3/utility/iterator.hpp>
+#include <range/v3/iterator/stream_iterators.hpp>
 #include <range/v3/view/transform.hpp>
 #include <valarray>
 

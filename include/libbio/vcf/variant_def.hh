@@ -13,7 +13,7 @@
 #include <libbio/vcf/vcf_reader.hh>
 #include <ostream>
 #include <range/v3/algorithm/copy.hpp>
-#include <range/v3/utility/iterator.hpp>
+#include <range/v3/iterator/stream_iterators.hpp>
 #include <range/v3/view/remove_if.hpp>
 #include <range/v3/view/transform.hpp>
 
