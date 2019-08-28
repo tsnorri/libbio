@@ -11,19 +11,34 @@
 
 namespace libbio
 {
-	void fasta_reader::report_unexpected_character(char const *current_character, int const current_state)
+	void fasta_reader::report_unexpected_character(int const current_state) const
 	{
 		std::cerr
-		<< "Unexpected character '" << *current_character << "' at " << m_lineno << ':' << (current_character - m_line_start)
+		<< "Unexpected character '" << *m_fsm.p << "' at " << m_lineno << ':' << (m_fsm.p - m_line_start)
 		<< ", state " << current_state << '.' << std::endl;
-
-		auto const start(m_fsm.pe - m_fsm.p < 128 ? m_fsm.p : m_fsm.pe - 128);
-		std::string_view buffer_end(start, m_fsm.pe - start);
-		std::cerr
-		<< "** Last 128 charcters from the buffer:" << std::endl
-		<< buffer_end << std::endl;
-
+		output_buffer_end();
 		abort();
+	}
+	
+	
+	void fasta_reader::report_unexpected_eof(int const current_state) const
+	{
+		std::cerr
+		<< "Unexpected EOF at " << m_lineno << ':' << (m_fsm.p - m_line_start)
+		<< ", state " << current_state << '.' << std::endl;
+		output_buffer_end();
+		abort();
+	}
+	
+	
+	void fasta_reader::output_buffer_end() const
+	{
+		auto const start(m_fsm.p - m_line_start < 128 ? m_line_start : m_fsm.p - 128);
+		auto const len(m_fsm.p - start);
+		std::string_view buffer_end(start, len);
+		std::cerr
+		<< "** Last " << len << " charcters from the buffer:" << std::endl
+		<< buffer_end << std::endl;
 	}
 	
 	
@@ -69,7 +84,10 @@ namespace libbio
 			}
 			
 			action error {
-				report_unexpected_character(fpc, fcurs);
+				if (m_fsm.p == m_fsm.pe)
+					report_unexpected_eof(fcurs);
+				else
+					report_unexpected_character(fcurs);
 			}
 			
 			comment_line	= (";" [^\n]*)		>line_start	"\n" >comment;
