@@ -47,7 +47,9 @@ namespace libbio {
 		std::size_t	m_lineno{};
 	
 	protected:
-		void report_unexpected_character(char const *current_character, int const current_state);
+		void report_unexpected_character(int const current_state) const;
+		void report_unexpected_eof(int const current_state) const;
+		void output_buffer_end() const;
 		
 	public:
 		bool parse(handle_type &handle, fasta_reader_delegate &delegate);
