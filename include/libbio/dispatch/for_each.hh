@@ -9,6 +9,9 @@
 #include <algorithm>
 #include <cmath>
 #include <dispatch/dispatch.h>
+#include <range/v3/range/primitives.hpp>
+#include <range/v3/view/chunk.hpp>
+#include <range/v3/view/enumerate.hpp>
 
 #ifndef LIBBIO_USE_STD_PARALLEL_FOR_EACH
 #	define LIBBIO_USE_STD_PARALLEL_FOR_EACH 0
@@ -51,7 +54,7 @@ namespace libbio { namespace detail {
 		}
 		
 	public:
-		parallel_for_helper(Fn &fn, std::size_t count, std::size_t stride = 8):
+		parallel_for_helper(Fn &fn, std::size_t count, std::size_t stride):
 			m_fn(&fn),
 			m_count(count),
 			m_stride(stride)
@@ -112,19 +115,26 @@ namespace libbio { namespace detail {
 		}
 		
 	public:
-		parallel_for_each_helper(t_range &range, Fn &fn, std::size_t stride = 8):
+		parallel_for_each_helper(t_range &range, Fn &fn, std::size_t stride, std::size_t size):
 			m_fn(&fn),
 			m_range(&range),
-			m_count(range.size()),
+			m_count(size),
 			m_stride(stride)
 		{
 		}
+		
+		
+		parallel_for_each_helper(t_range &range, Fn &fn, std::size_t stride):
+			parallel_for_each_helper(range, fn, stride, range.size())
+		{
+		}
+		
 		
 		void apply()
 		{
 			typedef parallel_for_each_helper helper_type;
 			std::size_t const iterations(std::ceil(1.0 * m_count / m_stride));
-
+			
 			if (1 < iterations)
 			{
 				dispatch_apply_f(
@@ -162,17 +172,7 @@ namespace libbio {
 		Fn &&fn
 	)
 	{
-#if LIBBIO_USE_STD_PARALLEL_FOR_EACH
-		std::for_each(
-			std::execution::par_unseq,
-			range.begin(),
-			range.end(),
-			std::forward <Fn>(fn)
-		);
-#else
-		detail::parallel_for_each_helper helper(range, fn);
-		helper.apply();
-#endif
+		parallel_for_each(range, 8, fn);
 	}
 	
 	
@@ -180,7 +180,7 @@ namespace libbio {
 	void parallel_for_each(
 		t_range &&range,
 		std::size_t const stride,
-		Fn && fn
+		Fn &&fn
 	)
 	{
 #if LIBBIO_USE_STD_PARALLEL_FOR_EACH
@@ -194,6 +194,37 @@ namespace libbio {
 		detail::parallel_for_each_helper helper(range, fn, stride);
 		helper.apply();
 #endif
+	}
+	
+	
+	// Same as parallel_for_each but operates on one chunk per thread.
+	// XXX Does this actually help since the chunked view is supposed to be a range?
+	template <typename Fn, typename t_range_view>
+	void parallel_for_each_range_view(
+		t_range_view &&range,
+		std::size_t const stride,
+		Fn &&fn
+	)
+	{
+		// Convert the range to a vector s.t. random access is possible.
+		auto chunks(range | ranges::view::chunk(stride) | ranges::to_vector);
+		auto wrap_fn([stride, &chunks, &fn](auto &rng, std::size_t i){
+			auto const start(i * stride);
+			for (auto &&[j, val] : ranges::view::enumerate(chunks[i]))
+				fn(val, start + j);
+		});
+		detail::parallel_for_each_helper helper(chunks, wrap_fn, 1, ranges::size(chunks));
+		helper.apply();
+	}
+	
+	
+	template <typename Fn, typename t_range_view>
+	void parallel_for_each_range_view(
+		t_range_view &&range,
+		Fn &&fn
+	)
+	{
+		parallel_for_each_range_view(range, 8, fn);
 	}
 	
 	
@@ -231,6 +262,17 @@ namespace libbio {
 			range.end(),
 			std::forward <Fn>(fn)
 		);
+	}
+	
+	
+	template <typename Fn, typename t_range_view>
+	void for_each_range_view(
+		t_range_view &&range,
+		Fn &&fn
+	)
+	{
+		for (auto &&[i, val] : ranges::view::enumerate(range))
+			fn(val, i);
 	}
 }
 
