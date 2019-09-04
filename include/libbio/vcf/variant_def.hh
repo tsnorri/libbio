@@ -10,7 +10,7 @@
 #include <boost/range/iterator_range_core.hpp>
 #include <libbio/assert.hh>
 #include <libbio/vcf/variant_decl.hh>
-#include <libbio/vcf/vcf_reader.hh>
+#include <libbio/vcf/vcf_reader_decl.hh>
 #include <ostream>
 #include <range/v3/algorithm/copy.hpp>
 #include <range/v3/iterator/stream_iterators.hpp>

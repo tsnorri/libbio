@@ -4,7 +4,7 @@
  */
 
 #include <libbio/vcf/variant.hh>
-#include <libbio/vcf/vcf_reader.hh>
+#include <libbio/vcf/vcf_reader_decl.hh>
 #include "vcf_reader_private.hh"
 
 
