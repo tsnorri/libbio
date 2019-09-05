@@ -7,6 +7,7 @@
 #include <ctime>
 #include <iomanip>
 #include <libbio/utility.hh>
+#include <sstream>
 
 
 namespace libbio {
@@ -24,6 +25,14 @@ namespace libbio {
 		<< std::setw(2) << std::setfill('0') << ctm.tm_min << ':'
 		<< std::setw(2) << std::setfill('0') << ctm.tm_sec
 		<< "] ";
+	}
+	
+	
+	std::string copy_time()
+	{
+		std::stringstream sstream;
+		log_time(sstream);
+		return sstream.str();
 	}
 	
 	
