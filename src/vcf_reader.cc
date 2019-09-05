@@ -239,6 +239,7 @@ namespace libbio {
 	void vcf_reader::parse_format(std::string_view const &new_format_sv)
 	{
 		auto *new_format(m_current_format->new_instance());
+		libbio_assert_eq(typeid(*m_current_format), typeid(*new_format));
 		m_current_format.reset(new_format);
 		m_current_format_vec.clear();
 		
