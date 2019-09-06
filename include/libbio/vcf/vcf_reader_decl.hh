@@ -50,7 +50,7 @@ namespace libbio {
 		template <typename> friend struct caller;
 		
 		template <int t_continue, int t_break>
-		int check_max_field(vcf_field const field, int const target, callback_fn const &cb);
+		inline int check_max_field(vcf_field const field, int const target, callback_fn const &cb, bool &retval);
 
 		void report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state);
 

@@ -16,15 +16,19 @@
 
 namespace libbio {
 	
+	// Parse the fields until m_max_parsed field, find the next newline and invoke the callback function.
 	template <int t_continue, int t_break>
-	int vcf_reader::check_max_field(vcf_field const field, int const target, callback_fn const &cb)
+	int vcf_reader::check_max_field(vcf_field const field, int const target, callback_fn const &cb, bool &retval)
 	{
 		if (field <= m_max_parsed_field)
 			return target;
 		
 		skip_to_next_nl();
 		if (!cb(m_current_variant))
+		{
+			retval = false;
 			return t_break;
+		}
 		
 		++m_counter;
 		return t_continue;
@@ -42,19 +46,18 @@ namespace libbio {
 		
 		vcf_info_field_base		*current_info_field{};
 		
-		std::string						format_string;				// Current format as a string.
-		char const						*start(nullptr);			// Current string start.
-		char const						*line_start(nullptr);		// Current line start.
-		std::int64_t					integer(0);					// Currently read from the input.
-		std::size_t						sample_idx(0);				// Current sample idx (1-based).
-		std::size_t						subfield_idx(0);			// Current index in multi-part fields.
-		bool							integer_is_negative(false);
-		bool							gt_is_phased(false);		// Is the current GT phased.
-		bool							alt_is_complex(false);		// Is the current ALT “complex” (includes *).
-		bool							info_is_flag(false);
-		int								cs(0);
+		std::string				format_string;				// Current format as a string.
+		char const				*start(nullptr);			// Current string start.
+		char const				*line_start(nullptr);		// Current line start.
+		std::int64_t			integer(0);					// Currently read from the input.
+		std::size_t				sample_idx(0);				// Current sample idx (1-based).
+		std::size_t				subfield_idx(0);			// Current index in multi-part fields.
+		bool					integer_is_negative(false);
+		bool					gt_is_phased(false);		// Is the current GT phased.
+		bool					alt_is_complex(false);		// Is the current ALT “complex” (includes *).
+		bool					info_is_flag(false);
+		int						cs(0);
 		
-		// FIXME: add throwing EOF actions?
 		// FIXME: add error actions to other machines than main?
 		%%{
 			machine vcf_parser;
@@ -198,6 +201,7 @@ namespace libbio {
 				
 				if (!cb(m_current_variant))
 				{
+					retval = false;
 					fhold;
 					fbreak;
 				}
@@ -315,14 +319,14 @@ namespace libbio {
 			
 			# Handle a newline and continue.
 			# The newline gets eaten before its checked, though, so use any instead.
-			main_nl			:= any @{ fhold; fgoto main; }	$eof{ retval = false; };
-			break_nl		:= any @{ fhold; fbreak; }		$eof{ retval = false; };
+			main_nl			:= '\n' @{ fhold; fgoto main; }	$eof{ throw std::runtime_error("Got an unexpected EOF"); };
+			break_nl		:= '\n' @{ fhold; fbreak; }		$eof{ throw std::runtime_error("Got an unexpected EOF"); };
 			
 			# #CHROM
 			chrom_id_f :=
 				(chrom_id sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::POS, fentry(pos_f), cb);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::POS, fentry(pos_f), cb, retval);
 				}
 				$err(error);
 			
@@ -330,7 +334,7 @@ namespace libbio {
 			pos_f :=
 				(pos sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ID, fentry(id_f), cb);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ID, fentry(id_f), cb, retval);
 				}
 				$err(error);
 			
@@ -338,7 +342,7 @@ namespace libbio {
 			id_f :=
 				(id_rec sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::REF, fentry(ref_f), cb);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::REF, fentry(ref_f), cb, retval);
 				}
 				$err(error);
 			
@@ -346,7 +350,7 @@ namespace libbio {
 			ref_f :=
 				(ref sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ALT, fentry(alt_f), cb);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ALT, fentry(alt_f), cb, retval);
 				}
 				$err(error);
 			
@@ -354,7 +358,7 @@ namespace libbio {
 			alt_f :=
 				(alt sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::QUAL, fentry(qual_f), cb);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::QUAL, fentry(qual_f), cb, retval);
 				}
 				$err(error);
 			
@@ -362,7 +366,7 @@ namespace libbio {
 			qual_f :=
 				(qual sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::FILTER, fentry(filter_f), cb);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::FILTER, fentry(filter_f), cb, retval);
 				}
 				$err(error);
 			
@@ -370,7 +374,7 @@ namespace libbio {
 			filter_f :=
 				(filter sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::INFO, fentry(info_f), cb);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::INFO, fentry(info_f), cb, retval);
 				}
 				$err(error);
 			
@@ -378,7 +382,7 @@ namespace libbio {
 			info_f :=
 				(info sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::FORMAT, fentry(format_f), cb);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::FORMAT, fentry(format_f), cb, retval);
 				}
 				$err(error);
 			
@@ -386,7 +390,7 @@ namespace libbio {
 			format_f :=
 				(format sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ALL, fentry(sample_rec_f), cb);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ALL, fentry(sample_rec_f), cb, retval);
 				}
 				$err(error);
 			
@@ -411,10 +415,10 @@ namespace libbio {
 					m_current_variant.m_lineno = m_lineno;
 					line_start = 1 + fpc;
 					
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::CHROM, fentry(chrom_id_f), cb);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::CHROM, fentry(chrom_id_f), cb, retval);
 				}
 				$err(error)
-				$eof{ retval = false; };
+				$eof{ retval = false; }; # Expected EOF.
 			
 			write init;
 			write exec;
