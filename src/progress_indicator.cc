@@ -40,7 +40,7 @@ namespace libbio {
 			m_signal_source = std::move(signal_source);
 		}
 		
-		dispatch_source_set_timer(*m_message_timer, dispatch_time(DISPATCH_TIME_NOW, 0), 333 * 1000 * 1000, 33 * 1000 * 1000);
+		dispatch_source_set_timer(*m_message_timer, dispatch_time(DISPATCH_TIME_NOW, 0), 100 * 1000 * 1000, 50 * 1000 * 1000);
 		dispatch(this).source_set_event_handler <&progress_indicator::handle_window_size_change_mt>(*m_signal_source);
 		
 		// Set the initial window size.
