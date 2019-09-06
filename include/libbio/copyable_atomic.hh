@@ -17,6 +17,11 @@ namespace libbio {
 	public:
 		using std::atomic <t_value>::atomic;
 		
+		copyable_atomic():
+			std::atomic <t_value>()
+		{
+		}
+		
 		copyable_atomic(copyable_atomic const &other)
 		{
 			this->store(other.load(std::memory_order_acquire), std::memory_order_release);
