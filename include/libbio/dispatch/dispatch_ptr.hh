@@ -57,6 +57,11 @@ namespace libbio {
 			return !(*this == other);
 		}
 		
+		explicit operator bool() const noexcept
+		{
+			return (m_ptr ? true : false);
+		}
+		
 		dispatch_ptr &operator=(dispatch_ptr const &other) &
 		{
 			if (*this != other)
