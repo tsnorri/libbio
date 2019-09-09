@@ -36,8 +36,6 @@ namespace libbio {
 		MQ
 	};
 	
-	enum { NULL_ALLELE = std::numeric_limits <std::uint8_t>::max() };
-	
 	enum class sv_type : std::uint8_t {
 		NONE		= 0,
 		DEL,
