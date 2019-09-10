@@ -86,6 +86,13 @@ namespace libbio {
 		if (m_is_installed)
 			dispatch(this).sync <&progress_indicator::end_logging_mt>(dispatch_get_main_queue());
 	}
+
+	
+	void progress_indicator::end_logging_no_update()
+	{
+		if (m_is_installed)
+			dispatch(this).sync <&progress_indicator::end_logging_no_update_mt>(dispatch_get_main_queue());
+	}
 	
 	
 	void progress_indicator::resume_timer_mt()
@@ -110,12 +117,13 @@ namespace libbio {
 	}
 	
 	
-	void progress_indicator::end_logging_mt()
+	void progress_indicator::end_logging_mt(bool const should_update)
 	{
 		if (!m_is_installed)
 			return;
 		
-		update_mt();
+		if (should_update)
+			update_mt();
 		dispatch_suspend(*m_message_timer);
 		m_indicator_type = indicator_type::NONE;
 		m_timer_active = false;

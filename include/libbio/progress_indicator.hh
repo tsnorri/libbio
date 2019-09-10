@@ -66,14 +66,17 @@ namespace libbio {
 		
 		progress_indicator() = default;
 		
+		void end_logging();
+		void end_logging_no_update();
+		
 		// Call from the main queue.
 		void install();
 		void uninstall();
 		
 		void log_with_progress_bar(std::string const &message, progress_indicator_delegate &delegate) { if (m_is_installed) setup_and_start(message, delegate, indicator_type::PROGRESS_BAR); }
 		void log_with_counter(std::string const &message, progress_indicator_delegate &delegate) { if (m_is_installed) setup_and_start(message, delegate, indicator_type::COUNTER); }
-		void end_logging();
-		void end_logging_mt();
+		void end_logging_mt() { end_logging_mt(true); }
+		void end_logging_no_update_mt() { end_logging_mt(false); }
 		
 	protected:
 		void setup_and_start(std::string const &message, progress_indicator_delegate &delegate, indicator_type const indicator);
@@ -82,6 +85,7 @@ namespace libbio {
 		void resume_timer_mt();
 		void handle_window_size_change_mt();
 		void update_mt();
+		void end_logging_mt(bool const should_update);
 	};
 	
 }
