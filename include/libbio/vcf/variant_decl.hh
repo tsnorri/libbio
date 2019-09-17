@@ -69,17 +69,17 @@ namespace libbio {
 		friend class vcf_generic_info_field_base;
 		
 	public:
-		enum { UNKNOWN_QUALITY = SIZE_MAX };
+		enum { UNKNOWN_QUALITY = -1 };
 		
 	protected:
 		vcf_reader											*m_reader{};
 		aligned_buffer <std::byte, buffer_base::zero_tag>	m_info{};			// FIXME: if the range contains only trivially constructible and destructible values, copy the bytes.
 		std::vector <variant_sample>						m_samples{};
 		std::vector <bool>									m_assigned_info_fields{};
+		double												m_qual{UNKNOWN_QUALITY};
 		std::size_t											m_variant_index{0};
 		std::size_t											m_lineno{0};
 		std::size_t											m_pos{0};
-		std::size_t											m_qual{SIZE_MAX};
 		
 	public:
 		// Make sure that both m_info and m_samples have zero return value for size(), see the formatters’ destructors.
@@ -90,7 +90,7 @@ namespace libbio {
 		void set_variant_index(std::size_t const idx)					{ m_variant_index = idx; }
 		void set_lineno(std::size_t const lineno)						{ m_lineno = lineno; }
 		void set_pos(std::size_t const pos)								{ m_pos = pos; }
-		void set_qual(std::size_t const qual)							{ m_qual = qual; }
+		void set_qual(double const qual)								{ m_qual = qual; }
 		
 		vcf_reader *reader() const										{ return m_reader; }
 		std::vector <variant_sample> const &samples() const				{ return m_samples; }
@@ -98,7 +98,7 @@ namespace libbio {
 		std::size_t lineno() const										{ return m_lineno; }
 		std::size_t pos() const											{ return m_pos; }
 		inline std::size_t zero_based_pos() const;
-		std::size_t qual() const										{ return m_qual; }
+		double qual() const												{ return m_qual; }
 		
 	protected:
 		void reset() { m_assigned_info_fields.assign(m_assigned_info_fields.size(), false); }

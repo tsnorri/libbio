@@ -3,6 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <boost/spirit/include/qi.hpp>
 #include <libbio/assert.hh>
 #include <libbio/vcf/variant.hh>
 #include <libbio/vcf/vcf_reader.hh>
@@ -85,8 +86,17 @@ namespace libbio {
 				integer += fc - '0';
 			}
 			
-			action set_unknown_quality_value {
-				integer = variant_base::UNKNOWN_QUALITY;
+			action begin_qual {
+				m_current_variant.set_qual(variant_base::UNKNOWN_QUALITY);
+			}
+			
+			action end_qual_value {
+				double qual{};
+				std::string_view const qual_sv(start, fpc - start);
+				if (boost::spirit::qi::parse(qual_sv.begin(), qual_sv.end(), boost::spirit::qi::float_, qual))
+					m_current_variant.set_qual(qual);
+				else
+					throw std::runtime_error("Unable to parse the given value");
 			}
 			
 			action end_info_key {
@@ -287,12 +297,10 @@ namespace libbio {
 				};
 			alt				= '.' | ((alt_part (',' alt_part)*) >{ subfield_idx = 0; });
 			
-			qual_numeric	= integer %{ HANDLE_INTEGER_END_VAR(&var_t::set_qual); };
-			qual_unknown	= '.'
-				$(set_unknown_quality_value)
-				%{ HANDLE_INTEGER_END_VAR(&var_t::set_qual); };
+			qual_numeric	= (([0-9]+ ('.' [0-9]+)?) | ('.' [0-9]+)) >(start_string) %(end_qual_value);
+			qual_unknown	= '.';
 			
-			qual			= qual_numeric | qual_unknown;
+			qual			= (qual_numeric | qual_unknown) >begin_qual;
 			
 			# FIXME: add actions.
 			filter_pass	= 'PASS';
