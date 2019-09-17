@@ -285,7 +285,7 @@ namespace libbio {
 						HANDLE_STRING_END_ALT(&alt_t::set_alt);
 					}
 				};
-			alt				= (alt_part (',' alt_part)*) >{ subfield_idx = 0; };
+			alt				= '.' | ((alt_part (',' alt_part)*) >{ subfield_idx = 0; });
 			
 			qual_numeric	= integer %{ HANDLE_INTEGER_END_VAR(&var_t::set_qual); };
 			qual_unknown	= '.'

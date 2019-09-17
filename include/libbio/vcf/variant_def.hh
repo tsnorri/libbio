@@ -154,14 +154,29 @@ namespace libbio {
 		
 		// ALT
 		stream << '\t';
-		ranges::copy(
-			var.alts() | ranges::view::transform([](auto const &va) -> t_string const & { return va.alt; }),
-			ranges::make_ostream_joiner(stream, ",")
-		);
+		{
+			auto const &alts(var.alts());
+			if (0 == alts.size())
+				stream << '.';
+			else
+			{
+				ranges::copy(
+					var.alts() | ranges::view::transform([](auto const &va) -> t_string const & { return va.alt; }),
+					ranges::make_ostream_joiner(stream, ",")
+				);
+			}
+		}
 		
 		// QUAL
-		stream << '\t' << var.qual();
-			
+		{
+			stream << '\t';
+			auto const qual(var.qual());
+			if (variant_base::UNKNOWN_QUALITY == qual)
+				stream << '.';
+			else
+				stream << var.qual();
+		}
+		
 		// FILTER
 		// FIXME: output the actual value once we have it.
 		stream << "\tPASS";
