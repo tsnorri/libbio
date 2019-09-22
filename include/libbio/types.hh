@@ -46,7 +46,8 @@ namespace libbio {
 		DUP_TANDEM,
 		DEL_ME,
 		INS_ME,
-		UNKNOWN
+		UNKNOWN_SV,
+		UNKNOWN		// Denotes “.” ALT. FIXME: consider clarifying the name of the enum.
 	};
 	
 	

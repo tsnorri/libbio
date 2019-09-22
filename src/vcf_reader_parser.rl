@@ -249,13 +249,12 @@ namespace libbio {
 			
 			# FIXME: add breakends.
 			simple_alt	= ([ACGTN]+);
-			complex_alt	= ([*]+) %{ alt_is_complex = true; };	# Use only '*' since a following definition has simple_alt | complex_alt.
 			
 			# Structural variants.
 			sv_alt_id_chr		= chr - [<>:];	# No angle brackets in SV identifiers.
 			
 			# Only set UNKNOWN when entering any state of sv_alt_t_unknown (instead of the final state exiting transitions).
-			# Otherwise the type will be set first to e.g. CNV and immediately to UNKNOWN.
+			# Otherwise the type will be set first to e.g. CNV and then immediately to UNKNOWN.
 			sv_alt_t_del		= 'DEL'				% (sv_t, 2)	 %{ CURRENT_ALT.alt_sv_type = sv_type::DEL; };
 			sv_alt_t_ins		= 'INS'				% (sv_t, 2)	 %{ CURRENT_ALT.alt_sv_type = sv_type::INS; };
 			sv_alt_t_dup		= 'DUP'				% (sv_t, 2)	 %{ CURRENT_ALT.alt_sv_type = sv_type::DUP; };
@@ -264,7 +263,7 @@ namespace libbio {
 			sv_alt_t_dup_tandem	= 'DUP:TANDEM'		% (sv_t, 2)	 %{ CURRENT_ALT.alt_sv_type = sv_type::DUP_TANDEM; };
 			sv_alt_t_del_me		= 'DEL:ME'			% (sv_t, 2)	 %{ CURRENT_ALT.alt_sv_type = sv_type::DEL_ME; };
 			sv_alt_t_ins_me		= 'INS:ME'			% (sv_t, 2)	 %{ CURRENT_ALT.alt_sv_type = sv_type::INS_ME; };
-			sv_alt_t_unknown	= sv_alt_id_chr+	% (sv_t, 1)	$~{ CURRENT_ALT.alt_sv_type = sv_type::UNKNOWN; };
+			sv_alt_t_unknown	= sv_alt_id_chr+	% (sv_t, 1)	$~{ CURRENT_ALT.alt_sv_type = sv_type::UNKNOWN_SV; };
 			
 			sv_alt_predef		= (
 									sv_alt_t_del |
@@ -281,21 +280,17 @@ namespace libbio {
 			sv_alt_subtype		= sv_alt_id_chr+;
 			sv_alt				= ('<' sv_alt_predef (':' sv_alt_subtype)* '>');
 			
-			alt_part	= (simple_alt | complex_alt | sv_alt)
+			action end_alt_string { HANDLE_STRING_END_ALT(&alt_t::set_alt); }
+			action end_alt_unknown {
+				HANDLE_STRING_END_ALT(&alt_t::set_alt);
+				CURRENT_ALT.alt_sv_type = sv_type::UNKNOWN;
+			}
+			alt_string	= (simple_alt | sv_alt)
 				>(start_alt)
-				%{
-					// Complex ALTs not handled currently.
-					if (alt_is_complex)
-					{
-						// FIXME: report an error.
-						m_current_variant.m_alts.pop_back();
-					}
-					else
-					{
-						HANDLE_STRING_END_ALT(&alt_t::set_alt);
-					}
-				};
-			alt				= '.' | ((alt_part (',' alt_part)*) >{ subfield_idx = 0; });
+				%(end_alt_string);
+			alt_unknown		= '.' >(start_alt) %(end_alt_unknown);
+			alt_part		= alt_string | alt_unknown;
+			alt				= (alt_part (',' alt_part)*) >{ subfield_idx = 0; };
 			
 			qual_numeric	= (([0-9]+ ('.' [0-9]+)?) | ('.' [0-9]+)) >(start_string) %(end_qual_value);
 			qual_unknown	= '.';

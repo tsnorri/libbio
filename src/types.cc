@@ -38,9 +38,12 @@ namespace libbio {
 			case sv_type::INS_ME:
 				return "INS:ME";
 				
+			case sv_type::UNKNOWN_SV:
+				return "(unknown structural variant)";
+			
 			case sv_type::UNKNOWN:
-				return "(unknown)";
-				
+				return "(unknown ALT)";
+			
 			default:
 				return "(unexpected value)";
 		}
