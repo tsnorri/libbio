@@ -12,7 +12,6 @@
 #include <libbio/vcf/variant_format.hh>
 #include <libbio/vcf/vcf_metadata.hh>
 #include <libbio/vcf/vcf_subfield_decl.hh>
-#include <ostream>
 #include <vector>
 
 
@@ -94,6 +93,7 @@ namespace libbio {
 		
 		vcf_reader *reader() const										{ return m_reader; }
 		std::vector <variant_sample> const &samples() const				{ return m_samples; }
+		std::vector <variant_sample> &samples()							{ return m_samples; }
 		std::size_t variant_index() const								{ return m_variant_index; }
 		std::size_t lineno() const										{ return m_lineno; }
 		std::size_t pos() const											{ return m_pos; }
@@ -212,11 +212,15 @@ namespace libbio {
 		
 		friend class vcf_reader;
 		
+	public:
+		typedef t_string						string_type;
+		typedef t_format_access					format_access;
+		
 	protected:
-		t_string								m_chrom_id{};
-		t_string								m_ref{};
-		std::vector <t_string>					m_id{};
-		std::vector <variant_alt <t_string>>	m_alts{};
+		string_type								m_chrom_id{};
+		string_type								m_ref{};
+		std::vector <string_type>				m_id{};
+		std::vector <variant_alt <string_type>>	m_alts{};
 		
 	public:
 		using formatted_variant_base <t_format_access>::formatted_variant_base;
@@ -232,10 +236,10 @@ namespace libbio {
 		{
 		}
 		
-		t_string const &chrom_id() const { return m_chrom_id; }
-		t_string const &ref() const { return m_ref; }
-		std::vector <t_string> const &id() const { return m_id; }
-		std::vector <variant_alt <t_string>> const &alts() const { return m_alts; }
+		string_type const &chrom_id() const { return m_chrom_id; }
+		string_type const &ref() const { return m_ref; }
+		std::vector <string_type> const &id() const { return m_id; }
+		std::vector <variant_alt <string_type>> const &alts() const { return m_alts; }
 		
 		void set_chrom_id(std::string_view const &chrom_id) { m_chrom_id = chrom_id; }
 		void set_ref(std::string_view const &ref) { m_ref = ref; }
@@ -249,6 +253,10 @@ namespace libbio {
 		friend class variant;
 		
 	public:
+		typedef std::string_view				string_type;
+		typedef transient_variant_format_access	format_access;
+		
+	public:
 		using variant_tpl <std::string_view, transient_variant_format_access>::variant_tpl;
 		
 		inline void reset();
@@ -258,12 +266,12 @@ namespace libbio {
 	class variant final : public variant_tpl <std::string, variant_format_access>
 	{
 	public:
+		typedef std::string				string_type;
+		typedef variant_format_access	format_access;
+		
+	public:
 		using variant_tpl <std::string, variant_format_access>::variant_tpl;
 	};
-	
-
-	template <typename t_string, typename t_formatter>
-	void output_vcf(std::ostream &stream, variant_tpl <t_string, t_formatter> const &var);
 }
 
 #endif

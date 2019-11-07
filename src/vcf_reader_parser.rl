@@ -18,8 +18,8 @@
 namespace libbio {
 	
 	// Parse the fields until m_max_parsed field, find the next newline and invoke the callback function.
-	template <int t_continue, int t_break>
-	int vcf_reader::check_max_field(vcf_field const field, int const target, callback_fn const &cb, bool &retval)
+	template <int t_continue, int t_break, typename t_cb>
+	int vcf_reader::check_max_field(vcf_field const field, int const target, t_cb const &cb, bool &retval)
 	{
 		if (field <= m_max_parsed_field)
 			return target;
@@ -36,7 +36,8 @@ namespace libbio {
 	}
 	
 	
-	bool vcf_reader::parse(callback_fn const &cb)
+	template <typename t_cb>
+	bool vcf_reader::parse2(t_cb const &cb)
 	{
 		typedef variant_tpl <std::string_view, transient_variant_format_access>	var_t;
 		typedef variant_alt <std::string_view>									alt_t;
@@ -429,4 +430,10 @@ namespace libbio {
 		
 		return retval;
 	}
+	
+	
+	bool vcf_reader::parse(callback_fn const &callback) { return parse2(callback); }
+	bool vcf_reader::parse(callback_fn &&callback) { return parse2(callback); }
+	bool vcf_reader::parse(callback_cq_fn const &callback) { return parse2(callback); }
+	bool vcf_reader::parse(callback_cq_fn &&callback) { return parse2(callback); }
 }

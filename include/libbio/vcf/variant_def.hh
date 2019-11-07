@@ -6,8 +6,6 @@
 #ifndef LIBBIO_VARIANT_DEF_HH
 #define LIBBIO_VARIANT_DEF_HH
 
-#include <boost/function_output_iterator.hpp>
-#include <boost/range/iterator_range_core.hpp>
 #include <libbio/assert.hh>
 #include <libbio/vcf/variant_decl.hh>
 #include <libbio/vcf/vcf_reader.hh>
@@ -127,98 +125,6 @@ namespace libbio {
 			m_alts.resize(pos + 1);
 		
 		m_alts[pos] = alt;
-	}
-	
-	
-	template <typename t_string, typename t_format_access>
-	void output_vcf(std::ostream &stream, variant_tpl <t_string, t_format_access> const &var)
-	{
-		auto const *reader(var.reader());
-		if (!reader)
-		{
-			stream << "# Empty variant\n";
-			return;
-		}
-		
-		auto const &fields(var.get_format().fields_by_identifier());
-		
-		// CHROM, POS
-		stream << var.chrom_id() << '\t' << var.pos();
-		
-		// ID
-		stream << '\t';
-		ranges::copy(var.id(), ranges::make_ostream_joiner(stream, ","));
-		
-		// REF
-		stream << '\t' << var.ref();
-		
-		// ALT
-		stream << '\t';
-		{
-			auto const &alts(var.alts());
-			if (0 == alts.size())
-				stream << '.';
-			else
-			{
-				ranges::copy(
-					var.alts() | ranges::view::transform([](auto const &va) -> t_string const & { return va.alt; }),
-					ranges::make_ostream_joiner(stream, ",")
-				);
-			}
-		}
-		
-		// QUAL
-		{
-			stream << '\t';
-			auto const qual(var.qual());
-			if (variant_base::UNKNOWN_QUALITY == qual)
-				stream << '.';
-			else
-				stream << var.qual();
-		}
-		
-		// FILTER
-		// FIXME: output the actual value once we have it.
-		stream << "\tPASS";
-		
-		// INFO
-		{
-			stream << '\t';
-			bool is_first(true);
-			for (auto const *field_ptr : reader->info_fields_in_headers())
-			{
-				if (field_ptr->output_vcf_value(stream, var, (is_first ? "" : ";")))
-					is_first = false;
-			}
-		}
-		
-		// FORMAT
-		stream << '\t';
-		ranges::copy(
-			fields	|	ranges::view::remove_if([](auto const &kv) -> bool {
-							return (vcf_metadata_value_type::NOT_PROCESSED == kv.second->value_type());
-						})
-					|	ranges::view::transform([](auto const &kv) -> std::string const & {
-							auto const *meta(kv.second->get_metadata());
-							libbio_assert(meta);
-							return meta->get_id(); 
-						}),
-			ranges::make_ostream_joiner(stream, ":")
-		);
-		
-		// Samples
-		for (auto const &sample : var.samples())
-		{
-			stream << '\t';
-			bool is_first(true);
-			for (auto const &kv : fields)
-			{
-				if (!is_first)
-					stream << ':';
-				kv.second->output_vcf_value(stream, sample);
-				is_first = false;
-			}
-		}
 	}
 	
 	

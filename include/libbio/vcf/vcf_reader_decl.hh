@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 #include <libbio/copyable_atomic.hh>
+#include <libbio/utility.hh>
 #include <libbio/vcf/variant_decl.hh>
 #include <libbio/vcf/variant_format.hh>
 #include <libbio/vcf/vcf_input.hh>
@@ -35,8 +36,9 @@ namespace libbio {
 		friend class formatted_variant_base;
 		
 	public:
-		typedef std::function <bool(transient_variant const &var)>	callback_fn;
-		typedef std::map <std::string, std::size_t>					sample_name_map;
+		typedef std::function <bool(transient_variant &var)>						callback_fn;
+		typedef std::function <bool(transient_variant const &var)>					callback_cq_fn;
+		typedef std::map <std::string, std::size_t, compare_strings_transparent>	sample_name_map; // Use a transparent comparator.
 		
 	protected:
 		struct fsm
@@ -49,8 +51,8 @@ namespace libbio {
 		template <typename> struct caller;
 		template <typename> friend struct caller;
 		
-		template <int t_continue, int t_break>
-		inline int check_max_field(vcf_field const field, int const target, callback_fn const &cb, bool &retval);
+		template <int t_continue, int t_break, typename t_cb>
+		inline int check_max_field(vcf_field const field, int const target, t_cb const &cb, bool &retval);
 
 		void report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state);
 
@@ -85,7 +87,9 @@ namespace libbio {
 		void fill_buffer();
 		void reset();
 		bool parse(callback_fn const &callback);
-		bool parse(callback_fn &&callback) { return parse(callback); }
+		bool parse(callback_fn &&callback);
+		bool parse(callback_cq_fn const &callback);
+		bool parse(callback_cq_fn &&callback);
 		
 		class vcf_input &vcf_input() { return *m_input; }
 		class vcf_input const &vcf_input() const { return *m_input; }
@@ -130,6 +134,9 @@ namespace libbio {
 		
 		template <typename t_field>
 		std::pair <std::uint16_t, std::uint16_t> assign_field_offsets(std::vector <t_field *> &field_vec) const;
+		
+		template <typename t_cb>
+		bool parse2(t_cb const &cb);
 		
 		std::pair <std::uint16_t, std::uint16_t> assign_info_field_offsets();
 		std::pair <std::uint16_t, std::uint16_t> assign_format_field_offsets();

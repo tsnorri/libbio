@@ -29,10 +29,23 @@ namespace libbio {
 		
 		// Return a new empty instance of this class.
 		virtual variant_format *new_instance() const { return new variant_format(); }
+		
+	protected:
+		template <typename t_str, typename t_dst>
+		inline void assign_field_ptr(t_str const &id, t_dst &dst);
 	};
 	
 	
 	typedef std::shared_ptr <variant_format>	variant_format_ptr;
+	
+	
+	template <typename t_str, typename t_dst>
+	void variant_format::assign_field_ptr(t_str const &id, t_dst &dst)
+	{
+		auto const it(m_fields_by_identifier.find(id));
+		libbio_always_assert_neq(it, m_fields_by_identifier.end());
+		dst = dynamic_cast <t_dst>(it->second.get());
+	}
 }
 
 #endif

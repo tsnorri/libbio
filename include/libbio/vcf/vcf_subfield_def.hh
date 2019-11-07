@@ -510,6 +510,9 @@ namespace libbio {
 		}
 		
 		// Convenience function.
+		// Non-const version (that would return non-const field_access::value_type) not needed b.c.
+		// the memory is ultimately retrieved from aligned_buffer::get() const that returns a pointer
+		// to non-const bytes.
 		typename field_access::value_type &operator()(typename base_class::container_type const &ct) const
 		{
 			return access_ds(this->buffer_start(ct));
@@ -555,13 +558,13 @@ namespace libbio {
 		
 	public:
 		virtual vcf_metadata_value_type value_type() const final { return vcf_metadata_value_type::STRING; }
-		virtual void output_vcf_value(std::ostream &stream, variant_sample const &sample) const final;
-
+		virtual void output_vcf_value(std::ostream &stream, variant_sample const &sample) const;
+		
 		// Convenience function.
-		vector_type const &operator()(variant_sample const &ct) const
-		{
-			return ct.m_genotype;
-		}
+		// m_genotype is a vector (and not a buffer that returns a pointer to some memory), so
+		// overloading is needed here.
+		vector_type &operator()(variant_sample &ct) const { return ct.m_genotype; }
+		vector_type const &operator()(variant_sample const &ct) const { return ct.m_genotype; }
 	};
 	
 	
