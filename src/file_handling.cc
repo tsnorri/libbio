@@ -24,7 +24,7 @@ namespace libbio {
 	{
 		char const *errmsg(strerror(errno));
 		std::cerr << "Got an error while trying to open '" << fname << "': " << errmsg << std::endl;
-		exit(EXIT_FAILURE);
+		std::exit(EXIT_FAILURE);
 	}
 	
 	
