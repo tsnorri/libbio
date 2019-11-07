@@ -249,14 +249,25 @@ namespace libbio { namespace detail {
 #ifdef __APPLE__ // Apparently macOS does not have aligned_alloc.
 		if (size)
 		{
-			auto const st(posix_memalign(&retval, alignment, size * sizeof(t_type)));
-			if (0 != st)
-				throw std::bad_alloc();
+			if (alignment <= sizeof(void *))
+			{
+				retval = malloc(size * sizeof(t_type));
+				if (!retval)
+					throw std::bad_alloc();
+			}
+			else
+			{
+				// posix_memalign requires that the alignment is a power of two and gte. sizeof(void *).
+				// FIXME: check that the alignment is actually a power of two.
+				auto const st(posix_memalign(&retval, alignment, size * sizeof(t_type))); // retval may be passed to free().
+				if (0 != st)
+					throw std::bad_alloc();
+			}
 		}
 #else
 		if (size)
 		{
-			retval = std::aligned_alloc(alignment, size * sizeof(t_type));
+			retval = std::aligned_alloc(alignment, size * sizeof(t_type)); // retval may be passed to free().
 			if (!retval)
 				throw std::bad_alloc();
 		}
