@@ -227,7 +227,7 @@ namespace {
 		alt_number_map alt_mapping;
 		do {
 			reader.fill_buffer();
-			should_continue = reader.parse([&stream, &sample_names, &alt_mapping](lb::transient_variant &var){
+			should_continue = reader.parse_nc([&stream, &sample_names, &alt_mapping](lb::transient_variant &var){
 				
 				if (!sample_names.empty())
 				{

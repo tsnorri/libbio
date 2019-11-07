@@ -432,8 +432,8 @@ namespace libbio {
 	}
 	
 	
-	bool vcf_reader::parse(callback_fn const &callback) { return parse2(callback); }
-	bool vcf_reader::parse(callback_fn &&callback) { return parse2(callback); }
+	bool vcf_reader::parse_nc(callback_fn const &callback) { return parse2(callback); }
+	bool vcf_reader::parse_nc(callback_fn &&callback) { return parse2(callback); }
 	bool vcf_reader::parse(callback_cq_fn const &callback) { return parse2(callback); }
 	bool vcf_reader::parse(callback_cq_fn &&callback) { return parse2(callback); }
 }

@@ -86,8 +86,8 @@ namespace libbio {
 		void read_header();
 		void fill_buffer();
 		void reset();
-		bool parse(callback_fn const &callback);
-		bool parse(callback_fn &&callback);
+		bool parse_nc(callback_fn const &callback);
+		bool parse_nc(callback_fn &&callback);
 		bool parse(callback_cq_fn const &callback);
 		bool parse(callback_cq_fn &&callback);
 		
@@ -136,7 +136,7 @@ namespace libbio {
 		std::pair <std::uint16_t, std::uint16_t> assign_field_offsets(std::vector <t_field *> &field_vec) const;
 		
 		template <typename t_cb>
-		bool parse2(t_cb const &cb);
+		inline bool parse2(t_cb const &cb);
 		
 		std::pair <std::uint16_t, std::uint16_t> assign_info_field_offsets();
 		std::pair <std::uint16_t, std::uint16_t> assign_format_field_offsets();
