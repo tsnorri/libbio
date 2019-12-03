@@ -224,10 +224,13 @@ namespace {
 		output_header(reader, stream, sample_names);
 		
 		bool should_continue(false);
+		std::size_t lineno{};
 		alt_number_map alt_mapping;
 		do {
 			reader.fill_buffer();
-			should_continue = reader.parse_nc([&stream, &sample_names, &alt_mapping](lb::transient_variant &var){
+			should_continue = reader.parse_nc([&stream, &sample_names, &alt_mapping, &lineno](lb::transient_variant &var){
+
+				++lineno;
 				
 				if (!sample_names.empty())
 				{
@@ -241,6 +244,9 @@ namespace {
 				{
 					lb::output_vcf(stream, var);
 				}
+
+				if (0 == lineno % 100000)
+					std::cerr << "Handled " << lineno << " lines…\n";
 				
 				return true;
 			});
