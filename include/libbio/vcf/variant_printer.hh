@@ -122,6 +122,14 @@ namespace libbio {
 		// INFO
 		auto const *reader(var.reader());
 		libbio_always_assert(reader);
+
+		auto const &info_fields(reader->info_fields_in_headers());
+		if (info_fields.empty())
+		{
+			os << '.';
+			return;
+		}
+
 		bool is_first(true);
 		for (auto const *field_ptr : reader->info_fields_in_headers())
 		{
