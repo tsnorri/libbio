@@ -67,6 +67,7 @@ namespace libbio {
 		vcf_genotype_ptr_vector			m_current_format_vec;
 		sample_name_map					m_sample_names;
 		transient_variant				m_current_variant;
+		char const						*m_current_line_start{};
 		copyable_atomic <std::size_t>	m_counter{0};
 		std::size_t						m_lineno{1};				// Current line number.
 		std::size_t						m_variant_index{0};			// Current variant number (0-based).
@@ -114,6 +115,7 @@ namespace libbio {
 		sample_name_map const &sample_names() const { return m_sample_names; }
 		void set_parsed_fields(vcf_field max_field) { m_max_parsed_field = max_field; }
 		std::size_t counter_value() const { return m_counter; } // Thread-safe.
+		inline std::pair <std::size_t, std::size_t> current_line_range() const; // Valid in parse()’s callback. FIXME: make this work also for the stream input.
 		
 		template <typename t_key, typename t_dst>
 		inline void get_info_field_ptr(t_key const &key, t_dst &dst) const;

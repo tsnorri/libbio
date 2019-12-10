@@ -50,7 +50,6 @@ namespace libbio {
 		
 		std::string				format_string;				// Current format as a string.
 		char const				*start(nullptr);			// Current string start.
-		char const				*line_start(nullptr);		// Current line start.
 		std::int64_t			integer(0);					// Currently read from the input.
 		std::size_t				sample_idx(0);				// Current sample idx (1-based).
 		std::size_t				subfield_idx(0);			// Current index in multi-part fields.
@@ -222,7 +221,7 @@ namespace libbio {
 			}
 			
 			action error {
-				report_unexpected_character(fpc, fpc - line_start, fcurs);
+				report_unexpected_character(fpc, fpc - m_current_line_start, fcurs);
 			}
 			
 			tab			= '\t';
@@ -322,9 +321,8 @@ namespace libbio {
 			sep				= '\t';		# Field separator
 			
 			# Handle a newline and continue.
-			# The newline gets eaten before its checked, though, so use any instead.
-			main_nl			:= '\n' @{ fhold; fgoto main; }	$eof{ throw std::runtime_error("Got an unexpected EOF"); };
-			break_nl		:= '\n' @{ fhold; fbreak; }		$eof{ throw std::runtime_error("Got an unexpected EOF"); };
+			main_nl			:= '\n' >to{ fhold; }	@{ fgoto main; }	$eof{ throw std::runtime_error("Got an unexpected EOF"); };
+			break_nl		:= '\n' >to{ fhold; }	@{ fbreak; }		$eof{ throw std::runtime_error("Got an unexpected EOF"); };
 			
 			# #CHROM
 			chrom_id_f :=
@@ -417,7 +415,7 @@ namespace libbio {
 					m_current_variant.reset();
 					m_current_variant.m_variant_index = m_variant_index++;
 					m_current_variant.m_lineno = m_lineno;
-					line_start = 1 + fpc;
+					m_current_line_start = 1 + fpc;
 					
 					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::CHROM, fentry(chrom_id_f), cb, retval);
 				}

@@ -67,6 +67,7 @@ namespace libbio {
 		m_input->reset_to_first_variant_offset();
 		m_lineno = m_input->last_header_lineno();
 		m_fsm.eof = nullptr;
+		m_current_line_start = nullptr;
 		m_counter = 0;
 		m_variant_index = 0;
 	}

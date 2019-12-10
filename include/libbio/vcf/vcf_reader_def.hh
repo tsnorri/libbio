@@ -34,6 +34,15 @@ namespace libbio {
 		get_info_field_ptr("END", retval);
 		return retval;
 	}
+	
+	std::pair <std::size_t, std::size_t> vcf_reader::current_line_range() const
+	{
+		auto const buffer_start(m_input->buffer_start());
+		return std::pair <std::size_t, std::size_t>(
+			m_current_line_start - buffer_start,
+			m_fsm.p - buffer_start
+		);
+	}
 }
 
 #endif
