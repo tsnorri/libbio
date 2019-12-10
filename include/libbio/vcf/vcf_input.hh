@@ -65,6 +65,7 @@ namespace libbio {
 	protected:
 		virtual void stream_reset() = 0;
 		virtual bool stream_getline() = 0;
+		virtual void stream_seekg(std::size_t const pos) = 0;
 		virtual std::size_t stream_tellg() = 0;
 		virtual void stream_read(char *data, std::size_t len) = 0;
 		virtual std::size_t stream_gcount() const = 0;
@@ -91,10 +92,11 @@ namespace libbio {
 		}
 		
 		virtual bool stream_getline() override							{ return std::getline(m_stream, m_buffer).operator bool(); }
+		virtual void stream_seekg(std::size_t const pos) override		{ m_stream.seekg(pos); }
 		virtual std::size_t stream_tellg() override						{ return m_stream.tellg(); }
 		virtual std::size_t stream_gcount() const override				{ return m_stream.gcount(); }
 		virtual bool stream_eof() const override						{ return m_stream.eof(); }
-
+		
 		virtual void stream_read(char *data, std::size_t len) override
 		{
 			try
