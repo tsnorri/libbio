@@ -30,12 +30,12 @@ namespace libbio {
 				false
 			);
 			
-				// Window size change signal event source.
+			// Window size change signal event source.
 			dispatch_ptr <dispatch_source_t> signal_source(
 				dispatch_source_create(DISPATCH_SOURCE_TYPE_SIGNAL, SIGWINCH, 0, main_queue),
 				false
 			);
-		
+			
 			m_message_timer = std::move(message_timer);
 			m_signal_source = std::move(signal_source);
 		}
@@ -55,11 +55,13 @@ namespace libbio {
 		if (m_is_installed)
 		{
 			// Deallocating a suspended source is considered a bug.
-			dispatch_resume(*m_message_timer);
-		
+			if (!m_timer_active)
+			{
+				dispatch_activate(*m_message_timer); // Needed in case the timer has never fired. For some reason, just using dispatch_resume does not work here at least on macOS 10.13. FIXME: check for symbol existence?
+				dispatch_resume(*m_message_timer);
+			}
 			dispatch_source_cancel(*m_message_timer);
 			dispatch_source_cancel(*m_signal_source);
-
 			m_is_installed = false;
 		}
 	}

@@ -44,6 +44,7 @@ namespace libbio {
 		};
 
 	protected:
+		progress_indicator_delegate			*m_delegate{};
 		dispatch_ptr <dispatch_source_t>	m_message_timer{};
 		dispatch_ptr <dispatch_source_t>	m_signal_source{};
 		
@@ -57,8 +58,6 @@ namespace libbio {
 		std::atomic <indicator_type>		m_indicator_type{indicator_type::NONE};
 		std::atomic_bool					m_timer_active{};
 		bool								m_is_installed{};
-		
-		progress_indicator_delegate			*m_delegate{};
 		
 	public:
 		bool is_stderr_interactive() const { return isatty(fileno(stderr)); }
