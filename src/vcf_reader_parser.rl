@@ -19,45 +19,48 @@ namespace libbio {
 	
 	// Parse the fields until m_max_parsed field, find the next newline and invoke the callback function.
 	template <int t_continue, int t_break, typename t_cb>
-	int vcf_reader::check_max_field(vcf_field const field, int const target, t_cb const &cb, bool &retval)
+	int vcf_reader::check_max_field(vcf_field const field, int const target, bool const stop_after_newline, t_cb const &cb, bool &retval)
 	{
 		if (field <= m_max_parsed_field)
 			return target;
 		
 		skip_to_next_nl();
-		if (!cb(m_current_variant))
+		bool const st(cb(m_current_variant));
+		++m_counter;
+		
+		if (!st)
 		{
 			retval = false;
 			return t_break;
 		}
-		
-		++m_counter;
+		else if (stop_after_newline)
+		{
+			return t_break;
+		}
 		return t_continue;
 	}
 	
 	
 	template <typename t_cb>
-	bool vcf_reader::parse2(t_cb const &cb)
+	bool vcf_reader::parse2(t_cb const &cb, parser_state &state, bool const stop_after_newline)
 	{
 		typedef variant_tpl <std::string_view, transient_variant_format_access>	var_t;
 		typedef variant_alt <std::string_view>									alt_t;
 		
 		bool retval(true);
-		m_current_format->m_fields_by_identifier.clear();
-		m_current_format_vec.clear();
 		
 		vcf_info_field_base		*current_info_field{};
 		
-		std::string				format_string;				// Current format as a string.
+		// State relative to the current line; may be discarded between calls to the parser.
 		char const				*start(nullptr);			// Current string start.
 		std::int64_t			integer(0);					// Currently read from the input.
 		std::size_t				sample_idx(0);				// Current sample idx (1-based).
 		std::size_t				subfield_idx(0);			// Current index in multi-part fields.
+		int						cs(0);
 		bool					integer_is_negative(false);
 		bool					gt_is_phased(false);		// Is the current GT phased.
 		bool					alt_is_complex(false);		// Is the current ALT “complex” (includes *).
 		bool					info_is_flag(false);
-		int						cs(0);
 		
 		// FIXME: add error actions to other machines than main?
 		%%{
@@ -159,13 +162,13 @@ namespace libbio {
 			
 			action end_format {
 				std::string_view const new_format(start, fpc - start);
-				if (new_format != format_string)
+				if (new_format != state.current_format)
 				{
 					m_current_format->reader_will_update_format(*this);
 					deinitialize_variant_samples(m_current_variant, m_current_format->m_fields_by_identifier);
 					
-					format_string = new_format;
-					parse_format(format_string);
+					state.current_format = new_format;
+					parse_format(state.current_format);
 					auto const [size, alignment] = assign_format_field_offsets();
 					reserve_memory_for_samples_in_current_variant(size, alignment);
 					
@@ -217,6 +220,13 @@ namespace libbio {
 				}
 				
 				++m_counter;
+				
+				if (stop_after_newline)
+				{
+					fnext main;
+					fbreak;
+				}
+				
 				fgoto main;
 			}
 			
@@ -328,7 +338,7 @@ namespace libbio {
 			chrom_id_f :=
 				(chrom_id sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::POS, fentry(pos_f), cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::POS, fentry(pos_f), stop_after_newline, cb, retval);
 				}
 				$err(error);
 			
@@ -336,7 +346,7 @@ namespace libbio {
 			pos_f :=
 				(pos sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ID, fentry(id_f), cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ID, fentry(id_f), stop_after_newline, cb, retval);
 				}
 				$err(error);
 			
@@ -344,7 +354,7 @@ namespace libbio {
 			id_f :=
 				(id_rec sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::REF, fentry(ref_f), cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::REF, fentry(ref_f), stop_after_newline, cb, retval);
 				}
 				$err(error);
 			
@@ -352,7 +362,7 @@ namespace libbio {
 			ref_f :=
 				(ref sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ALT, fentry(alt_f), cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ALT, fentry(alt_f), stop_after_newline, cb, retval);
 				}
 				$err(error);
 			
@@ -360,7 +370,7 @@ namespace libbio {
 			alt_f :=
 				(alt sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::QUAL, fentry(qual_f), cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::QUAL, fentry(qual_f), stop_after_newline, cb, retval);
 				}
 				$err(error);
 			
@@ -368,7 +378,7 @@ namespace libbio {
 			qual_f :=
 				(qual sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::FILTER, fentry(filter_f), cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::FILTER, fentry(filter_f), stop_after_newline, cb, retval);
 				}
 				$err(error);
 			
@@ -376,7 +386,7 @@ namespace libbio {
 			filter_f :=
 				(filter sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::INFO, fentry(info_f), cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::INFO, fentry(info_f), stop_after_newline, cb, retval);
 				}
 				$err(error);
 			
@@ -384,7 +394,7 @@ namespace libbio {
 			info_f :=
 				(info sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::FORMAT, fentry(format_f), cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::FORMAT, fentry(format_f), stop_after_newline, cb, retval);
 				}
 				$err(error);
 			
@@ -392,7 +402,7 @@ namespace libbio {
 			format_f :=
 				(format sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ALL, fentry(sample_rec_f), cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::ALL, fentry(sample_rec_f), stop_after_newline, cb, retval);
 				}
 				$err(error);
 			
@@ -411,16 +421,16 @@ namespace libbio {
 					subfield_idx = 0;
 					sample_idx = 0;
 					alt_is_complex = false;
-					++m_lineno;
+					++state.lineno;
 					m_current_variant.reset();
 					m_current_variant.m_variant_index = m_variant_index++;
-					m_current_variant.m_lineno = m_lineno;
+					m_current_variant.m_lineno = state.lineno;
 					m_current_line_start = 1 + fpc;
 					
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::CHROM, fentry(chrom_id_f), cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::CHROM, fentry(chrom_id_f), stop_after_newline, cb, retval);
 				}
 				$err(error)
-				$eof{ retval = false; }; # Expected EOF.
+				$eof{ retval = false; }; # Expected EOF. FIXME: should be true? Works anyway when using memory mapping.
 			
 			write init;
 			write exec;
@@ -430,8 +440,12 @@ namespace libbio {
 	}
 	
 	
-	bool vcf_reader::parse_nc(callback_fn const &callback) { return parse2(callback); }
-	bool vcf_reader::parse_nc(callback_fn &&callback) { return parse2(callback); }
-	bool vcf_reader::parse(callback_cq_fn const &callback) { return parse2(callback); }
-	bool vcf_reader::parse(callback_cq_fn &&callback) { return parse2(callback); }
+	bool vcf_reader::parse_nc(callback_fn const &callback)							{ parser_state state; return parse2(callback, state, false); }
+	bool vcf_reader::parse_nc(callback_fn &&callback)								{ parser_state state; return parse2(callback, state, false); }
+	bool vcf_reader::parse(callback_cq_fn const &callback)							{ parser_state state; return parse2(callback, state, false); }
+	bool vcf_reader::parse(callback_cq_fn &&callback)								{ parser_state state; return parse2(callback, state, false); }
+	bool vcf_reader::parse_one_nc(callback_fn const &callback, parser_state &state)	{ return parse2(callback, state, true); }
+	bool vcf_reader::parse_one_nc(callback_fn &&callback, parser_state &state)		{ return parse2(callback, state, true); }
+	bool vcf_reader::parse_one(callback_cq_fn const &callback, parser_state &state)	{ return parse2(callback, state, true); }
+	bool vcf_reader::parse_one(callback_cq_fn &&callback, parser_state &state)		{ return parse2(callback, state, true); }
 }

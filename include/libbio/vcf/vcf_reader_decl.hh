@@ -40,6 +40,17 @@ namespace libbio {
 		typedef std::function <bool(transient_variant const &var)>					callback_cq_fn;
 		typedef std::map <std::string, std::size_t, compare_strings_transparent>	sample_name_map; // Use a transparent comparator.
 		
+		// Enough state information to make it possible to resume parsing from the start of a line.
+		// TODO: consider moving more (most?) state information here since reset() will affect the machine state anyway.
+		struct parser_state
+		{
+			friend vcf_reader;
+			
+		protected:
+			std::string	current_format;	// Current format as a string.
+			std::size_t	lineno{1};
+		};
+		
 	protected:
 		struct fsm
 		{
@@ -52,8 +63,8 @@ namespace libbio {
 		template <typename> friend struct caller;
 		
 		template <int t_continue, int t_break, typename t_cb>
-		inline int check_max_field(vcf_field const field, int const target, t_cb const &cb, bool &retval);
-
+		inline int check_max_field(vcf_field const field, int const target, bool const stop_after_parsing, t_cb const &cb, bool &retval);
+		
 		void report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state);
 
 	protected:
@@ -64,13 +75,13 @@ namespace libbio {
 		vcf_info_field_ptr_vector		m_info_fields_in_headers;
 		vcf_genotype_field_map			m_genotype_fields;
 		variant_format_ptr				m_current_format{new variant_format()};
-		vcf_genotype_ptr_vector			m_current_format_vec;
+		vcf_genotype_ptr_vector			m_current_format_vec;					// Non-owning, contents point to m_current_format’s fields.
 		sample_name_map					m_sample_names;
 		transient_variant				m_current_variant;
 		char const						*m_current_line_start{};
 		copyable_atomic <std::size_t>	m_counter{0};
-		std::size_t						m_lineno{1};				// Current line number.
-		std::size_t						m_variant_index{0};			// Current variant number (0-based).
+		std::size_t						m_lineno{1};							// Current line number.
+		std::size_t						m_variant_index{0};						// Current variant number (0-based).
 		vcf_field						m_max_parsed_field{};
 		bool							m_have_assigned_variant_format{};
 	
@@ -91,6 +102,10 @@ namespace libbio {
 		bool parse_nc(callback_fn &&callback);
 		bool parse(callback_cq_fn const &callback);
 		bool parse(callback_cq_fn &&callback);
+		bool parse_one_nc(callback_fn const &callback, parser_state &state);
+		bool parse_one_nc(callback_fn &&callback, parser_state &state);
+		bool parse_one(callback_cq_fn const &callback, parser_state &state);
+		bool parse_one(callback_cq_fn &&callback, parser_state &state);
 		
 		class vcf_input &vcf_input() { return *m_input; }
 		class vcf_input const &vcf_input() const { return *m_input; }
@@ -131,14 +146,14 @@ namespace libbio {
 		void set_buffer_end(char const *pe) { m_fsm.pe = pe; }
 		void set_eof(char const *eof) { m_fsm.eof = eof; }
 		void set_lineno(std::size_t const lineno) { libbio_assert(lineno); m_lineno = lineno - 1; }
-
+		
 		void associate_metadata_with_field_descriptions();
 		
 		template <typename t_field>
 		std::pair <std::uint16_t, std::uint16_t> assign_field_offsets(std::vector <t_field *> &field_vec) const;
 		
 		template <typename t_cb>
-		inline bool parse2(t_cb const &cb);
+		inline bool parse2(t_cb const &cb, parser_state &state, bool const stop_after_newline);
 		
 		std::pair <std::uint16_t, std::uint16_t> assign_info_field_offsets();
 		std::pair <std::uint16_t, std::uint16_t> assign_format_field_offsets();

@@ -70,6 +70,9 @@ namespace libbio {
 		m_current_line_start = nullptr;
 		m_counter = 0;
 		m_variant_index = 0;
+		
+		m_current_format->m_fields_by_identifier.clear();
+		m_current_format_vec.clear();
 	}
 	
 	
