@@ -19,7 +19,7 @@ namespace libbio {
 
 	inline char *copy_format_cstr(boost::format const &fmt) { return strdup(boost::str(fmt).c_str()); }
 	
-	void log_time(std::ostream &stream);
+	std::ostream &log_time(std::ostream &stream);
 	std::string copy_time();
 	
 	// Calculate the printed length of a UTF-8 string by checking the first two bits of each byte.

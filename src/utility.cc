@@ -12,7 +12,7 @@
 
 namespace libbio {
 	
-	void log_time(std::ostream &stream)
+	std::ostream &log_time(std::ostream &stream)
 	{
 		auto const time(std::chrono::system_clock::now());
 		auto const ct(std::chrono::system_clock::to_time_t(time));
@@ -25,6 +25,8 @@ namespace libbio {
 		<< std::setw(2) << std::setfill('0') << ctm.tm_min << ':'
 		<< std::setw(2) << std::setfill('0') << ctm.tm_sec
 		<< "] ";
+		
+		return stream;
 	}
 	
 	
