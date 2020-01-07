@@ -8,6 +8,9 @@
 
 #include <libbio/vcf/variant_decl.hh>
 #include <ostream>
+#include <range/v3/algorithm/copy.hpp>
+#include <range/v3/iterator/stream_iterators.hpp>
+#include <range/v3/view/remove_if.hpp>
 
 
 namespace libbio {
