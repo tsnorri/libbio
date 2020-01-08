@@ -104,4 +104,45 @@ SCENARIO("FASTA files can be parsed")
 			}
 		}
 	}
+	
+	GIVEN("A test file with a sequence without a header")
+	{
+		libbio::mmap_handle <char> handle;
+		handle.open("test-files/test-2.fa");
+		
+		WHEN("the file is parsed")
+		{
+			lb::fasta_reader reader;
+			delegate cb;
+			reader.parse(handle, cb);
+			
+			THEN("the parsed FASTA matches the expected")
+			{
+				auto const expected(handle.to_string_view());
+				auto const actual(cb.stream().str());
+				REQUIRE(expected == actual);
+			}
+		}
+	}
+	
+	GIVEN("A test file with a sequence without a header and a terminating newline")
+	{
+		libbio::mmap_handle <char> handle;
+		handle.open("test-files/test-noeol-3.fa");
+		
+		WHEN("the file is parsed")
+		{
+			lb::fasta_reader reader;
+			delegate cb;
+			reader.parse(handle, cb);
+			
+			THEN("the parsed FASTA matches the expected")
+			{
+				auto const expected(handle.to_string_view());
+				auto actual(cb.stream().str());
+				actual.pop_back();
+				REQUIRE(expected == actual);
+			}
+		}
+	}
 }

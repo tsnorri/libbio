@@ -20,6 +20,7 @@ namespace
 	};
 }
 
+
 namespace libbio
 {
 	void fasta_reader::report_unexpected_character(int const current_state) const
@@ -63,7 +64,7 @@ namespace libbio
 		m_fsm.pe = m_fsm.p + handle.size();
 		m_fsm.eof = m_fsm.pe;
 		
-		m_line_start = nullptr;
+		m_line_start = m_fsm.p;
 		m_lineno = 0;
 		
 		%%{
@@ -149,10 +150,10 @@ namespace libbio
 			fasta_header	= comment_line* header_line;
 			fasta_sequence	= (comment_line* sequence_line)+ comment_line*;
 			
-			fasta_record	= (fasta_header fasta_sequence)+;
+			fasta_records	= (fasta_header fasta_sequence)+;
 			
 			main :=
-				fasta_record
+				(sequence_line | fasta_records)
 				$eof(handle_eof)
 				$err(error);
 			
