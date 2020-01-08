@@ -45,12 +45,13 @@ SCENARIO("Set symmetric difference can be determined")
 {
 	GIVEN("Two collections")
 	{
-		auto const &tup = GENERATE(gen::table({
-			std::make_tuple(5, std::vector <unsigned int>({1, 3, 5, 81}), std::vector <unsigned int>({2, 3, 4, 5, 6})),
-			std::make_tuple(0, std::vector <unsigned int>({2, 4, 6, 8}), std::vector <unsigned int>({2, 4, 6, 8})),
-			std::make_tuple(0, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({1, 2, 3})),
-			std::make_tuple(6, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({4, 5, 6})),
-			std::make_tuple(6, std::vector <unsigned int>({1, 3, 5}), std::vector <unsigned int>({2, 4, 6}))
+		typedef std::tuple <unsigned int, std::vector <unsigned int>, std::vector <unsigned int>> tuple_type;
+		auto const &tup = GENERATE(table <unsigned int, std::vector <unsigned int>, std::vector <unsigned int>>({
+			tuple_type{5, std::vector <unsigned int>({1, 3, 5, 81}), std::vector <unsigned int>({2, 3, 4, 5, 6})},
+			tuple_type{0, std::vector <unsigned int>({2, 4, 6, 8}), std::vector <unsigned int>({2, 4, 6, 8})},
+			tuple_type{0, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({1, 2, 3})},
+			tuple_type{6, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({4, 5, 6})},
+			tuple_type{6, std::vector <unsigned int>({1, 3, 5}), std::vector <unsigned int>({2, 4, 6})}
 		}));
 
 		
@@ -75,12 +76,13 @@ SCENARIO("Set intersection size can be determined")
 {
 	GIVEN("Two collections")
 	{
-		auto const &tup = GENERATE(gen::table({
-			std::make_tuple(2, std::vector <unsigned int>({1, 3, 5, 81}), std::vector <unsigned int>({2, 3, 4, 5, 6})),
-			std::make_tuple(4, std::vector <unsigned int>({2, 4, 6, 8}), std::vector <unsigned int>({2, 4, 6, 8})),
-			std::make_tuple(3, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({1, 2, 3})),
-			std::make_tuple(0, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({4, 5, 6})),
-			std::make_tuple(0, std::vector <unsigned int>({1, 3, 5}), std::vector <unsigned int>({2, 4, 6}))
+		typedef std::tuple <unsigned int, std::vector <unsigned int>, std::vector <unsigned int>> tuple_type;
+		auto const &tup = GENERATE(table <unsigned int, std::vector <unsigned int>, std::vector <unsigned int>>({
+			tuple_type{2, std::vector <unsigned int>({1, 3, 5, 81}), std::vector <unsigned int>({2, 3, 4, 5, 6})},
+			tuple_type{4, std::vector <unsigned int>({2, 4, 6, 8}), std::vector <unsigned int>({2, 4, 6, 8})},
+			tuple_type{3, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({1, 2, 3})},
+			tuple_type{0, std::vector <unsigned int>({1, 2, 3}), std::vector <unsigned int>({4, 5, 6})},
+			tuple_type{0, std::vector <unsigned int>({1, 3, 5}), std::vector <unsigned int>({2, 4, 6})}
 		}));
 
 		
@@ -106,11 +108,11 @@ SCENARIO("Unique items can be counted")
 	GIVEN("A collection of items")
 	{
 		typedef unique_count_test_input ti;
-		
-		auto const &tup = GENERATE(gen::table({
-			std::make_tuple(std::vector <ti>({{1, 1}, {2, 1}, {2, 1}, {4, 1}, {4, 1}, {4, 1}, {5, 1}}), std::vector <ti>({{1, 1}, {2, 2}, {4, 3}, {5, 1}})),
-			std::make_tuple(std::vector <ti>({{1, 1}, {2, 1}, {4, 1}}), std::vector <ti>({{1, 1}, {2, 1}, {4, 1}})),
-			std::make_tuple(std::vector <ti>({{3, 1}, {3, 1}, {3, 1}}), std::vector <ti>({{3, 3}}))
+		typedef std::tuple <std::vector <ti>, std::vector <ti>> tuple_type;
+		auto const &tup = GENERATE(table <std::vector <ti>, std::vector <ti>>({
+			tuple_type{std::vector <ti>({{1, 1}, {2, 1}, {2, 1}, {4, 1}, {4, 1}, {4, 1}, {5, 1}}), std::vector <ti>({{1, 1}, {2, 2}, {4, 3}, {5, 1}})},
+			tuple_type{std::vector <ti>({{1, 1}, {2, 1}, {4, 1}}), std::vector <ti>({{1, 1}, {2, 1}, {4, 1}})},
+			tuple_type{std::vector <ti>({{3, 1}, {3, 1}, {3, 1}}), std::vector <ti>({{3, 3}})}
 		}));
 		
 		WHEN("the unique items are counted")

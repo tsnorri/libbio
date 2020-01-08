@@ -24,6 +24,7 @@ namespace {
 		long long ll;
 	};
 
+	// We would like to test lb::detail::return_type_size().
 	// Since every lambda function has a distinct type, use the visitor pattern to determine the return type size.
 	struct lambda_container_base
 	{
@@ -51,12 +52,13 @@ SCENARIO("return_type_size() can return the correct size")
 {
 	GIVEN("a lambda function")
 	{
-		auto const &tuple = GENERATE(gen::table({
-			std::make_tuple(sizeof(char),			make_lambda_container([](test const &t) { return t.c; })),
-			std::make_tuple(sizeof(unsigned short),	make_lambda_container([](test const &t) { return t.s; })),
-			std::make_tuple(sizeof(int),			make_lambda_container([](test const &t) { return t.i; })),
-			std::make_tuple(sizeof(unsigned long),	make_lambda_container([](test const &t) { return t.l; })),
-			std::make_tuple(sizeof(long long),		make_lambda_container([](test const &t) { return t.ll; }))
+		typedef std::tuple <std::size_t, std::shared_ptr <lambda_container_base>> tuple_type;
+		auto const &tuple = GENERATE(table <std::size_t, std::shared_ptr <lambda_container_base>>({
+			tuple_type{sizeof(char),			make_lambda_container([](test const &t) { return t.c; })},
+			tuple_type{sizeof(unsigned short),	make_lambda_container([](test const &t) { return t.s; })},
+			tuple_type{sizeof(int),				make_lambda_container([](test const &t) { return t.i; })},
+			tuple_type{sizeof(unsigned long),	make_lambda_container([](test const &t) { return t.l; })},
+			tuple_type{sizeof(long long),		make_lambda_container([](test const &t) { return t.ll; })}
 		}));
 		
 		WHEN("the function is called")

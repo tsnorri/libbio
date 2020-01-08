@@ -20,9 +20,10 @@ SCENARIO("merge_projected can merge containers")
 		typedef std::vector <input_type>	input_vector;
 		typedef input_vector				output_vector;
 		
-		auto const &tup = GENERATE(gen::table({
-			std::make_tuple(input_vector({1, 3, 5, 7, 9}),	input_vector({0, 2, 4, 6, 8}),	output_vector({0, 1, 2, 3, 4, 5, 6, 7, 8, 9})),
-			std::make_tuple(input_vector({1, 3, 10, 7}),	input_vector({0, 2, 4, 6, 8}),	output_vector({0, 1, 2, 3, 4, 6, 8}))
+		typedef std::tuple <input_vector, input_vector, output_vector> tuple_type;
+		auto const &tup = GENERATE(table <input_vector, input_vector, output_vector>({
+			tuple_type{input_vector({1, 3, 5, 7, 9}),	input_vector({0, 2, 4, 6, 8}),	output_vector({0, 1, 2, 3, 4, 5, 6, 7, 8, 9})},
+			tuple_type{input_vector({1, 3, 10, 7}),		input_vector({0, 2, 4, 6, 8}),	output_vector({0, 1, 2, 3, 4, 6, 8})}
 		}));
 		
 		WHEN("the function is called")

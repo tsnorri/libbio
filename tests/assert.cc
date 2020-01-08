@@ -122,11 +122,12 @@ SCENARIO("Assertion macros throw on failure")
 	GIVEN("Two values of the same type")
 	{
 		// Order should be: lt, lte, gt, gte, eq, neq
-		auto const &tup = GENERATE(gen::table({
-			std::make_tuple(4,	5,	lb::make_array <bool>(true, true, false, false, false, true)),
-			std::make_tuple(5,	5,	lb::make_array <bool>(false, true, false, true, true, false)),
-			std::make_tuple(6,	5,	lb::make_array <bool>(false, false, true, true, false, true)),
-			std::make_tuple(-5,	5,	lb::make_array <bool>(true, true, false, false, false, true))
+		typedef std::tuple <int, int, std::array <bool, 6>> tuple_type;
+		auto const &tup = GENERATE(table <int, int, std::array <bool, 6>>({
+			tuple_type{4,	5,	lb::make_array <bool>(true, true, false, false, false, true)},
+			tuple_type{5,	5,	lb::make_array <bool>(false, true, false, true, true, false)},
+			tuple_type{6,	5,	lb::make_array <bool>(false, false, true, true, false, true)},
+			tuple_type{-5,	5,	lb::make_array <bool>(true, true, false, false, false, true)}
 		}));
 		
 		std::apply(test_assertion_macros <int, int>, tup);
