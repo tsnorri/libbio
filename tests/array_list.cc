@@ -18,9 +18,9 @@ namespace lb	= libbio;
 namespace {
 	typedef lb::array_list <int> array_list;
 	
-	typedef std::initializer_list <
+	typedef std::vector <
 		std::pair <std::size_t, int>
-	> initializer_list;
+	> vector;
 }
 
 
@@ -28,14 +28,15 @@ SCENARIO("Array list can be instantiated")
 {
 	GIVEN("Array list items")
 	{
-		auto const &il = GENERATE(gen::values({
-			initializer_list({{1, 2}, {3, 4}, {5, 6}}),
-			initializer_list({{2, -1}, {5, -2}, {10, -6}})
+		auto const &vec = GENERATE(gen::values({
+			vector{{1, 2}, {3, 4}, {5, 6}},
+			vector{{2, -1}, {5, -2}, {10, -6}}
 		}));
 		
 		
 		WHEN("the collection is instantiated")
 		{
+			auto il = {vec[0], vec[1], vec[2]};
 			array_list list(il);
 			
 			THEN("the contents match the initializer list")
