@@ -125,6 +125,10 @@ namespace libbio {
 		if (!S_ISREG(sb.st_mode))
 			throw std::runtime_error("Trying to memory map a non-regular file");
 		
+		// Don’t try to memory map empty files.
+		if (0 == sb.st_size)
+			return;
+		
 		m_content = static_cast <t_type *>(mmap(0, sb.st_size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0));
 		if (MAP_FAILED == m_content)
 			throw std::runtime_error(strerror(errno));
