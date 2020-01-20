@@ -320,6 +320,7 @@ namespace libbio {
 			qual			= (qual_numeric | qual_unknown) >begin_qual;
 			
 			# For now, values not equal to “PASS” are stored.
+			# FIXME: currently “.” cannot be told apart from PASS.
 			filter_pass		= 'PASS';
 			filter_unknown	= '.';
 			filter_name		= (chr - ';')+ - ('.' | 'PASS');
