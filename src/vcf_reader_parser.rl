@@ -159,6 +159,17 @@ namespace libbio {
 			
 			action end_info {
 			}
+
+			action end_filter_name {
+				{
+					auto const &filters(m_current_variant.m_reader->metadata().filter());
+					auto const filter_name(std::string_view(start, fpc - start));
+					auto const it(filters.find(filter_name));
+					if (filters.end() == it)
+						throw std::runtime_error("Unknown FILTER name");
+					m_current_variant.m_filters.emplace_back(&it->second);
+				}
+			}
 			
 			action end_format {
 				std::string_view const new_format(start, fpc - start);
@@ -307,10 +318,11 @@ namespace libbio {
 			
 			qual			= (qual_numeric | qual_unknown) >begin_qual;
 			
-			# FIXME: add actions.
-			filter_pass	= 'PASS';
-			filter_part	= (chr - ';')+;
-			filter		= (filter_pass | (filter_part (';' filter_part)*));
+			# For now, values not equal to “PASS” are stored.
+			filter_pass		= 'PASS';
+			filter_name		= (chr - ';')+ - 'PASS';
+			filter_part		= filter_name >(start_string) %(end_filter_name);
+			filter			= (filter_pass | (filter_part (';' filter_part)*));
 			
 			# Perform have_multiple_info_values before storing the current INFO value.
 			info_str		= (chr - [,;=])+;

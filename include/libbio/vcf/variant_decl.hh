@@ -69,11 +69,13 @@ namespace libbio {
 		
 	public:
 		enum { UNKNOWN_QUALITY = -1 };
+		typedef std::vector <vcf_metadata_filter const *>	filter_ptr_vector;
 		
 	protected:
 		vcf_reader											*m_reader{};
 		aligned_buffer <std::byte, buffer_base::zero_tag>	m_info{};			// FIXME: if the range contains only trivially constructible and destructible values, copy the bytes.
 		std::vector <variant_sample>						m_samples{};
+		filter_ptr_vector									m_filters{};
 		std::vector <bool>									m_assigned_info_fields{};
 		double												m_qual{UNKNOWN_QUALITY};
 		std::size_t											m_variant_index{0};
@@ -92,6 +94,7 @@ namespace libbio {
 		void set_qual(double const qual)								{ m_qual = qual; }
 		
 		vcf_reader *reader() const										{ return m_reader; }
+		filter_ptr_vector const &filters() const						{ return m_filters; }
 		std::vector <variant_sample> const &samples() const				{ return m_samples; }
 		std::vector <variant_sample> &samples()							{ return m_samples; }
 		std::size_t variant_index() const								{ return m_variant_index; }
@@ -101,7 +104,7 @@ namespace libbio {
 		double qual() const												{ return m_qual; }
 		
 	protected:
-		void reset() { m_assigned_info_fields.assign(m_assigned_info_fields.size(), false); }
+		inline void reset();
 		void finish_copy(variant_base const &other, variant_format const &variant_format, bool should_initialize);
 	};
 	
