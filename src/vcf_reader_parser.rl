@@ -3,6 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <boost/format.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <libbio/assert.hh>
 #include <libbio/vcf/variant.hh>
@@ -166,7 +167,7 @@ namespace libbio {
 					auto const filter_name(std::string_view(start, fpc - start));
 					auto const it(filters.find(filter_name));
 					if (filters.end() == it)
-						throw std::runtime_error("Unknown FILTER name");
+						throw std::runtime_error((boost::format("Unknown FILTER name ‘%s’") % filter_name).str());
 					m_current_variant.m_filters.emplace_back(&it->second);
 				}
 			}
@@ -320,9 +321,10 @@ namespace libbio {
 			
 			# For now, values not equal to “PASS” are stored.
 			filter_pass		= 'PASS';
-			filter_name		= (chr - ';')+ - 'PASS';
+			filter_unknown	= '.';
+			filter_name		= (chr - ';')+ - ('.' | 'PASS');
 			filter_part		= filter_name >(start_string) %(end_filter_name);
-			filter			= (filter_pass | (filter_part (';' filter_part)*));
+			filter			= (filter_pass | filter_unknown | (filter_part (';' filter_part)*));
 			
 			# Perform have_multiple_info_values before storing the current INFO value.
 			info_str		= (chr - [,;=])+;
