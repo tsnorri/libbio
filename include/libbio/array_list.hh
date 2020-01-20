@@ -568,7 +568,7 @@ namespace libbio {
 	template <typename t_value>
 	void array_list <t_value>::link_item(item_type &&item, size_type const idx)
 	{
-		libbio_assert(idx < m_items.size());
+		libbio_assert_lt_msg(idx, m_items.size(), "Expected ", idx, " < ", m_items.size());
 		
 		if (SIZE_MAX != item.prev)
 			m_items[item.prev].next = idx;
