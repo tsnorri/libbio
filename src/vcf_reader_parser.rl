@@ -270,7 +270,8 @@ namespace libbio {
 				%{ HANDLE_STRING_END_VAR(&var_t::set_ref); };
 			
 			# FIXME: add breakends.
-			simple_alt	= ([ACGTN]+);
+			simple_alt			= ([ACGTN]+);
+			alt_allele_missing	= '*';
 			
 			# Structural variants.
 			sv_alt_id_chr		= chr - [<>:];	# No angle brackets in SV identifiers.
@@ -307,7 +308,7 @@ namespace libbio {
 				HANDLE_STRING_END_ALT(&alt_t::set_alt);
 				CURRENT_ALT.alt_sv_type = sv_type::UNKNOWN;
 			}
-			alt_string	= (simple_alt | sv_alt)
+			alt_string	= (simple_alt | alt_allele_missing | sv_alt)
 				>(start_alt)
 				%(end_alt_string);
 			alt_unknown		= '.' >(start_alt) %(end_alt_unknown);
