@@ -113,17 +113,17 @@ namespace libbio {
 			# The other fields that may have a description value as well as the examples of ALT have the description
 			# surrounded in quotes.
 			meta_field_description			= 'Description="'
-				([^"]+) >(start_string) %{ HANDLE_STRING_END_METADATA(&meta_t::set_description); }
+				([^"]*) >(start_string) %{ HANDLE_STRING_END_METADATA(&meta_t::set_description); }
 				'"';
 			
 			# Source field.
 			meta_field_source				= 'Source="'
-				([^"]+) >(start_string) %{ HANDLE_STRING_END_METADATA(&meta_t::set_source); }
+				([^"]*) >(start_string) %{ HANDLE_STRING_END_METADATA(&meta_t::set_source); }
 				'"';
 				
 			# Version field.
 			meta_field_version				= 'Version="'
-				([^"]+) >(start_string) %{ HANDLE_STRING_END_METADATA(&meta_t::set_version); }
+				([^"]*) >(start_string) %{ HANDLE_STRING_END_METADATA(&meta_t::set_version); }
 				'"';
 			
 			# URL field.
@@ -151,7 +151,7 @@ namespace libbio {
 			
 			# species field.
 			meta_field_species				= 'species="'
-				([^"]+) >(start_string) %{ HANDLE_STRING_END_METADATA(&meta_t::set_species); }
+				([^"]*) >(start_string) %{ HANDLE_STRING_END_METADATA(&meta_t::set_species); }
 				'"';
 				
 			# Type field.
