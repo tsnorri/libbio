@@ -114,8 +114,16 @@ namespace libbio {
 	void variant_printer_base <t_variant>::output_filter(std::ostream &os, variant_type const &var) const
 	{
 		// FILTER
-		// FIXME: output the actual value once we have it.
-		os << "PASS";
+		auto const &filters(var.filters());
+		if (filters.empty())
+			os << "PASS";
+		else
+		{
+			ranges::copy(
+				var.filters() | ranges::view::transform([](auto const *filter){ return filter->get_id(); }),
+				ranges::make_ostream_joiner(os, ";")
+			);
+		}
 	}
 	
 	

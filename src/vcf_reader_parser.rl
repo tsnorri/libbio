@@ -3,6 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <boost/format.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <libbio/assert.hh>
 #include <libbio/vcf/variant.hh>
@@ -159,6 +160,17 @@ namespace libbio {
 			
 			action end_info {
 			}
+
+			action end_filter_name {
+				{
+					auto const &filters(m_current_variant.m_reader->metadata().filter());
+					auto const filter_name(std::string_view(start, fpc - start));
+					auto const it(filters.find(filter_name));
+					if (filters.end() == it)
+						throw std::runtime_error((boost::format("Unknown FILTER name ‘%s’") % filter_name).str());
+					m_current_variant.m_filters.emplace_back(&it->second);
+				}
+			}
 			
 			action end_format {
 				std::string_view const new_format(start, fpc - start);
@@ -258,7 +270,8 @@ namespace libbio {
 				%{ HANDLE_STRING_END_VAR(&var_t::set_ref); };
 			
 			# FIXME: add breakends.
-			simple_alt	= ([ACGTN]+);
+			simple_alt			= ([ACGTN]+);
+			alt_allele_missing	= '*';
 			
 			# Structural variants.
 			sv_alt_id_chr		= chr - [<>:];	# No angle brackets in SV identifiers.
@@ -295,7 +308,7 @@ namespace libbio {
 				HANDLE_STRING_END_ALT(&alt_t::set_alt);
 				CURRENT_ALT.alt_sv_type = sv_type::UNKNOWN;
 			}
-			alt_string	= (simple_alt | sv_alt)
+			alt_string	= (simple_alt | alt_allele_missing | sv_alt)
 				>(start_alt)
 				%(end_alt_string);
 			alt_unknown		= '.' >(start_alt) %(end_alt_unknown);
@@ -307,10 +320,13 @@ namespace libbio {
 			
 			qual			= (qual_numeric | qual_unknown) >begin_qual;
 			
-			# FIXME: add actions.
-			filter_pass	= 'PASS';
-			filter_part	= (chr - ';')+;
-			filter		= (filter_pass | (filter_part (';' filter_part)*));
+			# For now, values not equal to “PASS” are stored.
+			# FIXME: currently “.” cannot be told apart from PASS.
+			filter_pass		= 'PASS';
+			filter_unknown	= '.';
+			filter_name		= (chr - ';')+ - ('.' | 'PASS');
+			filter_part		= filter_name >(start_string) %(end_filter_name);
+			filter			= (filter_pass | filter_unknown | (filter_part (';' filter_part)*));
 			
 			# Perform have_multiple_info_values before storing the current INFO value.
 			info_str		= (chr - [,;=])+;

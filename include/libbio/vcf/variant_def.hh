@@ -33,6 +33,13 @@ namespace libbio {
 		libbio_always_assert_msg(0 != m_pos, "Unexpected position");
 		return m_pos - 1;
 	}
+
+
+	void variant_base::reset()
+	{
+		m_assigned_info_fields.assign(m_assigned_info_fields.size(), false);
+		m_filters.clear();
+	}
 	
 	
 	variant_format_ptr const &transient_variant_format_access::get_format_ptr(vcf_reader const &reader) const
