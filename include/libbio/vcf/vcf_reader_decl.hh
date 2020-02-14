@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019 Tuukka Norri
+ * Copyright (c) 2017-2020 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -84,6 +84,7 @@ namespace libbio {
 		std::size_t						m_variant_index{0};						// Current variant number (0-based).
 		vcf_field						m_max_parsed_field{};
 		bool							m_have_assigned_variant_format{};
+		bool							m_has_samples{};
 	
 	public:
 		vcf_reader() = default;
@@ -128,7 +129,7 @@ namespace libbio {
 		std::size_t sample_no(std::string const &sample_name) const;
 		std::size_t sample_count() const { return m_sample_names.size(); }
 		sample_name_map const &sample_names() const { return m_sample_names; }
-		void set_parsed_fields(vcf_field max_field) { m_max_parsed_field = max_field; }
+		inline void set_parsed_fields(vcf_field max_field);
 		std::size_t counter_value() const { return m_counter; } // Thread-safe.
 		inline std::pair <std::size_t, std::size_t> current_line_range() const; // Valid in parse()’s callback. FIXME: make this work also for the stream input.
 		

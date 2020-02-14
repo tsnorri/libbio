@@ -84,6 +84,10 @@ namespace libbio {
 				++sample_name_idx;
 			}
 			
+			action has_samples {
+				m_has_samples = true;
+			}
+			
 			action goto_header_sub			{ fgoto header_sub; }
 			
 			action end_line					{ line_start = fpc; ++m_lineno; }
@@ -263,10 +267,10 @@ namespace libbio {
 			meta							= "##" meta_record_name_or_generic;
 			
 			# Column headers.
-			column_names					= "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
+			column_names					= "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
 			sample_name						= ([^\t\n]+) >(start_string) %(end_sample_name);
 			sample_names					= sample_name ("\t" sample_name)*;
-			column_header					= (column_names ("\t" sample_names)? "\n" >(end_line) @{ fbreak; });
+			column_header					= (column_names ("\tFORMAT\t" >(has_samples) sample_names)? "\n" >(end_line) @{ fbreak; });
 			
 			fileformat						= ("##fileformat=VCFv4." [0-9]+ "\n" >(end_line));
 			

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019-2020 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -11,6 +11,16 @@
 
 
 namespace libbio {
+	void vcf_reader::set_parsed_fields(vcf_field max_field) {
+		m_max_parsed_field = (
+			m_has_samples
+			? max_field
+			: static_cast <vcf_field>(std::min(
+				to_underlying(max_field),
+				to_underlying(vcf_field::INFO)
+			))
+		);
+	}
 	
 	template <typename t_key, typename t_dst>
 	void vcf_reader::get_info_field_ptr(t_key const &key, t_dst &dst) const
