@@ -19,6 +19,25 @@
 
 
 namespace libbio {
+	class vcf_reader;
+
+	struct vcf_reader_delegate
+	{
+		virtual void vcf_reader_did_parse_metadata(vcf_reader &reader) = 0;
+	};
+
+	struct vcf_reader_default_delegate : public vcf_reader_delegate
+	{
+		void vcf_reader_did_parse_metadata(vcf_reader &reader) {}
+	};
+}
+
+namespace libbio { namespace detail {
+	extern vcf_reader_default_delegate g_vcf_reader_default_delegate;
+}}
+
+
+namespace libbio {
 	
 	class vcf_mmap_input;
 	class transient_variant;
@@ -78,6 +97,7 @@ namespace libbio {
 		vcf_genotype_ptr_vector			m_current_format_vec;					// Non-owning, contents point to m_current_format’s fields.
 		sample_name_map					m_sample_names;
 		transient_variant				m_current_variant;
+		vcf_reader_delegate				*m_delegate{&detail::g_vcf_reader_default_delegate};
 		char const						*m_current_line_start{};
 		copyable_atomic <std::size_t>	m_counter{0};
 		std::size_t						m_lineno{1};							// Current line number.
@@ -94,6 +114,7 @@ namespace libbio {
 		{
 		}
 		
+		void set_delegate(vcf_reader_delegate &delegate) { m_delegate = &delegate; }
 		void set_input(class vcf_input &input) { m_input = &input; }
 		void set_variant_format(variant_format *fmt) { libbio_always_assert(fmt); m_current_format.reset(fmt); m_have_assigned_variant_format = true; }
 		void read_header();

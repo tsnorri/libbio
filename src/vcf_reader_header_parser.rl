@@ -282,6 +282,7 @@ namespace libbio {
 		}%%
 		
 		// Post-process the metadata descriptions.
+		m_delegate->vcf_reader_did_parse_metadata(*this);
 		associate_metadata_with_field_descriptions();
 		auto const [info_size, info_max_alignment] = assign_info_field_offsets();
 		
