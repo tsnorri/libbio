@@ -84,7 +84,7 @@ namespace libbio {
 		template <int t_continue, int t_break, typename t_cb>
 		inline int check_max_field(vcf_field const field, int const target, bool const stop_after_parsing, t_cb const &cb, bool &retval);
 		
-		void report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state);
+		void report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state, bool const in_header = false);
 
 	protected:
 		class vcf_input					*m_input{nullptr};

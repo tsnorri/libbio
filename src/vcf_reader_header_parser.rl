@@ -46,7 +46,7 @@ namespace libbio {
 			variable eof	m_fsm.eof;
 			
 			action error {
-				report_unexpected_character(fpc, fpc - line_start, fcurs);
+				report_unexpected_character(fpc, fpc - line_start, fcurs, true);
 			}
 			
 			action start_string {

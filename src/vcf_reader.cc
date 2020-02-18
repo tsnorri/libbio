@@ -36,10 +36,15 @@ namespace libbio { namespace detail {
 
 namespace libbio {
 	
-	void vcf_reader::report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state)
+	void vcf_reader::report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state, bool const in_header)
 	{
+		if (in_header)
+			std::cerr << "Unexpected character in VCF header ";
+		else
+			std::cerr << "Unexpected character ";
+
 		std::cerr
-		<< "Unexpected character '" << "' (" << +(*current_character) << ") at " << m_lineno << ':' << pos
+		<< '\'' << (*current_character) << "' (" << +(*current_character) << ") at " << m_lineno << ':' << pos
 		<< ", state " << current_state << '.' << std::endl;
 
 		auto const start(m_fsm.p);
