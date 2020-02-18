@@ -18,6 +18,13 @@
 
 
 namespace libbio {
+
+	template <typename t_lhs_string, typename t_rhs_string>
+	bool operator==(variant_alt <t_lhs_string> const &lhs, variant_alt <t_rhs_string> const &rhs)
+	{
+		return lhs.alt_sv_type == rhs.alt_sv_type && lhs.alt == rhs.alt;
+	}
+	
 	
 	variant_base::variant_base(vcf_reader &reader, std::size_t const sample_count, std::size_t const info_size, std::size_t const info_alignment):
 		m_reader(&reader),
