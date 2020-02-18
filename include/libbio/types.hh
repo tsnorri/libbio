@@ -59,7 +59,11 @@ namespace libbio {
 		FLOAT,
 		CHARACTER,
 		STRING,
-		FLAG
+		FLAG,
+		// Special values.
+		SCALAR_LIMIT,
+		FIRST = INTEGER,
+		VECTOR_LIMIT = FLAG
 	};
 	
 	
