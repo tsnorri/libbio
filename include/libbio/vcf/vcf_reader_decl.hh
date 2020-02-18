@@ -136,6 +136,7 @@ namespace libbio {
 		char const *eof() const { return m_fsm.eof; }
 		
 		bool has_assigned_variant_format() const { return m_have_assigned_variant_format; }
+		vcf_metadata &metadata() { return m_metadata; }
 		vcf_metadata const &metadata() const { return m_metadata; }
 		vcf_info_field_map &info_fields() { return m_info_fields; }
 		vcf_info_field_map const &info_fields() const { return m_info_fields; }
