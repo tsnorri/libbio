@@ -34,6 +34,9 @@ namespace libbio {
 		
 		// Get the metadata pointer.
 		virtual vcf_metadata_base *get_metadata() const = 0;
+
+		// Whether the field uses the enumerated VCF type mapping.
+		virtual bool uses_vcf_type_mapping() const { return false; }
 		
 	protected:
 		// Alignment of this field.
@@ -144,12 +147,12 @@ namespace libbio {
 	};
 	
 	// Base classes for the different field types.
-	class vcf_storable_info_field_base : public vcf_storable_subfield_base, public vcf_info_field_base
+	class vcf_storable_info_field_base : public vcf_storable_subfield_base, public virtual vcf_info_field_base
 	{
 		friend class vcf_metadata_info;
 	};
 	
-	class vcf_storable_genotype_field_base : public vcf_storable_subfield_base, public vcf_genotype_field_base
+	class vcf_storable_genotype_field_base : public vcf_storable_subfield_base, public virtual vcf_genotype_field_base
 	{
 		friend class vcf_metadata_format;
 	};
@@ -171,7 +174,7 @@ namespace libbio {
 		virtual void reset(std::byte *mem) const final { /* No-op. */ }
 	};
 	
-	class vcf_info_field_placeholder : public vcf_info_field_base, public vcf_subfield_placeholder
+	class vcf_info_field_placeholder : public virtual vcf_info_field_base, public vcf_subfield_placeholder
 	{
 		virtual bool parse_and_assign(std::string_view const &sv, variant_base &var, std::byte *mem) const final { /* No-op. */ return false; }
 		virtual vcf_info_field_placeholder *clone() const final { return new vcf_info_field_placeholder(*this); }
@@ -180,7 +183,7 @@ namespace libbio {
 		virtual void output_vcf_value(std::ostream &stream, variant_base const &var) const final { throw std::runtime_error("Should not be called; parse_and_assign returns false"); }
 	};
 	
-	class vcf_genotype_field_placeholder : public vcf_genotype_field_base, public vcf_subfield_placeholder
+	class vcf_genotype_field_placeholder : public virtual vcf_genotype_field_base, public vcf_subfield_placeholder
 	{
 		virtual bool parse_and_assign(std::string_view const &sv, variant_sample &sample, std::byte *mem) const final { /* No-op. */ return false; }
 		virtual vcf_genotype_field_placeholder *clone() const final { return new vcf_genotype_field_placeholder(*this); }

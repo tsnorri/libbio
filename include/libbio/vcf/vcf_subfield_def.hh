@@ -73,6 +73,36 @@ namespace libbio {
 	
 	template <vcf_metadata_value_type t_metadata_value_type>
 	using vcf_field_type_mapping_t = typename vcf_field_type_mapping <t_metadata_value_type>::type;
+
+	// The actual value types. (Non-)specialization for vector types.
+	template <bool t_is_vector, vcf_metadata_value_type t_metadata_value_type> struct vcf_value_type_mapping
+	{
+		typedef std::vector <vcf_field_type_mapping_t <t_metadata_value_type>> type;
+	};
+
+	// Partial specialization for scalar types.
+	template <vcf_metadata_value_type t_metadata_value_type>
+	struct vcf_value_type_mapping <false, t_metadata_value_type>
+	{
+		typedef vcf_field_type_mapping_t <t_metadata_value_type> type;
+	};
+
+	// Specialization for FLAG.
+	template <bool t_is_vector>
+	struct vcf_value_type_mapping <t_is_vector, vcf_metadata_value_type::FLAG> {};
+
+	template <>
+	struct vcf_value_type_mapping <false, vcf_metadata_value_type::FLAG>
+	{
+		typedef vcf_field_type_mapping_t <vcf_metadata_value_type::FLAG> type;
+	};
+
+	// Helper template.
+	template <bool t_is_vector, vcf_metadata_value_type t_metadata_value_type>
+	using vcf_value_type_mapping_t = typename vcf_value_type_mapping <t_is_vector, t_metadata_value_type>::type;
+
+
+	constexpr bool vcf_value_count_corresponds_to_vector(std::int32_t number) { return (1 < number || number < 0); }
 	
 	
 	// Helper for constructing a vector.
@@ -173,7 +203,6 @@ namespace libbio {
 	template <typename t_type>
 	struct vcf_primitive_value_access : public vcf_value_access_base <t_type> {};
 	
-	
 	// Special output rules for integers.
 	template <>
 	struct vcf_primitive_value_access <std::int32_t> : public vcf_value_access_base <std::int32_t>
@@ -184,6 +213,9 @@ namespace libbio {
 			::libbio::output_vcf_value(stream, value);
 		}
 	};
+
+	template <vcf_metadata_value_type t_metadata_value_type>
+	using vcf_primitive_value_access_from_field_type_t = vcf_primitive_value_access <vcf_field_type_mapping_t <t_metadata_value_type>>;
 	
 	
 	// Handle object values in the reserved memory.
@@ -196,16 +228,20 @@ namespace libbio {
 			reinterpret_cast <t_type *>(mem)->~t_type();
 		}
 	};
-	
-	
+
+	template <vcf_metadata_value_type t_metadata_value_type>
+	using vcf_object_value_access_from_field_type_t = vcf_object_value_access <vcf_field_type_mapping_t <t_metadata_value_type>>;
+
+
 	// Handle vector values in the reserved memory.
 	// Currently, a vector is allocated for all vector types except GT.
 	template <typename t_element_type, std::int32_t t_number>
 	struct vcf_vector_value_access : public vcf_object_value_access <std::vector <t_element_type>>
 	{
+		static_assert(vcf_value_count_corresponds_to_vector(t_number));
 		typedef std::vector <t_element_type>	vector_type;
 		
-		using vcf_object_value_access <std::vector <t_element_type>>::access_ds;
+		using vcf_object_value_access <vector_type>::access_ds;
 		
 		template <typename t_metadata>
 		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, t_metadata const &metadata)
@@ -229,25 +265,23 @@ namespace libbio {
 			ranges::copy(vec, ranges::make_ostream_joiner(stream, ","));
 		}
 	};
-	
-	
-	// Use an alias template to make writing the vector (non-)specialization (below) easier.
-	template <std::int32_t t_number, vcf_metadata_value_type t_metadata_value_type>
-	using vcf_vector_value_access_t = vcf_vector_value_access <vcf_field_type_mapping_t <t_metadata_value_type>, t_number>;
+
+	template <vcf_metadata_value_type t_metadata_value_type, int32_t t_number>
+	using vcf_vector_value_access_from_field_type_t = vcf_vector_value_access <vcf_field_type_mapping_t <t_metadata_value_type>, t_number>;
 	
 	
 	// Handle a VCF field (specified in ##INFO or ##FORMAT).
 	// (Non-)specialization for vectors.
 	template <std::int32_t t_number, vcf_metadata_value_type t_metadata_value_type>
-	struct vcf_subfield_access : public vcf_vector_value_access_t <t_number, t_metadata_value_type>
+	struct vcf_subfield_access : public vcf_vector_value_access_from_field_type_t <t_metadata_value_type, t_number>
 	{
-		typedef vcf_vector_value_access_t <t_number, t_metadata_value_type>	value_access_type;
-		typedef typename value_access_type::vector_type						value_type;
-		typedef typename value_type::value_type								element_type;
+		typedef vcf_vector_value_access_from_field_type_t <t_metadata_value_type, t_number>	value_access_type;
+		typedef typename value_access_type::vector_type										value_type;
+		typedef typename value_type::value_type												element_type;
 	};
-	
+
 	// Specialization for strings.
-	template <> struct vcf_subfield_access <1, vcf_metadata_value_type::STRING> final : public vcf_object_value_access <std::string_view>
+	template <> struct vcf_subfield_access <1, vcf_metadata_value_type::STRING> final : public vcf_object_value_access_from_field_type_t <vcf_metadata_value_type::STRING>
 	{
 		typedef std::string_view	value_type;
 		typedef value_type			element_type;
@@ -255,22 +289,28 @@ namespace libbio {
 	
 	// Specializations for scalar values.
 	// FIXME: make it possible to store individual bits for flags?
-	template <> struct vcf_subfield_access <1, vcf_metadata_value_type::FLOAT> final : public vcf_primitive_value_access <float>
+	template <> struct vcf_subfield_access <1, vcf_metadata_value_type::CHARACTER> final : public vcf_object_value_access_from_field_type_t <vcf_metadata_value_type::CHARACTER>
 	{
-		typedef float				value_type;
+		typedef std::string_view	value_type;
 		typedef value_type			element_type;
 	};
-	
-	template <> struct vcf_subfield_access <1, vcf_metadata_value_type::INTEGER> final : public vcf_primitive_value_access <std::int32_t>
+
+	template <> struct vcf_subfield_access <1, vcf_metadata_value_type::FLOAT> final : public vcf_primitive_value_access_from_field_type_t <vcf_metadata_value_type::FLOAT>
 	{
-		typedef std::int32_t		value_type;
-		typedef value_type			element_type;
+		typedef vcf_field_type_mapping_t <vcf_metadata_value_type::FLOAT>	value_type;
+		typedef value_type													element_type;
 	};
 	
-	template <> struct vcf_subfield_access <0, vcf_metadata_value_type::FLAG> final : public vcf_primitive_value_access <std::uint8_t>
+	template <> struct vcf_subfield_access <1, vcf_metadata_value_type::INTEGER> final : public vcf_primitive_value_access_from_field_type_t <vcf_metadata_value_type::INTEGER>
 	{
-		typedef std::uint8_t		value_type;
-		typedef value_type			element_type;
+		typedef vcf_field_type_mapping_t <vcf_metadata_value_type::INTEGER>	value_type;
+		typedef value_type													element_type;
+	};
+	
+	template <> struct vcf_subfield_access <0, vcf_metadata_value_type::FLAG> final : public vcf_primitive_value_access_from_field_type_t <vcf_metadata_value_type::FLAG>
+	{
+		typedef vcf_field_type_mapping_t <vcf_metadata_value_type::FLAG>	value_type;
+		typedef value_type													element_type;
 	};
 	
 	
@@ -286,13 +326,13 @@ namespace libbio {
 	// Specializations for the different value types.
 	template <> struct vcf_subfield_parser <vcf_metadata_value_type::INTEGER> : public vcf_subfield_parser_base
 	{
-		typedef std::int32_t value_type;
+		typedef vcf_field_type_mapping_t <vcf_metadata_value_type::INTEGER>	value_type;
 		static void parse(std::string_view const &sv, value_type &dst);
 	};
 	
 	template <> struct vcf_subfield_parser <vcf_metadata_value_type::FLOAT> : public vcf_subfield_parser_base
 	{
-		typedef float value_type;
+		typedef vcf_field_type_mapping_t <vcf_metadata_value_type::FLOAT>	value_type;
 		static void parse(std::string_view const &sv, value_type &dst);
 	};
 	
@@ -390,6 +430,43 @@ namespace libbio {
 		}
 	};
 
+
+	// Virtualize value_type_is_vector(), get_value_type().
+	template <typename t_base>
+	struct vcf_typed_field_base : public virtual t_base
+	{
+		// For now these are only declared in the field types that use the mapping in the beginning of this header.
+		// Since the GT field has a custom value type (as we parse the phasing information), it does not use the mapping.
+		bool uses_vcf_type_mapping() const final { return true; }
+		virtual bool value_type_is_vector() const = 0;
+		virtual vcf_metadata_value_type get_value_type() const = 0;
+	};
+
+	typedef vcf_typed_field_base <vcf_info_field_base>		vcf_typed_info_field_base;
+	typedef vcf_typed_field_base <vcf_genotype_field_base>	vcf_typed_genotype_field_base;
+
+	// Virtual function declaration for operator().
+	template <bool t_is_vector, vcf_metadata_value_type t_value_type, typename t_container, typename t_base>
+	struct vcf_typed_field : public vcf_typed_field_base <t_base>
+	{
+		typedef vcf_value_type_mapping_t <t_is_vector, t_value_type>	value_type;
+		typedef t_container												container_type;
+
+		bool value_type_is_vector() const final					{ return t_is_vector; }
+		vcf_metadata_value_type get_value_type() const final	{ return t_value_type; }
+
+		virtual value_type &operator()(t_container const &) = 0;
+		virtual value_type const &operator()(t_container const &) const = 0;
+	};
+
+	// Aliases for easier castability. The third parameter matches the container_type defined in the classes below.
+	template <bool t_is_vector, vcf_metadata_value_type t_value_type>
+	using vcf_typed_info_field = vcf_typed_field <t_is_vector, t_value_type, variant_base, vcf_info_field_base>;
+
+	template <bool t_is_vector, vcf_metadata_value_type t_value_type>
+	using vcf_typed_genotype_field = vcf_typed_field <t_is_vector, t_value_type, variant_sample, vcf_genotype_field_base>;
+
+
 	// Base classes for the generic field types, implement byte_size().
 	template <std::int32_t t_number, vcf_metadata_value_type t_metadata_value_type>
 	class vcf_generic_info_field_base :
@@ -398,6 +475,7 @@ namespace libbio {
 	{
 	public:
 		typedef variant_base												container_type;
+		typedef vcf_info_field_base											virtual_base;
 		
 	protected:
 		typedef vcf_subfield_access <t_number, t_metadata_value_type>		field_access;
@@ -430,6 +508,7 @@ namespace libbio {
 	{
 	public:
 		typedef variant_sample												container_type;
+		typedef vcf_genotype_field_base										virtual_base;
 		
 	protected:
 		typedef vcf_generic_field_parser <t_number, t_metadata_value_type>	parser_type;
@@ -453,12 +532,21 @@ namespace libbio {
 		vcf_metadata_value_type t_metadata_value_type,
 		template <std::int32_t, vcf_metadata_value_type> class t_base
 	>
-	class vcf_generic_field final : public t_base <t_number, t_metadata_value_type>
+	class vcf_generic_field final :
+		public t_base <t_number, t_metadata_value_type>,
+		public vcf_typed_field <
+			vcf_value_count_corresponds_to_vector(t_number),
+			t_metadata_value_type,
+			typename t_base <t_number, t_metadata_value_type>::container_type,
+			typename t_base <t_number, t_metadata_value_type>::virtual_base
+		>
 	{
 	protected:
-		typedef variant_base											container_type;
 		typedef vcf_subfield_access <t_number, t_metadata_value_type>	field_access;
 		typedef t_base <t_number, t_metadata_value_type>				base_class;
+
+	public:
+		typedef typename base_class::container_type						container_type;
 		
 	protected:
 		virtual std::uint16_t alignment() const final { return field_access::alignment(); }
@@ -503,17 +591,19 @@ namespace libbio {
 	public:
 		virtual vcf_metadata_value_type value_type() const final { return t_metadata_value_type; }
 
-		virtual void output_vcf_value(std::ostream &stream, typename base_class::container_type const &ct) const final
+		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const final
 		{
 			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::output_vcf_value(stream, this->buffer_start(ct) + this->m_offset);
 		}
 		
-		// Convenience function.
-		// Non-const version (that would return non-const field_access::value_type) not needed b.c.
-		// the memory is ultimately retrieved from aligned_buffer::get() const that returns a pointer
-		// to non-const bytes.
-		typename field_access::value_type &operator()(typename base_class::container_type const &ct) const
+		// Operator().
+		typename field_access::value_type &operator()(container_type const &ct) final
+		{
+			return access_ds(this->buffer_start(ct));
+		}
+
+		typename field_access::value_type const &operator()(container_type const &ct) const final
 		{
 			return access_ds(this->buffer_start(ct));
 		}
@@ -560,9 +650,7 @@ namespace libbio {
 		virtual vcf_metadata_value_type value_type() const final { return vcf_metadata_value_type::STRING; }
 		virtual void output_vcf_value(std::ostream &stream, variant_sample const &sample) const;
 		
-		// Convenience function.
-		// m_genotype is a vector (and not a buffer that returns a pointer to some memory), so
-		// overloading is needed here.
+		// Operator().
 		vector_type &operator()(variant_sample &ct) const { return ct.m_genotype; }
 		vector_type const &operator()(variant_sample const &ct) const { return ct.m_genotype; }
 	};
