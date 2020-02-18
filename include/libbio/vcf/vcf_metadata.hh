@@ -220,8 +220,11 @@ namespace libbio {
 		}
 		
 	public:
+		info_map &info() { return m_info; }
 		info_map const &info() const { return m_info; }
+		filter_map &filter() { return m_filter; }
 		filter_map const &filter() const { return m_filter; }
+		contig_map &contig() { return m_contig; }
 		contig_map const &contig() const { return m_contig; }
 		
 		template <typename t_fn>
