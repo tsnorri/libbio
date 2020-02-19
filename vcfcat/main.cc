@@ -44,13 +44,15 @@ namespace {
 	protected:
 		sample_name_span const	*m_sample_names{};
 		alt_number_map const	*m_alt_mapping{};
+		bool const				m_exclude_samples{};
 		
 	public:
 		sample_filtering_variant_printer() = default;
 		
-		sample_filtering_variant_printer(sample_name_span const &sample_names, alt_number_map const &alt_mapping):
+		sample_filtering_variant_printer(sample_name_span const &sample_names, alt_number_map const &alt_mapping, bool const exclude_samples):
 			m_sample_names(&sample_names),
-			m_alt_mapping(&alt_mapping)
+			m_alt_mapping(&alt_mapping),
+			m_exclude_samples(exclude_samples)
 		{
 		}
 		
@@ -101,9 +103,8 @@ namespace {
 		auto const &parsed_sample_names(reader->sample_names());
 		bool is_first(true);
 		auto const &samples(var.samples());
-		for (auto const &name : *m_sample_names)
-		{
-			auto const idx1(parsed_sample_names.find(name)->second);
+		
+		auto cb([this, &os, &var, &is_first, &samples](std::size_t const idx1){
 			libbio_assert(idx1);
 			auto const idx(idx1 - 1);
 			auto const &sample(samples[idx]);
@@ -112,6 +113,27 @@ namespace {
 				os << '\t';
 			is_first = false;
 			this->output_sample(os, var, sample);
+		});
+		
+		if (m_exclude_samples)
+		{
+			for (auto const &pair : parsed_sample_names)
+			{
+				auto const &name(pair.first);
+				if (std::find(m_sample_names->begin(), m_sample_names->end(), name) == m_sample_names->end())
+				{
+					auto const idx1(pair.second);
+					cb(idx1);
+				}
+			}
+		}
+		else
+		{
+			for (auto const &name : *m_sample_names)
+			{
+				auto const idx1(parsed_sample_names.find(name)->second);
+				cb(idx1);
+			}
 		}
 	}
 	
@@ -135,7 +157,7 @@ namespace {
 	}
 	
 	
-	bool modify_variant(lb::transient_variant &var, alt_number_map &alt_mapping, sample_name_span const &sample_names)
+	bool modify_variant(lb::transient_variant &var, alt_number_map &alt_mapping, sample_name_span const &sample_names, bool const exclude_samples)
 	{
 		alt_mapping.clear();
 		
@@ -143,20 +165,47 @@ namespace {
 		auto const &reader(*var.reader());
 		auto const &parsed_sample_names(reader.sample_names());
 		auto &samples(var.samples());
-		for (auto const &name : sample_names)
+		
+		// Find the ALT values that are in use in the given samples.
 		{
-			auto const it(parsed_sample_names.find(name));
-			libbio_assert_neq(it, parsed_sample_names.end());
-			auto const idx1(it->second);
-			libbio_assert(idx1);
-			auto const idx(idx1 - 1);
-			auto &sample(samples[idx]);
-			for (auto const &gt : (*gt_field)(sample))
-				alt_mapping.emplace(gt.alt, 0);
+			auto const cb([&samples, &gt_field, &alt_mapping](std::size_t const idx1){
+				libbio_assert(idx1);
+				auto const idx(idx1 - 1);
+				auto &sample(samples[idx]);
+				for (auto const &gt : (*gt_field)(sample))
+					alt_mapping.emplace(gt.alt, 0);
+			});
+			
+			if (exclude_samples)
+			{
+				for (auto const &pair : parsed_sample_names)
+				{
+					auto const &name(pair.first);
+					auto const it(std::find(sample_names.begin(), sample_names.end(), name));
+					// Check whether the current sample name is also in the excluded list.
+					if (it != sample_names.end())
+						continue;
+					
+					auto const idx1(pair.second);
+					cb(idx1);
+				}
+			}
+			else
+			{
+				for (auto const &name : sample_names)
+				{
+					auto const it(parsed_sample_names.find(name));
+					libbio_assert_neq(it, parsed_sample_names.end());
+					
+					auto const idx1(it->second);
+					cb(idx1);
+				}
+			}
+			
+			alt_mapping.erase(0);
+			if (alt_mapping.empty())
+				return false;
 		}
-		alt_mapping.erase(0);
-		if (alt_mapping.empty())
-			return false;
 		
 		{
 			std::size_t idx{};
@@ -185,7 +234,7 @@ namespace {
 	}
 	
 	
-	void output_header(lb::vcf_reader const &reader, std::ostream &stream, sample_name_span const &sample_names)
+	void output_header(lb::vcf_reader const &reader, std::ostream &stream, sample_name_span const &sample_names, bool const exclude_samples)
 	{
 		auto const &metadata(reader.metadata());
 		
@@ -195,14 +244,22 @@ namespace {
 		});
 		
 		stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
-		if (sample_names.empty())
+		if (sample_names.empty() || exclude_samples)
 		{
 			std::vector <std::string const *> output_sample_names(reader.sample_count());
+			std::size_t found_count{};
 			for (auto const &[name, number] : reader.sample_names())
 			{
 				libbio_assert_lt(0, number);
-				output_sample_names[number - 1] = &name;
+
+				auto const did_find(std::find(sample_names.begin(), sample_names.end(), name) != sample_names.end());
+				if (exclude_samples == did_find)
+					continue;
+
+				output_sample_names[found_count] = &name;
+				++found_count;
 			}
+			output_sample_names.resize(found_count);
 			
 			for (auto const ptr : output_sample_names)
 				stream << '\t' << *ptr;
@@ -216,27 +273,27 @@ namespace {
 	}
 	
 	
-	void output_vcf(lb::vcf_reader &reader, std::ostream &stream, sample_name_span const &sample_names)
+	void output_vcf(lb::vcf_reader &reader, std::ostream &stream, sample_name_span const &sample_names, bool const exclude_samples)
 	{
 		if (!sample_names.empty())
 			check_sample_names(reader, sample_names);
 		
-		output_header(reader, stream, sample_names);
+		output_header(reader, stream, sample_names, exclude_samples);
 		
 		bool should_continue(false);
 		std::size_t lineno{};
 		alt_number_map alt_mapping;
 		do {
 			reader.fill_buffer();
-			should_continue = reader.parse_nc([&stream, &sample_names, &alt_mapping, &lineno](lb::transient_variant &var){
+			should_continue = reader.parse_nc([&stream, &sample_names, exclude_samples, &alt_mapping, &lineno](lb::transient_variant &var){
 
 				++lineno;
 				
-				if (!sample_names.empty())
+				if ((!sample_names.empty()) || exclude_samples)
 				{
-					if (modify_variant(var, alt_mapping, sample_names))
+					if (modify_variant(var, alt_mapping, sample_names, exclude_samples))
 					{
-						sample_filtering_variant_printer <lb::transient_variant> printer(sample_names, alt_mapping);
+						sample_filtering_variant_printer <lb::transient_variant> printer(sample_names, alt_mapping, exclude_samples);
 						lb::output_vcf(printer, stream, var);
 					}
 				}
@@ -288,7 +345,7 @@ int main(int argc, char **argv)
 	reader.fill_buffer();
 	reader.read_header();
 	reader.set_parsed_fields(lb::vcf_field::ALL);
-	output_vcf(reader, args_info.output_given ? output_stream : std::cout, sample_names);
+	output_vcf(reader, args_info.output_given ? output_stream : std::cout, sample_names, args_info.exclude_samples_given);
 	
 	return EXIT_SUCCESS;
 }
