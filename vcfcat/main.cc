@@ -284,10 +284,10 @@ int main(int argc, char **argv)
 	
 	// Parse.
 	reader.set_variant_format(new variant_format());
-	reader.set_parsed_fields(lb::vcf_field::ALL);
 	reader.set_input(vcf_input);
 	reader.fill_buffer();
 	reader.read_header();
+	reader.set_parsed_fields(lb::vcf_field::ALL);
 	output_vcf(reader, args_info.output_given ? output_stream : std::cout, sample_names);
 	
 	return EXIT_SUCCESS;
