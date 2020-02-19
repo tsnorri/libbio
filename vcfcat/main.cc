@@ -86,9 +86,10 @@ namespace {
 	{
 		auto const &alts(var.alts());
 		ranges::copy(
-			*m_alt_mapping | ranges::view::transform([&alts](auto const &kv) -> typename variant_type::string_type const & {
+			*m_alt_mapping
+			| ranges::view::transform([&var, &alts](auto const &kv) -> typename variant_type::string_type const & {
 				libbio_assert_lt(0, kv.first);
-				libbio_assert_lte(kv.first, alts.size());
+				libbio_assert_lte_msg(kv.first, alts.size(), "lineno: ", var.lineno(), " kv.first: ", kv.first, " alts.size(): ", alts.size());
 				return alts[kv.first - 1].alt; 
 			}),
 			ranges::make_ostream_joiner(os, ",")
@@ -173,7 +174,11 @@ namespace {
 				auto const idx(idx1 - 1);
 				auto &sample(samples[idx]);
 				for (auto const &gt : (*gt_field)(sample))
+				{
+					if (lb::sample_genotype::NULL_ALLELE == gt.alt)
+						continue;
 					alt_mapping.emplace(gt.alt, 0);
+				}
 			});
 			
 			if (exclude_samples)
@@ -207,6 +212,7 @@ namespace {
 				return false;
 		}
 		
+		// Number the new ALT values.
 		{
 			std::size_t idx{};
 			for (auto &kv : alt_mapping)
@@ -225,7 +231,7 @@ namespace {
 			
 			for (auto &gt : (*gt_field)(sample))
 			{
-				if (gt.alt)
+				if (gt.alt && lb::sample_genotype::NULL_ALLELE != gt.alt)
 					gt.alt = alt_mapping[gt.alt];
 			}
 		}
