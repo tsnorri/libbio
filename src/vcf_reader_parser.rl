@@ -344,7 +344,7 @@ namespace libbio {
 			format_part		= [^\t\n:]+;
 			format			= (format_part (':' format_part)*) >(start_string) %(end_format);
 			
-			sep				= '\t';		# Field separator
+			sep				= [\t];		# Field separator
 			
 			# Handle a newline and continue.
 			main_nl			:= '\n' >to{ fhold; }	@{ fgoto main; }	$eof{ throw std::runtime_error("Got an unexpected EOF"); };
@@ -408,7 +408,7 @@ namespace libbio {
 			
 			# INFO
 			info_f :=
-				(info sep)
+				(info (sep | [\n]))
 				@{
 					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::FORMAT, fentry(format_f), stop_after_newline, cb, retval);
 				}
