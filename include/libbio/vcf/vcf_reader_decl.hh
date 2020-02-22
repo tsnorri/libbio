@@ -67,7 +67,6 @@ namespace libbio {
 			
 		protected:
 			std::string	current_format;	// Current format as a string.
-			std::size_t	lineno{1};
 		};
 		
 	protected:

@@ -437,10 +437,10 @@ namespace libbio {
 					subfield_idx = 0;
 					sample_idx = 0;
 					alt_is_complex = false;
-					++state.lineno;
+					++m_lineno;
 					m_current_variant.reset();
 					m_current_variant.m_variant_index = m_variant_index++;
-					m_current_variant.m_lineno = state.lineno;
+					m_current_variant.m_lineno = m_lineno;
 					m_current_line_start = 1 + fpc;
 					
 					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(vcf_field::CHROM, fentry(chrom_id_f), stop_after_newline, cb, retval);
