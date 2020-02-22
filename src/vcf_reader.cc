@@ -381,7 +381,10 @@ namespace libbio {
 		auto const *src_bytes(src.m_info.get());
 		auto *dst_bytes(src.m_info.get());
 		for (auto const *field_ptr : m_info_fields_in_headers)
-			field_ptr->copy_ds(src_bytes, dst_bytes);
+		{
+			if (field_ptr->has_value(src))
+				field_ptr->copy_ds(src_bytes, dst_bytes);
+		}
 		
 		// Samples.
 		libbio_always_assert_eq(src.m_samples.size(), dst.m_samples.size());
