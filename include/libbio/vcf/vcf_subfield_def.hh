@@ -172,7 +172,7 @@ namespace libbio {
 		static constexpr t_type &access_ds(std::byte *mem) { return *reinterpret_cast <t_type *>(mem); }
 		static constexpr t_type const &access_ds(std::byte const *mem) { return *reinterpret_cast <t_type const *>(mem); }
 		
-		// Copy the value.
+		// Copy the value. Should only be called for copying the data to a non-transient variant.
 		static void copy_ds(std::byte const *src, std::byte *dst)
 		{
 			auto const &srcv(access_ds(src));
@@ -193,6 +193,7 @@ namespace libbio {
 		static constexpr std::size_t alignment() { return alignof(t_type); }
 		
 		// Replace or add a value.
+		// This works for string views b.c. the buffer where the characters are located still exists.
 		static constexpr void add_value(std::byte *mem, t_type const &val) { access_ds(mem) = val; }
 		
 		static void output_vcf_value(std::ostream &stream, std::byte *mem) { stream << access_ds(mem); }
@@ -451,9 +452,11 @@ namespace libbio {
 	{
 		typedef vcf_value_type_mapping_t <t_is_vector, t_value_type>	value_type;
 		typedef t_container												container_type;
+		
+		constexpr static bool is_typed_field() { return true; }
 
-		bool value_type_is_vector() const final					{ return t_is_vector; }
-		vcf_metadata_value_type get_value_type() const final	{ return t_value_type; }
+		bool value_type_is_vector() const override final				{ return t_is_vector; }
+		vcf_metadata_value_type get_value_type() const override final	{ return t_value_type; }
 
 		virtual value_type &operator()(t_container const &) = 0;
 		virtual value_type const &operator()(t_container const &) const = 0;
@@ -486,14 +489,14 @@ namespace libbio {
 		std::byte *buffer_start(container_type const &ct) const { return ct.m_info.get(); }
 		
 		// Handle boolean values.
-		virtual bool assign(std::byte *mem) const final
+		virtual bool assign(std::byte *mem) const override final
 		{
 			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, m_offset);
 			field_access::add_value(mem + m_offset, 0);
 			return true;
 		};
 		
-		virtual bool parse_and_assign(std::string_view const &sv, variant_base &var, std::byte *mem) const final
+		virtual bool parse_and_assign(std::string_view const &sv, variant_base &var, std::byte *mem) const override final
 		{
 			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, m_offset);
 			parser_type::parse_and_assign(sv, mem + m_offset);
@@ -517,7 +520,7 @@ namespace libbio {
 		// Access the container’s buffer, for use with operator().
 		std::byte *buffer_start(container_type const &ct) const { return ct.m_sample_data.get(); }
 		
-		virtual bool parse_and_assign(std::string_view const &sv, variant_sample &var, std::byte *mem) const final
+		virtual bool parse_and_assign(std::string_view const &sv, variant_sample &var, std::byte *mem) const override final
 		{
 			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, m_offset);
 			parser_type::parse_and_assign(sv, mem + m_offset);
@@ -549,26 +552,26 @@ namespace libbio {
 		typedef typename base_class::container_type						container_type;
 		
 	protected:
-		virtual std::uint16_t alignment() const final { return field_access::alignment(); }
-		virtual std::int32_t number() const final { return t_number; }
-		virtual std::uint16_t byte_size() const final { return field_access::byte_size(); }
+		virtual std::uint16_t alignment() const override { return field_access::alignment(); }
+		virtual std::int32_t number() const override { return t_number; }
+		virtual std::uint16_t byte_size() const override { return field_access::byte_size(); }
 		
 		// Construct the type in the memory block. The additional parameters are passed to the constructor if needed.
-		virtual void construct_ds(std::byte *mem, std::uint16_t const alt_count) const final
+		virtual void construct_ds(std::byte *mem, std::uint16_t const alt_count) const override
 		{
 			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::construct_ds(mem + this->m_offset, alt_count, *this->m_metadata);
 		}
 		
 		// Destruct the type in the memory block (if needed).
-		virtual void destruct_ds(std::byte *mem) const final
+		virtual void destruct_ds(std::byte *mem) const override
 		{
 			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::destruct_ds(mem + this->m_offset);
 		}
 		
 		// Copy the data structures.
-		virtual void copy_ds(std::byte const *src, std::byte *dst) const final
+		virtual void copy_ds(std::byte const *src, std::byte *dst) const override
 		{
 			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::copy_ds(src + this->m_offset, dst + this->m_offset);
@@ -580,30 +583,30 @@ namespace libbio {
 			return field_access::access_ds(mem + this->m_offset);
 		}
 		
-		virtual void reset(std::byte *mem) const final
+		virtual void reset(std::byte *mem) const override
 		{
 			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::reset_ds(mem + this->m_offset);
 		}
 		
-		virtual vcf_generic_field *clone() const final { return new vcf_generic_field(*this); }
+		virtual vcf_generic_field *clone() const override { return new vcf_generic_field(*this); }
 		
 	public:
-		virtual vcf_metadata_value_type value_type() const final { return t_metadata_value_type; }
+		virtual vcf_metadata_value_type value_type() const override { return t_metadata_value_type; }
 
-		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const final
+		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const override
 		{
 			libbio_always_assert_neq(vcf_storable_subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::output_vcf_value(stream, this->buffer_start(ct) + this->m_offset);
 		}
 		
 		// Operator().
-		typename field_access::value_type &operator()(container_type const &ct) final
+		typename field_access::value_type &operator()(container_type const &ct) override
 		{
 			return access_ds(this->buffer_start(ct));
 		}
 
-		typename field_access::value_type const &operator()(container_type const &ct) const final
+		typename field_access::value_type const &operator()(container_type const &ct) const override
 		{
 			return access_ds(this->buffer_start(ct));
 		}
@@ -617,38 +620,38 @@ namespace libbio {
 		typedef std::vector <sample_genotype> vector_type;
 			
 	protected:
-		virtual std::uint16_t alignment() const final { return 1; }
-		virtual std::uint16_t byte_size() const final { return 0; }
+		virtual std::uint16_t alignment() const override { return 1; }
+		virtual std::uint16_t byte_size() const override { return 0; }
 		
-		virtual std::int32_t number() const final { return 1; }
+		virtual std::int32_t number() const override { return 1; }
 		
-		virtual void construct_ds(std::byte *mem, std::uint16_t const alt_count) const final
+		virtual void construct_ds(std::byte *mem, std::uint16_t const alt_count) const override
 		{
 			// No-op.
 		}
 		
-		virtual void destruct_ds(std::byte *mem) const final
+		virtual void destruct_ds(std::byte *mem) const override
 		{
 			// No-op.
 		}
 		
-		virtual void copy_ds(std::byte const *src, std::byte *dst) const final
+		virtual void copy_ds(std::byte const *src, std::byte *dst) const override
 		{
 			// No-op.
 		}
 		
-		virtual void reset(std::byte *mem) const final
+		virtual void reset(std::byte *mem) const override
 		{
 			// No-op, done in parse_and_assign.
 		}
 		
-		virtual bool parse_and_assign(std::string_view const &sv, variant_sample &sample, std::byte *mem) const final;
+		virtual bool parse_and_assign(std::string_view const &sv, variant_sample &sample, std::byte *mem) const override;
 		
-		virtual vcf_genotype_field_gt *clone() const final { return new vcf_genotype_field_gt(*this); }
+		virtual vcf_genotype_field_gt *clone() const override { return new vcf_genotype_field_gt(*this); }
 		
 	public:
-		virtual vcf_metadata_value_type value_type() const final { return vcf_metadata_value_type::STRING; }
-		virtual void output_vcf_value(std::ostream &stream, variant_sample const &sample) const;
+		virtual vcf_metadata_value_type value_type() const override { return vcf_metadata_value_type::STRING; }
+		virtual void output_vcf_value(std::ostream &stream, variant_sample const &sample) const override;
 		
 		// Operator().
 		vector_type &operator()(variant_sample &ct) const { return ct.m_genotype; }
