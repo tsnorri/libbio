@@ -11,6 +11,7 @@ OBJECTS	=	algorithm.o \
 			atomic_int_matrix.o \
 			atomic_int_vector.o \
 			bit_rle_codec.o \
+			buffer.o \
 			fasta_reader.o \
 			int_vector.o \
 			is_lt.o \
