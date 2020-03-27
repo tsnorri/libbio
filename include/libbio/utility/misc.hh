@@ -10,13 +10,17 @@
 #include <boost/core/demangle.hpp>
 #include <boost/format.hpp>
 #include <cstring>
+#include <libbio/cxxcompat.hh>
 #include <ostream>
 #include <string>
 #include <utility>
 
 
 namespace libbio {
-
+	
+	template <typename t_type, std::size_t t_size>
+	LIBBIO_CONSTEVAL std::size_t array_size(t_type const (&array)[t_size]) { return t_size; }
+	
 	inline char *copy_format_cstr(boost::format const &fmt) { return strdup(boost::str(fmt).c_str()); }
 	
 	std::ostream &log_time(std::ostream &stream);
