@@ -41,7 +41,7 @@ namespace {
 }
 
 
-SCENARIO("FASTA files can be parsed")
+SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 {
 	GIVEN("A test file")
 	{

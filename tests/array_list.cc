@@ -24,7 +24,7 @@ namespace {
 }
 
 
-SCENARIO("Array list can be instantiated")
+SCENARIO("Array list can be instantiated", "[array_list]")
 {
 	GIVEN("Array list items")
 	{
@@ -50,7 +50,7 @@ SCENARIO("Array list can be instantiated")
 
 
 #ifdef LIBBIO_BOOST_SERIALIZATION
-SCENARIO("Array list can be serialized")
+SCENARIO("Array list can be serialized", "[array_list]")
 {
 	GIVEN("Array list items")
 	{

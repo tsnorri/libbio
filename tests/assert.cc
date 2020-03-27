@@ -92,7 +92,7 @@ namespace {
 }
 
 
-SCENARIO("Assertion macros throw on failure")
+SCENARIO("Assertion macros throw on failure", "[assert]")
 {
 	GIVEN("the always failing assertion macro")
 	{

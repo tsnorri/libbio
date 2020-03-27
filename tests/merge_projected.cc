@@ -11,7 +11,7 @@ namespace gen	= Catch::Generators;
 namespace lb	= libbio;
 
 
-SCENARIO("merge_projected can merge containers")
+SCENARIO("merge_projected can merge containers", "[merge_projected]")
 {
 	GIVEN("two vectors of values")
 	{

@@ -71,7 +71,7 @@ namespace {
 }
 
 
-SCENARIO("Bit runs can be read and written")
+SCENARIO("Bit runs can be read and written", "[bit_rle_codec]")
 {
 	GIVEN("A stream of words and a range of values")
 	{

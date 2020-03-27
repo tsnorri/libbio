@@ -41,7 +41,7 @@ namespace {
 }
 
 
-SCENARIO("Set symmetric difference can be determined")
+SCENARIO("Set symmetric difference can be determined", "[algorithm]")
 {
 	GIVEN("Two collections")
 	{
@@ -72,7 +72,7 @@ SCENARIO("Set symmetric difference can be determined")
 }
 
 
-SCENARIO("Set intersection size can be determined")
+SCENARIO("Set intersection size can be determined", "[algorithm]")
 {
 	GIVEN("Two collections")
 	{
@@ -103,7 +103,7 @@ SCENARIO("Set intersection size can be determined")
 }
 
 
-SCENARIO("Unique items can be counted")
+SCENARIO("Unique items can be counted", "[algorithm]")
 {
 	GIVEN("A collection of items")
 	{

@@ -32,7 +32,7 @@ namespace {
 
 TEMPLATE_PRODUCT_TEST_CASE(
 	"Templated is_equal tests (all combinations)",
-	"[template]",
+	"[template][is_equal]",
 	(
 		tpg <std::int8_t>::type,
 		tpg <std::int16_t>::type,
@@ -144,7 +144,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 
 TEMPLATE_PRODUCT_TEST_CASE(
 	"Templated check_lte tests (signed and unsigned)",
-	"[template]",
+	"[template][is_equal]",
 	(
 		tpg <std::int8_t>::type,
 		tpg <std::int16_t>::type,
@@ -252,8 +252,8 @@ TEMPLATE_PRODUCT_TEST_CASE(
 
 
 TEMPLATE_PRODUCT_TEST_CASE(
-	"Templated check_lte tests (signed)",
-	"[template]",
+	"Templated is_equal tests (signed)",
+	"[template][is_equal]",
 	(
 		tpg <std::int8_t>::type,
 		tpg <std::int16_t>::type,

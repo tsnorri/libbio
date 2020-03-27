@@ -11,7 +11,7 @@ namespace gen	= Catch::Generators;
 namespace lb	= libbio;
 
 
-SCENARIO("RLE bit vector can store runs")
+SCENARIO("RLE bit vector can store runs", "[rle_bit_vector]")
 {
 	GIVEN("An RLE bit vector")
 	{
@@ -34,7 +34,7 @@ SCENARIO("RLE bit vector can store runs")
 }
 
 
-SCENARIO("RLE bit vector can collapse runs")
+SCENARIO("RLE bit vector can collapse runs", "[rle_bit_vector]")
 {
 	GIVEN("An RLE bit vector")
 	{

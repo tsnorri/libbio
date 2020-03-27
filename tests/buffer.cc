@@ -52,7 +52,7 @@ namespace {
 
 TEMPLATE_PRODUCT_TEST_CASE(
 	"buffers can be constructed",
-	"[template]",
+	"[template][buffer][aligned_buffer]",
 	(
 		buffer_type <lb::buffer>::buffer_with_copy_contents,
 		buffer_type <lb::buffer>::buffer_with_zero_on_copy,
@@ -94,7 +94,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 
 TEMPLATE_PRODUCT_TEST_CASE(
 	"aligned_buffers can be constructed with specific alignment",
-	"[template]",
+	"[template][aligned_buffer]",
 	(
 		buffer_test_type <lb::aligned_buffer <std::byte, lb::buffer_base::copy_tag>>::template type,
 		buffer_test_type <lb::aligned_buffer <std::byte, lb::buffer_base::zero_tag>>::template type
@@ -136,7 +136,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 
 TEMPLATE_PRODUCT_TEST_CASE(
 	"buffers can be copied",
-	"[template]",
+	"[template][buffer][aligned_buffer]",
 	(
 		buffer_type <lb::buffer>::buffer_with_copy_contents,
 		buffer_type <lb::aligned_buffer>::buffer_with_copy_contents
@@ -200,7 +200,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 
 TEMPLATE_PRODUCT_TEST_CASE(
 	"buffers can be copied without copying their contents",
-	"[template]",
+	"[template][buffer][aligned_buffer]",
 	(
 		buffer_type <lb::buffer>::buffer_with_zero_on_copy,
 		buffer_type <lb::aligned_buffer>::buffer_with_zero_on_copy
@@ -264,7 +264,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 
 TEMPLATE_PRODUCT_TEST_CASE(
 	"buffers can be moved",
-	"[template]",
+	"[template][buffer][aligned_buffer]",
 	(
 		buffer_type <lb::buffer>::buffer_with_copy_contents,
 		buffer_type <lb::buffer>::buffer_with_zero_on_copy,

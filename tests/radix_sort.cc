@@ -48,7 +48,7 @@ namespace {
 }
 
 
-SCENARIO("return_type_size() can return the correct size")
+SCENARIO("return_type_size() can return the correct size", "[return_type_size]")
 {
 	GIVEN("a lambda function")
 	{
@@ -75,7 +75,7 @@ SCENARIO("return_type_size() can return the correct size")
 }
 
 
-SCENARIO("Radix sort can sort a sequence of numbers")
+SCENARIO("Radix sort can sort a sequence of numbers", "[radix_sort]")
 {
 	GIVEN("A sequence of numbers")
 	{

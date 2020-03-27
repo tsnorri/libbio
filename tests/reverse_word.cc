@@ -20,7 +20,7 @@ namespace {
 }
 
 
-SCENARIO("64-bit words may be reversed")
+SCENARIO("64-bit words may be reversed", "[reverse_bits]")
 {
 	GIVEN("a 64-bit word")
 	{
@@ -45,7 +45,7 @@ SCENARIO("64-bit words may be reversed")
 
 
 // FIXME: add similar tests for 16, 32, 64 bits
-SCENARIO("8-bit words can be reversed")
+SCENARIO("8-bit words can be reversed", "[reverse_bits]")
 {
 	GIVEN("an 8-bit word")
 	{
