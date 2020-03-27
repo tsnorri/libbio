@@ -22,7 +22,8 @@ OBJECTS	=	algorithm.o \
 			merge_projected.o \
 			radix_sort.o \
 			reverse_word.o \
-			rle_bit_vector.o
+			rle_bit_vector.o \
+			vcf_reader.o
 
 CATCH2_HEADERS	= $(shell find ../lib/Catch2/include)
 
