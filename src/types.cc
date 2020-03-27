@@ -77,25 +77,25 @@ namespace libbio {
 	{
 		switch (vt)
 		{
-			case UNKNOWN:
+			case vcf_metadata_value_type::UNKNOWN:
 				os << '.';
 				break;
-			case NOT_PROCESSED:
+			case vcf_metadata_value_type::NOT_PROCESSED:
 				os << "(Not processed)";
 				break;
-			case INTEGER:
+			case vcf_metadata_value_type::INTEGER:
 				os << "Integer";
 				break;
-			case FLOAT:
+			case vcf_metadata_value_type::FLOAT:
 				os << "Float";
 				break;
-			case CHARACTER:
+			case vcf_metadata_value_type::CHARACTER:
 				os << "Character";
 				break;
-			case STRING:
+			case vcf_metadata_value_type::STRING:
 				os << "String";
 				break;
-			case FLAG:
+			case vcf_metadata_value_type::FLAG:
 				os << "Flag";
 				break;
 			default:

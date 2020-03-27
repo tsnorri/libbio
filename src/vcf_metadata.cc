@@ -3,7 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <libbio/vcf/vcf_metadata.hh>
+#include <libbio/vcf/metadata.hh>
 
 
 namespace libbio {

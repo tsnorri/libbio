@@ -6,7 +6,7 @@
 #ifndef LIBBIO_VCF_READER_SUPPORT_HH
 #define LIBBIO_VCF_READER_SUPPORT_HH
 
-#include <libbio/vcf/vcf_subfield_decl.hh>
+#include <libbio/vcf/subfield/placeholder.hh>
 
 
 namespace libbio {

@@ -4,10 +4,11 @@
  */
 
 #include <libbio/utility.hh>
+#include <libbio/vcf/subfield.hh>
 #include <libbio/vcf/variant.hh>
 #include <libbio/vcf/vcf_reader.hh>
 #include <libbio/vcf/vcf_reader_support.hh>
-#include <libbio/vcf/vcf_subfield_def.hh>
+#include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/zip.hpp>
 
 
@@ -109,19 +110,19 @@ namespace libbio {
 			case 1:
 				return new t_field_tpl <1, t_field_type>();
 
-			case vcf_metadata_number::VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE:
-				return new t_field_tpl <vcf_metadata_number::VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE, t_field_type>();
+			case VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE:
+				return new t_field_tpl <VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE, t_field_type>();
 				
-			case vcf_metadata_number::VCF_NUMBER_ONE_PER_ALLELE:
-				return new t_field_tpl <vcf_metadata_number::VCF_NUMBER_ONE_PER_ALLELE, t_field_type>();
+			case VCF_NUMBER_ONE_PER_ALLELE:
+				return new t_field_tpl <VCF_NUMBER_ONE_PER_ALLELE, t_field_type>();
 				
-			case vcf_metadata_number::VCF_NUMBER_ONE_PER_GENOTYPE:
-				return new t_field_tpl <vcf_metadata_number::VCF_NUMBER_ONE_PER_GENOTYPE, t_field_type>();
+			case VCF_NUMBER_ONE_PER_GENOTYPE:
+				return new t_field_tpl <VCF_NUMBER_ONE_PER_GENOTYPE, t_field_type>();
 			
-			case vcf_metadata_number::VCF_NUMBER_UNKNOWN:
-			case vcf_metadata_number::VCF_NUMBER_DETERMINED_AT_RUNTIME:
+			case VCF_NUMBER_UNKNOWN:
+			case VCF_NUMBER_DETERMINED_AT_RUNTIME:
 			default:
-				return new t_field_tpl <vcf_metadata_number::VCF_NUMBER_DETERMINED_AT_RUNTIME, t_field_type>();
+				return new t_field_tpl <VCF_NUMBER_DETERMINED_AT_RUNTIME, t_field_type>();
 		}
 	}
 	
@@ -202,7 +203,7 @@ namespace libbio {
 	
 	
 	template <typename t_field>
-	std::pair <std::uint16_t, std::uint16_t> vcf_reader::assign_field_offsets(std::vector <t_field *> &field_vec) const
+	std::pair <std::uint16_t, std::uint16_t> vcf_reader::sort_and_assign_field_offsets(std::vector <t_field *> &field_vec) const
 	{
 		if (!field_vec.empty())
 		{
@@ -243,7 +244,7 @@ namespace libbio {
 		for (auto const &[key, field_ptr] : m_info_fields)
 			field_ptr->set_offset(vcf_storable_subfield_base::INVALID_OFFSET);
 		
-		return assign_field_offsets(m_info_fields_in_headers);
+		return sort_and_assign_field_offsets(m_info_fields_in_headers);
 	}
 	
 	
@@ -283,7 +284,7 @@ namespace libbio {
 	}
 	
 	
-	std::pair <std::uint16_t, std::uint16_t> vcf_reader::assign_format_field_offsets()
+	std::pair <std::uint16_t, std::uint16_t> vcf_reader::assign_format_field_indices_and_offsets()
 	{
 		// Recalculate the offsets. This also has the effect of making variants copied earlier unreadable,
 		// unless the subfield descriptors have been copied by the client.
@@ -291,110 +292,9 @@ namespace libbio {
 			field_ptr->set_offset(vcf_storable_subfield_base::INVALID_OFFSET);
 		
 		auto format_vec(m_current_format_vec); // Copy b.c. the field order needs to be preserved.
-		return assign_field_offsets(format_vec);
-	}
-	
-	
-	void vcf_reader::reserve_memory_for_samples_in_current_variant(std::uint16_t const size, std::uint16_t const alignment)
-	{
-		if (m_current_variant.m_samples.empty())
-			return;
-		
-		auto const &first_sample_data(m_current_variant.m_samples.front().m_sample_data);
-		auto const prev_size(first_sample_data.size());
-		auto const prev_alignment(first_sample_data.alignment());
-		
-		if (size && (prev_size < size || prev_alignment < alignment))
-		{
-			for (auto &sample : m_current_variant.m_samples)
-				sample.m_sample_data.realloc(size, alignment);
-		}
-	}
-	
-	
-	void vcf_reader::initialize_variant(variant_base &variant, vcf_genotype_field_map const &format)
-	{
-		// Info.
-		auto *bytes(variant.m_info.get());
-		if (bytes)
-		{
-			for (auto const *field_ptr : m_info_fields_in_headers)
-				field_ptr->construct_ds(bytes, 16); // Assume that the REF + ALT count is at most 16.
-		}
-		
-		initialize_variant_samples(variant, format);
-	}
-	
-	
-	void vcf_reader::deinitialize_variant(variant_base &variant, vcf_genotype_field_map const &format)
-	{
-		// Info.
-		auto *bytes(variant.m_info.get());
-		if (bytes)
-		{
-			for (auto const *field_ptr : m_info_fields_in_headers)
-				field_ptr->destruct_ds(bytes);
-		}
-		
-		deinitialize_variant_samples(variant, format);
-	}
-	
-	
-	void vcf_reader::initialize_variant_samples(variant_base &variant, vcf_genotype_field_map const &format)
-	{
-		// The samples are preallocated, see read_header().
-		// Also the variant data has been preallocated either
-		// in reserve_memory_for_samples_in_current_variant or by the copy constructor.
-		for (auto &sample : variant.m_samples)
-		{
-			auto &sample_data(sample.m_sample_data);
-			auto *bytes(sample_data.get());
-			if (bytes)
-			{
-				for (auto const &[key, field_ptr] : format)
-				{
-					libbio_assert_lte(field_ptr->get_offset() + field_ptr->byte_size(), sample_data.size());
-					field_ptr->construct_ds(bytes, 16); // Assume that the REF + ALT count is at most 16. Vector’s emplace_back is used for adding values, though.
-				}
-			}
-		}
-	}
-	
-	
-	void vcf_reader::deinitialize_variant_samples(variant_base &variant, vcf_genotype_field_map const &format)
-	{
-		for (auto &sample : variant.m_samples)
-		{
-			auto *bytes(sample.m_sample_data.get());
-			if (bytes)
-			{
-				for (auto const &[key, field_ptr] : format)
-					field_ptr->destruct_ds(bytes); // Assume that the REF + ALT count is at most 16.
-			}
-		}
-	}
-	
-	
-	void vcf_reader::copy_variant(variant_base const &src, variant_base &dst, vcf_genotype_field_map const &format)
-	{
-		// Info.
-		auto const *src_bytes(src.m_info.get());
-		auto *dst_bytes(src.m_info.get());
-		for (auto const *field_ptr : m_info_fields_in_headers)
-		{
-			if (field_ptr->has_value(src))
-				field_ptr->copy_ds(src_bytes, dst_bytes);
-		}
-		
-		// Samples.
-		libbio_always_assert_eq(src.m_samples.size(), dst.m_samples.size());
-		for (auto const &[src_sample, dst_sample] : ranges::view::zip(src.m_samples, dst.m_samples))
-		{
-			auto const	*src_bytes(src_sample.m_sample_data.get());
-			auto		*dst_bytes(dst_sample.m_sample_data.get());
-
-			for (auto const &[key, field_ptr] : format)
-				field_ptr->copy_ds(src_bytes, dst_bytes);
-		}
+		auto const retval(sort_and_assign_field_offsets(format_vec));
+		for (auto const &[idx, field_ptr] : ranges::view::enumerate(format_vec))
+			field_ptr->set_index(idx);
+		return retval;
 	}
 }

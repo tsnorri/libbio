@@ -11,11 +11,13 @@
 #include <vector>
 #include <libbio/copyable_atomic.hh>
 #include <libbio/utility.hh>
-#include <libbio/vcf/variant_decl.hh>
+#include <libbio/vcf/metadata.hh>
+#include <libbio/vcf/subfield/decl.hh>
+#include <libbio/vcf/subfield/genotype_field_base_decl.hh>
+#include <libbio/vcf/subfield/info_field_base_decl.hh>
 #include <libbio/vcf/variant_format.hh>
+#include <libbio/vcf/variant/variant_decl.hh>
 #include <libbio/vcf/vcf_input.hh>
-#include <libbio/vcf/vcf_metadata.hh>
-#include <libbio/vcf/vcf_subfield_decl.hh>
 
 
 namespace libbio {
@@ -47,12 +49,11 @@ namespace libbio {
 	{
 		friend class vcf_stream_input_base;
 		friend class vcf_mmap_input;
-		friend class variant_base;
 		friend class variant_format_access;
 		friend class transient_variant_format_access;
 		
-		template <typename>
-		friend class formatted_variant_base;
+		template <typename, typename>
+		friend class formatted_variant;
 		
 	public:
 		typedef std::function <bool(transient_variant &var)>						callback_fn;
@@ -172,13 +173,13 @@ namespace libbio {
 		void associate_metadata_with_field_descriptions();
 		
 		template <typename t_field>
-		std::pair <std::uint16_t, std::uint16_t> assign_field_offsets(std::vector <t_field *> &field_vec) const;
+		std::pair <std::uint16_t, std::uint16_t> sort_and_assign_field_offsets(std::vector <t_field *> &field_vec) const;
 		
 		template <typename t_cb>
 		inline bool parse2(t_cb const &cb, parser_state &state, bool const stop_after_newline);
 		
 		std::pair <std::uint16_t, std::uint16_t> assign_info_field_offsets();
-		std::pair <std::uint16_t, std::uint16_t> assign_format_field_offsets();
+		std::pair <std::uint16_t, std::uint16_t> assign_format_field_indices_and_offsets();
 		void parse_format(std::string_view const &new_format);
 		
 		template <template <std::int32_t, vcf_metadata_value_type> typename t_field_tpl, vcf_metadata_value_type t_field_type, typename t_field_base_class>
@@ -187,16 +188,7 @@ namespace libbio {
 		template <template <std::int32_t, vcf_metadata_value_type> typename t_field_tpl, typename t_key, typename t_field_map>
 		auto find_or_add_field(vcf_metadata_formatted_field const &meta, t_key const &key, t_field_map &map, bool &did_add) ->
 			typename t_field_map::mapped_type::element_type &;
-		
-		void initialize_variant(variant_base &variant, vcf_genotype_field_map const &format);
-		void deinitialize_variant(variant_base &variant, vcf_genotype_field_map const &format);
-		void initialize_variant_samples(variant_base &variant, vcf_genotype_field_map const &format);
-		void deinitialize_variant_samples(variant_base &variant, vcf_genotype_field_map const &format);
-		void reserve_memory_for_samples_in_current_variant(std::uint16_t const size, std::uint16_t const alignment);
-		void copy_variant(variant_base const &src, variant_base &dst, vcf_genotype_field_map const &format);
 	};
 }
-
-#include <libbio/vcf/variant_def.hh>
 
 #endif

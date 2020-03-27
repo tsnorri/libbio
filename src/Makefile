@@ -1,7 +1,7 @@
 -include ../local.mk
 include ../common.mk
 
-.PRECIOUS: vcf_reader_parser.cc vcf_reader_header_parser.cc vcf_genotype_field_gt_parser.cc
+.PRECIOUS: fasta_reader.cc vcf_reader_parser.cc vcf_reader_header_parser.cc vcf_genotype_field_gt_parser.cc
 
 OBJECTS		=	assert.o \
 				fasta_reader.o \
@@ -12,7 +12,6 @@ OBJECTS		=	assert.o \
 				sequence_reader.o \
 				types.o \
 				utility.o \
-				variant.o \
 				vcf_genotype_field_gt_parser.o \
 				vcf_input.o \
 				vcf_metadata.o \

@@ -3,8 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_VCF_METADATA_DECL_HH
-#define LIBBIO_VCF_METADATA_DECL_HH
+#ifndef LIBBIO_VCF_METADATA_HH
+#define LIBBIO_VCF_METADATA_HH
 
 #include <libbio/cxxcompat.hh>
 #include <libbio/types.hh>

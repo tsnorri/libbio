@@ -6,9 +6,9 @@
 #include <boost/format.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <libbio/assert.hh>
+#include <libbio/vcf/subfield.hh>
 #include <libbio/vcf/variant.hh>
 #include <libbio/vcf/vcf_reader.hh>
-#include <libbio/vcf/vcf_subfield.hh>
 #include "vcf_reader_private.hh"
 
 
@@ -45,8 +45,8 @@ namespace libbio {
 	template <typename t_cb>
 	bool vcf_reader::parse2(t_cb const &cb, parser_state &state, bool const stop_after_newline)
 	{
-		typedef variant_tpl <std::string_view, transient_variant_format_access>	var_t;
-		typedef variant_alt <std::string_view>									alt_t;
+		typedef transient_variant				var_t;
+		typedef variant_alt <std::string_view>	alt_t;
 		
 		bool retval(true);
 		
@@ -58,7 +58,7 @@ namespace libbio {
 		std::size_t				sample_idx(0);				// Current sample idx (1-based).
 		std::size_t				subfield_idx(0);			// Current index in multi-part fields.
 		int						cs(0);
-		bool					integer_is_negative(false);
+		bool					integer_is_negative(false);	// Re-initialized in HANDLE_INTEGER_END.
 		bool					gt_is_phased(false);		// Is the current GT phased.
 		bool					alt_is_complex(false);		// Is the current ALT “complex” (includes *).
 		bool					info_is_flag(false);
@@ -177,14 +177,15 @@ namespace libbio {
 				if (new_format != state.current_format)
 				{
 					m_current_format->reader_will_update_format(*this);
-					deinitialize_variant_samples(m_current_variant, m_current_format->m_fields_by_identifier);
+					m_current_variant.deinitialize_samples();
 					
 					state.current_format = new_format;
 					parse_format(state.current_format);
-					auto const [size, alignment] = assign_format_field_offsets();
-					reserve_memory_for_samples_in_current_variant(size, alignment);
+					auto const [size, alignment] = assign_format_field_indices_and_offsets();
+					auto const field_count(m_current_format->fields_by_identifier().size());
+					m_current_variant.reserve_memory_for_samples(size, alignment, field_count);
 					
-					initialize_variant_samples(m_current_variant, m_current_format->m_fields_by_identifier);
+					m_current_variant.initialize_samples();
 					m_current_format->reader_did_update_format(*this);
 				}
 			}
@@ -204,12 +205,13 @@ namespace libbio {
 			
 			action start_sample {
 				subfield_idx = 0;
-				
-				for (auto const *field_ptr : m_current_format_vec)
 				{
 					auto &samples(m_current_variant.m_samples);
 					libbio_always_assert_lt_msg(sample_idx, samples.size(), "Samples should be preallocated.");
-					field_ptr->prepare(samples[sample_idx]);
+					auto &current_sample(samples[sample_idx]);
+					current_sample.reset();
+					for (auto const *field_ptr : m_current_format_vec)
+						field_ptr->prepare(current_sample);
 				}
 			}
 			

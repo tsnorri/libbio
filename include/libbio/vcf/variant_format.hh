@@ -7,7 +7,7 @@
 #define LIBBIO_VARIANT_FORMAT_HH
 
 #include <libbio/assert.hh>
-#include <libbio/vcf/vcf_subfield_decl.hh>
+#include <libbio/vcf/subfield/genotype_field_base_decl.hh>
 
 
 namespace libbio {

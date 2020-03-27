@@ -3,7 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <libbio/vcf/vcf_subfield.hh>
+#include <libbio/vcf/subfield.hh>
 
 
 %% machine gt_parser;
@@ -13,17 +13,17 @@
 namespace lb	= libbio;
 
 
-namespace libbio {
+namespace {
 	
-	void vcf_genotype_field_gt::output_vcf_value(std::ostream &stream, variant_sample const &sample) const
+	void output_genotype(std::ostream &stream, std::vector <lb::sample_genotype> const &genotype)
 	{
 		bool is_first(true);
-		for (auto const &gt : sample.m_genotype)
+		for (auto const &gt : genotype)
 		{
 			if (!is_first)
 				stream << (gt.is_phased ? '|' : '/');
 			
-			if (sample_genotype::NULL_ALLELE == gt.alt)
+			if (lb::sample_genotype::NULL_ALLELE == gt.alt)
 				stream << '.';
 			else
 				stream << gt.alt;
@@ -31,11 +31,27 @@ namespace libbio {
 			is_first = false;
 		}
 	}
+}
+
+
+namespace libbio {
 	
-	
-	bool vcf_genotype_field_gt::parse_and_assign(std::string_view const &sv, variant_sample &sample, std::byte *mem) const
+	void vcf_genotype_field_gt::output_vcf_value(std::ostream &stream, variant_sample const &sample) const
 	{
-		// Mixed phasing is possible, e.g. in VCF 4.2 specification 0/1|2: tetraploid with a single phased allele.
+		output_genotype(stream, sample.m_genotype);
+	}
+	
+	
+	void vcf_genotype_field_gt::output_vcf_value(std::ostream &stream, transient_variant_sample const &sample) const
+	{
+		output_genotype(stream, sample.m_genotype);
+	}
+	
+	
+	bool vcf_genotype_field_gt::parse_and_assign(std::string_view const &sv, transient_variant_sample &sample, std::byte *mem) const
+	{
+		// Mixed phasing is possible, e.g. in VCF 4.2 specification p. 26: 0/1|2: triploid with a single phased allele.
+		// (The specification says it is tetraploid but this is likely a bug.)
 		sample.m_genotype.clear();
 		std::uint16_t idx{};
 		bool is_phased{};

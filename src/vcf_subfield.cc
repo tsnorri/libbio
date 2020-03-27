@@ -5,7 +5,7 @@
 
 #include <boost/spirit/include/qi.hpp>
 #include <charconv>
-#include <libbio/vcf/vcf_subfield.hh>
+#include <libbio/vcf/subfield.hh>
 
 
 namespace lb	= libbio;
@@ -27,34 +27,24 @@ namespace {
 
 namespace libbio {
 	
-	bool vcf_info_field_base::output_vcf_value(std::ostream &stream, variant_base const &var, char const *sep) const
-	{
-		libbio_assert(m_metadata);
-		if (var.m_assigned_info_fields[m_metadata->get_index()])
-		{
-			stream << sep << m_metadata->get_id();
-			if (vcf_metadata_value_type::FLAG != value_type())
-			{
-				stream << '=';
-				output_vcf_value(stream, var);
-			}
-			return true;
-		}
-		return false;
-	}
-	
-	
-	void vcf_subfield_parser <vcf_metadata_value_type::INTEGER>::parse(std::string_view const &sv, value_type &dst)
+	bool vcf_subfield_parser <vcf_metadata_value_type::INTEGER>::parse(std::string_view const &sv, value_type &dst)
 	{
 		auto const *start(sv.data());
 		auto const *end(start + sv.size());
 		auto const res(std::from_chars(start, end, dst));
 		if (std::errc::invalid_argument == res.ec || std::errc::result_out_of_range == res.ec)
+		{
+			// Check for MISSING.
+			if ("." == sv)
+				return false;
+			
 			throw std::runtime_error("Unable to parse the given value");
+		}
+		return true;
 	}
 	
 	
-	void vcf_subfield_parser <vcf_metadata_value_type::FLOAT>::parse(std::string_view const &sv, value_type &dst)
+	bool vcf_subfield_parser <vcf_metadata_value_type::FLOAT>::parse(std::string_view const &sv, value_type &dst)
 	{
 		// libc++ does not yet have from_chars for float.
 #if 0
@@ -62,11 +52,24 @@ namespace libbio {
 		auto const *end(start + sv.size());
 		auto const res(std::from_chars(start, end, dst));
 		if (std::errc::invalid_argument == res.ec || std::errc::result_out_of_range == res.ec)
+		{
+			// Check for MISSING.
+			if ("." == sv)
+				return false;
+			
 			throw std::runtime_error("Unable to parse the given value");
+		}
 #endif
 		
 		if (!boost::spirit::qi::parse(sv.begin(), sv.end(), boost::spirit::qi::float_, dst))
+		{
+			// Check for MISSING.
+			if ("." == sv)
+				return false;
+			
 			throw std::runtime_error("Unable to parse the given value");
+		}
+		return true;
 	}
 	
 	

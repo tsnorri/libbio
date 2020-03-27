@@ -6,7 +6,7 @@
 #ifndef LIBBIO_VARIANT_PRINTER_HH
 #define LIBBIO_VARIANT_PRINTER_HH
 
-#include <libbio/vcf/variant_decl.hh>
+#include <libbio/vcf/variant/variant_decl.hh>
 #include <ostream>
 #include <range/v3/algorithm/copy.hpp>
 #include <range/v3/iterator/stream_iterators.hpp>
@@ -19,7 +19,8 @@ namespace libbio {
 	class variant_printer_base
 	{
 	public:
-		typedef t_variant	variant_type;
+		typedef t_variant						variant_type;
+		typedef typename t_variant::sample_type	variant_sample_type;
 		
 	public:
 		virtual ~variant_printer_base() {}
@@ -36,7 +37,7 @@ namespace libbio {
 		virtual inline void output_info(std::ostream &os, variant_type const &var) const;
 		virtual inline void output_format(std::ostream &os, variant_type const &var) const;
 		
-		virtual inline void output_sample(std::ostream &os, variant_type const &var, variant_sample const &sample) const;
+		virtual inline void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const;
 		virtual inline void output_samples(std::ostream &os, variant_type const &var) const;
 		
 		void output_variant(std::ostream &os, variant_type const &var) const;
@@ -103,7 +104,7 @@ namespace libbio {
 	{
 		// QUAL
 		auto const qual(var.qual());
-		if (variant_base::UNKNOWN_QUALITY == qual)
+		if (abstract_variant::UNKNOWN_QUALITY == qual)
 			os << '.';
 		else
 			os << var.qual();
@@ -170,7 +171,7 @@ namespace libbio {
 	
 	
 	template <typename t_variant>
-	void variant_printer_base <t_variant>::output_sample(std::ostream &os, variant_type const &var, variant_sample const &sample) const
+	void variant_printer_base <t_variant>::output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const
 	{
 		// One sample
 		auto const &fields(var.get_format().fields_by_identifier());
@@ -235,16 +236,18 @@ namespace libbio {
 	}
 	
 	
+	// Using formatted_variant is the easiest way to check that the given parameter is
+	// a variant, and the extra functionality in variant and transient_variant is not needed here.
 	template <template <typename> typename t_printer, typename t_string, typename t_format_access>
-	void output_vcf(std::ostream &os, variant_tpl <t_string, t_format_access> const &var)
+	void output_vcf(std::ostream &os, formatted_variant <t_string, t_format_access> const &var)
 	{
-		t_printer <variant_tpl <t_string, t_format_access>> printer;
+		t_printer <formatted_variant <t_string, t_format_access>> printer;
 		output_vcf(printer, os, var);
 	}
 	
 	
 	template <typename t_string, typename t_format_access>
-	void output_vcf(std::ostream &os, variant_tpl <t_string, t_format_access> const &var)
+	void output_vcf(std::ostream &os, formatted_variant <t_string, t_format_access> const &var)
 	{
 		output_vcf <variant_printer>(os, var);
 	}

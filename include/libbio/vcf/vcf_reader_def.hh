@@ -7,7 +7,7 @@
 #define LIBBIO_VCF_READER_DEF_HH
 
 #include <libbio/vcf/vcf_reader_decl.hh>
-#include <libbio/vcf/vcf_subfield_def.hh>
+#include <libbio/vcf/subfield/generic_field.hh>
 
 
 namespace libbio {

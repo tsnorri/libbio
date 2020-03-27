@@ -51,7 +51,7 @@ namespace libbio {
 	};
 	
 	
-	enum vcf_metadata_value_type : std::uint8_t
+	enum class vcf_metadata_value_type : std::uint8_t
 	{
 		UNKNOWN = 0,
 		NOT_PROCESSED,
@@ -67,14 +67,19 @@ namespace libbio {
 	};
 	
 	
-	enum vcf_metadata_number
+	enum vcf_metadata_number : std::int32_t
 	{
 		// VCF 4.3 specification, section 1.3 Data types: “For the Integer type, the values from −2^31 to −2^31 + 7 cannot be stored in the binary version and therefore are disallowed in both VCF and BCF”
-		VCF_NUMBER_UNKNOWN					= INT32_MIN,		// .
-		VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE = INT32_MIN + 1,	// A
-		VCF_NUMBER_ONE_PER_ALLELE			= INT32_MIN + 2,	// R
+		VCF_NUMBER_UNKNOWN						= INT32_MIN,		// .
+		VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE	= INT32_MIN + 1,	// A
+		VCF_NUMBER_ONE_PER_ALLELE				= INT32_MIN + 2,	// R
 		VCF_NUMBER_ONE_PER_GENOTYPE			= INT32_MIN + 3,	// G
-		VCF_NUMBER_DETERMINED_AT_RUNTIME	= INT32_MIN + 4
+		VCF_NUMBER_DETERMINED_AT_RUNTIME		= INT32_MIN + 4,
+		
+		// Shorthand.
+		VCF_NUMBER_A = VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE,
+		VCF_NUMBER_R = VCF_NUMBER_ONE_PER_ALLELE,
+		VCF_NUMBER_G = VCF_NUMBER_ONE_PER_GENOTYPE
 	};
 	
 

@@ -6,7 +6,9 @@
 #ifndef LIBBIO_VCF_SUBFIELD_HH
 #define LIBBIO_VCF_SUBFIELD_HH
 
-#include <libbio/vcf/vcf_subfield_decl.hh>
-#include <libbio/vcf/vcf_subfield_def.hh>
+#include <libbio/vcf/subfield/generic_field.hh>
+#include <libbio/vcf/subfield/genotype_field_base_def.hh>
+#include <libbio/vcf/subfield/genotype_field_gt.hh>
+#include <libbio/vcf/subfield/info_field_base_def.hh>
 
 #endif
