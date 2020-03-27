@@ -6,10 +6,10 @@
 #include <libbio/assert.hh>
 #include <libbio/cxxcompat.hh>
 #include <libbio/file_handling.hh>
+#include <libbio/vcf/subfield.hh>
 #include <libbio/vcf/variant.hh>
 #include <libbio/vcf/variant_printer.hh>
 #include <libbio/vcf/vcf_reader.hh>
-#include <libbio/vcf/vcf_subfield.hh>
 #include <map>
 #include "cmdline.h"
 
@@ -351,7 +351,7 @@ int main(int argc, char **argv)
 	reader.fill_buffer();
 	reader.read_header();
 	reader.set_parsed_fields(lb::vcf_field::ALL);
-	output_vcf(reader, args_info.output_given ? output_stream : std::cout, sample_names, args_info.exclude_samples_given);
+	output_vcf(reader, args_info.output_given ? output_stream : std::cout, sample_names, (args_info.exclude_samples_given ?: sample_names.empty()));
 	
 	return EXIT_SUCCESS;
 }
