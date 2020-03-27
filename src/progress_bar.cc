@@ -31,7 +31,7 @@ namespace libbio {
 		ch::time_point <ch::steady_clock> start_time
 	)
 	{
-		std::string const blocks[]{u8"▏", u8"▎", u8"▍", u8"▌", u8"▋", u8"▊", u8"▉", u8"█"};
+		std::string const blocks[]{"▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"};
 		
 		libbio_assert(0.0f <= value);
 		libbio_assert(value <= 1.0f);
@@ -62,9 +62,9 @@ namespace libbio {
 			auto const integral(std::floor(v));
 			auto const fraction(v - integral);
 		
-			stream << u8" |";
+			stream << " |";
 			for (std::size_t i(0); i < integral; ++i)
-				stream << u8"█";
+				stream << "█";
 		
 			if (v != integral)
 			{
@@ -76,7 +76,7 @@ namespace libbio {
 			for (std::size_t i(1 + integral); i < length; ++i)
 				stream << ' ';
 			
-			stream << u8"| ";
+			stream << "| ";
 		}
 		
 		// Display the value as percentage.
