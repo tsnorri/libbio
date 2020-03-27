@@ -38,8 +38,6 @@ namespace libbio {
 		struct copy_tag {};
 		struct zero_tag {};
 		
-		struct zero_terminated_tag {};
-		
 	protected:
 		std::size_t		m_size{};
 		
@@ -58,8 +56,12 @@ namespace libbio {
 	template <typename t_type>
 	struct buffer_tpl_base : public buffer_base
 	{
+		template <typename, typename>
+		friend class buffer;
+		
 		using buffer_base::buffer_base;
 		virtual t_type *get() const = 0;
+		virtual t_type *operator*() const = 0;
 	};
 	
 	
@@ -70,7 +72,22 @@ namespace libbio {
 		typedef t_type value_type;
 		
 	protected:
+		typedef buffer_tpl_base <t_type>	base_class;
+		
+	protected:
 		std::unique_ptr <t_type, detail::malloc_deleter <t_type>>	m_content;
+		
+	protected:
+		buffer &copy_from(base_class const &src)
+		{
+			if (this != &src)
+			{
+				base_class::operator=(src);
+				m_content.reset(detail::alloc <t_type>(src.m_size));
+				detail::buffer_helper <t_type, buffer, t_default_copy_tag>::copy_to_buffer(src, *this);
+			}
+			return *this;
+		}
 		
 	public:
 		buffer() = default;
@@ -78,23 +95,17 @@ namespace libbio {
 		buffer &operator=(buffer &&src) & = default;
 		
 		buffer(t_type *value, std::size_t size):	// Takes ownership.
-			buffer_tpl_base <t_type>(size),
+			base_class(size),
 			m_content(value)
 		{
 		}
 		
-		buffer(std::size_t const size):
+		explicit buffer(std::size_t const size):
 			buffer(detail::alloc <t_type>(size), size)
 		{
 		}
 		
-		// Enable for char *.
-		template <typename t_char_type = std::enable_if_t <std::is_same_v <t_type, char>, char>>
-		buffer(t_char_type *value, buffer_base::zero_terminated_tag const &): // Takes ownership.
-			buffer(value, std::strlen(value))
-		{
-		}
-		
+		// Copy constructor.
 		template <typename t_copy_tag>
 		buffer(t_type *value, std::size_t const size, t_copy_tag const &):
 			buffer(detail::alloc <t_type>(size), size)
@@ -102,25 +113,33 @@ namespace libbio {
 			detail::buffer_helper <t_type, buffer, t_copy_tag>::copy_to_buffer(value, size, *this);
 		}
 		
+		// Copy constructor.
 		template <typename t_copy_tag = t_default_copy_tag>
-		buffer(buffer_tpl_base <t_type> const &src, t_copy_tag const &copy_tag = t_copy_tag()):
+		buffer(base_class const &src, t_copy_tag const &copy_tag = t_copy_tag()):
 			buffer(src.get(), src.size(), copy_tag)
 		{
 		}
 		
+		// Copy constructor.
 		buffer(buffer const &src): buffer(src.get(), src.size(), t_default_copy_tag()) {}
 		
-		buffer &operator=(buffer_tpl_base <t_type> const &src) &
+		buffer &operator=(base_class const &src) &
 		{
-			if (this != &src)
-			{
-				m_content.reset(detail::alloc <t_type>(src.m_size));
-				detail::buffer_helper <t_type, buffer, t_default_copy_tag>::copy_to_buffer(src, *this);
-			}
-			return *this;
+			return copy_from(src);
+		}
+		
+		buffer &operator=(buffer const &src) &
+		{
+			return copy_from(src);
+		}
+		
+		static buffer buffer_with_allocated_buffer(char *value) // Takes ownership.
+		{
+			return buffer(value, std::strlen(value));
 		}
 		
 		virtual t_type *get() const override { return m_content.get(); }
+		virtual t_type *operator*() const override { return get(); }
 	};
 	
 	
@@ -128,13 +147,19 @@ namespace libbio {
 	template <typename t_type, typename t_default_copy_tag = buffer_base::copy_tag>
 	class aligned_buffer final : public buffer_tpl_base <t_type>
 	{
+	public:
+		typedef t_type	value_type;
+		
+	protected:
+		typedef buffer_tpl_base <t_type>	base_class;
+		
 	protected:
 		std::size_t m_alignment{};
 		std::unique_ptr <t_type, detail::malloc_deleter <t_type>>	m_content;
 		
 	protected:
 		aligned_buffer(t_type *value, std::size_t const size, std::size_t const alignment):	// Takes ownership.
-			buffer_tpl_base <t_type>(size),
+			base_class(size),
 			m_alignment(alignment),
 			m_content(value)
 		{
@@ -145,11 +170,12 @@ namespace libbio {
 		aligned_buffer(aligned_buffer &&src) = default;
 		aligned_buffer &operator=(aligned_buffer &&src) & = default;
 		
-		aligned_buffer(std::size_t const size, std::size_t const alignment):
+		explicit aligned_buffer(std::size_t const size, std::size_t const alignment = alignof(t_type)):
 			aligned_buffer(detail::aligned_alloc <t_type>(size, alignment), size, alignment)
 		{
 		}
 		
+		// Copy constructor.
 		template <typename t_copy_tag>
 		aligned_buffer(t_type *value, std::size_t const size, std::size_t const alignment, t_copy_tag const &):
 			aligned_buffer(detail::aligned_alloc <t_type>(size, alignment), size, alignment)
@@ -157,12 +183,14 @@ namespace libbio {
 			detail::buffer_helper <t_type, aligned_buffer, t_copy_tag>::copy_to_buffer(value, size, *this);
 		}
 		
+		// Copy constructor.
 		template <typename t_copy_tag = t_default_copy_tag>
-		aligned_buffer(buffer_tpl_base <t_type> const &src, std::size_t const alignment, t_copy_tag const &copy_tag = t_copy_tag()):
+		aligned_buffer(base_class const &src, std::size_t const alignment, t_copy_tag const &copy_tag = t_copy_tag()):
 			aligned_buffer(src.get(), src.m_size, alignment, copy_tag)
 		{
 		}
 		
+		// Copy constructor.
 		template <typename t_copy_tag = t_default_copy_tag>
 		aligned_buffer(aligned_buffer const &src, t_copy_tag const &copy_tag = t_copy_tag()):
 			aligned_buffer(src.m_content.get(), src.m_size, src.m_alignment, copy_tag)
@@ -175,6 +203,7 @@ namespace libbio {
 		{
 			if (this != &src)
 			{
+				base_class::operator=(src);
 				m_alignment = src.m_alignment;
 				m_content.reset(detail::aligned_alloc <t_type>(src.m_size, src.m_alignment));
 				detail::buffer_helper <t_type, aligned_buffer, t_default_copy_tag>::copy_to_buffer(src, *this);
@@ -191,6 +220,7 @@ namespace libbio {
 		
 		std::size_t alignment() const { return m_alignment; }
 		virtual t_type *get() const override { return m_content.get(); }
+		virtual t_type *operator*() const override { return get(); }
 	};
 	
 	
@@ -284,7 +314,7 @@ namespace libbio { namespace detail {
 	template <typename t_type, typename t_dst>
 	struct buffer_helper_base <t_type, t_dst, buffer_base::copy_tag>
 	{
-		static void copy(t_type const *src, std::size_t const size, t_dst &dst)
+		static void copy_to_buffer(t_type const *src, std::size_t const size, t_dst &dst)
 		{
 			std::copy(src, src + size, dst.get());
 		}
@@ -295,7 +325,7 @@ namespace libbio { namespace detail {
 	{
 		static void copy_to_buffer(t_type const *, std::size_t const, t_dst &dst)
 		{
-			std::fill(dst.get(), dst.get() + dst.size(), t_type(0));
+			std::fill_n(dst.get(), dst.size(), t_type(0));
 		}
 	};
 	
