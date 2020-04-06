@@ -133,7 +133,7 @@ namespace {
 	};
 		
 	template <lb::vcf_metadata_value_type t_value_type>
-	inline LIBBIO_CONSTEVAL auto constant_from_value_type_v = typename constant_from_value_type <t_value_type>::type{};
+	inline constexpr auto constant_from_value_type_v = typename constant_from_value_type <t_value_type>::type{};
 	
 	
 	template <typename t_value>
@@ -149,7 +149,7 @@ namespace {
 	};
 	
 	template <typename t_value>
-	inline LIBBIO_CONSTEVAL bool is_vector_type_v = is_vector_type <t_value>::type::value;
+	inline constexpr bool is_vector_type_v = is_vector_type <t_value>::type::value;
 	
 	
 	template <typename t_cb>
