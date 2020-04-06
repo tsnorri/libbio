@@ -30,6 +30,7 @@ namespace std {
 		span <gsl::byte const, gsl::details::calculate_byte_size <t_element, t_extent>::value> as_bytes(span <t_element, t_extent> s) noexcept { return gsl::as_bytes(s); }
 	}
 #else
+#	include <span>
 #	define LIBBIO_CONSTEVAL consteval
 #endif
 
