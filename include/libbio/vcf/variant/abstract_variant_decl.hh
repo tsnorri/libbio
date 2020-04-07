@@ -20,16 +20,18 @@ namespace libbio {
 	// Declare the constructors here s.t. the initialization code may be written more easily.
 	class abstract_variant
 	{
-		friend class vcf_reader;
-		friend class vcf_info_field_base;
-		friend class variant_format_access;
+		template <typename, typename>
+		friend class formatted_variant;
+		
 		friend class transient_variant_format_access;
+		friend class variant_format_access;
 		
 		template <std::int32_t, vcf_metadata_value_type>
 		friend class vcf_generic_info_field_base;
 		
-		template <typename, typename>
-		friend class formatted_variant;
+		friend class vcf_info_field_base;
+		friend class vcf_reader;
+		friend class vcf_storable_info_field_base;
 		
 	public:
 		enum { UNKNOWN_QUALITY = -1 };

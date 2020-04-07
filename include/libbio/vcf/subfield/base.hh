@@ -98,7 +98,7 @@ namespace libbio {
 		// Destruct the datastructure.
 		virtual void destruct_ds(container_type const &ct, std::byte *mem) const = 0;
 		
-		// access_ds left out on purpose since its return type varies and it’s not needed for GT.
+		// access_ds left out on purpose since its return type varies.
 		
 		// Copy the data structure.
 		virtual void copy_ds(

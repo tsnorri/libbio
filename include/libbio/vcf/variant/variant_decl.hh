@@ -23,6 +23,11 @@ namespace libbio {
 	public:
 		using transient_variant_base::transient_variant_base;
 		
+		transient_variant(transient_variant const &) = delete;
+		transient_variant(transient_variant &&) = default;
+		transient_variant &operator=(transient_variant const &) = delete;
+		transient_variant &operator=(transient_variant &&) & = default;
+		
 		inline void reset();
 	};
 	

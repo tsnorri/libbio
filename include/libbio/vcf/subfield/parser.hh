@@ -110,7 +110,7 @@ namespace libbio {
 	class vcf_generic_field_parser <1, t_metadata_value_type>
 	{
 	protected:
-		typedef vcf_subfield_access <1, t_metadata_value_type, true>	field_access;
+		typedef vcf_subfield_access <1, t_metadata_value_type, true>	field_access; // May be transient b.c. used only for parsing.
 		
 	protected:
 		bool parse_and_assign(std::string_view const &sv, std::byte *mem) const

@@ -13,9 +13,10 @@
 namespace lb	= libbio;
 
 
-namespace {
+namespace libbio {
 	
-	void output_genotype(std::ostream &stream, std::vector <lb::sample_genotype> const &genotype)
+	// FIXME: move to another module.
+	void output_genotype(std::ostream &stream, std::vector <sample_genotype> const &genotype)
 	{
 		bool is_first(true);
 		for (auto const &gt : genotype)
@@ -31,28 +32,12 @@ namespace {
 			is_first = false;
 		}
 	}
-}
-
-
-namespace libbio {
-	
-	void vcf_genotype_field_gt::output_vcf_value(std::ostream &stream, variant_sample const &sample) const
-	{
-		output_genotype(stream, sample.m_genotype);
-	}
-	
-	
-	void vcf_genotype_field_gt::output_vcf_value(std::ostream &stream, transient_variant_sample const &sample) const
-	{
-		output_genotype(stream, sample.m_genotype);
-	}
 	
 	
 	bool vcf_genotype_field_gt::parse_and_assign(std::string_view const &sv, transient_variant_sample &sample, std::byte *mem) const
 	{
 		// Mixed phasing is possible, e.g. in VCF 4.2 specification p. 26: 0/1|2: triploid with a single phased allele.
 		// (The specification says it is tetraploid but this is likely a bug.)
-		sample.m_genotype.clear();
 		std::uint16_t idx{};
 		bool is_phased{};
 
@@ -79,7 +64,7 @@ namespace libbio {
 			}
 			
 			action end_part {
-				sample.m_genotype.emplace_back(idx, is_phased);
+				value_access::add_value(mem, sample_genotype(idx, is_phased));
 			}
 			
 			action is_phased {

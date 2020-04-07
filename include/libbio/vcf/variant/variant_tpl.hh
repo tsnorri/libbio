@@ -42,6 +42,10 @@ namespace libbio {
 		std::vector <variant_alt_type>			m_alts{};
 		std::vector <variant_sample_type>		m_samples{};
 		
+	protected:
+		template <typename t_other_sample_type>
+		void copy_samples(std::vector <t_other_sample_type> const &src);
+		
 	public:
 		variant_tpl() = default;
 		
@@ -56,6 +60,11 @@ namespace libbio {
 		{
 		}
 		
+		variant_tpl(variant_tpl const &) = default;
+		variant_tpl(variant_tpl &&) = default;
+		variant_tpl &operator=(variant_tpl const &) & = default;
+		variant_tpl &operator=(variant_tpl &&) & = default;
+		
 		// Allow copying from from another specialization of variant_tpl.
 		template <typename t_other_string>
 		variant_tpl(variant_tpl <t_other_string> const &other):
@@ -66,6 +75,7 @@ namespace libbio {
 			m_alts(other.m_alts.cbegin(), other.m_alts.cend()),
 			m_samples(other.m_samples.size())
 		{
+			copy_samples(other.m_samples);
 		}
 		
 		string_type const &chrom_id() const								{ return m_chrom_id; }
@@ -99,6 +109,17 @@ namespace libbio {
 			m_alts.resize(pos + 1);
 		
 		m_alts[pos] = alt;
+	}
+
+	
+	template <typename t_string>
+	template <typename t_other_sample_type>
+	void variant_tpl <t_string>::copy_samples(std::vector <t_other_sample_type> const &src)
+	{
+		auto const size(src.size());
+		m_samples.resize(size);
+		for (std::size_t i(0); i < size; ++i)
+			m_samples[i] = src[i];
 	}
 }
 

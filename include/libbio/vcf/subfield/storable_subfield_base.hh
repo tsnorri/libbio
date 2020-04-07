@@ -8,6 +8,8 @@
 
 #include <libbio/vcf/subfield/genotype_field_base_decl.hh>
 #include <libbio/vcf/subfield/info_field_base_decl.hh>
+#include <libbio/vcf/variant/abstract_variant_decl.hh>
+#include <libbio/vcf/variant/sample.hh>
 
 
 namespace libbio {
@@ -34,12 +36,20 @@ namespace libbio {
 	class vcf_storable_info_field_base : public vcf_storable_subfield_base, public virtual vcf_info_field_base
 	{
 		friend class vcf_metadata_info;
+		
+	protected:
+		// Access the container’s buffer, for use with operator().
+		std::byte *buffer_start(abstract_variant const &ct) const { return ct.m_info.get(); }
 	};
 	
 	
 	class vcf_storable_genotype_field_base : public vcf_storable_subfield_base, public virtual vcf_genotype_field_base
 	{
 		friend class vcf_metadata_format;
+		
+	protected:
+		// Access the container’s buffer, for use with operator().
+		std::byte *buffer_start(variant_sample_base const &vs) const { return vs.m_sample_data.get(); }
 	};
 }
 

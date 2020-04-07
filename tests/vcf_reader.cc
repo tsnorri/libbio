@@ -6,6 +6,7 @@
 #include <catch2/catch.hpp>
 #include <libbio/vcf/vcf_reader.hh>
 #include <map>
+#include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/zip.hpp>
 #include <set>
 #include <string>
@@ -415,6 +416,188 @@ namespace {
 		{"FORMAT_INTEGER_G",	{lb::VCF_NUMBER_G,			lb::vcf_metadata_value_type::INTEGER}},
 		{"FORMAT_INTEGER_D",	{lb::VCF_NUMBER_UNKNOWN,	lb::vcf_metadata_value_type::INTEGER}}
 	};
+	
+	
+	std::vector <expected_record> prepare_expected_records_for_test_data_types_vcf()
+	{
+		std::vector <expected_record> expected_records{
+			{30,	8,	"test_gt_only",		"C",	{"G"},		{1, 1, false},									{},					{"INFO_FLAG", "INFO_FLAG_2"}},
+			{31,	10,	"test_most",		"A",	{"C", "G"},	{},												{"INFO_FLAG"},		{"INFO_FLAG_2"}},
+			{32,	12,	"test_most_2",		"C",	{"G", "T"},	{},												{"INFO_FLAG_2"},	{"INFO_FLAG"}},
+			{33,	14,	"test_gt_only_2",	"G",	{"C"},		{1, 1, true},									{},					{"INFO_FLAG", "INFO_FLAG_2"}},
+			{34,	16,	"test_missing",		"T",	{"A"},		{0, lb::sample_genotype::NULL_ALLELE, false},	{},					{"INFO_FLAG", "INFO_FLAG_2"}}
+		};
+		
+		for (auto const idx : lb::make_array <std::size_t>(0u, 3u, 4u))
+		{
+			for (auto const &[id, meta] : s_type_test_expected_info_fields)
+				expected_records[idx].add_empty_info_id(id);
+		}
+		
+		for (auto const &id : lb::make_array <char const *>(
+			"INFO_INTEGER_4",
+			"INFO_FLOAT_4",
+			"INFO_CHARACTER_4",
+			"INFO_STRING_4"
+		))
+		{
+			for (auto &rec : expected_records)
+				rec.add_empty_info_id(id);
+		}
+		
+		for (auto const idx : lb::make_array <std::size_t>(0u, 3u))
+		{
+			for (auto const &[id, meta] : s_type_test_expected_genotype_fields)
+				expected_records[idx].add_unset_genotype_id(id);
+		}
+		
+		for (auto const &id : lb::make_array <char const *>(
+			"GT",
+			"FORMAT_INTEGER",
+			"FORMAT_FLOAT",
+			"FORMAT_CHARACTER",
+			"FORMAT_STRING",
+			"FORMAT_INTEGER_A",
+			"FORMAT_INTEGER_R",
+			"FORMAT_INTEGER_G",
+			"FORMAT_INTEGER_D"
+		))
+		{
+			expected_records[4].add_empty_genotype_id(id);
+		}
+		
+		for (auto const &id : lb::make_array <char const *>(
+			"FORMAT_INTEGER_4",
+			"FORMAT_FLOAT_4",
+			"FORMAT_CHARACTER_4",
+			"FORMAT_STRING_4"
+		))
+		{
+			for (auto &rec : expected_records)
+				rec.add_unset_genotype_id(id);
+		}
+		
+		expected_records[1].add_info_value("INFO_INTEGER",			s_type_test_expected_info_fields,		5);
+		expected_records[2].add_info_value("INFO_INTEGER",			s_type_test_expected_info_fields,		7);
+		expected_records[1].add_info_value("INFO_FLOAT",			s_type_test_expected_info_fields,		1.025f);
+		expected_records[2].add_info_value("INFO_FLOAT",			s_type_test_expected_info_fields,		5.25f);
+		expected_records[1].add_info_value("INFO_CHARACTER",		s_type_test_expected_info_fields,		std::string("c"));
+		expected_records[2].add_info_value("INFO_CHARACTER",		s_type_test_expected_info_fields,		std::string("e"));
+		expected_records[1].add_info_value("INFO_STRING",			s_type_test_expected_info_fields,		std::string("info_test"));
+		expected_records[2].add_info_value("INFO_STRING",			s_type_test_expected_info_fields,		std::string("test3"));
+		expected_records[1].add_info_value("INFO_INTEGER_A",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({1, 4}));
+		expected_records[2].add_info_value("INFO_INTEGER_A",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({3, 6}));
+		expected_records[1].add_info_value("INFO_INTEGER_R",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({1, 3, 5}));
+		expected_records[2].add_info_value("INFO_INTEGER_R",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({3, 5, 7}));
+		expected_records[1].add_info_value("INFO_INTEGER_G",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({3, 7}));
+		expected_records[2].add_info_value("INFO_INTEGER_G",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({5, 9}));
+		expected_records[1].add_info_value("INFO_INTEGER_D",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({5, 6, 7, 8}));
+		expected_records[2].add_info_value("INFO_INTEGER_D",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({7, 8, 9, 10}));
+		
+		expected_records[1].add_genotype_value("FORMAT_INTEGER",	s_type_test_expected_genotype_fields,	6);
+		expected_records[2].add_genotype_value("FORMAT_INTEGER",	s_type_test_expected_genotype_fields,	8);
+		expected_records[1].add_genotype_value("FORMAT_FLOAT",		s_type_test_expected_genotype_fields,	2.5f);
+		expected_records[2].add_genotype_value("FORMAT_FLOAT",		s_type_test_expected_genotype_fields,	7.75f);
+		expected_records[1].add_genotype_value("FORMAT_CHARACTER",	s_type_test_expected_genotype_fields,	std::string("d"));
+		expected_records[2].add_genotype_value("FORMAT_CHARACTER",	s_type_test_expected_genotype_fields,	std::string("f"));
+		expected_records[1].add_genotype_value("FORMAT_STRING",		s_type_test_expected_genotype_fields,	std::string("sample_test"));
+		expected_records[2].add_genotype_value("FORMAT_STRING",		s_type_test_expected_genotype_fields,	std::string("test4"));
+		expected_records[1].add_genotype_value("FORMAT_INTEGER_A",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({2, 5}));
+		expected_records[2].add_genotype_value("FORMAT_INTEGER_A",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({4, 7}));
+		expected_records[1].add_genotype_value("FORMAT_INTEGER_R",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({2, 4, 6}));
+		expected_records[2].add_genotype_value("FORMAT_INTEGER_R",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({4, 6, 8}));
+		expected_records[1].add_genotype_value("FORMAT_INTEGER_G",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({4, 8}));
+		expected_records[2].add_genotype_value("FORMAT_INTEGER_G",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({6, 10}));
+		expected_records[1].add_genotype_value("FORMAT_INTEGER_D",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({6, 7, 8, 9}));
+		expected_records[2].add_genotype_value("FORMAT_INTEGER_D",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({8, 9, 10, 11}));
+		
+		return expected_records;
+	}
+	
+	
+	template <typename t_variant, typename t_info_fields, typename t_genotype_fields>
+	void check_record_against_expected_in_test_data_types_vcf(
+		t_variant const &var,
+		expected_record const &expected,
+		t_info_fields const &actual_info_fields,
+		t_genotype_fields const &actual_genotype_fields
+	)
+	{
+		REQUIRE(var.chrom_id() == "chr1");
+		REQUIRE(var.lineno() == expected.lineno);
+		REQUIRE(var.pos() == expected.pos);
+		REQUIRE(var.id().size() == 1);
+		REQUIRE(var.id().front() == expected.id);
+		REQUIRE(var.ref() == expected.ref);
+		REQUIRE(var.alts().size() == expected.alts.size());
+		for (auto const &[actual_alt, expected_alt] : ranges::view::zip(var.alts(), expected.alts))
+		{
+			REQUIRE(actual_alt.alt_sv_type == lb::sv_type::NONE);
+			REQUIRE(actual_alt.alt == expected_alt);
+		}
+	
+		// Info fields.
+		for (auto const &[id, expected_meta] : s_type_test_expected_info_fields)
+		{
+			auto const field_it(actual_info_fields.find(id));
+			REQUIRE(actual_info_fields.end() != field_it);
+		
+			if (lb::vcf_metadata_value_type::FLAG == expected_meta.value_type)
+			{
+				REQUIRE((
+					(expected.set_flags.contains(id) && field_it->second->has_value(var)) ||
+					(expected.unset_flags.contains(id) && !field_it->second->has_value(var))
+				));
+			}
+			else
+			{
+				check_expected_field(var, *field_it->second, expected.info_values, expected.empty_info_ids);
+			}
+		}
+	
+		// Genotype fields.
+		REQUIRE(1 == var.samples().size());
+		auto const &first_sample(var.samples().front());
+		auto const &genotype_fields_by_id(var.get_format().fields_by_identifier());
+		for (auto const &[id, expected_meta] : s_type_test_expected_genotype_fields)
+		{
+			REQUIRE(actual_genotype_fields.end() != actual_genotype_fields.find(id));
+			auto const field_it(genotype_fields_by_id.find(id));
+			if (expected.unset_genotype_ids.contains(id))
+				REQUIRE(genotype_fields_by_id.end() == field_it);
+			else
+			{
+				REQUIRE(genotype_fields_by_id.end() != field_it);
+				check_expected_field(first_sample, *field_it->second, expected.genotype_values, expected.empty_genotype_ids);
+			}
+		}
+	
+		// Handle GT.
+		{
+			auto const it(genotype_fields_by_id.find("GT"));
+			if (genotype_fields_by_id.end() != it)
+			{
+				REQUIRE_NOTHROW([&](){
+					auto const &gt_field(dynamic_cast <lb::vcf_genotype_field_gt &>(*it->second));
+					auto const &expected_gt(expected.gt);
+			
+					if (expected_gt.is_in_record)
+					{
+						REQUIRE(gt_field.has_value(first_sample));
+						auto const &actual_gt(gt_field(first_sample));
+						REQUIRE(actual_gt.size() == 2);
+						REQUIRE(actual_gt[0].alt == expected_gt.lhs);
+						REQUIRE(actual_gt[1].alt == expected_gt.rhs);
+						REQUIRE(actual_gt[1].is_phased == expected_gt.is_phased);
+					}
+					else
+					{
+						REQUIRE(!gt_field.has_value(first_sample));
+					}
+				});
+			}
+		}
+	}
 }
 
 
@@ -569,96 +752,7 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 				REQUIRE(actual_info_keys == expected_info_keys);
 				REQUIRE(actual_genotype_keys == expected_genotype_keys);
 				
-				std::vector <expected_record> expected_records{
-					{30,	8,	"test_gt_only",		"C",	{"G"},		{1, 1, false},									{},					{"INFO_FLAG", "INFO_FLAG_2"}},
-					{31,	10,	"test_most",		"A",	{"C", "G"},	{},												{"INFO_FLAG"},		{"INFO_FLAG_2"}},
-					{32,	12,	"test_most_2",		"C",	{"G", "T"},	{},												{"INFO_FLAG_2"},	{"INFO_FLAG"}},
-					{33,	14,	"test_gt_only_2",	"G",	{"C"},		{1, 1, true},									{},					{"INFO_FLAG", "INFO_FLAG_2"}},
-					{34,	16,	"test_missing",		"T",	{"A"},		{0, lb::sample_genotype::NULL_ALLELE, false},	{},					{"INFO_FLAG", "INFO_FLAG_2"}}
-				};
-				
-				for (auto const idx : lb::make_array <std::size_t>(0u, 3u, 4u))
-				{
-					for (auto const &[id, meta] : s_type_test_expected_info_fields)
-						expected_records[idx].add_empty_info_id(id);
-				}
-				
-				for (auto const &id : lb::make_array <char const *>(
-					"INFO_INTEGER_4",
-					"INFO_FLOAT_4",
-					"INFO_CHARACTER_4",
-					"INFO_STRING_4"
-				))
-				{
-					for (auto &rec : expected_records)
-						rec.add_empty_info_id(id);
-				}
-				
-				for (auto const idx : lb::make_array <std::size_t>(0u, 3u))
-				{
-					for (auto const &[id, meta] : s_type_test_expected_genotype_fields)
-						expected_records[idx].add_unset_genotype_id(id);
-				}
-				
-				for (auto const &id : lb::make_array <char const *>(
-					"GT",
-					"FORMAT_INTEGER",
-					"FORMAT_FLOAT",
-					"FORMAT_CHARACTER",
-					"FORMAT_STRING",
-					"FORMAT_INTEGER_A",
-					"FORMAT_INTEGER_R",
-					"FORMAT_INTEGER_G",
-					"FORMAT_INTEGER_D"
-				))
-				{
-					expected_records[4].add_empty_genotype_id(id);
-				}
-				
-				for (auto const &id : lb::make_array <char const *>(
-					"FORMAT_INTEGER_4",
-					"FORMAT_FLOAT_4",
-					"FORMAT_CHARACTER_4",
-					"FORMAT_STRING_4"
-				))
-				{
-					for (auto &rec : expected_records)
-						rec.add_unset_genotype_id(id);
-				}
-				
-				expected_records[1].add_info_value("INFO_INTEGER",			s_type_test_expected_info_fields,		5);
-				expected_records[2].add_info_value("INFO_INTEGER",			s_type_test_expected_info_fields,		7);
-				expected_records[1].add_info_value("INFO_FLOAT",			s_type_test_expected_info_fields,		1.025f);
-				expected_records[2].add_info_value("INFO_FLOAT",			s_type_test_expected_info_fields,		5.25f);
-				expected_records[1].add_info_value("INFO_CHARACTER",		s_type_test_expected_info_fields,		std::string("c"));
-				expected_records[2].add_info_value("INFO_CHARACTER",		s_type_test_expected_info_fields,		std::string("e"));
-				expected_records[1].add_info_value("INFO_STRING",			s_type_test_expected_info_fields,		std::string("info_test"));
-				expected_records[2].add_info_value("INFO_STRING",			s_type_test_expected_info_fields,		std::string("test3"));
-				expected_records[1].add_info_value("INFO_INTEGER_A",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({1, 4}));
-				expected_records[2].add_info_value("INFO_INTEGER_A",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({3, 6}));
-				expected_records[1].add_info_value("INFO_INTEGER_R",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({1, 3, 5}));
-				expected_records[2].add_info_value("INFO_INTEGER_R",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({3, 5, 7}));
-				expected_records[1].add_info_value("INFO_INTEGER_G",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({3, 7}));
-				expected_records[2].add_info_value("INFO_INTEGER_G",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({5, 9}));
-				expected_records[1].add_info_value("INFO_INTEGER_D",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({5, 6, 7, 8}));
-				expected_records[2].add_info_value("INFO_INTEGER_D",		s_type_test_expected_info_fields,		std::vector <std::int32_t>({7, 8, 9, 10}));
-				
-				expected_records[1].add_genotype_value("FORMAT_INTEGER",	s_type_test_expected_genotype_fields,	6);
-				expected_records[2].add_genotype_value("FORMAT_INTEGER",	s_type_test_expected_genotype_fields,	8);
-				expected_records[1].add_genotype_value("FORMAT_FLOAT",		s_type_test_expected_genotype_fields,	2.5f);
-				expected_records[2].add_genotype_value("FORMAT_FLOAT",		s_type_test_expected_genotype_fields,	7.75f);
-				expected_records[1].add_genotype_value("FORMAT_CHARACTER",	s_type_test_expected_genotype_fields,	std::string("d"));
-				expected_records[2].add_genotype_value("FORMAT_CHARACTER",	s_type_test_expected_genotype_fields,	std::string("f"));
-				expected_records[1].add_genotype_value("FORMAT_STRING",		s_type_test_expected_genotype_fields,	std::string("sample_test"));
-				expected_records[2].add_genotype_value("FORMAT_STRING",		s_type_test_expected_genotype_fields,	std::string("test4"));
-				expected_records[1].add_genotype_value("FORMAT_INTEGER_A",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({2, 5}));
-				expected_records[2].add_genotype_value("FORMAT_INTEGER_A",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({4, 7}));
-				expected_records[1].add_genotype_value("FORMAT_INTEGER_R",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({2, 4, 6}));
-				expected_records[2].add_genotype_value("FORMAT_INTEGER_R",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({4, 6, 8}));
-				expected_records[1].add_genotype_value("FORMAT_INTEGER_G",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({4, 8}));
-				expected_records[2].add_genotype_value("FORMAT_INTEGER_G",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({6, 10}));
-				expected_records[1].add_genotype_value("FORMAT_INTEGER_D",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({6, 7, 8, 9}));
-				expected_records[2].add_genotype_value("FORMAT_INTEGER_D",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({8, 9, 10, 11}));
+				auto const expected_records(prepare_expected_records_for_test_data_types_vcf());
 				
 				bool should_continue(false);
 				std::size_t idx{};
@@ -672,84 +766,12 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 							&idx
 						]
 						(lb::transient_variant const &var){
+							
 							REQUIRE(idx < expected_records.size());
 							auto const &expected(expected_records[idx]);
-						
-							REQUIRE(var.chrom_id() == "chr1");
-							REQUIRE(var.lineno() == expected.lineno);
-							REQUIRE(var.pos() == expected.pos);
-							REQUIRE(var.id().size() == 1);
-							REQUIRE(var.id().front() == expected.id);
-							REQUIRE(var.ref() == expected.ref);
-							REQUIRE(var.alts().size() == expected.alts.size());
-							for (auto const &[actual_alt, expected_alt] : ranges::view::zip(var.alts(), expected.alts))
-							{
-								REQUIRE(actual_alt.alt_sv_type == lb::sv_type::NONE);
-								REQUIRE(actual_alt.alt == expected_alt);
-							}
-						
-							// Info fields.
-							for (auto const &[id, expected_meta] : s_type_test_expected_info_fields)
-							{
-								auto const field_it(actual_info_fields.find(id));
-								REQUIRE(actual_info_fields.end() != field_it);
 							
-								if (lb::vcf_metadata_value_type::FLAG == expected_meta.value_type)
-								{
-									REQUIRE((
-										(expected.set_flags.contains(id) && field_it->second->has_value(var)) ||
-										(expected.unset_flags.contains(id) && !field_it->second->has_value(var))
-									));
-								}
-								else
-								{
-									check_expected_field(var, *field_it->second, expected.info_values, expected.empty_info_ids);
-								}
-							}
-						
-							// Genotype fields.
-							REQUIRE(1 == var.samples().size());
-							auto const &first_sample(var.samples().front());
-							auto const &genotype_fields_by_id(var.get_format().fields_by_identifier());
-							for (auto const &[id, expected_meta] : s_type_test_expected_genotype_fields)
-							{
-								REQUIRE(actual_genotype_fields.end() != actual_genotype_fields.find(id));
-								auto const field_it(genotype_fields_by_id.find(id));
-								if (expected.unset_genotype_ids.contains(id))
-									REQUIRE(genotype_fields_by_id.end() == field_it);
-								else
-								{
-									REQUIRE(genotype_fields_by_id.end() != field_it);
-									check_expected_field(first_sample, *field_it->second, expected.genotype_values, expected.empty_genotype_ids);
-								}
-							}
-						
-							// Handle GT.
-							{
-								auto const it(genotype_fields_by_id.find("GT"));
-								if (genotype_fields_by_id.end() != it)
-								{
-									REQUIRE_NOTHROW([&](){
-										auto const &gt_field(dynamic_cast <lb::vcf_genotype_field_gt &>(*it->second));
-										auto const &expected_gt(expected.gt);
-									
-										if (expected_gt.is_in_record)
-										{
-											REQUIRE(gt_field.has_value(first_sample));
-											auto const &actual_gt(gt_field(first_sample));
-											REQUIRE(actual_gt.size() == 2);
-											REQUIRE(actual_gt[0].alt == expected_gt.lhs);
-											REQUIRE(actual_gt[1].alt == expected_gt.rhs);
-											REQUIRE(actual_gt[1].is_phased == expected_gt.is_phased);
-										}
-										else
-										{
-											REQUIRE(!gt_field.has_value(first_sample));
-										}
-									});
-								}
-							}
-						
+							check_record_against_expected_in_test_data_types_vcf(var, expected, actual_info_fields, actual_genotype_fields);
+							
 							++idx;
 							return true;
 						}
@@ -757,6 +779,89 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 				} while (should_continue);
 				
 				REQUIRE(idx == expected_records.size());
+			}
+		}
+	}
+}
+
+
+SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]")
+{
+	GIVEN("a VCF file")
+	{
+		lb::mmap_handle <char> handle;
+		handle.open("test-files/test-data-types.vcf");
+		lb::vcf_mmap_input input(handle);
+		lb::vcf_reader reader(input);
+		
+		// FIXME: test also with reserved keys added.
+		
+		WHEN("the file is parsed")
+		{
+			reader.fill_buffer();
+			reader.read_header();
+			reader.set_parsed_fields(lb::vcf_field::ALL);
+			
+			THEN("the variant records may be copied")
+			{
+				bool should_continue(false);
+				do {
+					reader.fill_buffer();
+					should_continue = reader.parse(
+						[](lb::transient_variant const &var){
+							lb::variant persistent_variant(var);
+							return true;
+						}
+					);
+				} while (should_continue);
+			}
+		}
+	}
+}
+
+
+SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_reader]")
+{
+	GIVEN("a VCF file")
+	{
+		lb::mmap_handle <char> handle;
+		handle.open("test-files/test-data-types.vcf");
+		lb::vcf_mmap_input input(handle);
+		lb::vcf_reader reader(input);
+		
+		// FIXME: test also with reserved keys added.
+		
+		WHEN("the variant records have been copied")
+		{
+			reader.fill_buffer();
+			reader.read_header();
+			reader.set_parsed_fields(lb::vcf_field::ALL);
+			
+			auto const &actual_info_fields(reader.info_fields());
+			auto const &actual_genotype_fields(reader.genotype_fields());
+			
+			std::vector <lb::variant> persistent_variants;
+			bool should_continue(false);
+			do {
+				reader.fill_buffer();
+				should_continue = reader.parse(
+					[&persistent_variants](lb::transient_variant const &var){
+						persistent_variants.emplace_back(var);
+						return true;
+					}
+				);
+			} while (should_continue);
+			
+			THEN("each copied record matches the expected")
+			{
+				auto const expected_records(prepare_expected_records_for_test_data_types_vcf());
+				for (auto const &[idx, var] : ranges::view::enumerate(persistent_variants))
+				{
+					REQUIRE(idx < expected_records.size());
+					auto const &expected(expected_records[idx]);
+					
+					check_record_against_expected_in_test_data_types_vcf(var, expected, actual_info_fields, actual_genotype_fields);
+				}
 			}
 		}
 	}
