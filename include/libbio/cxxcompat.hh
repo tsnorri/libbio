@@ -20,6 +20,7 @@ namespace std {
 
 #if __cplusplus < 202000L
 #	define LIBBIO_CONSTEVAL constexpr
+#	define LIBBIO_CONSTINIT constexpr
 
 	// XXX hack.
 #	include <gsl/span>
@@ -32,6 +33,7 @@ namespace std {
 #else
 #	include <span>
 #	define LIBBIO_CONSTEVAL consteval
+#	define LIBBIO_CONSTINIT constinit
 #endif
 
 #endif
