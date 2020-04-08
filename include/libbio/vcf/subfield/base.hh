@@ -48,6 +48,12 @@ namespace libbio {
 		friend class vcf_metadata_formatted_field;
 		
 	public:
+		enum { INVALID_OFFSET = UINT16_MAX };
+		
+	protected:
+		std::uint16_t		m_offset{INVALID_OFFSET};	// Offset of this field in the memory block.
+		
+	public:
 		virtual ~vcf_subfield_base() {}
 
 		// Value type according to the VCF header.
@@ -64,6 +70,9 @@ namespace libbio {
 		virtual bool uses_vcf_type_mapping() const { return false; }
 		
 	protected:
+		std::uint16_t get_offset() const { return m_offset; }
+		void set_offset(std::uint16_t offset) { m_offset = offset; }
+		
 		// Alignment of this field.
 		virtual std::uint16_t alignment() const = 0;
 		
@@ -72,9 +81,6 @@ namespace libbio {
 		
 		// Create a clone of this object.
 		virtual vcf_subfield_base *clone() const = 0;
-		
-		virtual inline std::uint16_t get_offset() const { return 0; }
-		virtual inline void set_offset(std::uint16_t) {};
 	};
 	
 	

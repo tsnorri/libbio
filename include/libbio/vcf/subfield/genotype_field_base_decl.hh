@@ -10,6 +10,7 @@
 #include <libbio/vcf/metadata.hh>
 #include <libbio/vcf/subfield/base.hh>
 #include <libbio/vcf/variant/fwd.hh>
+#include <libbio/vcf/variant/sample.hh>
 
 
 namespace libbio {
@@ -52,6 +53,9 @@ namespace libbio {
 		inline void prepare(transient_variant_sample &dst) const;
 		inline void parse_and_assign(std::string_view const &sv, transient_variant_sample &dst) const;
 		virtual vcf_genotype_field_base *clone() const override = 0;
+		
+		// Access the container’s buffer, for use with operator().
+		std::byte *buffer_start(variant_sample_base const &vs) const { return vs.m_sample_data.get(); }
 		
 	public:
 		std::uint16_t get_index() const { return m_index; }

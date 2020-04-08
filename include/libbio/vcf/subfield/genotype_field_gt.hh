@@ -7,9 +7,9 @@
 #define LIBBIO_VCF_SUBFIELD_GENOTYPE_FIELD_GT_HH
 
 #include <libbio/assert.hh>
+#include <libbio/vcf/subfield/base.hh>
 #include <libbio/vcf/subfield/concrete_ds_access.hh>
 #include <libbio/vcf/subfield/genotype_field_base_decl.hh>
-#include <libbio/vcf/subfield/storable_subfield_base.hh>
 #include <libbio/vcf/subfield/value_access.hh>
 #include <libbio/vcf/variant/sample.hh>
 #include <ostream>
@@ -35,7 +35,7 @@ namespace libbio { namespace detail {
 		using value_access_tpl = vcf_genotype_field_gt_helper::value_access;
 		
 		typedef detail::vcf_subfield_concrete_ds_access <
-			vcf_storable_genotype_field_base, // not vcf_typed_genotype_field b.c. vcf_genotype_field_gt::uses_vcf_type_mapping() returns false.
+			vcf_genotype_field_base, // not vcf_typed_genotype_field b.c. vcf_genotype_field_gt::uses_vcf_type_mapping() returns false.
 			variant_sample_t,
 			value_access_tpl,
 			t_is_transient
@@ -52,6 +52,7 @@ namespace libbio { namespace detail {
 			vector_type &operator()(container_type &ct) const { return value_access::access_ds(this->buffer_start(ct)); }
 			vector_type const &operator()(container_type const &ct) const { return value_access::access_ds(this->buffer_start(ct)); }
 			
+			using ds_access_base::output_vcf_value;
 			virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const override { output_genotype(stream, (*this)(ct)); }
 		};
 	};

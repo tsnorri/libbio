@@ -9,6 +9,7 @@
 #include <libbio/cxxcompat.hh>
 #include <libbio/vcf/metadata.hh>
 #include <libbio/vcf/subfield/base.hh>
+#include <libbio/vcf/variant/abstract_variant_decl.hh>
 #include <libbio/vcf/variant/fwd.hh>
 
 
@@ -20,8 +21,8 @@ namespace libbio {
 	
 	// Base class for info field descriptions.
 	class vcf_info_field_base :	public virtual vcf_subfield_base,
-								public vcf_subfield_ds_access <variant_base_t, true>,
-								public vcf_subfield_ds_access <variant_base_t, false>
+								public virtual vcf_subfield_ds_access <variant_base_t, true>,
+								public virtual vcf_subfield_ds_access <variant_base_t, false>
 	{
 		friend class vcf_reader;
 		
@@ -57,6 +58,9 @@ namespace libbio {
 		inline void parse_and_assign(std::string_view const &sv, transient_variant &dst) const;
 		inline void assign_flag(transient_variant &dst) const;
 		virtual vcf_info_field_base *clone() const override = 0;
+		
+		// Access the container’s buffer, for use with operator().
+		std::byte *buffer_start(abstract_variant const &ct) const { return ct.m_info.get(); }
 		
 	public:
 		using vcf_subfield_ds_access <variant_base_t, true>::output_vcf_value;

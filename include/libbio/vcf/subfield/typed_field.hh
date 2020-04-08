@@ -41,8 +41,8 @@ namespace libbio {
 	// Virtual function declaration for operator().
 	template <vcf_metadata_value_type t_value_type, bool t_is_vector, template <bool> typename t_container, typename t_base>
 	class vcf_typed_field :	public detail::vcf_typed_field_base <t_base>,
-								public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_container, false>,
-								public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_container, true>
+							public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_container, false>,
+							public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_container, true>
 	{
 		static_assert(std::is_same_v <t_base, vcf_info_field_base> || std::is_same_v <t_base, vcf_genotype_field_base>);
 		

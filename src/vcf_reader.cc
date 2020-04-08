@@ -242,7 +242,7 @@ namespace libbio {
 	{
 		// Sort the info fields by alignment requirement and size, then assign offsets.
 		for (auto const &[key, field_ptr] : m_info_fields)
-			field_ptr->set_offset(vcf_storable_subfield_base::INVALID_OFFSET);
+			field_ptr->set_offset(vcf_subfield_base::INVALID_OFFSET);
 		
 		return sort_and_assign_field_offsets(m_info_fields_in_headers);
 	}
@@ -289,7 +289,7 @@ namespace libbio {
 		// Recalculate the offsets. This also has the effect of making variants copied earlier unreadable,
 		// unless the subfield descriptors have been copied by the client.
 		for (auto const &[key, field_ptr] : m_genotype_fields)
-			field_ptr->set_offset(vcf_storable_subfield_base::INVALID_OFFSET);
+			field_ptr->set_offset(vcf_subfield_base::INVALID_OFFSET);
 		
 		auto format_vec(m_current_format_vec); // Copy b.c. the field order needs to be preserved.
 		auto const retval(sort_and_assign_field_offsets(format_vec));
