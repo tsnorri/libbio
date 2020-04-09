@@ -62,12 +62,11 @@ namespace libbio {
 		// Number of items in this field according to the VCF header.
 		virtual std::int32_t number() const = 0;
 		
-		// FIXME: this should not be here b.c. a subclass could override the value type.
 		bool value_type_is_vector() const { return vcf_value_count_corresponds_to_vector(number()); }
 		
 		// Get the metadata pointer.
 		virtual vcf_metadata_base *get_metadata() const = 0;
-
+		
 		// Whether the field uses the enumerated VCF type mapping.
 		virtual bool uses_vcf_type_mapping() const { return false; }
 		

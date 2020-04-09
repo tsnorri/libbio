@@ -14,16 +14,6 @@
 
 namespace libbio { namespace detail {
 	
-	// Virtualize value_type_is_vector(), get_value_type().
-	template <typename t_base>
-	struct vcf_typed_field_base : public virtual t_base
-	{
-		// For now these are only declared in the field types that use the mapping in the beginning of this header.
-		// Since the GT field has a custom value type (as we parse the phasing information), it does not use the mapping.
-		bool uses_vcf_type_mapping() const final { return true; }
-	};
-	
-	
 	template <vcf_metadata_value_type t_value_type, bool t_is_vector, typename t_base, bool t_is_transient>
 	struct vcf_typed_field_value_access
 	{
@@ -42,7 +32,7 @@ namespace libbio {
 	
 	// Virtual function declaration for operator().
 	template <vcf_metadata_value_type t_value_type, bool t_is_vector, typename t_base>
-	class vcf_typed_field :	public detail::vcf_typed_field_base <t_base>,
+	class vcf_typed_field :	public virtual t_base,
 							public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_base, false>,
 							public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_base, true>
 	{
@@ -58,6 +48,10 @@ namespace libbio {
 	public:
 		using value_access_t <false>::operator();
 		using value_access_t <true>::operator();
+		
+		// For now these are only declared in the field types that use the mapping in the beginning of this header.
+		// Since the GT field has a custom value type (as we parse the phasing information), it does not use the mapping.
+		constexpr bool uses_vcf_type_mapping() const final { return true; }
 		
 		constexpr static bool is_typed_field() { return true; }
 		
