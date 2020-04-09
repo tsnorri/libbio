@@ -30,7 +30,6 @@ namespace libbio { namespace detail {
 	class vcf_generic_field_ds_access :	public virtual t_base::typed_field_base,
 										public vcf_subfield_concrete_ds_access <
 											typename t_base::typed_field_base::virtual_base,
-											t_base::template container_tpl,
 											vcf_generic_field_ds_access_helper <t_base>::template field_access_tpl,
 											t_is_transient
 										>

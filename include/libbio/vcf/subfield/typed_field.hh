@@ -24,11 +24,13 @@ namespace libbio { namespace detail {
 	};
 	
 	
-	template <vcf_metadata_value_type t_value_type, bool t_is_vector, template <bool> typename t_container, bool t_is_transient>
+	template <vcf_metadata_value_type t_value_type, bool t_is_vector, typename t_base, bool t_is_transient>
 	struct vcf_typed_field_value_access
 	{
+		static_assert(std::is_same_v <t_base, vcf_info_field_base> || std::is_same_v <t_base, vcf_genotype_field_base>);
+		
 		typedef vcf_value_type_mapping_t <t_value_type, t_is_vector, t_is_transient>	value_type;
-		typedef t_container <t_is_transient>											container_type;
+		typedef typename t_base::template container_tpl <t_is_transient>				container_type;
 		
 		virtual value_type &operator()(container_type &) const = 0;
 		virtual value_type const &operator()(container_type const &) const = 0;
@@ -39,10 +41,10 @@ namespace libbio { namespace detail {
 namespace libbio {
 	
 	// Virtual function declaration for operator().
-	template <vcf_metadata_value_type t_value_type, bool t_is_vector, template <bool> typename t_container, typename t_base>
+	template <vcf_metadata_value_type t_value_type, bool t_is_vector, typename t_base>
 	class vcf_typed_field :	public detail::vcf_typed_field_base <t_base>,
-							public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_container, false>,
-							public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_container, true>
+							public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_base, false>,
+							public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_base, true>
 	{
 		static_assert(std::is_same_v <t_base, vcf_info_field_base> || std::is_same_v <t_base, vcf_genotype_field_base>);
 		
@@ -51,7 +53,7 @@ namespace libbio {
 		
 	protected:
 		template <bool B>
-		using value_access_t = detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_container, B>;
+		using value_access_t = detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_base, B>;
 		
 	public:
 		using value_access_t <false>::operator();

@@ -30,15 +30,15 @@ namespace libbio {
 	typedef detail::vcf_typed_field_base <vcf_info_field_base>		vcf_typed_info_field_base;
 	typedef detail::vcf_typed_field_base <vcf_genotype_field_base>	vcf_typed_genotype_field_base;
 	
-	template <vcf_metadata_value_type t_value_type, bool t_is_vector, template <bool> typename t_container, typename t_base>
+	template <vcf_metadata_value_type t_value_type, bool t_is_vector, typename t_base>
 	class vcf_typed_field;
 	
 	// Aliases for easier castability.
 	template <bool t_is_vector, vcf_metadata_value_type t_value_type>
-	using vcf_typed_info_field_t = vcf_typed_field <t_value_type, t_is_vector, variant_base_t, vcf_info_field_base>;
+	using vcf_typed_info_field_t = vcf_typed_field <t_value_type, t_is_vector, vcf_info_field_base>;
 
 	template <bool t_is_vector, vcf_metadata_value_type t_value_type>
-	using vcf_typed_genotype_field_t = vcf_typed_field <t_value_type, t_is_vector, variant_sample_t, vcf_genotype_field_base>;
+	using vcf_typed_genotype_field_t = vcf_typed_field <t_value_type, t_is_vector, vcf_genotype_field_base>;
 	
 	
 	// Base class and interface for field descriptions (specified by ##INFO, ##FORMAT).
@@ -61,6 +61,8 @@ namespace libbio {
 		
 		// Number of items in this field according to the VCF header.
 		virtual std::int32_t number() const = 0;
+		
+		// FIXME: this should not be here b.c. a subclass could override the value type.
 		bool value_type_is_vector() const { return vcf_value_count_corresponds_to_vector(number()); }
 		
 		// Get the metadata pointer.

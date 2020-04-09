@@ -30,6 +30,9 @@ namespace libbio {
 		friend class formatted_variant;
 		
 	public:
+		template <bool t_is_transient> 
+		using container_tpl = variant_base_t <t_is_transient>;
+		
 		template <bool t_is_vector, vcf_metadata_value_type t_value_type>
 		using typed_field_type = vcf_typed_info_field_t <t_is_vector, t_value_type>;
 		

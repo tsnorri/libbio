@@ -29,6 +29,9 @@ namespace libbio {
 		enum { INVALID_INDEX = UINT16_MAX };
 		
 	public:
+		template <bool t_is_transient>
+		using container_tpl = variant_sample_t <t_is_transient>;
+		
 		template <bool t_is_vector, vcf_metadata_value_type t_value_type>
 		using typed_field_type = vcf_typed_genotype_field_t <t_is_vector, t_value_type>;
 		

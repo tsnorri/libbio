@@ -29,7 +29,6 @@ namespace libbio { namespace detail {
 		template <bool t_is_transient>
 		using base_class = vcf_subfield_concrete_ds_access <
 			vcf_genotype_field_base, 
-			variant_sample_t,
 			value_access_tpl,
 			t_is_transient
 		>;
@@ -64,7 +63,6 @@ namespace libbio { namespace detail {
 namespace libbio {
 	
 	// Subclass for the GT field.
-	// FIXME: Instead of relying on the special data member in variant_sample, vcf_genotype_field_gt could use the same buffer as the generic types.
 	class vcf_genotype_field_gt final :	public detail::vcf_genotype_field_gt_ds_access <true>,
 		 								public detail::vcf_genotype_field_gt_ds_access <false>
 	{
