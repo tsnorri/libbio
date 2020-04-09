@@ -25,13 +25,13 @@ namespace libbio { namespace detail {
 	// m_metadata located in vcf_*_field_base.
 	template <
 		typename t_base,
-		template <bool> typename t_container_tpl,
+		template <bool> typename t_container_tpl, // FIXME: depends on the first parameter, remove.
 		template <bool> typename t_access_tpl,
 		bool t_is_transient
 	>
 	class vcf_subfield_concrete_ds_access : public virtual t_base
 	{
-		//static_assert(std::is_same_v <t_base, vcf_info_field_base> || std::is_same_v <t_base, vcf_genotype_field_base>);
+		static_assert(std::is_same_v <t_base, vcf_info_field_base> || std::is_same_v <t_base, vcf_genotype_field_base>);
 		
 	protected:
 		typedef t_container_tpl <t_is_transient>	container_type;

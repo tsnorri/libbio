@@ -12,11 +12,7 @@
 namespace libbio {
 	
 	// Fwd.
-	template <
-		std::int32_t t_number,
-		vcf_metadata_value_type t_metadata_value_type,
-		template <std::int32_t, vcf_metadata_value_type> class t_base
-	>
+	template <typename t_base>
 	class vcf_generic_field;
 	
 	template <std::int32_t t_number, vcf_metadata_value_type t_metadata_value_type>
@@ -26,10 +22,10 @@ namespace libbio {
 	class vcf_generic_genotype_field_base;
 	
 	template <std::int32_t t_number, vcf_metadata_value_type t_metadata_value_type>
-	using vcf_info_field = vcf_generic_field <t_number, t_metadata_value_type, vcf_generic_info_field_base>;
+	using vcf_info_field = vcf_generic_field <vcf_generic_info_field_base <t_number, t_metadata_value_type>>;
 
 	template <std::int32_t t_number, vcf_metadata_value_type t_metadata_value_type>
-	using vcf_genotype_field = vcf_generic_field <t_number, t_metadata_value_type, vcf_generic_genotype_field_base>;
+	using vcf_genotype_field = vcf_generic_field <vcf_generic_genotype_field_base <t_number, t_metadata_value_type>>;
 	
 	// Info fields.
 	using vcf_info_field_aa			= vcf_info_field <1,										vcf_metadata_value_type::STRING>;

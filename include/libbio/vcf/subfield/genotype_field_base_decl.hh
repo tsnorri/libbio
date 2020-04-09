@@ -30,7 +30,7 @@ namespace libbio {
 		
 	public:
 		template <bool t_is_vector, vcf_metadata_value_type t_value_type>
-		using typed_field_type = vcf_typed_genotype_field <t_is_vector, t_value_type>;
+		using typed_field_type = vcf_typed_genotype_field_t <t_is_vector, t_value_type>;
 		
 	protected:
 		vcf_metadata_format	*m_metadata{};

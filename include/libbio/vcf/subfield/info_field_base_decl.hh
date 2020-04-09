@@ -21,8 +21,8 @@ namespace libbio {
 	
 	// Base class for info field descriptions.
 	class vcf_info_field_base :	public virtual vcf_subfield_base,
-								public virtual vcf_subfield_ds_access <variant_base_t, true>,
-								public virtual vcf_subfield_ds_access <variant_base_t, false>
+								public vcf_subfield_ds_access <variant_base_t, true>,
+								public vcf_subfield_ds_access <variant_base_t, false>
 	{
 		friend class vcf_reader;
 		
@@ -31,7 +31,7 @@ namespace libbio {
 		
 	public:
 		template <bool t_is_vector, vcf_metadata_value_type t_value_type>
-		using typed_field_type = vcf_typed_info_field <t_is_vector, t_value_type>;
+		using typed_field_type = vcf_typed_info_field_t <t_is_vector, t_value_type>;
 		
 	protected:
 		vcf_metadata_info	*m_metadata{};

@@ -21,46 +21,43 @@ namespace libbio { namespace detail {
 	{
 		typedef std::vector <sample_genotype>									vector_type;
 		typedef vcf_vector_value_access <sample_genotype, VCF_NUMBER_UNKNOWN>	value_access;
-	};
-	
-	
-	template <bool t_is_transient>
-	struct vcf_genotype_field_gt_access_helper
-	{
-		typedef vcf_genotype_field_gt_helper::vector_type				vector_type;
-		typedef vcf_genotype_field_gt_helper::value_access				value_access;
 		
-		// We use the same type for both transient and non-transient containers.
+		// The same type is used for both transient and non-transient containers.
 		template <bool>
-		using value_access_tpl = vcf_genotype_field_gt_helper::value_access;
+		using value_access_tpl = value_access;
 		
-		typedef detail::vcf_subfield_concrete_ds_access <
-			vcf_genotype_field_base, // not vcf_typed_genotype_field b.c. vcf_genotype_field_gt::uses_vcf_type_mapping() returns false.
+		template <bool t_is_transient>
+		using base_class = vcf_subfield_concrete_ds_access <
+			vcf_genotype_field_base, 
 			variant_sample_t,
 			value_access_tpl,
 			t_is_transient
-		>																ds_access_base;
-		
-		
-		class vcf_genotype_field_gt_ds_access : public ds_access_base
-		{
-		public:
-			typedef typename ds_access_base::container_type				container_type;
-			
-		public:
-			// Operator().
-			vector_type &operator()(container_type &ct) const { return value_access::access_ds(this->buffer_start(ct)); }
-			vector_type const &operator()(container_type const &ct) const { return value_access::access_ds(this->buffer_start(ct)); }
-			
-			using ds_access_base::output_vcf_value;
-			virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const override { output_genotype(stream, (*this)(ct)); }
-		};
+		>;
 	};
 	
 	
 	template <bool t_is_transient>
-	using vcf_genotype_field_gt_access_t =
-	typename vcf_genotype_field_gt_access_helper <t_is_transient>::vcf_genotype_field_gt_ds_access;
+	class vcf_genotype_field_gt_ds_access : public detail::vcf_genotype_field_gt_helper::base_class <t_is_transient>
+	{
+	protected:
+		typedef detail::vcf_genotype_field_gt_helper		helper_type;
+		typedef helper_type::base_class <t_is_transient>	base_class;
+		
+	public:
+		typedef vcf_genotype_field_gt_helper::vector_type	vector_type;
+		typedef typename base_class::container_type			container_type;
+		
+	protected:
+		typedef vcf_genotype_field_gt_helper::value_access	value_access;
+		
+	public:
+		// Operator().
+		vector_type &operator()(container_type &ct) const { return value_access::access_ds(this->buffer_start(ct)); }
+		vector_type const &operator()(container_type const &ct) const { return value_access::access_ds(this->buffer_start(ct)); }
+		
+		using base_class::output_vcf_value;
+		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const override { output_genotype(stream, (*this)(ct)); }
+	};
 }}
 
 
@@ -68,8 +65,8 @@ namespace libbio {
 	
 	// Subclass for the GT field.
 	// FIXME: Instead of relying on the special data member in variant_sample, vcf_genotype_field_gt could use the same buffer as the generic types.
-	class vcf_genotype_field_gt final :	public detail::vcf_genotype_field_gt_access_t <true>,
-		 								public detail::vcf_genotype_field_gt_access_t <false>
+	class vcf_genotype_field_gt final :	public detail::vcf_genotype_field_gt_ds_access <true>,
+		 								public detail::vcf_genotype_field_gt_ds_access <false>
 	{
 	protected:
 		typedef detail::vcf_genotype_field_gt_helper::vector_type	vector_type;

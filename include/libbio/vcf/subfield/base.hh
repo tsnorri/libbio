@@ -35,10 +35,10 @@ namespace libbio {
 	
 	// Aliases for easier castability.
 	template <bool t_is_vector, vcf_metadata_value_type t_value_type>
-	using vcf_typed_info_field = vcf_typed_field <t_value_type, t_is_vector, variant_t, vcf_info_field_base>;
+	using vcf_typed_info_field_t = vcf_typed_field <t_value_type, t_is_vector, variant_base_t, vcf_info_field_base>;
 
 	template <bool t_is_vector, vcf_metadata_value_type t_value_type>
-	using vcf_typed_genotype_field = vcf_typed_field <t_value_type, t_is_vector, variant_sample_t, vcf_genotype_field_base>;
+	using vcf_typed_genotype_field_t = vcf_typed_field <t_value_type, t_is_vector, variant_sample_t, vcf_genotype_field_base>;
 	
 	
 	// Base class and interface for field descriptions (specified by ##INFO, ##FORMAT).

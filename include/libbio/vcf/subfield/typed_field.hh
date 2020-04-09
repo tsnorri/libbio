@@ -46,12 +46,16 @@ namespace libbio {
 	{
 		static_assert(std::is_same_v <t_base, vcf_info_field_base> || std::is_same_v <t_base, vcf_genotype_field_base>);
 		
+	public:
+		typedef t_base virtual_base;
+		
 	protected:
-		template <bool B> using value_access_t = detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_container, B>;
+		template <bool B>
+		using value_access_t = detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_container, B>;
 		
 	public:
-		using value_access_t <true>::operator();
 		using value_access_t <false>::operator();
+		using value_access_t <true>::operator();
 		
 		constexpr static bool is_typed_field() { return true; }
 		
