@@ -82,8 +82,12 @@ namespace libbio {
 		{
 			if (this != &src)
 			{
-				base_class::operator=(src);
-				m_content.reset(detail::alloc <t_type>(src.m_size));
+				// Reallocate only if src cannot be copied.
+				if (this->m_size < src.m_size)
+				{
+					m_content.reset(detail::alloc <t_type>(src.m_size));
+					base_class::operator=(src); // Sets m_size.
+				}
 				detail::buffer_helper <t_type, buffer, t_default_copy_tag>::copy_to_buffer(src, *this);
 			}
 			return *this;
@@ -203,9 +207,13 @@ namespace libbio {
 		{
 			if (this != &src)
 			{
-				base_class::operator=(src);
-				m_alignment = src.m_alignment;
-				m_content.reset(detail::aligned_alloc <t_type>(src.m_size, src.m_alignment));
+				// Reallocate only if src cannot be copied.
+				if (m_alignment < src.m_alignment || this->m_size < src.m_size)
+				{
+					m_content.reset(detail::aligned_alloc <t_type>(src.m_size, src.m_alignment));
+					base_class::operator=(src); // Sets m_size.
+					m_alignment = src.m_alignment;
+				}
 				detail::buffer_helper <t_type, aligned_buffer, t_default_copy_tag>::copy_to_buffer(src, *this);
 			}
 			return *this;
