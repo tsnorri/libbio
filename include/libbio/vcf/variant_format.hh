@@ -18,6 +18,7 @@ namespace libbio {
 	class variant_format
 	{
 		friend class vcf_reader;
+		friend bool operator==(variant_format const &, variant_format const &);
 		
 	protected:
 		vcf_genotype_field_map			m_fields_by_identifier;

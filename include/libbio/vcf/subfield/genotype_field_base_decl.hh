@@ -15,6 +15,9 @@
 
 namespace libbio {
 	
+	class variant_format;
+	
+	
 	// Base class for genotype field descriptions.
 	class vcf_genotype_field_base :	public virtual vcf_subfield_base,
 									public vcf_subfield_ds_access <variant_sample_t, true>,
@@ -24,6 +27,8 @@ namespace libbio {
 		
 		template <typename, typename>
 		friend class formatted_variant;
+		
+		friend bool operator==(variant_format const &, variant_format const &);
 		
 	public:
 		enum { INVALID_INDEX = UINT16_MAX };

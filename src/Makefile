@@ -18,7 +18,8 @@ OBJECTS		=	assert.o \
 				vcf_reader_header_parser.o \
 				vcf_reader_parser.o \
 				vcf_reader.o \
-				vcf_subfield.o
+				vcf_subfield.o \
+				vcf_variant_format.o
 
 CFLAGS		+= -fPIC
 CXXFLAGS	+= -fPIC
