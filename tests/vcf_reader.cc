@@ -866,3 +866,60 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 		}
 	}
 }
+
+
+SCENARIO("Copying persistent variants works even if the format has changed", "[vcf_reader]")
+{
+	GIVEN("a VCF file")
+	{
+		lb::mmap_handle <char> handle;
+		handle.open("test-files/test-data-types.vcf");
+		lb::vcf_mmap_input input(handle);
+		lb::vcf_reader reader(input);
+		
+		// FIXME: test also with reserved keys added.
+		
+		WHEN("the file is parsed")
+		{
+			reader.fill_buffer();
+			reader.read_header();
+			reader.set_parsed_fields(lb::vcf_field::ALL);
+			
+			THEN("the variant records may be copied")
+			{
+				auto const &actual_info_fields(reader.info_fields());
+				auto const &actual_genotype_fields(reader.genotype_fields());
+				auto const expected_records(prepare_expected_records_for_test_data_types_vcf());
+				
+				bool should_continue(false);
+				std::size_t idx{};
+				lb::variant dst_variant;
+				do {
+					reader.fill_buffer();
+					should_continue = reader.parse(
+						[
+							&actual_info_fields,
+							&actual_genotype_fields,
+							&expected_records,
+							&idx,
+							&dst_variant
+						](lb::transient_variant const &var){
+							lb::variant persistent_variant(var);
+							dst_variant = persistent_variant;
+							
+							REQUIRE(idx < expected_records.size());
+							auto const &expected(expected_records[idx]);
+							
+							check_record_against_expected_in_test_data_types_vcf(var, expected, actual_info_fields, actual_genotype_fields);
+							check_record_against_expected_in_test_data_types_vcf(persistent_variant, expected, actual_info_fields, actual_genotype_fields);
+							check_record_against_expected_in_test_data_types_vcf(dst_variant, expected, actual_info_fields, actual_genotype_fields);
+							
+							++idx;
+							return true;
+						}
+					);
+				} while (should_continue);
+			}
+		}
+	}
+}

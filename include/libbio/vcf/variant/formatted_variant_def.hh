@@ -56,16 +56,16 @@ namespace libbio {
 		variant_tpl <t_string>(other),
 		t_format_access(other)
 	{
-		this->finish_copy(other, true);
+		this->finish_copy(other, true, true);
 	}
 	
 	template <typename t_string, typename t_format_access>
 	template <typename t_other_string, typename t_other_format_access>
 	formatted_variant <t_string, t_format_access>::formatted_variant(formatted_variant <t_other_string, t_other_format_access> const &other):
 		variant_tpl <t_string>(other),
-		t_format_access(*this->m_reader, other)
+		t_format_access(*this->m_reader, other) // Copy the format from a non-transient variant or get one from the reader in case of a transient variant.
 	{
-		this->finish_copy(other, true);
+		this->finish_copy(other, true, true);
 	}
 	
 	
@@ -75,9 +75,10 @@ namespace libbio {
 	{
 		if (this != &other)
 		{
+			auto const [should_init_info, should_init_samples] = this->prepare_for_copy(other);
 			variant_tpl <t_string>::operator=(other);
 			t_format_access::operator=(other);
-			this->finish_copy(other, false);
+			this->finish_copy(other, should_init_info, should_init_samples);
 		}
 		return *this;
 	}
@@ -89,9 +90,10 @@ namespace libbio {
 	{
 		if (this != &other)
 		{
+			auto const [should_init_info, should_init_samples] = this->prepare_for_copy(other);
 			variant_tpl <t_string>::operator=(other);
 			t_format_access::operator=(other);
-			this->finish_copy(other, false);
+			this->finish_copy(other, should_init_info, should_init_samples);
 		}
 		return *this;
 	}
@@ -101,9 +103,8 @@ namespace libbio {
 	template <typename t_string, typename t_format_access>
 	formatted_variant <t_string, t_format_access>::~formatted_variant()
 	{
-		if (this->m_info.size() || this->m_samples.size())
+		if (this->m_reader)
 		{
-			libbio_always_assert(this->m_reader);
 			deinitialize_info();
 			deinitialize_samples();
 		}
@@ -179,6 +180,7 @@ namespace libbio {
 	template <typename t_string, typename t_format_access>
 	void formatted_variant <t_string, t_format_access>::deinitialize_samples()
 	{
+		libbio_assert(this->m_reader);
 		auto const &fields_by_id(this->get_format().fields_by_identifier());
 		for (auto &sample : this->m_samples)
 		{
@@ -226,21 +228,55 @@ namespace libbio {
 	
 	template <typename t_string, typename t_format_access>
 	template <typename t_other_string, typename t_other_format_access>
-	void formatted_variant <t_string, t_format_access>::finish_copy(
-		formatted_variant <t_other_string, t_other_format_access> const &src,
-		bool const should_initialize
+	std::pair <bool, bool> formatted_variant <t_string, t_format_access>::prepare_for_copy(
+		formatted_variant <t_other_string, t_other_format_access> const &other
 	)
 	{
-		if (this->m_info.size() || this->m_samples.size())
+		if (this->m_reader && other.m_reader)
 		{
-			libbio_always_assert(this->m_reader);
+			auto const *old_format(get_format_ptr().get());
+			auto const *new_format(other.get_format_ptr().get());
+			libbio_assert_msg(old_format, "Variant format should not be nullptr if m_reader is set.");
+			libbio_assert_msg(new_format, "Variant format should not be nullptr if m_reader is set.");
+			
+			if (old_format == new_format || *old_format == *new_format)
+				return std::pair <bool, bool>(false, false);
+			
+			// Formats do not match. Get rid of the old samples.
+			deinitialize_samples();
+			return std::pair <bool, bool>(false, true);
+		}
+		else if (this->m_reader)
+		{
+			// other is empty.
+			libbio_assert(!other.m_reader);
+			deinitialize_info();
+			deinitialize_samples();
+			return std::pair <bool, bool>(true, true);
+		}
+		else
+		{
+			libbio_assert(other.m_reader);
+			return std::pair <bool, bool>(true, true);
+		}
+	}
 	
+	
+	template <typename t_string, typename t_format_access>
+	template <typename t_other_string, typename t_other_format_access>
+	void formatted_variant <t_string, t_format_access>::finish_copy(
+		formatted_variant <t_other_string, t_other_format_access> const &src,
+		bool const should_initialize_info,
+		bool const should_initialize_samples
+	)
+	{
+		if (this->m_reader)
+		{
 			// Zeroed when copying.
-			if (should_initialize)
-			{
+			if (should_initialize_info)
 				initialize_info();
+			if (should_initialize_samples)
 				initialize_samples();
-			}
 			
 			auto const &format(this->get_format());
 			auto const &fields_by_id(format.fields_by_identifier());

@@ -105,7 +105,14 @@ namespace libbio {
 		);
 		
 		template <typename t_other_string, typename t_other_format_access>
-		void finish_copy(formatted_variant <t_other_string, t_other_format_access> const &other, bool should_initialize);
+		std::pair <bool, bool> prepare_for_copy(formatted_variant <t_other_string, t_other_format_access> const &other);
+		
+		template <typename t_other_string, typename t_other_format_access>
+		void finish_copy(
+			formatted_variant <t_other_string, t_other_format_access> const &other,
+			bool const should_initialize_info,
+			bool const should_initialize_samples
+		);
 	};
 }
 
