@@ -265,7 +265,7 @@ namespace libbio {
 				%{ HANDLE_STRING_END_VAR(&var_t::set_id, subfield_idx++); };
 			id_rec		= (id_part (';' id_part)*) >{ subfield_idx = 0; };
 			
-			ref			= ([ACGTN]+)
+			ref			= ([ACGTURYKMSWBDHVN]+)
 				>(start_string)
 				%{ HANDLE_STRING_END_VAR(&var_t::set_ref); };
 			
