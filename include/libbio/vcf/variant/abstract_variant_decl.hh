@@ -34,7 +34,7 @@ namespace libbio::vcf {
 		friend class storable_info_field_base;
 		
 	public:
-		enum { UNKNOWN_QUALITY = -1 };
+		inline static constexpr double UNKNOWN_QUALITY{-1};
 		typedef std::vector <metadata_filter const *>		filter_ptr_vector;
 		
 	protected:
