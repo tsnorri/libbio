@@ -598,6 +598,60 @@ namespace {
 			}
 		}
 	}
+	
+	
+	class test_fixture
+	{
+	protected:
+		lb::mmap_handle <char> m_handle;
+		lb::vcf_mmap_input m_input;
+		lb::vcf_reader m_reader;
+		std::vector <std::string> m_expected_info_keys{map_keys(s_type_test_expected_info_fields)};
+		std::vector <std::string> m_expected_genotype_keys{map_keys(s_type_test_expected_genotype_fields)};
+	
+	public:
+		void open_vcf_file()
+		{
+			m_handle.open("test-files/test-data-types.vcf");
+			m_input = lb::vcf_mmap_input(m_handle);
+			m_reader = lb::vcf_reader(m_input);
+		}
+	
+		void read_vcf_header()
+		{
+			m_reader.fill_buffer();
+			m_reader.read_header();
+		}
+	
+		void add_reserved_info_keys()
+		{
+			lb::add_reserved_info_keys(m_reader.info_fields());
+			auto const reserved_info_keys(map_keys(m_reader.info_fields()));
+			add_to_sorted_vector(reserved_info_keys, m_expected_info_keys);
+		}
+	
+		void add_reserved_genotype_keys()
+		{
+			lb::add_reserved_genotype_keys(m_reader.genotype_fields());
+			auto const reserved_genotype_keys(map_keys(m_reader.genotype_fields()));
+			add_to_sorted_vector(reserved_genotype_keys, m_expected_genotype_keys);
+		}
+		
+		void add_reserved_keys()
+		{
+			add_reserved_info_keys();
+			add_reserved_genotype_keys();
+		}
+		
+		lb::vcf_reader &get_reader() { return m_reader; }
+		lb::vcf_reader const &get_reader() const { return m_reader; }
+		std::vector <std::string> const &get_expected_info_keys() const { return m_expected_info_keys; }
+		std::vector <std::string> const &get_expected_genotype_keys() const { return m_expected_genotype_keys; }
+		auto const &get_actual_info_fields() const { return m_reader.info_fields(); }
+		auto const &get_actual_genotype_fields() const { return m_reader.genotype_fields(); }
+		std::vector <std::string> get_actual_info_keys() const { return map_keys(get_actual_info_fields()); }
+		std::vector <std::string> get_actual_genotype_keys() const { return map_keys(get_actual_genotype_fields()); }
+	};
 }
 
 
@@ -687,23 +741,21 @@ SCENARIO("VCF reader instantiation", "[vcf_reader]")
 
 SCENARIO("The VCF reader can parse VCF header", "[vcf_reader]")
 {
+	test_fixture fixture;
+	
 	GIVEN("a VCF file")
 	{
-		lb::mmap_handle <char> handle;
-		handle.open("test-files/test-data-types.vcf");
-		lb::vcf_mmap_input input(handle);
-		lb::vcf_reader reader(input);
+		fixture.open_vcf_file();
 		// Don’t add the reserved fields.
 		
 		WHEN("the headers of the file are parsed")
 		{
-			reader.fill_buffer();
-			reader.read_header();
+			fixture.read_vcf_header();
 			
 			THEN("the corresponding metadata descriptions get instantiated")
 			{
-				auto const &info_fields(reader.info_fields());
-				auto const &genotype_fields(reader.genotype_fields());
+				auto const &info_fields(fixture.get_actual_info_fields());
+				auto const &genotype_fields(fixture.get_actual_genotype_fields());
 				
 				auto expected_genotype_fields(s_type_test_expected_genotype_fields);
 				expected_genotype_fields.emplace("GT", metadata_description(1, lb::vcf_metadata_value_type::STRING));
@@ -718,36 +770,26 @@ SCENARIO("The VCF reader can parse VCF header", "[vcf_reader]")
 
 SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 {
+	test_fixture fixture;
+	
 	GIVEN("a VCF file")
 	{
-		lb::mmap_handle <char> handle;
-		handle.open("test-files/test-data-types.vcf");
-		lb::vcf_mmap_input input(handle);
-		lb::vcf_reader reader(input);
+		fixture.open_vcf_file();
 		
 		// Add to get GT.
-		lb::add_reserved_info_keys(reader.info_fields());
-		lb::add_reserved_genotype_keys(reader.genotype_fields());
-		auto const reserved_info_keys(map_keys(reader.info_fields()));
-		auto const reserved_genotype_keys(map_keys(reader.genotype_fields()));
-
+		fixture.add_reserved_keys();
+		
 		WHEN("the file is parsed")
 		{
-			reader.fill_buffer();
-			reader.read_header();
-			reader.set_parsed_fields(lb::vcf_field::ALL);
+			fixture.read_vcf_header();
+			fixture.get_reader().set_parsed_fields(lb::vcf_field::ALL);
 			
 			THEN("each record matches the expected")
 			{
-				auto expected_info_keys(map_keys(s_type_test_expected_info_fields));
-				auto expected_genotype_keys(map_keys(s_type_test_expected_genotype_fields));
-				add_to_sorted_vector(reserved_info_keys, expected_info_keys);
-				add_to_sorted_vector(reserved_genotype_keys, expected_genotype_keys);
-				
-				auto const &actual_info_fields(reader.info_fields());
-				auto const &actual_genotype_fields(reader.genotype_fields());
-				auto const actual_info_keys(map_keys(actual_info_fields));
-				auto const actual_genotype_keys(map_keys(actual_genotype_fields));
+				auto const expected_info_keys(fixture.get_expected_info_keys());
+				auto const expected_genotype_keys(fixture.get_expected_genotype_keys());
+				auto const actual_info_keys(fixture.get_actual_info_keys());
+				auto const actual_genotype_keys(fixture.get_actual_genotype_keys());
 				
 				REQUIRE(actual_info_keys == expected_info_keys);
 				REQUIRE(actual_genotype_keys == expected_genotype_keys);
@@ -757,12 +799,11 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 				bool should_continue(false);
 				std::size_t idx{};
 				do {
-					reader.fill_buffer();
-					should_continue = reader.parse(
+					fixture.get_reader().fill_buffer();
+					should_continue = fixture.get_reader().parse(
 						[
 							&expected_records,
-							&actual_info_fields,
-							&actual_genotype_fields,
+							&fixture,
 							&idx
 						]
 						(lb::transient_variant const &var){
@@ -770,7 +811,12 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 							REQUIRE(idx < expected_records.size());
 							auto const &expected(expected_records[idx]);
 							
-							check_record_against_expected_in_test_data_types_vcf(var, expected, actual_info_fields, actual_genotype_fields);
+							check_record_against_expected_in_test_data_types_vcf(
+								var,
+								expected,
+								fixture.get_actual_info_fields(),
+								fixture.get_actual_genotype_fields()
+							);
 							
 							++idx;
 							return true;
@@ -787,27 +833,27 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 
 SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]")
 {
+	auto should_add_reserved_keys = GENERATE(false, true);
+	
+	test_fixture fixture;
+	
 	GIVEN("a VCF file")
 	{
-		lb::mmap_handle <char> handle;
-		handle.open("test-files/test-data-types.vcf");
-		lb::vcf_mmap_input input(handle);
-		lb::vcf_reader reader(input);
-		
-		// FIXME: test also with reserved keys added.
+		fixture.open_vcf_file();
+		if (should_add_reserved_keys)
+			fixture.add_reserved_keys();
 		
 		WHEN("the file is parsed")
 		{
-			reader.fill_buffer();
-			reader.read_header();
-			reader.set_parsed_fields(lb::vcf_field::ALL);
+			fixture.read_vcf_header();
+			fixture.get_reader().set_parsed_fields(lb::vcf_field::ALL);
 			
 			THEN("the variant records may be copied")
 			{
 				bool should_continue(false);
 				do {
-					reader.fill_buffer();
-					should_continue = reader.parse(
+					fixture.get_reader().fill_buffer();
+					should_continue = fixture.get_reader().parse(
 						[](lb::transient_variant const &var){
 							lb::variant persistent_variant(var);
 							return true;
@@ -822,29 +868,29 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 
 SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_reader]")
 {
+	auto should_add_reserved_keys = GENERATE(false, true);
+	
+	test_fixture fixture;
+	
 	GIVEN("a VCF file")
 	{
-		lb::mmap_handle <char> handle;
-		handle.open("test-files/test-data-types.vcf");
-		lb::vcf_mmap_input input(handle);
-		lb::vcf_reader reader(input);
-		
-		// FIXME: test also with reserved keys added.
+		fixture.open_vcf_file();
+		if (should_add_reserved_keys)
+			fixture.add_reserved_keys();
 		
 		WHEN("the variant records have been copied")
 		{
-			reader.fill_buffer();
-			reader.read_header();
-			reader.set_parsed_fields(lb::vcf_field::ALL);
+			fixture.read_vcf_header();
+			fixture.get_reader().set_parsed_fields(lb::vcf_field::ALL);
 			
-			auto const &actual_info_fields(reader.info_fields());
-			auto const &actual_genotype_fields(reader.genotype_fields());
+			auto const &actual_info_fields(fixture.get_actual_info_fields());
+			auto const &actual_genotype_fields(fixture.get_actual_genotype_fields());
 			
 			std::vector <lb::variant> persistent_variants;
 			bool should_continue(false);
 			do {
-				reader.fill_buffer();
-				should_continue = reader.parse(
+				fixture.get_reader().fill_buffer();
+				should_continue = fixture.get_reader().parse(
 					[&persistent_variants](lb::transient_variant const &var){
 						persistent_variants.emplace_back(var);
 						return true;
@@ -860,7 +906,12 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 					REQUIRE(idx < expected_records.size());
 					auto const &expected(expected_records[idx]);
 					
-					check_record_against_expected_in_test_data_types_vcf(var, expected, actual_info_fields, actual_genotype_fields);
+					check_record_against_expected_in_test_data_types_vcf(
+						var,
+						expected,
+						fixture.get_actual_info_fields(),
+						fixture.get_actual_genotype_fields()
+					);
 				}
 			}
 		}
@@ -870,33 +921,33 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 
 SCENARIO("Copying persistent variants works even if the format has changed", "[vcf_reader]")
 {
+	auto should_add_reserved_keys = GENERATE(false, true);
+	
+	test_fixture fixture;
+	
 	GIVEN("a VCF file")
 	{
-		lb::mmap_handle <char> handle;
-		handle.open("test-files/test-data-types.vcf");
-		lb::vcf_mmap_input input(handle);
-		lb::vcf_reader reader(input);
-		
-		// FIXME: test also with reserved keys added.
+		fixture.open_vcf_file();
+		if (should_add_reserved_keys)
+			fixture.add_reserved_keys();
 		
 		WHEN("the file is parsed")
 		{
-			reader.fill_buffer();
-			reader.read_header();
-			reader.set_parsed_fields(lb::vcf_field::ALL);
+			fixture.read_vcf_header();
+			fixture.get_reader().set_parsed_fields(lb::vcf_field::ALL);
 			
 			THEN("the variant records may be copied")
 			{
-				auto const &actual_info_fields(reader.info_fields());
-				auto const &actual_genotype_fields(reader.genotype_fields());
+				auto const &actual_info_fields(fixture.get_actual_info_fields());
+				auto const &actual_genotype_fields(fixture.get_actual_genotype_fields());
 				auto const expected_records(prepare_expected_records_for_test_data_types_vcf());
 				
 				bool should_continue(false);
 				std::size_t idx{};
 				lb::variant dst_variant;
 				do {
-					reader.fill_buffer();
-					should_continue = reader.parse(
+					fixture.get_reader().fill_buffer();
+					should_continue = fixture.get_reader().parse(
 						[
 							&actual_info_fields,
 							&actual_genotype_fields,
