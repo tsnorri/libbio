@@ -11,9 +11,9 @@
 namespace ios = boost::iostreams;
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
-	void vcf_stream_input_base::reset_to_first_variant_offset()
+	void stream_input_base::reset_to_first_variant_offset()
 	{
 		stream_reset();
 		m_len = 0;
@@ -21,7 +21,7 @@ namespace libbio {
 	}
 	
 	
-	bool vcf_stream_input_base::getline(std::string_view &dst)
+	bool stream_input_base::getline(std::string_view &dst)
 	{
 		bool const st(stream_getline());
 		if (!st)
@@ -32,14 +32,14 @@ namespace libbio {
 	}
 	
 	
-	void vcf_stream_input_base::store_first_variant_offset(std::size_t const lineno)
+	void stream_input_base::store_first_variant_offset(std::size_t const lineno)
 	{
-		vcf_input::store_first_variant_offset(lineno);
+		input::store_first_variant_offset(lineno);
 		m_first_variant_offset = stream_tellg();
 	}
 	
 	
-	void vcf_stream_input_base::fill_buffer(vcf_reader &reader)
+	void stream_input_base::fill_buffer(reader &vcf_reader)
 	{
 		// Copy the remainder to the beginning.
 		if (m_pos + 1 < m_len)
@@ -70,9 +70,9 @@ namespace libbio {
 			{
 				m_pos = m_len;
 				auto const end(data_start + m_len);
-				reader.set_buffer_start(data_start);
-				reader.set_buffer_end(end);
-				reader.set_eof(end);
+				vcf_reader.set_buffer_start(data_start);
+				vcf_reader.set_buffer_end(end);
+				vcf_reader.set_eof(end);
 				return;
 			}
 		
@@ -82,8 +82,8 @@ namespace libbio {
 			if (std::string_view::npos != m_pos)
 			{
 				m_pos += (data - data_start);
-				reader.set_buffer_start(data_start);
-				reader.set_buffer_end(data_start + m_pos + 1);
+				vcf_reader.set_buffer_start(data_start);
+				vcf_reader.set_buffer_end(data_start + m_pos + 1);
 				return;
 			}
 			
@@ -92,14 +92,14 @@ namespace libbio {
 	}
 	
 	
-	void vcf_mmap_input::reset_range()
+	void mmap_input::reset_range()
 	{
 		m_range_start_offset = 0;
 		m_range_length = m_handle->size();
 	}
 	
 	
-	bool vcf_mmap_input::getline(std::string_view &dst)
+	bool mmap_input::getline(std::string_view &dst)
 	{
 		auto const size(m_handle->size());
 		libbio_assert(m_pos <= size);
@@ -116,9 +116,9 @@ namespace libbio {
 	}
 	
 	
-	void vcf_mmap_input::store_first_variant_offset(std::size_t const lineno)
+	void mmap_input::store_first_variant_offset(std::size_t const lineno)
 	{
-		vcf_input::store_first_variant_offset(lineno);
+		input::store_first_variant_offset(lineno);
 
 		m_first_variant_offset = m_pos;
 		m_range_length = m_handle->size() - m_pos;
@@ -127,15 +127,15 @@ namespace libbio {
 	}
 	
 	
-	void vcf_mmap_input::fill_buffer(vcf_reader &reader)
+	void mmap_input::fill_buffer(reader &vcf_reader)
 	{
 		auto const bytes(m_handle->data());
 		auto const buffer_start(bytes + m_range_start_offset);
 		auto const buffer_end(bytes + m_range_start_offset + m_range_length);
 		
-		reader.set_lineno(m_range_start_lineno);
-		reader.set_buffer_start(buffer_start);
-		reader.set_buffer_end(buffer_end);
-		reader.set_eof(buffer_end);
+		vcf_reader.set_lineno(m_range_start_lineno);
+		vcf_reader.set_buffer_start(buffer_start);
+		vcf_reader.set_buffer_end(buffer_end);
+		vcf_reader.set_eof(buffer_end);
 	}
 }

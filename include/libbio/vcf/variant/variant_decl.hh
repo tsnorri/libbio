@@ -9,7 +9,7 @@
 #include <libbio/vcf/variant/formatted_variant_decl.hh>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	class transient_variant final : public transient_variant_base
 	{

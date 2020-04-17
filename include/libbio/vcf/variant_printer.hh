@@ -13,7 +13,7 @@
 #include <range/v3/view/remove_if.hpp>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	template <typename t_variant>
 	class variant_printer_base
@@ -158,7 +158,7 @@ namespace libbio {
 		auto const &fields(var.get_format().fields_by_identifier());
 		ranges::copy(
 			fields	|	ranges::view::remove_if([](auto const &kv) -> bool {
-							return (vcf_metadata_value_type::NOT_PROCESSED == kv.second->value_type());
+							return (metadata_value_type::NOT_PROCESSED == kv.second->value_type());
 						})
 					|	ranges::view::transform([](auto const &kv) -> std::string const & {
 							auto const *meta(kv.second->get_metadata());

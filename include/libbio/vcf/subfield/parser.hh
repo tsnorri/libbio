@@ -9,53 +9,53 @@
 #include <libbio/vcf/subfield/access.hh>
 
 
-namespace libbio {
+namespace libbio::vcf {
 
 	// VCF value parser. The main parser handles vectors, so this class only needs to handle single values.
 	// Since the value type is specified in the headers, making the parser stateful enough to parse the values
 	// consistently would be more difficult than doing the parsing here.
 	// Non-specialization intentionally left blank.
-	template <vcf_metadata_value_type t_metadata_value_type>
-	struct vcf_subfield_parser {};
+	template <metadata_value_type t_metadata_value_type>
+	struct subfield_parser {};
 	
-	struct vcf_subfield_parser_base { static constexpr bool type_needs_parsing() { return true; } };
+	struct subfield_parser_base { static constexpr bool type_needs_parsing() { return true; } };
 	
 	// Specializations for the different value types.
-	template <> struct vcf_subfield_parser <vcf_metadata_value_type::INTEGER> : public vcf_subfield_parser_base
+	template <> struct subfield_parser <metadata_value_type::INTEGER> : public subfield_parser_base
 	{
-		typedef vcf_field_type_mapping_t <vcf_metadata_value_type::INTEGER, true>	value_type;
+		typedef field_type_mapping_t <metadata_value_type::INTEGER, true>	value_type;
 		static bool parse(std::string_view const &sv, value_type &dst);
 	};
 	
-	template <> struct vcf_subfield_parser <vcf_metadata_value_type::FLOAT> : public vcf_subfield_parser_base
+	template <> struct subfield_parser <metadata_value_type::FLOAT> : public subfield_parser_base
 	{
-		typedef vcf_field_type_mapping_t <vcf_metadata_value_type::FLOAT, true>	value_type;
+		typedef field_type_mapping_t <metadata_value_type::FLOAT, true>	value_type;
 		static bool parse(std::string_view const &sv, value_type &dst);
 	};
 	
-	template <> struct vcf_subfield_parser <vcf_metadata_value_type::STRING> : public vcf_subfield_parser_base
+	template <> struct subfield_parser <metadata_value_type::STRING> : public subfield_parser_base
 	{
 		static constexpr bool type_needs_parsing() { return false; }
 	};
 	
-	template <> struct vcf_subfield_parser <vcf_metadata_value_type::CHARACTER> : public vcf_subfield_parser_base
+	template <> struct subfield_parser <metadata_value_type::CHARACTER> : public subfield_parser_base
 	{
 		static constexpr bool type_needs_parsing() { return false; }
 	};
 	
 	
 	// Helper for implementing parse_and_assign(). Vectors are handled here.
-	template <std::int32_t t_number, vcf_metadata_value_type t_metadata_value_type>
-	class vcf_generic_field_parser
+	template <std::int32_t t_number, metadata_value_type t_metadata_value_type>
+	class generic_field_parser
 	{
 	protected:
-		typedef vcf_subfield_access <t_number, t_metadata_value_type, true>	field_access;
+		typedef subfield_access <t_number, t_metadata_value_type, true>	field_access;
 		
 	protected:
 		bool parse_and_assign(std::string_view const &sv, std::byte *mem) const
 		{
 			// mem needs to include the offset.
-			if constexpr (t_metadata_value_type == vcf_metadata_value_type::FLAG)
+			if constexpr (t_metadata_value_type == metadata_value_type::FLAG)
 				libbio_fail("parse_and_assign should not be called for FLAG type fields");
 			else
 			{
@@ -65,7 +65,7 @@ namespace libbio {
 				if ("." == sv)
 					return false;
 				
-				typedef vcf_subfield_parser <t_metadata_value_type> parser_type;
+				typedef subfield_parser <t_metadata_value_type> parser_type;
 				if constexpr (parser_type::type_needs_parsing())
 				{
 					std::size_t start_pos(0);
@@ -95,8 +95,8 @@ namespace libbio {
 	};
 	
 	// Non-specialization for values with zero elements.
-	template <vcf_metadata_value_type t_metadata_value_type>
-	struct vcf_generic_field_parser <0, t_metadata_value_type>
+	template <metadata_value_type t_metadata_value_type>
+	struct generic_field_parser <0, t_metadata_value_type>
 	{
 		bool parse_and_assign(std::string_view const &sv, std::byte *mem) const
 		{
@@ -106,21 +106,21 @@ namespace libbio {
 	};
 	
 	// Specialization for scalar values.
-	template <vcf_metadata_value_type t_metadata_value_type>
-	class vcf_generic_field_parser <1, t_metadata_value_type>
+	template <metadata_value_type t_metadata_value_type>
+	class generic_field_parser <1, t_metadata_value_type>
 	{
 	protected:
-		typedef vcf_subfield_access <1, t_metadata_value_type, true>	field_access; // May be transient b.c. used only for parsing.
+		typedef subfield_access <1, t_metadata_value_type, true>	field_access; // May be transient b.c. used only for parsing.
 		
 	protected:
 		bool parse_and_assign(std::string_view const &sv, std::byte *mem) const
 		{
 			// mem needs to include the offset.
-			if constexpr (t_metadata_value_type == vcf_metadata_value_type::FLAG)
+			if constexpr (t_metadata_value_type == metadata_value_type::FLAG)
 				libbio_fail("parse_and_assign should not be called for FLAG type fields");
 			else
 			{
-				typedef vcf_subfield_parser <t_metadata_value_type> parser_type;
+				typedef subfield_parser <t_metadata_value_type> parser_type;
 				if ("." == sv)
 					return false;
 				

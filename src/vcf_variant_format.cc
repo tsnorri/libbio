@@ -10,7 +10,7 @@
 namespace lb	= libbio;
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	bool operator==(variant_format const &lhs, variant_format const &rhs)
 	{

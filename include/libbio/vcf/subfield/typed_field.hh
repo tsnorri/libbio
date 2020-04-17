@@ -12,38 +12,38 @@
 #include <libbio/vcf/subfield/type_mapping.hh>
 
 
-namespace libbio { namespace detail {
+namespace libbio::vcf::detail {
 	
-	template <vcf_metadata_value_type t_value_type, bool t_is_vector, typename t_base, bool t_is_transient>
-	struct vcf_typed_field_value_access
+	template <metadata_value_type t_value_type, bool t_is_vector, typename t_base, bool t_is_transient>
+	struct typed_field_value_access
 	{
-		static_assert(std::is_same_v <t_base, vcf_info_field_base> || std::is_same_v <t_base, vcf_genotype_field_base>);
+		static_assert(std::is_same_v <t_base, info_field_base> || std::is_same_v <t_base, genotype_field_base>);
 		
-		typedef vcf_value_type_mapping_t <t_value_type, t_is_vector, t_is_transient>	value_type;
-		typedef typename t_base::template container_tpl <t_is_transient>				container_type;
+		typedef value_type_mapping_t <t_value_type, t_is_vector, t_is_transient>	value_type;
+		typedef typename t_base::template container_tpl <t_is_transient>			container_type;
 		
 		virtual value_type &operator()(container_type &) const = 0;
 		virtual value_type const &operator()(container_type const &) const = 0;
 	};
-}}
+}
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// Virtual function declaration for operator().
-	template <vcf_metadata_value_type t_value_type, bool t_is_vector, typename t_base>
-	class vcf_typed_field :	public virtual t_base,
-							public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_base, false>,
-							public detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_base, true>
+	template <metadata_value_type t_value_type, bool t_is_vector, typename t_base>
+	class typed_field :	public virtual t_base,
+						public detail::typed_field_value_access <t_value_type, t_is_vector, t_base, false>,
+						public detail::typed_field_value_access <t_value_type, t_is_vector, t_base, true>
 	{
-		static_assert(std::is_same_v <t_base, vcf_info_field_base> || std::is_same_v <t_base, vcf_genotype_field_base>);
+		static_assert(std::is_same_v <t_base, info_field_base> || std::is_same_v <t_base, genotype_field_base>);
 		
 	public:
 		typedef t_base virtual_base;
 		
 	protected:
 		template <bool B>
-		using value_access_t = detail::vcf_typed_field_value_access <t_value_type, t_is_vector, t_base, B>;
+		using value_access_t = detail::typed_field_value_access <t_value_type, t_is_vector, t_base, B>;
 		
 	public:
 		using value_access_t <false>::operator();
@@ -55,8 +55,8 @@ namespace libbio {
 		
 		constexpr static bool is_typed_field() { return true; }
 		
-		constexpr bool value_type_is_vector() const							{ return t_is_vector; }
-		constexpr vcf_metadata_value_type value_type() const override final	{ return t_value_type; }
+		constexpr bool value_type_is_vector() const						{ return t_is_vector; }
+		constexpr metadata_value_type value_type() const override final	{ return t_value_type; }
 	};
 }
 

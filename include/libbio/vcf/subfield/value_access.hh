@@ -17,21 +17,21 @@
 #include <vector>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// Handle VCF values in the reserved memory.
 	template <typename t_type>
-	struct vcf_value_access_base
+	struct value_access_base
 	{
 		// Not currently needed b.c. all memory for INFO fields and samples is preallocated.
 		//static_assert(std::is_trivially_move_constructible_v <t_type>);
 		//static_assert(std::is_trivially_move_assignable_v <t_type>);
 		
 		// Access only by using static member functions.
-		vcf_value_access_base() = delete;
+		value_access_base() = delete;
 		
 		// Construct t_type with placement new.
-		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, vcf_metadata_base const &)
+		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, metadata_base const &)
 		{
 			libbio_always_assert_eq(0, reinterpret_cast <std::uintptr_t>(mem) % alignof(t_type));
 			new (mem) t_type{};
@@ -63,23 +63,23 @@ namespace libbio {
 	
 	// Handle primitive values in the reserved memory.
 	template <typename t_type>
-	struct vcf_primitive_value_access : public vcf_value_access_base <t_type> {};
+	struct primitive_value_access : public value_access_base <t_type> {};
 	
 	// Special output rules for integers.
 	template <>
-	struct vcf_primitive_value_access <std::int32_t> : public vcf_value_access_base <std::int32_t>
+	struct primitive_value_access <std::int32_t> : public value_access_base <std::int32_t>
 	{
 		static void output_vcf_value(std::ostream &stream, std::byte *mem)
 		{
 			auto const value(access_ds(mem));
-			::libbio::output_vcf_value(stream, value);
+			::libbio::vcf::output_vcf_value(stream, value);
 		}
 	};
 	
 	
 	// Handle object values in the reserved memory.
 	template <typename t_type>
-	struct vcf_object_value_access : public vcf_value_access_base <t_type>
+	struct object_value_access : public value_access_base <t_type>
 	{
 		// Call t_type’s destructor.
 		static void destruct_ds(std::byte *mem)
@@ -91,18 +91,18 @@ namespace libbio {
 	
 	// Handle vector values in the reserved memory.
 	template <typename t_element_type, std::int32_t t_number>
-	struct vcf_vector_value_access : public vcf_object_value_access <std::vector <t_element_type>>
+	struct vector_value_access : public object_value_access <std::vector <t_element_type>>
 	{
-		static_assert(vcf_value_count_corresponds_to_vector(t_number));
+		static_assert(value_count_corresponds_to_vector(t_number));
 		typedef std::vector <t_element_type>	vector_type;
 		
-		using vcf_object_value_access <vector_type>::access_ds;
+		using object_value_access <vector_type>::access_ds;
 		
 		template <typename t_metadata>
 		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, t_metadata const &metadata)
 		{
 			libbio_always_assert_eq(0, reinterpret_cast <std::uintptr_t>(mem) % alignof(vector_type));
-			vcf_vector_value_helper <t_number>::template construct_ds <vector_type>(mem, alt_count, metadata);
+			vector_value_helper <t_number>::template construct_ds <vector_type>(mem, alt_count, metadata);
 		}
 		
 		static void reset_ds(std::byte *mem)

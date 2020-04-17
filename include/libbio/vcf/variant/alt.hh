@@ -10,7 +10,7 @@
 #include <libbio/types.hh>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	struct variant_alt_base
 	{

@@ -10,24 +10,24 @@
 #include <libbio/vcf/subfield/genotype_field_base_decl.hh>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
-	class vcf_reader;
+	class reader;
 	
 	
 	class variant_format
 	{
-		friend class vcf_reader;
+		friend class reader;
 		friend bool operator==(variant_format const &, variant_format const &);
 		
 	protected:
-		vcf_genotype_field_map			m_fields_by_identifier;
+		genotype_field_map			m_fields_by_identifier;
 	
 	public:
 		virtual ~variant_format() {}
-		virtual void reader_will_update_format(vcf_reader &reader) {}
-		virtual void reader_did_update_format(vcf_reader &reader) {}
-		vcf_genotype_field_map const &fields_by_identifier() const { return m_fields_by_identifier; }
+		virtual void reader_will_update_format(reader &vcf_reader) {}
+		virtual void reader_did_update_format(reader &vcf_reader) {}
+		genotype_field_map const &fields_by_identifier() const { return m_fields_by_identifier; }
 		
 		// Return a new empty instance of this class.
 		virtual variant_format *new_instance() const { return new variant_format(); }

@@ -9,7 +9,7 @@
 #include <vector>
 
 
-namespace libbio { namespace detail {
+namespace libbio::vcf::detail {
 	
 	template <typename t_src, typename t_dst>
 	void copy_vector(std::vector <t_src> const &src, std::vector <t_dst> &dst);
@@ -53,6 +53,6 @@ namespace libbio { namespace detail {
 		for (std::size_t i(0); i < size; ++i)
 			copy_value(src[i], dst[i]);
 	}
-}}
+}
 
 #endif

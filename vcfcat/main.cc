@@ -15,6 +15,7 @@
 
 
 namespace lb	= libbio;
+namespace vcf	= libbio::vcf;
 
 typedef std::span <char const *>			sample_name_span;
 typedef std::map <std::size_t, std::size_t>	alt_number_map;
@@ -24,19 +25,19 @@ namespace {
 	
 	// From libvcf2multialign.
 	// FIXME: come up with a way not to duplicate the code needed for storing field pointers.
-	struct variant_format final : public libbio::variant_format
+	struct variant_format final : public vcf::variant_format
 	{
-		libbio::vcf_genotype_field_gt	*gt{};
+		vcf::genotype_field_gt	*gt{};
 		
 		// Return a new empty instance of this class.
 		virtual variant_format *new_instance() const override { return new variant_format(); }
 		
-		virtual void reader_did_update_format(libbio::vcf_reader &reader) override;
+		virtual void reader_did_update_format(vcf::reader &reader) override;
 	};
 	
 	
 	template <typename t_variant>
-	class sample_filtering_variant_printer final : public lb::variant_printer_base <t_variant>
+	class sample_filtering_variant_printer final : public vcf::variant_printer_base <t_variant>
 	{
 	public:
 		typedef t_variant	variant_type;
@@ -61,20 +62,20 @@ namespace {
 	};
 	
 	
-	void variant_format::reader_did_update_format(lb::vcf_reader &reader)
+	void variant_format::reader_did_update_format(vcf::reader &reader)
 	{	
 		this->assign_field_ptr("GT", gt);
 	}
 	
 	
-	inline variant_format const &get_variant_format(libbio::variant const &var)
+	inline variant_format const &get_variant_format(vcf::variant const &var)
 	{
 		libbio_assert(var.reader()->has_assigned_variant_format());
 		return static_cast <variant_format const &>(var.get_format());
 	}
 	
 	
-	inline variant_format const &get_variant_format(libbio::transient_variant const &var)
+	inline variant_format const &get_variant_format(vcf::transient_variant const &var)
 	{
 		libbio_assert(var.reader()->has_assigned_variant_format());
 		return static_cast <variant_format const &>(var.get_format());
@@ -139,7 +140,7 @@ namespace {
 	}
 	
 	
-	void check_sample_names(lb::vcf_reader const &reader, sample_name_span const &sample_names)
+	void check_sample_names(vcf::reader const &reader, sample_name_span const &sample_names)
 	{
 		// Check whether the given sample names actually exist.
 		auto const &parsed_sample_names(reader.sample_names());
@@ -158,7 +159,7 @@ namespace {
 	}
 	
 	
-	bool modify_variant(lb::transient_variant &var, alt_number_map &alt_mapping, sample_name_span const &sample_names, bool const exclude_samples)
+	bool modify_variant(vcf::transient_variant &var, alt_number_map &alt_mapping, sample_name_span const &sample_names, bool const exclude_samples)
 	{
 		alt_mapping.clear();
 		
@@ -175,7 +176,7 @@ namespace {
 				auto &sample(samples[idx]);
 				for (auto const &gt : (*gt_field)(sample))
 				{
-					if (lb::sample_genotype::NULL_ALLELE == gt.alt)
+					if (vcf::sample_genotype::NULL_ALLELE == gt.alt)
 						continue;
 					alt_mapping.emplace(gt.alt, 0);
 				}
@@ -231,7 +232,7 @@ namespace {
 			
 			for (auto &gt : (*gt_field)(sample))
 			{
-				if (gt.alt && lb::sample_genotype::NULL_ALLELE != gt.alt)
+				if (gt.alt && vcf::sample_genotype::NULL_ALLELE != gt.alt)
 					gt.alt = alt_mapping[gt.alt];
 			}
 		}
@@ -240,12 +241,12 @@ namespace {
 	}
 	
 	
-	void output_header(lb::vcf_reader const &reader, std::ostream &stream, sample_name_span const &sample_names, bool const exclude_samples)
+	void output_header(vcf::reader const &reader, std::ostream &stream, sample_name_span const &sample_names, bool const exclude_samples)
 	{
 		auto const &metadata(reader.metadata());
 		
 		stream << "##fileformat=VCFv4.3\n";
-		metadata.visit_all_metadata([&stream](lb::vcf_metadata_base const &meta){
+		metadata.visit_all_metadata([&stream](vcf::metadata_base const &meta){
 			meta.output_vcf(stream);
 		});
 		
@@ -279,7 +280,7 @@ namespace {
 	}
 	
 	
-	void output_vcf(lb::vcf_reader &reader, std::ostream &stream, sample_name_span const &sample_names, bool const exclude_samples)
+	void output_vcf(vcf::reader &reader, std::ostream &stream, sample_name_span const &sample_names, bool const exclude_samples)
 	{
 		if (!sample_names.empty())
 			check_sample_names(reader, sample_names);
@@ -291,7 +292,7 @@ namespace {
 		alt_number_map alt_mapping;
 		do {
 			reader.fill_buffer();
-			should_continue = reader.parse_nc([&stream, &sample_names, exclude_samples, &alt_mapping, &lineno](lb::transient_variant &var){
+			should_continue = reader.parse_nc([&stream, &sample_names, exclude_samples, &alt_mapping, &lineno](vcf::transient_variant &var){
 
 				++lineno;
 				
@@ -299,13 +300,13 @@ namespace {
 				{
 					if (modify_variant(var, alt_mapping, sample_names, exclude_samples))
 					{
-						sample_filtering_variant_printer <lb::transient_variant> printer(sample_names, alt_mapping, exclude_samples);
-						lb::output_vcf(printer, stream, var);
+						sample_filtering_variant_printer <vcf::transient_variant> printer(sample_names, alt_mapping, exclude_samples);
+						vcf::output_vcf(printer, stream, var);
 					}
 				}
 				else
 				{
-					lb::output_vcf(stream, var);
+					vcf::output_vcf(stream, var);
 				}
 
 				if (0 == lineno % 100000)
@@ -338,19 +339,19 @@ int main(int argc, char **argv)
 	sample_name_span const sample_names(const_cast <char const **>(args_info.sample_arg), args_info.sample_given);
 	
 	// Create a VCF input.
-	lb::vcf_mmap_input vcf_input(input_handle);
+	vcf::mmap_input vcf_input(input_handle);
 	
 	// Create the parser and add the fields listed in the specification to the metadata.
-	lb::vcf_reader reader;
-	lb::add_reserved_info_keys(reader.info_fields());
-	lb::add_reserved_genotype_keys(reader.genotype_fields());
+	vcf::reader reader;
+	vcf::add_reserved_info_keys(reader.info_fields());
+	vcf::add_reserved_genotype_keys(reader.genotype_fields());
 	
 	// Parse.
 	reader.set_variant_format(new variant_format());
 	reader.set_input(vcf_input);
 	reader.fill_buffer();
 	reader.read_header();
-	reader.set_parsed_fields(lb::vcf_field::ALL);
+	reader.set_parsed_fields(vcf::field::ALL);
 	output_vcf(reader, args_info.output_given ? output_stream : std::cout, sample_names, (args_info.exclude_samples_given ?: sample_names.empty()));
 	
 	return EXIT_SUCCESS;

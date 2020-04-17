@@ -12,9 +12,9 @@
 #include <range/v3/view/zip.hpp>
 
 
-namespace libbio { namespace detail {
+namespace libbio::vcf::detail {
 
-	vcf_reader_default_delegate  g_vcf_reader_default_delegate;
+	reader_default_delegate  g_vcf_reader_default_delegate;
 
 	template <typename t_base>
 	struct placeholder_field_helper
@@ -22,22 +22,22 @@ namespace libbio { namespace detail {
 	};
 	
 	template <>
-	struct placeholder_field_helper <vcf_info_field_base>
+	struct placeholder_field_helper <info_field_base>
 	{
-		static vcf_info_field_base &get_placeholder() { return vcf_reader_support::get_instance().get_info_field_placeholder(); }
+		static info_field_base &get_placeholder() { return reader_support::get_instance().get_info_field_placeholder(); }
 	};
 	
 	template <>
-	struct placeholder_field_helper <vcf_genotype_field_base>
+	struct placeholder_field_helper <genotype_field_base>
 	{
-		static vcf_genotype_field_base &get_placeholder() { return vcf_reader_support::get_instance().get_genotype_field_placeholder(); }
+		static genotype_field_base &get_placeholder() { return reader_support::get_instance().get_genotype_field_placeholder(); }
 	};
-}}
+}
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
-	void vcf_reader::report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state, bool const in_header)
+	void reader::report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state, bool const in_header)
 	{
 		if (in_header)
 			std::cerr << "Unexpected character in VCF header ";
@@ -59,7 +59,7 @@ namespace libbio {
 	}
 	
 	
-	void vcf_reader::skip_to_next_nl()
+	void reader::skip_to_next_nl()
 	{
 		std::string_view sv(m_fsm.p, m_fsm.pe - m_fsm.p);
 		auto const pos(sv.find('\n'));
@@ -69,7 +69,7 @@ namespace libbio {
 	
 	
 	// Seek to the beginning of the records.
-	void vcf_reader::reset()
+	void reader::reset()
 	{
 		libbio_assert(m_input);
 		m_input->reset_to_first_variant_offset();
@@ -85,7 +85,7 @@ namespace libbio {
 	
 	
 	// Return the 1-based number of the given sample.
-	std::size_t vcf_reader::sample_no(std::string const &sample_name) const
+	std::size_t reader::sample_no(std::string const &sample_name) const
 	{
 		auto const it(m_sample_names.find(sample_name));
 		if (it == m_sample_names.cend())
@@ -94,15 +94,15 @@ namespace libbio {
 	}
 	
 	
-	void vcf_reader::fill_buffer()
+	void reader::fill_buffer()
 	{
 		libbio_assert(m_input);
 		m_input->fill_buffer(*this);
 	}
 	
 	
-	template <template <std::int32_t, vcf_metadata_value_type> typename t_field_tpl, vcf_metadata_value_type t_field_type, typename t_field_base_class>
-	auto vcf_reader::instantiate_field(vcf_metadata_formatted_field const &meta) -> t_field_base_class *
+	template <template <std::int32_t, metadata_value_type> typename t_field_tpl, metadata_value_type t_field_type, typename t_field_base_class>
+	auto reader::instantiate_field(metadata_formatted_field const &meta) -> t_field_base_class *
 	{
 		switch (meta.get_number())
 		{
@@ -127,8 +127,8 @@ namespace libbio {
 	}
 	
 	
-	template <template <std::int32_t, vcf_metadata_value_type> typename t_field_tpl, typename t_key, typename t_field_map>
-	auto vcf_reader::find_or_add_field(vcf_metadata_formatted_field const &meta, t_key const &key, t_field_map &map, bool &did_add) -> typename t_field_map::mapped_type::element_type &
+	template <template <std::int32_t, metadata_value_type> typename t_field_tpl, typename t_key, typename t_field_map>
+	auto reader::find_or_add_field(metadata_formatted_field const &meta, t_key const &key, t_field_map &map, bool &did_add) -> typename t_field_map::mapped_type::element_type &
 	{
 		auto const it(map.find(key));
 		if (map.end() != it)
@@ -141,28 +141,28 @@ namespace libbio {
 		field_base_class *val{};
 		switch (meta.get_value_type())
 		{
-			case vcf_metadata_value_type::INTEGER:
-				val = instantiate_field <t_field_tpl, vcf_metadata_value_type::INTEGER, field_base_class>(meta);
+			case metadata_value_type::INTEGER:
+				val = instantiate_field <t_field_tpl, metadata_value_type::INTEGER, field_base_class>(meta);
 				break;
 				
-			case vcf_metadata_value_type::FLOAT:
-				val = instantiate_field <t_field_tpl, vcf_metadata_value_type::FLOAT, field_base_class>(meta);
+			case metadata_value_type::FLOAT:
+				val = instantiate_field <t_field_tpl, metadata_value_type::FLOAT, field_base_class>(meta);
 				break;
 			
-			case vcf_metadata_value_type::CHARACTER:
-				val = instantiate_field <t_field_tpl, vcf_metadata_value_type::CHARACTER, field_base_class>(meta);
+			case metadata_value_type::CHARACTER:
+				val = instantiate_field <t_field_tpl, metadata_value_type::CHARACTER, field_base_class>(meta);
 				break;
 				
-			case vcf_metadata_value_type::STRING:
-				val = instantiate_field <t_field_tpl, vcf_metadata_value_type::STRING, field_base_class>(meta);
+			case metadata_value_type::STRING:
+				val = instantiate_field <t_field_tpl, metadata_value_type::STRING, field_base_class>(meta);
 				break;
 			
-			case vcf_metadata_value_type::FLAG:
-				val = new t_field_tpl <0, vcf_metadata_value_type::FLAG>();
+			case metadata_value_type::FLAG:
+				val = new t_field_tpl <0, metadata_value_type::FLAG>();
 				break;
 			
-			case vcf_metadata_value_type::UNKNOWN:
-			case vcf_metadata_value_type::NOT_PROCESSED:
+			case metadata_value_type::UNKNOWN:
+			case metadata_value_type::NOT_PROCESSED:
 			default:
 				val = detail::placeholder_field_helper <field_base_class>::get_placeholder().clone();
 				break;
@@ -180,12 +180,12 @@ namespace libbio {
 	}
 	
 	
-	void vcf_reader::associate_metadata_with_field_descriptions()
+	void reader::associate_metadata_with_field_descriptions()
 	{
 		bool did_add(false);
 		for (auto &[key, meta] : m_metadata.m_info)
 		{
-			auto &info_field(find_or_add_field <vcf_info_field>(meta, key, m_info_fields, did_add));
+			auto &info_field(find_or_add_field <info_field>(meta, key, m_info_fields, did_add));
 			if (did_add)
 				meta.check_field(info_field);
 			info_field.m_metadata = &meta;
@@ -194,7 +194,7 @@ namespace libbio {
 		
 		for (auto &[key, meta] : m_metadata.m_format)
 		{
-			auto &genotype_field(find_or_add_field <vcf_genotype_field>(meta, key, m_genotype_fields, did_add));
+			auto &genotype_field(find_or_add_field <genotype_field>(meta, key, m_genotype_fields, did_add));
 			if (did_add)
 				meta.check_field(genotype_field);
 			genotype_field.m_metadata = &meta;
@@ -203,7 +203,7 @@ namespace libbio {
 	
 	
 	template <typename t_field>
-	std::pair <std::uint16_t, std::uint16_t> vcf_reader::sort_and_assign_field_offsets(std::vector <t_field *> &field_vec) const
+	std::pair <std::uint16_t, std::uint16_t> reader::sort_and_assign_field_offsets(std::vector <t_field *> &field_vec) const
 	{
 		if (!field_vec.empty())
 		{
@@ -238,17 +238,17 @@ namespace libbio {
 	}
 	
 	
-	std::pair <std::uint16_t, std::uint16_t> vcf_reader::assign_info_field_offsets()
+	std::pair <std::uint16_t, std::uint16_t> reader::assign_info_field_offsets()
 	{
 		// Sort the info fields by alignment requirement and size, then assign offsets.
 		for (auto const &[key, field_ptr] : m_info_fields)
-			field_ptr->set_offset(vcf_subfield_base::INVALID_OFFSET);
+			field_ptr->set_offset(subfield_base::INVALID_OFFSET);
 		
 		return sort_and_assign_field_offsets(m_info_fields_in_headers);
 	}
 	
 	
-	void vcf_reader::parse_format(std::string_view const &new_format_sv)
+	void reader::parse_format(std::string_view const &new_format_sv)
 	{
 		auto *new_format(m_current_format->new_instance());
 		libbio_assert_eq(typeid(*m_current_format), typeid(*new_format));
@@ -284,12 +284,12 @@ namespace libbio {
 	}
 	
 	
-	std::pair <std::uint16_t, std::uint16_t> vcf_reader::assign_format_field_indices_and_offsets()
+	std::pair <std::uint16_t, std::uint16_t> reader::assign_format_field_indices_and_offsets()
 	{
 		// Recalculate the offsets. This also has the effect of making variants copied earlier unreadable,
 		// unless the subfield descriptors have been copied by the client.
 		for (auto const &[key, field_ptr] : m_genotype_fields)
-			field_ptr->set_offset(vcf_subfield_base::INVALID_OFFSET);
+			field_ptr->set_offset(subfield_base::INVALID_OFFSET);
 		
 		auto format_vec(m_current_format_vec); // Copy b.c. the field order needs to be preserved.
 		auto const retval(sort_and_assign_field_offsets(format_vec));

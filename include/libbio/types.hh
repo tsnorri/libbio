@@ -11,9 +11,9 @@
 #include <ostream>
 
 
-namespace libbio {
+namespace libbio::vcf {
 
-	enum class vcf_field : std::uint8_t {
+	enum class field : std::uint8_t {
 		CHROM	= 0,
 		POS		= 1,
 		ID		= 2,
@@ -51,7 +51,7 @@ namespace libbio {
 	};
 	
 	
-	enum class vcf_metadata_value_type : std::uint8_t
+	enum class metadata_value_type : std::uint8_t
 	{
 		UNKNOWN = 0,
 		NOT_PROCESSED,
@@ -67,7 +67,7 @@ namespace libbio {
 	};
 	
 	
-	enum vcf_metadata_number : std::int32_t
+	enum metadata_number : std::int32_t
 	{
 		// VCF 4.3 specification, section 1.3 Data types: “For the Integer type, the values from −2^31 to −2^31 + 7 cannot be stored in the binary version and therefore are disallowed in both VCF and BCF”
 		VCF_NUMBER_UNKNOWN						= INT32_MIN,		// .
@@ -82,11 +82,15 @@ namespace libbio {
 		VCF_NUMBER_G = VCF_NUMBER_ONE_PER_GENOTYPE
 	};
 	
-
-	char const *to_string(sv_type const svt);
 	
 	void output_vcf_value(std::ostream &os, std::int32_t const);
-	void output_vcf_value(std::ostream &os, vcf_metadata_value_type const);
+	void output_vcf_value(std::ostream &os, metadata_value_type const);
+}
+
+
+namespace libbio {
+
+	char const *to_string(vcf::sv_type const svt);
 }
 
 #endif

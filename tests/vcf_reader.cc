@@ -46,12 +46,12 @@ namespace {
 	
 	struct metadata_description
 	{
-		std::int32_t				number{};
-		lb::vcf_metadata_value_type	value_type{};
+		std::int32_t					number{};
+		lb::vcf::metadata_value_type	value_type{};
 		
 		metadata_description() = default;
 		
-		metadata_description(std::int32_t number_, lb::vcf_metadata_value_type value_type_):
+		metadata_description(std::int32_t number_, lb::vcf::metadata_value_type value_type_):
 			number(number_),
 			value_type(value_type_)
 		{
@@ -81,7 +81,7 @@ namespace {
 			auto const actual_number(actual_field.number());
 			REQUIRE((
 					actual_number == expected.number ||
-					(actual_field.value_type_is_vector() && actual_number == lb::VCF_NUMBER_DETERMINED_AT_RUNTIME)
+					(actual_field.value_type_is_vector() && actual_number == lb::vcf::VCF_NUMBER_DETERMINED_AT_RUNTIME)
 			));
 			REQUIRE(actual_field.value_type() == expected.value_type);
 			
@@ -116,24 +116,24 @@ namespace {
 	};
 	
 	
-	template <lb::vcf_metadata_value_type t_value_type>
+	template <lb::vcf::metadata_value_type t_value_type>
 	struct value_type_mapping {};
 	
-	template <> struct value_type_mapping <lb::vcf_metadata_value_type::INTEGER>	{ typedef std::int32_t	type; };
-	template <> struct value_type_mapping <lb::vcf_metadata_value_type::FLOAT>		{ typedef float			type; };
-	template <> struct value_type_mapping <lb::vcf_metadata_value_type::CHARACTER>	{ typedef std::string	type; };
-	template <> struct value_type_mapping <lb::vcf_metadata_value_type::STRING>		{ typedef std::string	type; };
+	template <> struct value_type_mapping <lb::vcf::metadata_value_type::INTEGER>	{ typedef std::int32_t	type; };
+	template <> struct value_type_mapping <lb::vcf::metadata_value_type::FLOAT>		{ typedef float			type; };
+	template <> struct value_type_mapping <lb::vcf::metadata_value_type::CHARACTER>	{ typedef std::string	type; };
+	template <> struct value_type_mapping <lb::vcf::metadata_value_type::STRING>	{ typedef std::string	type; };
 	
-	template <lb::vcf_metadata_value_type t_value_type>
+	template <lb::vcf::metadata_value_type t_value_type>
 	using value_type_mapping_t = typename value_type_mapping <t_value_type>::type;
 	
-	template <lb::vcf_metadata_value_type t_value_type>
+	template <lb::vcf::metadata_value_type t_value_type>
 	struct constant_from_value_type
 	{
-		typedef std::integral_constant <lb::vcf_metadata_value_type, t_value_type> type;
+		typedef std::integral_constant <lb::vcf::metadata_value_type, t_value_type> type;
 	};
 		
-	template <lb::vcf_metadata_value_type t_value_type>
+	template <lb::vcf::metadata_value_type t_value_type>
 	inline constexpr auto constant_from_value_type_v = typename constant_from_value_type <t_value_type>::type{};
 	
 	
@@ -154,23 +154,23 @@ namespace {
 	
 	
 	template <typename t_cb>
-	void visit_value_type(lb::vcf_metadata_value_type value_type, bool is_vector, t_cb &&cb)
+	void visit_value_type(lb::vcf::metadata_value_type value_type, bool is_vector, t_cb &&cb)
 	{
 		if (is_vector)
 		{
 			switch (value_type)
 			{
-				case lb::vcf_metadata_value_type::INTEGER:
-					cb(constant_from_value_type_v <lb::vcf_metadata_value_type::INTEGER>, std::true_type());
+				case lb::vcf::metadata_value_type::INTEGER:
+					cb(constant_from_value_type_v <lb::vcf::metadata_value_type::INTEGER>, std::true_type());
 					break;
-				case lb::vcf_metadata_value_type::FLOAT:
-					cb(constant_from_value_type_v <lb::vcf_metadata_value_type::FLOAT>, std::true_type());
+				case lb::vcf::metadata_value_type::FLOAT:
+					cb(constant_from_value_type_v <lb::vcf::metadata_value_type::FLOAT>, std::true_type());
 					break;
-				case lb::vcf_metadata_value_type::CHARACTER:
-					cb(constant_from_value_type_v <lb::vcf_metadata_value_type::CHARACTER>, std::true_type());
+				case lb::vcf::metadata_value_type::CHARACTER:
+					cb(constant_from_value_type_v <lb::vcf::metadata_value_type::CHARACTER>, std::true_type());
 					break;
-				case lb::vcf_metadata_value_type::STRING:
-					cb(constant_from_value_type_v <lb::vcf_metadata_value_type::STRING>, std::true_type());
+				case lb::vcf::metadata_value_type::STRING:
+					cb(constant_from_value_type_v <lb::vcf::metadata_value_type::STRING>, std::true_type());
 					break;
 				default:
 					throw std::runtime_error("Unexpected value type");
@@ -180,17 +180,17 @@ namespace {
 		{
 			switch (value_type)
 			{
-				case lb::vcf_metadata_value_type::INTEGER:
-					cb(constant_from_value_type_v <lb::vcf_metadata_value_type::INTEGER>, std::false_type());
+				case lb::vcf::metadata_value_type::INTEGER:
+					cb(constant_from_value_type_v <lb::vcf::metadata_value_type::INTEGER>, std::false_type());
 					break;
-				case lb::vcf_metadata_value_type::FLOAT:
-					cb(constant_from_value_type_v <lb::vcf_metadata_value_type::FLOAT>, std::false_type());
+				case lb::vcf::metadata_value_type::FLOAT:
+					cb(constant_from_value_type_v <lb::vcf::metadata_value_type::FLOAT>, std::false_type());
 					break;
-				case lb::vcf_metadata_value_type::CHARACTER:
-					cb(constant_from_value_type_v <lb::vcf_metadata_value_type::CHARACTER>, std::false_type());
+				case lb::vcf::metadata_value_type::CHARACTER:
+					cb(constant_from_value_type_v <lb::vcf::metadata_value_type::CHARACTER>, std::false_type());
 					break;
-				case lb::vcf_metadata_value_type::STRING:
-					cb(constant_from_value_type_v <lb::vcf_metadata_value_type::STRING>, std::false_type());
+				case lb::vcf::metadata_value_type::STRING:
+					cb(constant_from_value_type_v <lb::vcf::metadata_value_type::STRING>, std::false_type());
 					break;
 				default:
 					throw std::runtime_error("Unexpected value type");
@@ -235,7 +235,7 @@ namespace {
 		value_variant					value;
 		
 		template <typename t_type>
-		record_value(lb::vcf_metadata_value_type value_type_, bool is_vector_, t_type const &value_)
+		record_value(lb::vcf::metadata_value_type value_type_, bool is_vector_, t_type const &value_)
 		{
 			visit_value_type(value_type_, is_vector_, [this, &value_](auto const value_type, auto const is_vector){
 				if constexpr (is_vector() == is_vector_type_v <t_type>)
@@ -299,7 +299,7 @@ namespace {
 		{
 			auto const it(metadata.find(id));
 			REQUIRE(metadata.end() != it);
-			auto const is_vector(lb::vcf_value_count_corresponds_to_vector(it->second.number));
+			auto const is_vector(lb::vcf::value_count_corresponds_to_vector(it->second.number));
 			info_values.emplace(id, record_value(it->second.value_type, is_vector, std::forward <t_type>(value)));
 		}
 		
@@ -308,7 +308,7 @@ namespace {
 		{
 			auto const it(metadata.find(id));
 			REQUIRE(metadata.end() != it);
-			auto const is_vector(lb::vcf_value_count_corresponds_to_vector(it->second.number));
+			auto const is_vector(lb::vcf::value_count_corresponds_to_vector(it->second.number));
 			genotype_values.emplace(id, record_value(it->second.value_type, is_vector, std::forward <t_type>(value)));
 		}
 		
@@ -386,46 +386,46 @@ namespace {
 	
 	
 	static metadata_map const s_type_test_expected_info_fields{
-		{"INFO_FLAG",			{0,							lb::vcf_metadata_value_type::FLAG}},
-		{"INFO_FLAG_2",			{0,							lb::vcf_metadata_value_type::FLAG}},
-		{"INFO_INTEGER",		{1,							lb::vcf_metadata_value_type::INTEGER}},
-		{"INFO_FLOAT",			{1,							lb::vcf_metadata_value_type::FLOAT}},
-		{"INFO_CHARACTER",		{1,							lb::vcf_metadata_value_type::CHARACTER}},
-		{"INFO_STRING",			{1,							lb::vcf_metadata_value_type::STRING}},
-		{"INFO_INTEGER_4",		{4,							lb::vcf_metadata_value_type::INTEGER}},
-		{"INFO_FLOAT_4",		{4,							lb::vcf_metadata_value_type::FLOAT}},
-		{"INFO_CHARACTER_4",	{4,							lb::vcf_metadata_value_type::CHARACTER}},
-		{"INFO_STRING_4",		{4,							lb::vcf_metadata_value_type::STRING}},
-		{"INFO_INTEGER_A",		{lb::VCF_NUMBER_A,			lb::vcf_metadata_value_type::INTEGER}},
-		{"INFO_INTEGER_R",		{lb::VCF_NUMBER_R,			lb::vcf_metadata_value_type::INTEGER}},
-		{"INFO_INTEGER_G",		{lb::VCF_NUMBER_G,			lb::vcf_metadata_value_type::INTEGER}},
-		{"INFO_INTEGER_D",		{lb::VCF_NUMBER_UNKNOWN,	lb::vcf_metadata_value_type::INTEGER}}
+		{"INFO_FLAG",			{0,								lb::vcf::metadata_value_type::FLAG}},
+		{"INFO_FLAG_2",			{0,								lb::vcf::metadata_value_type::FLAG}},
+		{"INFO_INTEGER",		{1,								lb::vcf::metadata_value_type::INTEGER}},
+		{"INFO_FLOAT",			{1,								lb::vcf::metadata_value_type::FLOAT}},
+		{"INFO_CHARACTER",		{1,								lb::vcf::metadata_value_type::CHARACTER}},
+		{"INFO_STRING",			{1,								lb::vcf::metadata_value_type::STRING}},
+		{"INFO_INTEGER_4",		{4,								lb::vcf::metadata_value_type::INTEGER}},
+		{"INFO_FLOAT_4",		{4,								lb::vcf::metadata_value_type::FLOAT}},
+		{"INFO_CHARACTER_4",	{4,								lb::vcf::metadata_value_type::CHARACTER}},
+		{"INFO_STRING_4",		{4,								lb::vcf::metadata_value_type::STRING}},
+		{"INFO_INTEGER_A",		{lb::vcf::VCF_NUMBER_A,			lb::vcf::metadata_value_type::INTEGER}},
+		{"INFO_INTEGER_R",		{lb::vcf::VCF_NUMBER_R,			lb::vcf::metadata_value_type::INTEGER}},
+		{"INFO_INTEGER_G",		{lb::vcf::VCF_NUMBER_G,			lb::vcf::metadata_value_type::INTEGER}},
+		{"INFO_INTEGER_D",		{lb::vcf::VCF_NUMBER_UNKNOWN,	lb::vcf::metadata_value_type::INTEGER}}
 	};
 	
 	static metadata_map const s_type_test_expected_genotype_fields{ // GT not included.
-		{"FORMAT_INTEGER",		{1,							lb::vcf_metadata_value_type::INTEGER}},
-		{"FORMAT_FLOAT",		{1,							lb::vcf_metadata_value_type::FLOAT}},
-		{"FORMAT_CHARACTER",	{1,							lb::vcf_metadata_value_type::CHARACTER}},
-		{"FORMAT_STRING",		{1,							lb::vcf_metadata_value_type::STRING}},
-		{"FORMAT_INTEGER_4",	{4,							lb::vcf_metadata_value_type::INTEGER}},
-		{"FORMAT_FLOAT_4",		{4,							lb::vcf_metadata_value_type::FLOAT}},
-		{"FORMAT_CHARACTER_4",	{4,							lb::vcf_metadata_value_type::CHARACTER}},
-		{"FORMAT_STRING_4",		{4,							lb::vcf_metadata_value_type::STRING}},
-		{"FORMAT_INTEGER_A",	{lb::VCF_NUMBER_A,			lb::vcf_metadata_value_type::INTEGER}},
-		{"FORMAT_INTEGER_R",	{lb::VCF_NUMBER_R,			lb::vcf_metadata_value_type::INTEGER}},
-		{"FORMAT_INTEGER_G",	{lb::VCF_NUMBER_G,			lb::vcf_metadata_value_type::INTEGER}},
-		{"FORMAT_INTEGER_D",	{lb::VCF_NUMBER_UNKNOWN,	lb::vcf_metadata_value_type::INTEGER}}
+		{"FORMAT_INTEGER",		{1,								lb::vcf::metadata_value_type::INTEGER}},
+		{"FORMAT_FLOAT",		{1,								lb::vcf::metadata_value_type::FLOAT}},
+		{"FORMAT_CHARACTER",	{1,								lb::vcf::metadata_value_type::CHARACTER}},
+		{"FORMAT_STRING",		{1,								lb::vcf::metadata_value_type::STRING}},
+		{"FORMAT_INTEGER_4",	{4,								lb::vcf::metadata_value_type::INTEGER}},
+		{"FORMAT_FLOAT_4",		{4,								lb::vcf::metadata_value_type::FLOAT}},
+		{"FORMAT_CHARACTER_4",	{4,								lb::vcf::metadata_value_type::CHARACTER}},
+		{"FORMAT_STRING_4",		{4,								lb::vcf::metadata_value_type::STRING}},
+		{"FORMAT_INTEGER_A",	{lb::vcf::VCF_NUMBER_A,			lb::vcf::metadata_value_type::INTEGER}},
+		{"FORMAT_INTEGER_R",	{lb::vcf::VCF_NUMBER_R,			lb::vcf::metadata_value_type::INTEGER}},
+		{"FORMAT_INTEGER_G",	{lb::vcf::VCF_NUMBER_G,			lb::vcf::metadata_value_type::INTEGER}},
+		{"FORMAT_INTEGER_D",	{lb::vcf::VCF_NUMBER_UNKNOWN,	lb::vcf::metadata_value_type::INTEGER}}
 	};
 	
 	
 	std::vector <expected_record> prepare_expected_records_for_test_data_types_vcf()
 	{
 		std::vector <expected_record> expected_records{
-			{30,	8,	"test_gt_only",		"C",	{"G"},		{1, 1, false},									{},					{"INFO_FLAG", "INFO_FLAG_2"}},
-			{31,	10,	"test_most",		"A",	{"C", "G"},	{},												{"INFO_FLAG"},		{"INFO_FLAG_2"}},
-			{32,	12,	"test_most_2",		"C",	{"G", "T"},	{},												{"INFO_FLAG_2"},	{"INFO_FLAG"}},
-			{33,	14,	"test_gt_only_2",	"G",	{"C"},		{1, 1, true},									{},					{"INFO_FLAG", "INFO_FLAG_2"}},
-			{34,	16,	"test_missing",		"T",	{"A"},		{0, lb::sample_genotype::NULL_ALLELE, false},	{},					{"INFO_FLAG", "INFO_FLAG_2"}}
+			{30,	8,	"test_gt_only",		"C",	{"G"},		{1, 1, false},										{},					{"INFO_FLAG", "INFO_FLAG_2"}},
+			{31,	10,	"test_most",		"A",	{"C", "G"},	{},													{"INFO_FLAG"},		{"INFO_FLAG_2"}},
+			{32,	12,	"test_most_2",		"C",	{"G", "T"},	{},													{"INFO_FLAG_2"},	{"INFO_FLAG"}},
+			{33,	14,	"test_gt_only_2",	"G",	{"C"},		{1, 1, true},										{},					{"INFO_FLAG", "INFO_FLAG_2"}},
+			{34,	16,	"test_missing",		"T",	{"A"},		{0, lb::vcf::sample_genotype::NULL_ALLELE, false},	{},					{"INFO_FLAG", "INFO_FLAG_2"}}
 		};
 		
 		for (auto const idx : lb::make_array <std::size_t>(0u, 3u, 4u))
@@ -532,7 +532,7 @@ namespace {
 		REQUIRE(var.alts().size() == expected.alts.size());
 		for (auto const &[actual_alt, expected_alt] : ranges::view::zip(var.alts(), expected.alts))
 		{
-			REQUIRE(actual_alt.alt_sv_type == lb::sv_type::NONE);
+			REQUIRE(actual_alt.alt_sv_type == lb::vcf::sv_type::NONE);
 			REQUIRE(actual_alt.alt == expected_alt);
 		}
 	
@@ -542,7 +542,7 @@ namespace {
 			auto const field_it(actual_info_fields.find(id));
 			REQUIRE(actual_info_fields.end() != field_it);
 		
-			if (lb::vcf_metadata_value_type::FLAG == expected_meta.value_type)
+			if (lb::vcf::metadata_value_type::FLAG == expected_meta.value_type)
 			{
 				REQUIRE((
 					(expected.set_flags.contains(id) && field_it->second->has_value(var)) ||
@@ -578,7 +578,7 @@ namespace {
 			if (genotype_fields_by_id.end() != it)
 			{
 				REQUIRE_NOTHROW([&](){
-					auto const &gt_field(dynamic_cast <lb::vcf_genotype_field_gt &>(*it->second));
+					auto const &gt_field(dynamic_cast <lb::vcf::genotype_field_gt &>(*it->second));
 					auto const &expected_gt(expected.gt);
 			
 					if (expected_gt.is_in_record)
@@ -604,8 +604,8 @@ namespace {
 	{
 	protected:
 		lb::mmap_handle <char> m_handle;
-		lb::vcf_mmap_input m_input;
-		lb::vcf_reader m_reader;
+		lb::vcf::mmap_input m_input;
+		lb::vcf::reader m_reader;
 		std::vector <std::string> m_expected_info_keys{map_keys(s_type_test_expected_info_fields)};
 		std::vector <std::string> m_expected_genotype_keys{map_keys(s_type_test_expected_genotype_fields)};
 	
@@ -613,8 +613,8 @@ namespace {
 		void open_vcf_file()
 		{
 			m_handle.open("test-files/test-data-types.vcf");
-			m_input = lb::vcf_mmap_input(m_handle);
-			m_reader = lb::vcf_reader(m_input);
+			m_input = lb::vcf::mmap_input(m_handle);
+			m_reader = lb::vcf::reader(m_input);
 		}
 	
 		void read_vcf_header()
@@ -625,14 +625,14 @@ namespace {
 	
 		void add_reserved_info_keys()
 		{
-			lb::add_reserved_info_keys(m_reader.info_fields());
+			lb::vcf::add_reserved_info_keys(m_reader.info_fields());
 			auto const reserved_info_keys(map_keys(m_reader.info_fields()));
 			add_to_sorted_vector(reserved_info_keys, m_expected_info_keys);
 		}
 	
 		void add_reserved_genotype_keys()
 		{
-			lb::add_reserved_genotype_keys(m_reader.genotype_fields());
+			lb::vcf::add_reserved_genotype_keys(m_reader.genotype_fields());
 			auto const reserved_genotype_keys(map_keys(m_reader.genotype_fields()));
 			add_to_sorted_vector(reserved_genotype_keys, m_expected_genotype_keys);
 		}
@@ -643,8 +643,8 @@ namespace {
 			add_reserved_genotype_keys();
 		}
 		
-		lb::vcf_reader &get_reader() { return m_reader; }
-		lb::vcf_reader const &get_reader() const { return m_reader; }
+		lb::vcf::reader &get_reader() { return m_reader; }
+		lb::vcf::reader const &get_reader() const { return m_reader; }
 		std::vector <std::string> const &get_expected_info_keys() const { return m_expected_info_keys; }
 		std::vector <std::string> const &get_expected_genotype_keys() const { return m_expected_genotype_keys; }
 		auto const &get_actual_info_fields() const { return m_reader.info_fields(); }
@@ -663,14 +663,14 @@ SCENARIO("VCF reader instantiation", "[vcf_reader]")
 		{
 			THEN("the reader is correctly constructed")
 			{
-				lb::vcf_reader reader;
+				lb::vcf::reader reader;
 			}
 		}
 		
 		WHEN("constructed with vcf_input")
 		{
-			lb::vcf_mmap_input input;
-			lb::vcf_reader reader(input);
+			lb::vcf::mmap_input input;
+			lb::vcf::reader reader(input);
 			
 			THEN("the reader is correctly constructed")
 			{
@@ -680,9 +680,9 @@ SCENARIO("VCF reader instantiation", "[vcf_reader]")
 		
 		WHEN("constructed with reserved info and genotype keys")
 		{
-			lb::vcf_reader reader;
-			lb::add_reserved_info_keys(reader.info_fields());
-			lb::add_reserved_genotype_keys(reader.genotype_fields());
+			lb::vcf::reader reader;
+			lb::vcf::add_reserved_info_keys(reader.info_fields());
+			lb::vcf::add_reserved_genotype_keys(reader.genotype_fields());
 			
 			THEN("the corresponding metadata descriptions get instantiated")
 			{
@@ -690,45 +690,45 @@ SCENARIO("VCF reader instantiation", "[vcf_reader]")
 				auto const &genotype_fields(reader.genotype_fields());
 				
 				metadata_map const expected_info_fields{
-					{"AA",			{1,					lb::vcf_metadata_value_type::STRING}},
-					{"AC",			{lb::VCF_NUMBER_A,	lb::vcf_metadata_value_type::INTEGER}},
-					{"AD",			{lb::VCF_NUMBER_R,	lb::vcf_metadata_value_type::INTEGER}},
-					{"ADF",			{lb::VCF_NUMBER_R,	lb::vcf_metadata_value_type::INTEGER}},
-					{"ADR",			{lb::VCF_NUMBER_R,	lb::vcf_metadata_value_type::INTEGER}},
-					{"AF",			{lb::VCF_NUMBER_A,	lb::vcf_metadata_value_type::FLOAT}},
-					{"AN",			{1,					lb::vcf_metadata_value_type::INTEGER}},
-					{"BQ",			{1,					lb::vcf_metadata_value_type::FLOAT}},
-					{"CIGAR",		{lb::VCF_NUMBER_A,	lb::vcf_metadata_value_type::STRING}},
-					{"DB",			{0,					lb::vcf_metadata_value_type::FLAG}},
-					{"DP",			{1,					lb::vcf_metadata_value_type::INTEGER}},
-					{"END",			{1,					lb::vcf_metadata_value_type::INTEGER}},
-					{"H2",			{0,					lb::vcf_metadata_value_type::FLAG}},
-					{"H3",			{0,					lb::vcf_metadata_value_type::FLAG}},
-					{"MQ",			{1,					lb::vcf_metadata_value_type::FLOAT}},
-					{"MQ0",			{1,					lb::vcf_metadata_value_type::INTEGER}},
-					{"NS",			{1,					lb::vcf_metadata_value_type::INTEGER}},
-					{"SB",			{4,					lb::vcf_metadata_value_type::INTEGER}},
-					{"SOMATIC",		{0,					lb::vcf_metadata_value_type::FLAG}},
-					{"VALIDATED",	{0,					lb::vcf_metadata_value_type::FLAG}},
-					{"1000G",		{0,					lb::vcf_metadata_value_type::FLAG}}
+					{"AA",			{1,						lb::vcf::metadata_value_type::STRING}},
+					{"AC",			{lb::vcf::VCF_NUMBER_A,	lb::vcf::metadata_value_type::INTEGER}},
+					{"AD",			{lb::vcf::VCF_NUMBER_R,	lb::vcf::metadata_value_type::INTEGER}},
+					{"ADF",			{lb::vcf::VCF_NUMBER_R,	lb::vcf::metadata_value_type::INTEGER}},
+					{"ADR",			{lb::vcf::VCF_NUMBER_R,	lb::vcf::metadata_value_type::INTEGER}},
+					{"AF",			{lb::vcf::VCF_NUMBER_A,	lb::vcf::metadata_value_type::FLOAT}},
+					{"AN",			{1,						lb::vcf::metadata_value_type::INTEGER}},
+					{"BQ",			{1,						lb::vcf::metadata_value_type::FLOAT}},
+					{"CIGAR",		{lb::vcf::VCF_NUMBER_A,	lb::vcf::metadata_value_type::STRING}},
+					{"DB",			{0,						lb::vcf::metadata_value_type::FLAG}},
+					{"DP",			{1,						lb::vcf::metadata_value_type::INTEGER}},
+					{"END",			{1,						lb::vcf::metadata_value_type::INTEGER}},
+					{"H2",			{0,						lb::vcf::metadata_value_type::FLAG}},
+					{"H3",			{0,						lb::vcf::metadata_value_type::FLAG}},
+					{"MQ",			{1,						lb::vcf::metadata_value_type::FLOAT}},
+					{"MQ0",			{1,						lb::vcf::metadata_value_type::INTEGER}},
+					{"NS",			{1,						lb::vcf::metadata_value_type::INTEGER}},
+					{"SB",			{4,						lb::vcf::metadata_value_type::INTEGER}},
+					{"SOMATIC",		{0,						lb::vcf::metadata_value_type::FLAG}},
+					{"VALIDATED",	{0,						lb::vcf::metadata_value_type::FLAG}},
+					{"1000G",		{0,						lb::vcf::metadata_value_type::FLAG}}
 				};
 				
 				metadata_map const expected_genotype_fields{
-					{"AD",			{lb::VCF_NUMBER_R,	lb::vcf_metadata_value_type::INTEGER}},
-					{"ADF",			{lb::VCF_NUMBER_R,	lb::vcf_metadata_value_type::INTEGER}},
-					{"ADR",			{lb::VCF_NUMBER_R,	lb::vcf_metadata_value_type::INTEGER}},
-					{"DP",			{1,					lb::vcf_metadata_value_type::INTEGER}},
-					{"EC",			{lb::VCF_NUMBER_A,	lb::vcf_metadata_value_type::INTEGER}},
-					{"FT",			{1,					lb::vcf_metadata_value_type::STRING}},
-					{"GL",			{lb::VCF_NUMBER_G,	lb::vcf_metadata_value_type::FLOAT}},
-					{"GP",			{lb::VCF_NUMBER_G,	lb::vcf_metadata_value_type::FLOAT}},
-					{"GQ",			{1,					lb::vcf_metadata_value_type::INTEGER}},
-					{"GT",			{1,					lb::vcf_metadata_value_type::STRING}},
-					{"HQ",			{2,					lb::vcf_metadata_value_type::INTEGER}},
-					{"MQ",			{1,					lb::vcf_metadata_value_type::INTEGER}},
-					{"PL",			{lb::VCF_NUMBER_G,	lb::vcf_metadata_value_type::INTEGER}},
-					{"PQ",			{1,					lb::vcf_metadata_value_type::INTEGER}},
-					{"PS",			{1,					lb::vcf_metadata_value_type::INTEGER}}
+					{"AD",			{lb::vcf::VCF_NUMBER_R,	lb::vcf::metadata_value_type::INTEGER}},
+					{"ADF",			{lb::vcf::VCF_NUMBER_R,	lb::vcf::metadata_value_type::INTEGER}},
+					{"ADR",			{lb::vcf::VCF_NUMBER_R,	lb::vcf::metadata_value_type::INTEGER}},
+					{"DP",			{1,						lb::vcf::metadata_value_type::INTEGER}},
+					{"EC",			{lb::vcf::VCF_NUMBER_A,	lb::vcf::metadata_value_type::INTEGER}},
+					{"FT",			{1,						lb::vcf::metadata_value_type::STRING}},
+					{"GL",			{lb::vcf::VCF_NUMBER_G,	lb::vcf::metadata_value_type::FLOAT}},
+					{"GP",			{lb::vcf::VCF_NUMBER_G,	lb::vcf::metadata_value_type::FLOAT}},
+					{"GQ",			{1,						lb::vcf::metadata_value_type::INTEGER}},
+					{"GT",			{1,						lb::vcf::metadata_value_type::STRING}},
+					{"HQ",			{2,						lb::vcf::metadata_value_type::INTEGER}},
+					{"MQ",			{1,						lb::vcf::metadata_value_type::INTEGER}},
+					{"PL",			{lb::vcf::VCF_NUMBER_G,	lb::vcf::metadata_value_type::INTEGER}},
+					{"PQ",			{1,						lb::vcf::metadata_value_type::INTEGER}},
+					{"PS",			{1,						lb::vcf::metadata_value_type::INTEGER}}
 				};
 				
 				check_metadata_fields(expected_info_fields, info_fields, false);
@@ -758,7 +758,7 @@ SCENARIO("The VCF reader can parse VCF header", "[vcf_reader]")
 				auto const &genotype_fields(fixture.get_actual_genotype_fields());
 				
 				auto expected_genotype_fields(s_type_test_expected_genotype_fields);
-				expected_genotype_fields.emplace("GT", metadata_description(1, lb::vcf_metadata_value_type::STRING));
+				expected_genotype_fields.emplace("GT", metadata_description(1, lb::vcf::metadata_value_type::STRING));
 				
 				check_metadata_fields(s_type_test_expected_info_fields, info_fields, true);
 				check_metadata_fields(expected_genotype_fields, genotype_fields, true);
@@ -782,7 +782,7 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 		WHEN("the file is parsed")
 		{
 			fixture.read_vcf_header();
-			fixture.get_reader().set_parsed_fields(lb::vcf_field::ALL);
+			fixture.get_reader().set_parsed_fields(lb::vcf::field::ALL);
 			
 			THEN("each record matches the expected")
 			{
@@ -806,7 +806,7 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 							&fixture,
 							&idx
 						]
-						(lb::transient_variant const &var){
+						(lb::vcf::transient_variant const &var){
 							
 							REQUIRE(idx < expected_records.size());
 							auto const &expected(expected_records[idx]);
@@ -846,7 +846,7 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 		WHEN("the file is parsed")
 		{
 			fixture.read_vcf_header();
-			fixture.get_reader().set_parsed_fields(lb::vcf_field::ALL);
+			fixture.get_reader().set_parsed_fields(lb::vcf::field::ALL);
 			
 			THEN("the variant records may be copied")
 			{
@@ -854,8 +854,8 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 				do {
 					fixture.get_reader().fill_buffer();
 					should_continue = fixture.get_reader().parse(
-						[](lb::transient_variant const &var){
-							lb::variant persistent_variant(var);
+						[](lb::vcf::transient_variant const &var){
+							lb::vcf::variant persistent_variant(var);
 							return true;
 						}
 					);
@@ -881,17 +881,17 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 		WHEN("the variant records have been copied")
 		{
 			fixture.read_vcf_header();
-			fixture.get_reader().set_parsed_fields(lb::vcf_field::ALL);
+			fixture.get_reader().set_parsed_fields(lb::vcf::field::ALL);
 			
 			auto const &actual_info_fields(fixture.get_actual_info_fields());
 			auto const &actual_genotype_fields(fixture.get_actual_genotype_fields());
 			
-			std::vector <lb::variant> persistent_variants;
+			std::vector <lb::vcf::variant> persistent_variants;
 			bool should_continue(false);
 			do {
 				fixture.get_reader().fill_buffer();
 				should_continue = fixture.get_reader().parse(
-					[&persistent_variants](lb::transient_variant const &var){
+					[&persistent_variants](lb::vcf::transient_variant const &var){
 						persistent_variants.emplace_back(var);
 						return true;
 					}
@@ -934,7 +934,7 @@ SCENARIO("Copying persistent variants works even if the format has changed", "[v
 		WHEN("the file is parsed")
 		{
 			fixture.read_vcf_header();
-			fixture.get_reader().set_parsed_fields(lb::vcf_field::ALL);
+			fixture.get_reader().set_parsed_fields(lb::vcf::field::ALL);
 			
 			THEN("the variant records may be copied")
 			{
@@ -944,7 +944,7 @@ SCENARIO("Copying persistent variants works even if the format has changed", "[v
 				
 				bool should_continue(false);
 				std::size_t idx{};
-				lb::variant dst_variant;
+				lb::vcf::variant dst_variant;
 				do {
 					fixture.get_reader().fill_buffer();
 					should_continue = fixture.get_reader().parse(
@@ -954,8 +954,8 @@ SCENARIO("Copying persistent variants works even if the format has changed", "[v
 							&expected_records,
 							&idx,
 							&dst_variant
-						](lb::transient_variant const &var){
-							lb::variant persistent_variant(var);
+						](lb::vcf::transient_variant const &var){
+							lb::vcf::variant persistent_variant(var);
 							dst_variant = persistent_variant;
 							
 							REQUIRE(idx < expected_records.size());

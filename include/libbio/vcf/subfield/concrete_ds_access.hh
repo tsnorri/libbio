@@ -12,25 +12,25 @@
 #include <ostream>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
-	class vcf_info_field_base;
-	class vcf_genotype_field_base;
+	class info_field_base;
+	class genotype_field_base;
 }
 
 
-namespace libbio { namespace detail {
+namespace libbio::vcf::detail {
 	
 	// Generic implementation of accessors for one container type.
-	// m_metadata located in vcf_*_field_base.
+	// m_metadata located in *_field_base.
 	template <
 		typename t_base,
 		template <bool> typename t_access_tpl,
 		bool t_is_transient
 	>
-	class vcf_subfield_concrete_ds_access : public virtual t_base
+	class subfield_concrete_ds_access : public virtual t_base
 	{
-		static_assert(std::is_same_v <t_base, vcf_info_field_base> || std::is_same_v <t_base, vcf_genotype_field_base>);
+		static_assert(std::is_same_v <t_base, info_field_base> || std::is_same_v <t_base, genotype_field_base>);
 		
 	protected:
 		template <bool B>
@@ -50,14 +50,14 @@ namespace libbio { namespace detail {
 		// Construct the type in the memory block. The additional parameters are passed to the constructor if needed.
 		virtual void construct_ds(container_type const &ct, std::byte *mem, std::uint16_t const alt_count) const override final
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			access_type::construct_ds(mem + this->m_offset, alt_count, *this->m_metadata);
 		}
 	
 		// Destruct the type in the memory block (if needed).
 		virtual void destruct_ds(container_type const &ct, std::byte *mem) const override final
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			access_type::destruct_ds(mem + this->m_offset);
 		}
 	
@@ -69,7 +69,7 @@ namespace libbio { namespace detail {
 			std::byte *dst
 		) const override final
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			libbio_assert(src);
 			libbio_assert(dst);
 			auto const &srcv(access_type::access_ds(src + this->m_offset));
@@ -79,10 +79,10 @@ namespace libbio { namespace detail {
 	
 		virtual void reset(container_type const &ct, std::byte *mem) const override final
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			access_type::reset_ds(mem + this->m_offset);
 		}
 	};
-}}
+}
 
 #endif

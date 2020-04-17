@@ -13,7 +13,7 @@
 #include <vector>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// Genotype value for one chromosome copy.
 	struct sample_genotype
@@ -41,11 +41,11 @@ namespace libbio {
 		template <typename, typename>
 		friend class formatted_variant;
 		
-		friend class vcf_genotype_field_base;
-		friend class vcf_storable_genotype_field_base;
+		friend class genotype_field_base;
+		friend class storable_genotype_field_base;
 		
-		template <std::int32_t, vcf_metadata_value_type>
-		friend class vcf_generic_genotype_field_base;
+		template <std::int32_t, metadata_value_type>
+		friend class generic_genotype_field_base;
 		
 	protected:
 		// The buffer needs to be zeroed when copying b.c. it may contain vectors.
@@ -61,12 +61,12 @@ namespace libbio {
 	template <typename t_string>
 	class variant_sample_tpl : public variant_sample_base
 	{
-		friend class vcf_reader;
-		friend class vcf_genotype_field_base;
-		friend class vcf_genotype_field_gt;
+		friend class reader;
+		friend class genotype_field_base;
+		friend class genotype_field_gt;
 		
-		template <std::int32_t, vcf_metadata_value_type>
-		friend class vcf_generic_genotype_field_base;
+		template <std::int32_t, metadata_value_type>
+		friend class generic_genotype_field_base;
 		
 	protected:
 		typedef t_string string_type;
@@ -121,7 +121,7 @@ namespace libbio {
 	
 	inline std::ostream &operator<<(std::ostream &os, sample_genotype const &gt)
 	{
-		// Simple implementation for vcf_vector_value_access_base, use output_vcf_value or output_genotype instead.
+		// Simple implementation for vcf::vector_value_access_base, use output_vcf_value or output_genotype instead.
 		os << gt.alt;
 		return os;
 	}

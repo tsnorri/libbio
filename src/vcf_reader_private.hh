@@ -27,10 +27,10 @@
 #define HANDLE_INTEGER_END_METADATA(FN, ...)	HANDLE_INTEGER(caller <decltype(FN)>::handle_integer_end	<FN>(integer, integer_is_negative, CURRENT_METADATA, ##__VA_ARGS__))
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	template <typename t_fnt>
-	struct vcf_reader::caller
+	struct reader::caller
 	{
 		template <t_fnt t_fn, typename t_dst, typename ... t_args>
 		static void handle_string_end(char const *start, std::size_t length, t_dst &dst, t_args ... args)

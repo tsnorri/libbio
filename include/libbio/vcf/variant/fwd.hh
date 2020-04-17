@@ -11,13 +11,13 @@
 #include <type_traits>
 
 
-namespace libbio { namespace detail {
+namespace libbio::vcf::detail {
 	class transient_variant_format_access;
 	class variant_format_access;
-}}
+}
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// Fwd.
 	template <typename t_string, typename t_format_access>

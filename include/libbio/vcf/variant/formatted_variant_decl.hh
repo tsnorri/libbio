@@ -10,13 +10,13 @@
 #include <libbio/vcf/variant_format.hh>
 
 
-namespace libbio {
+namespace libbio::vcf {
 
-	class vcf_reader;
+	class reader;
 }
 
 
-namespace libbio { namespace detail {
+namespace libbio::vcf::detail {
 	
 	// Use static polymorphism to delegate construction, destruction and copying.
 	class transient_variant_format_access
@@ -29,8 +29,8 @@ namespace libbio { namespace detail {
 		
 	protected:
 		transient_variant_format_access() = default;
-		transient_variant_format_access(vcf_reader const &reader) {};
-		inline variant_format_ptr const &get_format_ptr(vcf_reader const &reader) const;
+		transient_variant_format_access(reader const &vcf_reader) {};
+		inline variant_format_ptr const &get_format_ptr(reader const &vcf_reader) const;
 	};
 	
 	
@@ -46,22 +46,22 @@ namespace libbio { namespace detail {
 		
 	protected:
 		variant_format_access() = default;
-		inline variant_format_access(vcf_reader const &reader);
-		inline variant_format_access(vcf_reader const &reader, transient_variant_format_access const &other);
+		inline variant_format_access(reader const &vcf_reader);
+		inline variant_format_access(reader const &vcf_reader, transient_variant_format_access const &other);
 		
-		variant_format_ptr const &get_format_ptr(vcf_reader const &reader) const { return m_format; }
+		variant_format_ptr const &get_format_ptr(reader const &reader) const { return m_format; }
 	};
-}}
+}
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// Override constructors, destructor and copy assignment to delegate the operatrions.
 	// Destructors of base classes are called in reverse order of declaration, so t_format_access’s destructor is called before variant_base’s.
 	template <typename t_string, typename t_format_access>
 	class formatted_variant : public variant_tpl <t_string>, public t_format_access
 	{
-		friend class vcf_reader;
+		friend class reader;
 		
 	public:
 		typedef variant_sample_tpl <t_string>	sample_type;
@@ -70,7 +70,7 @@ namespace libbio {
 		formatted_variant() = default;
 		~formatted_variant();
 		
-		inline formatted_variant(vcf_reader &reader, std::size_t const sample_count, std::size_t const info_size, std::size_t const info_alignment);
+		inline formatted_variant(reader &vcf_reader, std::size_t const sample_count, std::size_t const info_size, std::size_t const info_alignment);
 		
 		// Copy constructors.
 		inline formatted_variant(formatted_variant const &other);

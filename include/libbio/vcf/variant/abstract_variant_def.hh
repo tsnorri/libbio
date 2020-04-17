@@ -11,16 +11,16 @@
 #include <libbio/vcf/vcf_reader_def.hh>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	abstract_variant::abstract_variant(
-		vcf_reader &reader,
+		class reader &vcf_reader,
 		std::size_t const info_size,
 		std::size_t const info_alignment
 	):
-		m_reader(&reader),
+		m_reader(&vcf_reader),
 		m_info(info_size, info_alignment),
-		m_assigned_info_fields(reader.metadata().info().size(), false)
+		m_assigned_info_fields(vcf_reader.metadata().info().size(), false)
 	{
 	}
 	

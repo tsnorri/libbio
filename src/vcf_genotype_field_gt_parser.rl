@@ -13,7 +13,7 @@
 namespace lb	= libbio;
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// FIXME: move to another module.
 	void output_genotype(std::ostream &stream, std::vector <sample_genotype> const &genotype)
@@ -24,7 +24,7 @@ namespace libbio {
 			if (!is_first)
 				stream << (gt.is_phased ? '|' : '/');
 			
-			if (lb::sample_genotype::NULL_ALLELE == gt.alt)
+			if (sample_genotype::NULL_ALLELE == gt.alt)
 				stream << '.';
 			else
 				stream << gt.alt;
@@ -34,7 +34,7 @@ namespace libbio {
 	}
 	
 	
-	bool vcf_genotype_field_gt::parse_and_assign(std::string_view const &sv, transient_variant_sample &sample, std::byte *mem) const
+	bool genotype_field_gt::parse_and_assign(std::string_view const &sv, transient_variant_sample &sample, std::byte *mem) const
 	{
 		// Mixed phasing is possible, e.g. in VCF 4.2 specification p. 26: 0/1|2: triploid with a single phased allele.
 		// (The specification says it is tetraploid but this is likely a bug.)

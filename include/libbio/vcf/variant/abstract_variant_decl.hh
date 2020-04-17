@@ -11,11 +11,11 @@
 #include <vector>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	class variant_format;
-	class vcf_reader;
-	class vcf_metadata_filter;
+	class reader;
+	class metadata_filter;
 	
 	// Declare the constructors here s.t. the initialization code may be written more easily.
 	class abstract_variant
@@ -26,19 +26,19 @@ namespace libbio {
 		friend class transient_variant_format_access;
 		friend class variant_format_access;
 		
-		template <std::int32_t, vcf_metadata_value_type>
-		friend class vcf_generic_info_field_base;
+		template <std::int32_t, metadata_value_type>
+		friend class generic_info_field_base;
 		
-		friend class vcf_info_field_base;
-		friend class vcf_reader;
-		friend class vcf_storable_info_field_base;
+		friend class info_field_base;
+		friend class reader;
+		friend class storable_info_field_base;
 		
 	public:
 		enum { UNKNOWN_QUALITY = -1 };
-		typedef std::vector <vcf_metadata_filter const *>	filter_ptr_vector;
+		typedef std::vector <metadata_filter const *>		filter_ptr_vector;
 		
 	protected:
-		vcf_reader											*m_reader{};
+		reader												*m_reader{};
 		aligned_buffer <std::byte, buffer_base::zero_tag>	m_info{};			// Zero on copy b.c. the types may not be TriviallyCopyable.
 		// FIXME: if the range contains only trivially copyable types, copy the bytes.
 		filter_ptr_vector									m_filters{};
@@ -53,14 +53,14 @@ namespace libbio {
 		abstract_variant() = default;
 		virtual ~abstract_variant() {}
 		
-		inline abstract_variant(vcf_reader &reader, std::size_t const info_size, std::size_t const info_alignment);
+		inline abstract_variant(reader &vcf_reader, std::size_t const info_size, std::size_t const info_alignment);
 		
 		void set_variant_index(std::size_t const idx)					{ m_variant_index = idx; }
 		void set_lineno(std::size_t const lineno)						{ m_lineno = lineno; }
 		void set_pos(std::size_t const pos)								{ m_pos = pos; }
 		void set_qual(double const qual)								{ m_qual = qual; }
 		
-		vcf_reader *reader() const										{ return m_reader; }
+		class reader *reader() const									{ return m_reader; }
 		filter_ptr_vector const &filters() const						{ return m_filters; }
 		std::size_t variant_index() const								{ return m_variant_index; }
 		std::size_t lineno() const										{ return m_lineno; }

@@ -10,11 +10,11 @@
 #include <libbio/vcf/subfield/info_field_base_decl.hh>
 
 
-namespace libbio { namespace detail {
+namespace libbio::vcf::detail {
 	
 	// Partial implementation.
 	template <typename t_base, template <bool> typename t_container_tpl, bool t_is_transient>
-	class vcf_subfield_placeholder_impl : public virtual t_base
+	class subfield_placeholder_impl : public virtual t_base
 	{
 	protected:
 		typedef t_container_tpl <t_is_transient>	container_type;
@@ -36,16 +36,16 @@ namespace libbio { namespace detail {
 		) const override { /* No-op. */ }
 		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const override { throw std::runtime_error("Should not be called; parse_and_assign returns false"); }
 	};
-}}
+}
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// Base classes for placeholders.
-	class vcf_subfield_placeholder_base : public virtual vcf_subfield_base
+	class subfield_placeholder_base : public virtual subfield_base
 	{
 	public:
-		virtual vcf_metadata_value_type value_type() const final { return vcf_metadata_value_type::NOT_PROCESSED; }
+		virtual metadata_value_type value_type() const final { return metadata_value_type::NOT_PROCESSED; }
 		
 	protected:
 		virtual std::uint16_t byte_size() const final { return 0; }
@@ -54,21 +54,21 @@ namespace libbio {
 	};
 	
 	
-	class vcf_info_field_placeholder final :		public vcf_subfield_placeholder_base,
-													public detail::vcf_subfield_placeholder_impl <vcf_info_field_base, variant_base_t, true>,
-													public detail::vcf_subfield_placeholder_impl <vcf_info_field_base, variant_base_t, false>
+	class info_field_placeholder final :		public subfield_placeholder_base,
+												public detail::subfield_placeholder_impl <info_field_base, variant_base_t, true>,
+												public detail::subfield_placeholder_impl <info_field_base, variant_base_t, false>
 	{
 		virtual bool parse_and_assign(std::string_view const &sv, transient_variant &var, std::byte *mem) const { /* No-op. */ return false; }
-		virtual vcf_info_field_placeholder *clone() const { return new vcf_info_field_placeholder(*this); }
+		virtual info_field_placeholder *clone() const { return new info_field_placeholder(*this); }
 	};
 	
 	
-	class vcf_genotype_field_placeholder final :	public vcf_subfield_placeholder_base,
-													public detail::vcf_subfield_placeholder_impl <vcf_genotype_field_base, variant_sample_t, true>,
-													public detail::vcf_subfield_placeholder_impl <vcf_genotype_field_base, variant_sample_t, false>
+	class genotype_field_placeholder final :	public subfield_placeholder_base,
+												public detail::subfield_placeholder_impl <genotype_field_base, variant_sample_t, true>,
+												public detail::subfield_placeholder_impl <genotype_field_base, variant_sample_t, false>
 	{
 		virtual bool parse_and_assign(std::string_view const &sv, transient_variant_sample &sample, std::byte *mem) const { /* No-op. */ return false; }
-		virtual vcf_genotype_field_placeholder *clone() const { return new vcf_genotype_field_placeholder(*this); }
+		virtual genotype_field_placeholder *clone() const { return new genotype_field_placeholder(*this); }
 	};
 }
 

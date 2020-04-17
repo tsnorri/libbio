@@ -11,7 +11,7 @@
 #include <libbio/vcf/variant/variant_tpl.hh>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	template <typename t_string>
 	std::size_t variant_end_pos(variant_tpl <t_string> const &var, vcf_info_field_end const &end_field)

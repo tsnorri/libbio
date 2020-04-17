@@ -10,13 +10,13 @@
 #include <libbio/vcf/metadata.hh>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// Helper for constructing a vector.
 	// Placement new is needed, so std::make_from_tuple cannot be used.
 	// Default implementation for various values including VCF_NUMBER_DETERMINED_AT_RUNTIME.
 	template <std::int32_t t_number>
-	struct vcf_vector_value_helper
+	struct vector_value_helper
 	{
 		// Construct a vector with placement new. Allocate the given amount of memory.
 		template <typename t_vector, typename t_metadata>
@@ -37,20 +37,20 @@ namespace libbio {
 	
 	// Special cases.
 	template <>
-	struct vcf_vector_value_helper <VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE>
+	struct vector_value_helper <VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE>
 	{
 		template <typename t_vector>
-		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, vcf_metadata_base const &)
+		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, metadata_base const &)
 		{
 			new (mem) t_vector(alt_count);
 		}
 	};
 	
 	template <>
-	struct vcf_vector_value_helper <VCF_NUMBER_ONE_PER_ALLELE>
+	struct vector_value_helper <VCF_NUMBER_ONE_PER_ALLELE>
 	{
 		template <typename t_vector>
-		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, vcf_metadata_base const &)
+		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, metadata_base const &)
 		{
 			new (mem) t_vector(1 + alt_count);
 		}

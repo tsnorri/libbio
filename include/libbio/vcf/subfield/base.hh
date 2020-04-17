@@ -12,40 +12,40 @@
 #include <ostream>
 
 
-namespace libbio { namespace detail {
+namespace libbio::vcf::detail {
 	
 	// Fwd.
 	template <typename>
-	struct vcf_typed_field_base;
-}}
+	struct typed_field_base;
+}
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// Fwd.
-	class vcf_metadata_base;
-	class vcf_info_field_base;
-	class vcf_genotype_field_base;
+	class metadata_base;
+	class info_field_base;
+	class genotype_field_base;
 	
-	typedef detail::vcf_typed_field_base <vcf_info_field_base>		vcf_typed_info_field_base;
-	typedef detail::vcf_typed_field_base <vcf_genotype_field_base>	vcf_typed_genotype_field_base;
+	typedef detail::typed_field_base <info_field_base>		typed_info_field_base;
+	typedef detail::typed_field_base <genotype_field_base>	typed_genotype_field_base;
 	
-	template <vcf_metadata_value_type t_value_type, bool t_is_vector, typename t_base>
-	class vcf_typed_field;
+	template <metadata_value_type t_value_type, bool t_is_vector, typename t_base>
+	class typed_field;
 	
 	// Aliases for easier castability.
-	template <bool t_is_vector, vcf_metadata_value_type t_value_type>
-	using vcf_typed_info_field_t = vcf_typed_field <t_value_type, t_is_vector, vcf_info_field_base>;
+	template <bool t_is_vector, metadata_value_type t_value_type>
+	using typed_info_field_t = typed_field <t_value_type, t_is_vector, info_field_base>;
 
-	template <bool t_is_vector, vcf_metadata_value_type t_value_type>
-	using vcf_typed_genotype_field_t = vcf_typed_field <t_value_type, t_is_vector, vcf_genotype_field_base>;
+	template <bool t_is_vector, metadata_value_type t_value_type>
+	using typed_genotype_field_t = typed_field <t_value_type, t_is_vector, genotype_field_base>;
 	
 	
 	// Base class and interface for field descriptions (specified by ##INFO, ##FORMAT).
-	class vcf_subfield_base
+	class subfield_base
 	{
-		friend class vcf_metadata_format;
-		friend class vcf_metadata_formatted_field;
+		friend class metadata_format;
+		friend class metadata_formatted_field;
 		
 	public:
 		enum { INVALID_OFFSET = UINT16_MAX };
@@ -54,18 +54,18 @@ namespace libbio {
 		std::uint16_t		m_offset{INVALID_OFFSET};	// Offset of this field in the memory block.
 		
 	public:
-		virtual ~vcf_subfield_base() {}
+		virtual ~subfield_base() {}
 
 		// Value type according to the VCF header.
-		virtual vcf_metadata_value_type value_type() const = 0;
+		virtual metadata_value_type value_type() const = 0;
 		
 		// Number of items in this field according to the VCF header.
 		virtual std::int32_t number() const = 0;
 		
-		bool value_type_is_vector() const { return vcf_value_count_corresponds_to_vector(number()); }
+		bool value_type_is_vector() const { return value_count_corresponds_to_vector(number()); }
 		
 		// Get the metadata pointer.
-		virtual vcf_metadata_base *get_metadata() const = 0;
+		virtual metadata_base *get_metadata() const = 0;
 		
 		// Whether the field uses the enumerated VCF type mapping.
 		virtual bool uses_vcf_type_mapping() const { return false; }
@@ -81,16 +81,16 @@ namespace libbio {
 		virtual std::uint16_t byte_size() const = 0;
 		
 		// Create a clone of this object.
-		virtual vcf_subfield_base *clone() const = 0;
+		virtual subfield_base *clone() const = 0;
 	};
 	
 	
 	// Interface for the container in question (one of variant, transient_variant, variant_sample, transient_variant_sample).
 	template <template <bool> typename t_container_tpl, bool t_is_transient>
-	class vcf_subfield_ds_access
+	class subfield_ds_access
 	{
 	public:
-		virtual ~vcf_subfield_ds_access() {}
+		virtual ~subfield_ds_access() {}
 		
 	protected:
 		typedef t_container_tpl <t_is_transient>	container_type;
@@ -117,7 +117,7 @@ namespace libbio {
 			
 	public:
 		// Output the field contents to a stream.
-		// In case of vcf_info_field, the value has to be present in the variant.
+		// In case of info_field, the value has to be present in the variant.
 		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const = 0;
 	};
 }

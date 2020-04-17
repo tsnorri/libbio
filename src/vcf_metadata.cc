@@ -6,13 +6,13 @@
 #include <libbio/vcf/metadata.hh>
 
 
-namespace libbio {
+namespace libbio::vcf {
 
-	void vcf_metadata_formatted_field::check_field(std::int32_t const number, vcf_metadata_value_type const vt) const
+	void metadata_formatted_field::check_field(std::int32_t const number, metadata_value_type const vt) const
 	{
 		switch (vt)
 		{
-			case vcf_metadata_value_type::UNKNOWN:
+			case metadata_value_type::UNKNOWN:
 				throw std::runtime_error("Field contents were to be parsed but field value type was set to unknown");
 			
 			default:
@@ -30,7 +30,7 @@ namespace libbio {
 	
 	// FIXME: refine the output formats.
 	
-	void vcf_metadata_info::output_vcf(std::ostream &stream) const
+	void metadata_info::output_vcf(std::ostream &stream) const
 	{
 		stream << "##INFO=<ID=" << get_id() << ",Number=";
 		output_vcf_value(stream, get_number());
@@ -44,7 +44,7 @@ namespace libbio {
 	}
 	
 	
-	void vcf_metadata_format::output_vcf(std::ostream &stream) const
+	void metadata_format::output_vcf(std::ostream &stream) const
 	{
 		stream << "##FORMAT=<ID=" << get_id() << ",Number=";
 		output_vcf_value(stream, get_number());
@@ -54,25 +54,25 @@ namespace libbio {
 	}
 	
 	
-	void vcf_metadata_filter::output_vcf(std::ostream &stream) const
+	void metadata_filter::output_vcf(std::ostream &stream) const
 	{
 		stream << "##FILTER=<ID=" << get_id() << ",Description=\"" << get_description() << "\">\n";
 	}
 	
 	
-	void vcf_metadata_alt::output_vcf(std::ostream &stream) const
+	void metadata_alt::output_vcf(std::ostream &stream) const
 	{
 		stream << "##ALT=<ID=" << get_id() << ",Description=\"" << get_description() << "\">\n";
 	}
 	
 	
-	void vcf_metadata_assembly::output_vcf(std::ostream &stream) const
+	void metadata_assembly::output_vcf(std::ostream &stream) const
 	{
 		stream << "##assembly=" << get_assembly() << '\n';
 	}
 	
 	
-	void vcf_metadata_contig::output_vcf(std::ostream &stream) const
+	void metadata_contig::output_vcf(std::ostream &stream) const
 	{
 		stream << "##contig=<ID=" << get_id() << ",length=" << get_length() << ">\n";
 	}

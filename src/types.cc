@@ -7,48 +7,51 @@
 
 namespace libbio {
 	
-	char const *to_string(sv_type const svt)
+	char const *to_string(vcf::sv_type const svt)
 	{
 		switch (svt)
 		{
-			case sv_type::NONE:
+			case vcf::sv_type::NONE:
 				return "(none)";
 			
-			case sv_type::DEL:
+			case vcf::sv_type::DEL:
 				return "DEL";
 			
-			case sv_type::INS:
+			case vcf::sv_type::INS:
 				return "INS";
 			
-			case sv_type::DUP:
+			case vcf::sv_type::DUP:
 				return "DUP";
 			
-			case sv_type::INV:
+			case vcf::sv_type::INV:
 				return "INV";
 			
-			case sv_type::CNV:
+			case vcf::sv_type::CNV:
 				return "CNV";
 			
-			case sv_type::DUP_TANDEM:
+			case vcf::sv_type::DUP_TANDEM:
 				return "DUP:TANDEM";
 				
-			case sv_type::DEL_ME:
+			case vcf::sv_type::DEL_ME:
 				return "DEL:ME";
 				
-			case sv_type::INS_ME:
+			case vcf::sv_type::INS_ME:
 				return "INS:ME";
 				
-			case sv_type::UNKNOWN_SV:
+			case vcf::sv_type::UNKNOWN_SV:
 				return "(unknown structural variant)";
 			
-			case sv_type::UNKNOWN:
+			case vcf::sv_type::UNKNOWN:
 				return "(unknown ALT)";
 			
 			default:
 				return "(unexpected value)";
 		}
 	}
-	
+}
+
+
+namespace libbio::vcf {
 	
 	void output_vcf_value(std::ostream &stream, std::int32_t const value)
 	{
@@ -73,29 +76,29 @@ namespace libbio {
 	}
 	
 	
-	void output_vcf_value(std::ostream &os, vcf_metadata_value_type const vt)
+	void output_vcf_value(std::ostream &os, metadata_value_type const vt)
 	{
 		switch (vt)
 		{
-			case vcf_metadata_value_type::UNKNOWN:
+			case metadata_value_type::UNKNOWN:
 				os << '.';
 				break;
-			case vcf_metadata_value_type::NOT_PROCESSED:
+			case metadata_value_type::NOT_PROCESSED:
 				os << "(Not processed)";
 				break;
-			case vcf_metadata_value_type::INTEGER:
+			case metadata_value_type::INTEGER:
 				os << "Integer";
 				break;
-			case vcf_metadata_value_type::FLOAT:
+			case metadata_value_type::FLOAT:
 				os << "Float";
 				break;
-			case vcf_metadata_value_type::CHARACTER:
+			case metadata_value_type::CHARACTER:
 				os << "Character";
 				break;
-			case vcf_metadata_value_type::STRING:
+			case metadata_value_type::STRING:
 				os << "String";
 				break;
-			case vcf_metadata_value_type::FLAG:
+			case metadata_value_type::FLAG:
 				os << "Flag";
 				break;
 			default:

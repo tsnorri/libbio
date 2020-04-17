@@ -10,7 +10,7 @@
 #include <libbio/vcf/variant/variant_decl.hh>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	void transient_variant::reset()
 	{

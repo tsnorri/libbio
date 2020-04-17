@@ -25,9 +25,9 @@ namespace {
 }
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
-	bool vcf_subfield_parser <vcf_metadata_value_type::INTEGER>::parse(std::string_view const &sv, value_type &dst)
+	bool subfield_parser <metadata_value_type::INTEGER>::parse(std::string_view const &sv, value_type &dst)
 	{
 		auto const *start(sv.data());
 		auto const *end(start + sv.size());
@@ -44,7 +44,7 @@ namespace libbio {
 	}
 	
 	
-	bool vcf_subfield_parser <vcf_metadata_value_type::FLOAT>::parse(std::string_view const &sv, value_type &dst)
+	bool subfield_parser <metadata_value_type::FLOAT>::parse(std::string_view const &sv, value_type &dst)
 	{
 		// libc++ does not yet have from_chars for float.
 #if 0
@@ -73,48 +73,48 @@ namespace libbio {
 	}
 	
 	
-	void add_reserved_info_keys(vcf_info_field_map &dst)
+	void add_reserved_info_keys(info_field_map &dst)
 	{
-		add_to_map(dst, "AA",			new vcf_info_field_aa());
-		add_to_map(dst, "AC",			new vcf_info_field_ac());
-		add_to_map(dst, "AD",			new vcf_info_field_ad());
-		add_to_map(dst, "ADF",			new vcf_info_field_adf());
-		add_to_map(dst, "ADR",			new vcf_info_field_adr());
-		add_to_map(dst, "AF",			new vcf_info_field_af());
-		add_to_map(dst, "AN",			new vcf_info_field_an());
-		add_to_map(dst, "BQ",			new vcf_info_field_bq());
-		add_to_map(dst, "CIGAR",		new vcf_info_field_cigar());
-		add_to_map(dst, "DB",			new vcf_info_field_db());
-		add_to_map(dst, "DP",			new vcf_info_field_dp());
-		add_to_map(dst, "END",			new vcf_info_field_end());
-		add_to_map(dst, "H2",			new vcf_info_field_h2());
-		add_to_map(dst, "H3",			new vcf_info_field_h3());
-		add_to_map(dst, "MQ",			new vcf_info_field_mq());
-		add_to_map(dst, "MQ0",			new vcf_info_field_mq0());
-		add_to_map(dst, "NS",			new vcf_info_field_ns());
-		add_to_map(dst, "SB",			new vcf_info_field_sb());
-		add_to_map(dst, "SOMATIC",		new vcf_info_field_somatic());
-		add_to_map(dst, "VALIDATED",	new vcf_info_field_validated());
-		add_to_map(dst, "1000G",		new vcf_info_field_1000g());
+		add_to_map(dst, "AA",			new info_field_aa());
+		add_to_map(dst, "AC",			new info_field_ac());
+		add_to_map(dst, "AD",			new info_field_ad());
+		add_to_map(dst, "ADF",			new info_field_adf());
+		add_to_map(dst, "ADR",			new info_field_adr());
+		add_to_map(dst, "AF",			new info_field_af());
+		add_to_map(dst, "AN",			new info_field_an());
+		add_to_map(dst, "BQ",			new info_field_bq());
+		add_to_map(dst, "CIGAR",		new info_field_cigar());
+		add_to_map(dst, "DB",			new info_field_db());
+		add_to_map(dst, "DP",			new info_field_dp());
+		add_to_map(dst, "END",			new info_field_end());
+		add_to_map(dst, "H2",			new info_field_h2());
+		add_to_map(dst, "H3",			new info_field_h3());
+		add_to_map(dst, "MQ",			new info_field_mq());
+		add_to_map(dst, "MQ0",			new info_field_mq0());
+		add_to_map(dst, "NS",			new info_field_ns());
+		add_to_map(dst, "SB",			new info_field_sb());
+		add_to_map(dst, "SOMATIC",		new info_field_somatic());
+		add_to_map(dst, "VALIDATED",	new info_field_validated());
+		add_to_map(dst, "1000G",		new info_field_1000g());
 	}
 	
 	
-	void add_reserved_genotype_keys(vcf_genotype_field_map &dst)
+	void add_reserved_genotype_keys(genotype_field_map &dst)
 	{
-		add_to_map(dst, "AD",			new vcf_genotype_field_ad());
-		add_to_map(dst, "ADF",			new vcf_genotype_field_adf());
-		add_to_map(dst, "ADR",			new vcf_genotype_field_adr());
-		add_to_map(dst, "DP",			new vcf_genotype_field_dp());
-		add_to_map(dst, "EC",			new vcf_genotype_field_ec());
-		add_to_map(dst, "FT",			new vcf_genotype_field_ft());
-		add_to_map(dst, "GL",			new vcf_genotype_field_gl());
-		add_to_map(dst, "GP",			new vcf_genotype_field_gp());
-		add_to_map(dst, "GQ",			new vcf_genotype_field_gq());
-		add_to_map(dst, "GT",			new vcf_genotype_field_gt());
-		add_to_map(dst, "HQ",			new vcf_genotype_field_hq());
-		add_to_map(dst, "MQ",			new vcf_genotype_field_mq());
-		add_to_map(dst, "PL",			new vcf_genotype_field_pl());
-		add_to_map(dst, "PQ",			new vcf_genotype_field_pq());
-		add_to_map(dst, "PS",			new vcf_genotype_field_ps());
+		add_to_map(dst, "AD",			new genotype_field_ad());
+		add_to_map(dst, "ADF",			new genotype_field_adf());
+		add_to_map(dst, "ADR",			new genotype_field_adr());
+		add_to_map(dst, "DP",			new genotype_field_dp());
+		add_to_map(dst, "EC",			new genotype_field_ec());
+		add_to_map(dst, "FT",			new genotype_field_ft());
+		add_to_map(dst, "GL",			new genotype_field_gl());
+		add_to_map(dst, "GP",			new genotype_field_gp());
+		add_to_map(dst, "GQ",			new genotype_field_gq());
+		add_to_map(dst, "GT",			new genotype_field_gt());
+		add_to_map(dst, "HQ",			new genotype_field_hq());
+		add_to_map(dst, "MQ",			new genotype_field_mq());
+		add_to_map(dst, "PL",			new genotype_field_pl());
+		add_to_map(dst, "PQ",			new genotype_field_pq());
+		add_to_map(dst, "PS",			new genotype_field_ps());
 	}
 }

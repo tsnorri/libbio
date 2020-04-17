@@ -14,7 +14,7 @@
 #include <vector>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// Store the string-type variant fields as t_string.
 	// This class is separated from formatted_variant mainly because maintaining
@@ -22,7 +22,7 @@ namespace libbio {
 	template <typename t_string>
 	class variant_tpl : public abstract_variant
 	{
-		friend class vcf_reader;
+		friend class reader;
 		
 		template <typename>
 		friend class variant_tpl;
@@ -50,7 +50,7 @@ namespace libbio {
 		variant_tpl() = default;
 		
 		variant_tpl(
-			vcf_reader &reader,
+			class reader &reader,
 			std::size_t const sample_count,
 			std::size_t const info_size,
 			std::size_t const info_alignment

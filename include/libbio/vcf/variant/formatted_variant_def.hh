@@ -11,33 +11,33 @@
 #include <range/v3/view/zip.hpp>
 
 
-namespace libbio { namespace detail {
+namespace libbio::vcf::detail {
 	
-	variant_format_ptr const &transient_variant_format_access::get_format_ptr(vcf_reader const &reader) const
+	variant_format_ptr const &transient_variant_format_access::get_format_ptr(reader const &vcf_reader) const
 	{
-		return reader.get_variant_format_ptr();
+		return vcf_reader.get_variant_format_ptr();
 	}
 	
 	
-	variant_format_access::variant_format_access(vcf_reader const &reader):
-		m_format(reader.get_variant_format_ptr())
+	variant_format_access::variant_format_access(reader const &vcf_reader):
+		m_format(vcf_reader.get_variant_format_ptr())
 	{
 	}
 	
 	
-	variant_format_access::variant_format_access(vcf_reader const &reader, transient_variant_format_access const &other):
-		m_format(other.get_format_ptr(reader))
+	variant_format_access::variant_format_access(reader const &vcf_reader, transient_variant_format_access const &other):
+		m_format(other.get_format_ptr(vcf_reader))
 	{
 	}
-}}
+}
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// Constructor.
 	template <typename t_string, typename t_format_access>
 	formatted_variant <t_string, t_format_access>::formatted_variant(
-		vcf_reader &reader,
+		reader &reader,
 		std::size_t const sample_count,
 		std::size_t const info_size,
 		std::size_t const info_alignment

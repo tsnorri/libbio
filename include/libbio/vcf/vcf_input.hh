@@ -10,26 +10,26 @@
 #include <libbio/mmap_handle.hh>
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
-	class vcf_reader;
+	class reader;
 	
 	
-	class vcf_input
+	class input
 	{
 	protected:
 		std::size_t					m_first_variant_offset{0};
 		std::size_t					m_first_variant_lineno{1};
 		
 	public:
-		vcf_input() = default;
-		explicit vcf_input(vcf_input const &other) = default;
+		input() = default;
+		input(input const &other) = default;
 		
-		virtual ~vcf_input() {};
+		virtual ~input() {};
 		virtual bool getline(std::string_view &dst) = 0;
 		virtual void store_first_variant_offset(std::size_t const lineno) { m_first_variant_lineno = lineno; }
 		virtual void reset_to_first_variant_offset() {}
-		virtual void fill_buffer(vcf_reader &reader) = 0;
+		virtual void fill_buffer(reader &vcf_reader) = 0;
 		
 		virtual char const *buffer_start() const { return nullptr; }
 		virtual char const *first_variant_start() const { return nullptr; }
@@ -42,7 +42,7 @@ namespace libbio {
 	};
 
 
-	class vcf_stream_input_base : public vcf_input
+	class stream_input_base : public input
 	{
 	protected:
 		std::string					m_buffer;
@@ -50,17 +50,17 @@ namespace libbio {
 		std::size_t					m_pos{0};
 	
 	public:
-		vcf_stream_input_base():
+		stream_input_base():
 			m_buffer(128, '\0')
 		{
 		}
 		
-		virtual ~vcf_stream_input_base() {}
+		virtual ~stream_input_base() {}
 	
 		virtual bool getline(std::string_view &dst) override;
 		virtual void store_first_variant_offset(std::size_t const lineno) override;
 		virtual void reset_to_first_variant_offset() override;
-		virtual void fill_buffer(vcf_reader &reader) override;
+		virtual void fill_buffer(reader &vcf_reader) override;
 		
 	protected:
 		virtual void stream_reset() = 0;
@@ -74,13 +74,13 @@ namespace libbio {
 	
 	
 	template <typename t_stream>
-	class vcf_stream_input final : public vcf_stream_input_base
+	class stream_input final : public stream_input_base
 	{
 	protected:
 		t_stream					m_stream;
 		
 	public:
-		using vcf_stream_input_base::vcf_stream_input_base;
+		using stream_input_base::stream_input_base;
 		
 		t_stream &input_stream() { return m_stream; }
 		
@@ -112,7 +112,7 @@ namespace libbio {
 	};
 
 
-	class vcf_mmap_input final : public vcf_input
+	class mmap_input final : public input
 	{
 	public:
 		typedef mmap_handle <char> handle_type;
@@ -125,9 +125,9 @@ namespace libbio {
 		std::size_t			m_range_length{0};
 	
 	public:
-		vcf_mmap_input() = default;
+		mmap_input() = default;
 		
-		vcf_mmap_input(handle_type const &handle):
+		mmap_input(handle_type const &handle):
 			m_handle(&handle)
 		{
 			reset_range();
@@ -137,7 +137,7 @@ namespace libbio {
 		
 		virtual bool getline(std::string_view &dst) override;
 		virtual void store_first_variant_offset(std::size_t const lineno) override;
-		virtual void fill_buffer(vcf_reader &reader) override;
+		virtual void fill_buffer(reader &vcf_reader) override;
 		
 		virtual char const *buffer_start() const override { return m_handle->data(); }
 		virtual char const *first_variant_start() const override { return m_handle->data() + m_first_variant_offset; }

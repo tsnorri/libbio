@@ -19,16 +19,16 @@
 								} while (false)
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
-	void vcf_reader::read_header()
+	void reader::read_header()
 	{
 		// FIXME: add a return value in order to allow re-filling the buffer when using the streaming VCF input.
 		
-		typedef vcf_metadata_base	meta_t;
+		typedef metadata_base	meta_t;
 		
-		vcf_metadata_record_var	current_metadata;
-		vcf_metadata_base		*current_metadata_ptr{};
+		metadata_record_var		current_metadata;
+		metadata_base			*current_metadata_ptr{};
 		
 		char const				*file_start(m_fsm.p);
 		char const				*start(nullptr);			// Current string start.
@@ -63,19 +63,19 @@ namespace libbio {
 				integer += fc - '0';
 			}
 			
-			action meta_record_info			{ BEGIN_METADATA(vcf_metadata_info); }
-			action meta_record_filter		{ BEGIN_METADATA(vcf_metadata_filter); }
-			action meta_record_format		{ BEGIN_METADATA(vcf_metadata_format); }
-			action meta_record_alt			{ BEGIN_METADATA(vcf_metadata_alt); }
-			action meta_record_assembly		{ BEGIN_METADATA(vcf_metadata_assembly); }
-			action meta_record_contig		{ BEGIN_METADATA(vcf_metadata_contig); }
+			action meta_record_info			{ BEGIN_METADATA(metadata_info); }
+			action meta_record_filter		{ BEGIN_METADATA(metadata_filter); }
+			action meta_record_format		{ BEGIN_METADATA(metadata_format); }
+			action meta_record_alt			{ BEGIN_METADATA(metadata_alt); }
+			action meta_record_assembly		{ BEGIN_METADATA(metadata_assembly); }
+			action meta_record_contig		{ BEGIN_METADATA(metadata_contig); }
 			
-			action meta_record_info_end		{ END_METADATA(vcf_metadata_info); }
-			action meta_record_filter_end	{ END_METADATA(vcf_metadata_filter); }
-			action meta_record_format_end	{ END_METADATA(vcf_metadata_format); }
-			action meta_record_alt_end		{ END_METADATA(vcf_metadata_alt); }
-			action meta_record_contig_end	{ END_METADATA(vcf_metadata_contig); }
-			action meta_record_assembly_end	{ END_METADATA(vcf_metadata_assembly); }
+			action meta_record_info_end		{ END_METADATA(metadata_info); }
+			action meta_record_filter_end	{ END_METADATA(metadata_filter); }
+			action meta_record_format_end	{ END_METADATA(metadata_format); }
+			action meta_record_alt_end		{ END_METADATA(metadata_alt); }
+			action meta_record_contig_end	{ END_METADATA(metadata_contig); }
+			action meta_record_assembly_end	{ END_METADATA(metadata_assembly); }
 			
 			action end_sample_name {
 				std::string_view const sample_name(start, fpc - start);
@@ -159,11 +159,11 @@ namespace libbio {
 				'"';
 				
 			# Type field.
-			meta_type_integer				= "Integer"		%{ CURRENT_METADATA.set_value_type(vcf_metadata_value_type::INTEGER);	};
-			meta_type_float					= "Float"		%{ CURRENT_METADATA.set_value_type(vcf_metadata_value_type::FLOAT);		};
-			meta_type_character				= "Character"	%{ CURRENT_METADATA.set_value_type(vcf_metadata_value_type::CHARACTER);	};
-			meta_type_string				= "String"		%{ CURRENT_METADATA.set_value_type(vcf_metadata_value_type::STRING);	};
-			meta_type_flag					= "Flag"		%{ CURRENT_METADATA.set_value_type(vcf_metadata_value_type::FLAG);		};
+			meta_type_integer				= "Integer"		%{ CURRENT_METADATA.set_value_type(metadata_value_type::INTEGER);	};
+			meta_type_float					= "Float"		%{ CURRENT_METADATA.set_value_type(metadata_value_type::FLOAT);		};
+			meta_type_character				= "Character"	%{ CURRENT_METADATA.set_value_type(metadata_value_type::CHARACTER);	};
+			meta_type_string				= "String"		%{ CURRENT_METADATA.set_value_type(metadata_value_type::STRING);	};
+			meta_type_flag					= "Flag"		%{ CURRENT_METADATA.set_value_type(metadata_value_type::FLAG);		};
 			meta_type						=	meta_type_integer |
 												meta_type_float |
 												meta_type_character |

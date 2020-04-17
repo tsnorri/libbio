@@ -14,32 +14,32 @@
 #include <libbio/vcf/subfield/typed_field.hh>
 
 
-namespace libbio { namespace detail {
+namespace libbio::vcf::detail {
 	
 	template <typename t_base>
-	struct vcf_generic_field_ds_access_helper
+	struct generic_field_ds_access_helper
 	{
 		template <bool B>
-		using field_access_tpl = vcf_subfield_access <t_base::s_number(), t_base::s_value_type(), B>;
+		using field_access_tpl = subfield_access <t_base::s_number(), t_base::s_value_type(), B>;
 	};
 	
 	
-	// t_base is one of vcf_generic_info_field_base, vcf_generic_genotype_field_base.
-	// operator() defined in vcf_typed_field.
+	// t_base is one of generic_info_field_base, generic_genotype_field_base.
+	// operator() defined in typed_field.
 	template <typename t_base, bool t_is_transient>
-	class vcf_generic_field_ds_access :	public virtual t_base::typed_field_base,
-										public vcf_subfield_concrete_ds_access <
-											typename t_base::typed_field_base::virtual_base,
-											vcf_generic_field_ds_access_helper <t_base>::template field_access_tpl,
-											t_is_transient
-										>
+	class generic_field_ds_access :	public virtual t_base::typed_field_base,
+									public subfield_concrete_ds_access <
+										typename t_base::typed_field_base::virtual_base,
+										generic_field_ds_access_helper <t_base>::template field_access_tpl,
+										t_is_transient
+									>
 	{
 	protected:
 		typedef typename t_base::typed_field_base							typed_field_base;
 		
-		typedef vcf_value_type_mapping_t <
+		typedef value_type_mapping_t <
 			t_base::s_value_type(),
-			vcf_value_count_corresponds_to_vector(t_base::s_number()),
+			value_count_corresponds_to_vector(t_base::s_number()),
 			t_is_transient
 		>																	value_type;
 		
@@ -47,7 +47,7 @@ namespace libbio { namespace detail {
 		using container_tpl = typename t_base::template container_tpl <B>;
 		
 		template <bool B>
-		using field_access_tpl = typename vcf_generic_field_ds_access_helper <t_base>::template field_access_tpl <B>;
+		using field_access_tpl = typename generic_field_ds_access_helper <t_base>::template field_access_tpl <B>;
 		
 		typedef container_tpl <t_is_transient>								container_type;
 		typedef container_tpl <false>										non_transient_container_type;
@@ -60,7 +60,7 @@ namespace libbio { namespace detail {
 	
 		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const override final
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::output_vcf_value(stream, this->buffer_start(ct) + this->m_offset);
 		}
 		
@@ -75,104 +75,104 @@ namespace libbio { namespace detail {
 			return field_access::access_ds(this->buffer_start(ct));
 		}
 	};
-}}
+}
 
 
-namespace libbio {
+namespace libbio::vcf {
 	
 	// Base classes for the generic field types.
-	template <std::int32_t t_number, vcf_metadata_value_type t_value_type>
-	class vcf_generic_info_field_base :
-		public virtual vcf_typed_info_field_t <vcf_value_count_corresponds_to_vector(t_number), t_value_type>,
-		public vcf_generic_field_parser <t_number, t_value_type>
+	template <std::int32_t t_number, metadata_value_type t_value_type>
+	class generic_info_field_base :
+		public virtual typed_info_field_t <value_count_corresponds_to_vector(t_number), t_value_type>,
+		public generic_field_parser <t_number, t_value_type>
 	{
 	public:
 		template <bool t_transient>
 		using container_tpl	= variant_base_t <t_transient>;
 		
-		typedef vcf_typed_info_field_t <
-			vcf_value_count_corresponds_to_vector(t_number),
+		typedef typed_info_field_t <
+			value_count_corresponds_to_vector(t_number),
 			t_value_type
 		>															typed_field_base;
 		
 	protected:
-		typedef vcf_subfield_access <t_number, t_value_type, true>	field_access; // May be transient b.c. field_access is only used for parse_and_assign and assign here.
-		typedef vcf_generic_field_parser <t_number, t_value_type>	parser_type;
+		typedef subfield_access <t_number, t_value_type, true>	field_access; // May be transient b.c. field_access is only used for parse_and_assign and assign here.
+		typedef generic_field_parser <t_number, t_value_type>	parser_type;
 		
 	public:
 		static constexpr std::int32_t s_number() { return t_number; }
-		static constexpr vcf_metadata_value_type s_value_type() { return t_value_type; }
+		static constexpr metadata_value_type s_value_type() { return t_value_type; }
 		
 	protected:
 		// Assign a value, used for FLAG.
 		virtual bool assign(std::byte *mem) const override final
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			field_access::add_value(mem + this->m_offset, 0);
 			return true;
 		};
 		
 		virtual bool parse_and_assign(std::string_view const &sv, transient_variant &var, std::byte *mem) const override final
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			parser_type::parse_and_assign(sv, mem + this->m_offset);
 			return true;
 		}
 	};
 	
 	
-	template <std::int32_t t_number, vcf_metadata_value_type t_value_type>
-	class vcf_generic_genotype_field_base :
-		public virtual vcf_typed_genotype_field_t <vcf_value_count_corresponds_to_vector(t_number), t_value_type>,
-		public vcf_generic_field_parser <t_number, t_value_type>
+	template <std::int32_t t_number, metadata_value_type t_value_type>
+	class generic_genotype_field_base :
+		public virtual typed_genotype_field_t <value_count_corresponds_to_vector(t_number), t_value_type>,
+		public generic_field_parser <t_number, t_value_type>
 	{
 	public:
 		template <bool t_transient>
 		using container_tpl	= variant_sample_t <t_transient>;
 		
-		typedef vcf_typed_genotype_field_t <
-			vcf_value_count_corresponds_to_vector(t_number),
+		typedef typed_genotype_field_t <
+			value_count_corresponds_to_vector(t_number),
 			t_value_type
 		>															typed_field_base;
 		
 	protected:
-		typedef vcf_generic_field_parser <t_number, t_value_type>	parser_type;
+		typedef generic_field_parser <t_number, t_value_type>	parser_type;
 		
 	public:
 		static constexpr std::int32_t s_number() { return t_number; }
-		static constexpr vcf_metadata_value_type s_value_type() { return t_value_type; }
+		static constexpr metadata_value_type s_value_type() { return t_value_type; }
 		
 	protected:
 		virtual bool parse_and_assign(std::string_view const &sv, transient_variant_sample &var, std::byte *mem) const override final
 		{
-			libbio_always_assert_neq(vcf_subfield_base::INVALID_OFFSET, this->m_offset);
+			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			return parser_type::parse_and_assign(sv, mem + this->m_offset);
 		}
 	};
 	
 	
 	// A generic field type.
-	// t_base is one of vcf_generic_info_field_base, vcf_generic_genotype_field_base.
+	// t_base is one of generic_info_field_base, generic_genotype_field_base.
 	template <typename t_base>
-	class vcf_generic_field final :
+	class generic_field final :
 		public t_base,
-		public detail::vcf_generic_field_ds_access <t_base, true>,
-		public detail::vcf_generic_field_ds_access <t_base, false>
+		public detail::generic_field_ds_access <t_base, true>,
+		public detail::generic_field_ds_access <t_base, false>
 	{
 		static_assert(
 			std::is_same_v <
 				t_base,
-				vcf_generic_info_field_base <t_base::s_number(), t_base::s_value_type()>
+				generic_info_field_base <t_base::s_number(), t_base::s_value_type()>
 			> ||
 			std::is_same_v <
 				t_base,
-				vcf_generic_genotype_field_base <t_base::s_number(), t_base::s_value_type()>
+				generic_genotype_field_base <t_base::s_number(), t_base::s_value_type()>
 			>
 		);
 		
 	protected:
 		template <bool t_is_transient>
-		using field_access = vcf_subfield_access <t_base::s_number(), t_base::s_value_type(), t_is_transient>;
+		using field_access = subfield_access <t_base::s_number(), t_base::s_value_type(), t_is_transient>;
 		
 	protected:
 		// Assume that the alignment and the size are close enough for both types.
@@ -187,7 +187,7 @@ namespace libbio {
 			return std::max(field_access <true>::byte_size(), field_access <false>::byte_size());
 		}
 		
-		virtual vcf_generic_field *clone() const override { return new vcf_generic_field(*this); }
+		virtual generic_field *clone() const override { return new generic_field(*this); }
 		
 	public:
 		constexpr virtual std::int32_t number() const override { return t_base::s_number(); }
