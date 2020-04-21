@@ -55,8 +55,8 @@ namespace libbio::vcf {
 	
 	
 	class info_field_placeholder final :		public subfield_placeholder_base,
-												public detail::subfield_placeholder_impl <info_field_base, variant_base_t, true>,
-												public detail::subfield_placeholder_impl <info_field_base, variant_base_t, false>
+												public detail::subfield_placeholder_impl <info_field_base, variant_formatted_base_t, true>,
+												public detail::subfield_placeholder_impl <info_field_base, variant_formatted_base_t, false>
 	{
 		virtual bool parse_and_assign(std::string_view const &sv, transient_variant &var, std::byte *mem) const { /* No-op. */ return false; }
 		virtual info_field_placeholder *clone() const { return new info_field_placeholder(*this); }

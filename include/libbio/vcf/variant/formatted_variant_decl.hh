@@ -36,7 +36,7 @@ namespace libbio::vcf::detail {
 	
 	class variant_format_access
 	{
-		friend class variant_base;
+		friend class variant_formatted_base;
 		
 		template <typename, typename>
 		friend class formatted_variant_base;
@@ -58,7 +58,7 @@ namespace libbio::vcf::detail {
 namespace libbio::vcf {
 	
 	// Override constructors, destructor and copy assignment to delegate the operatrions.
-	// Destructors of base classes are called in reverse order of declaration, so t_format_access’s destructor is called before variant_base’s.
+	// Destructors of base classes are called in reverse order of declaration, so t_format_access’s destructor is called before variant_formatted_base’s.
 	template <typename t_string, typename t_format_access>
 	class formatted_variant : public variant_tpl <t_string>, public t_format_access
 	{

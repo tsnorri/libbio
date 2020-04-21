@@ -88,7 +88,7 @@ namespace libbio::vcf {
 	{
 	public:
 		template <bool t_transient>
-		using container_tpl	= variant_base_t <t_transient>;
+		using container_tpl	= variant_formatted_base_t <t_transient>;
 		
 		typedef typed_info_field_t <
 			value_count_corresponds_to_vector(t_number),

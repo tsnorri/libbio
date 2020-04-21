@@ -24,7 +24,7 @@ namespace libbio::vcf {
 	
 	variant &variant::operator=(transient_variant const &other) &
 	{
-		variant_base::operator=(other);
+		variant_formatted_base::operator=(other);
 		return *this;
 	}
 }

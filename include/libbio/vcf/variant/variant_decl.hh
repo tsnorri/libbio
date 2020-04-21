@@ -11,7 +11,7 @@
 
 namespace libbio::vcf {
 	
-	class transient_variant final : public transient_variant_base
+	class transient_variant final : public transient_variant_formatted_base
 	{
 		friend class variant;
 		
@@ -21,7 +21,7 @@ namespace libbio::vcf {
 		typedef transient_variant_sample				sample_type;
 		
 	public:
-		using transient_variant_base::transient_variant_base;
+		using transient_variant_formatted_base::transient_variant_formatted_base;
 		
 		transient_variant(transient_variant const &) = delete;
 		transient_variant(transient_variant &&) = default;
@@ -32,7 +32,7 @@ namespace libbio::vcf {
 	};
 	
 	
-	class variant final : public variant_base
+	class variant final : public variant_formatted_base
 	{
 	public:
 		typedef std::string						string_type;
@@ -40,7 +40,7 @@ namespace libbio::vcf {
 		typedef variant_sample					sample_type;
 		
 	public:
-		using variant_base::variant_base;
+		using variant_formatted_base::variant_formatted_base;
 		inline variant &operator=(transient_variant const &other) &;
 	};
 }

@@ -91,7 +91,7 @@ namespace libbio::vcf {
 			}
 			
 			action begin_qual {
-				m_current_variant.set_qual(variant_base::UNKNOWN_QUALITY);
+				m_current_variant.set_qual(variant_formatted_base::UNKNOWN_QUALITY);
 			}
 			
 			action end_qual_value {
