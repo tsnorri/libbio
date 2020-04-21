@@ -561,6 +561,7 @@ namespace {
 		auto const &genotype_fields_by_id(var.get_format().fields_by_identifier());
 		for (auto const &[id, expected_meta] : s_type_test_expected_genotype_fields)
 		{
+			INFO("Checking for genotype field “" << id << "”");
 			REQUIRE(actual_genotype_fields.end() != actual_genotype_fields.find(id));
 			auto const field_it(genotype_fields_by_id.find(id));
 			if (expected.unset_genotype_ids.contains(id))
@@ -843,6 +844,8 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
 		
+		auto const should_use_copy_constructor_for_copying_variant = GENERATE(true, false);
+		
 		WHEN("the file is parsed")
 		{
 			fixture.read_vcf_header();
@@ -854,8 +857,15 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 				do {
 					fixture.get_reader().fill_buffer();
 					should_continue = fixture.get_reader().parse(
-						[](lb::vcf::transient_variant const &var){
-							lb::vcf::variant persistent_variant(var);
+						[should_use_copy_constructor_for_copying_variant, &fixture](lb::vcf::transient_variant const &var){
+							
+							if (should_use_copy_constructor_for_copying_variant)
+								lb::vcf::variant persistent_variant(var);
+							else
+							{
+								auto persistent_variant(fixture.get_reader().make_empty_variant());
+								persistent_variant = var;
+							}
 							return true;
 						}
 					);
@@ -878,6 +888,8 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
 		
+		auto const should_use_copy_constructor_for_copying_variant = GENERATE(true, false);
+		
 		WHEN("the variant records have been copied")
 		{
 			fixture.read_vcf_header();
@@ -891,8 +903,19 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 			do {
 				fixture.get_reader().fill_buffer();
 				should_continue = fixture.get_reader().parse(
-					[&persistent_variants](lb::vcf::transient_variant const &var){
-						persistent_variants.emplace_back(var);
+					[
+						should_use_copy_constructor_for_copying_variant,
+						&fixture,
+						&persistent_variants
+					](lb::vcf::transient_variant const &var){
+						if (should_use_copy_constructor_for_copying_variant)
+							persistent_variants.emplace_back(var);
+						else
+						{
+							auto persistent_variant(fixture.get_reader().make_empty_variant());
+							persistent_variant = var;
+							persistent_variants.emplace_back(std::move(persistent_variant));
+						}
 						return true;
 					}
 				);
@@ -931,6 +954,8 @@ SCENARIO("Copying persistent variants works even if the format has changed", "[v
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
 		
+		auto const should_use_copy_constructor_for_copying_variant = GENERATE(true, false);
+		
 		WHEN("the file is parsed")
 		{
 			fixture.read_vcf_header();
@@ -944,25 +969,39 @@ SCENARIO("Copying persistent variants works even if the format has changed", "[v
 				
 				bool should_continue(false);
 				std::size_t idx{};
+				
 				lb::vcf::variant dst_variant;
+				if (!should_use_copy_constructor_for_copying_variant)
+					dst_variant = fixture.get_reader().make_empty_variant();
+				
 				do {
 					fixture.get_reader().fill_buffer();
 					should_continue = fixture.get_reader().parse(
 						[
+							should_use_copy_constructor_for_copying_variant,
 							&actual_info_fields,
 							&actual_genotype_fields,
 							&expected_records,
 							&idx,
 							&dst_variant
 						](lb::vcf::transient_variant const &var){
-							lb::vcf::variant persistent_variant(var);
-							dst_variant = persistent_variant;
 							
 							REQUIRE(idx < expected_records.size());
 							auto const &expected(expected_records[idx]);
 							
+							if (should_use_copy_constructor_for_copying_variant)
+							{
+								lb::vcf::variant persistent_variant(var);
+								dst_variant = persistent_variant;
+								
+								check_record_against_expected_in_test_data_types_vcf(persistent_variant, expected, actual_info_fields, actual_genotype_fields);
+							}
+							else
+							{
+								dst_variant = var;
+							}
+							
 							check_record_against_expected_in_test_data_types_vcf(var, expected, actual_info_fields, actual_genotype_fields);
-							check_record_against_expected_in_test_data_types_vcf(persistent_variant, expected, actual_info_fields, actual_genotype_fields);
 							check_record_against_expected_in_test_data_types_vcf(dst_variant, expected, actual_info_fields, actual_genotype_fields);
 							
 							++idx;

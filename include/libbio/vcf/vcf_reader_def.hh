@@ -53,6 +53,13 @@ namespace libbio::vcf {
 			m_fsm.p - buffer_start
 		);
 	}
+	
+	variant reader::make_empty_variant()
+	{
+		// See vcf_reader_header_parser.rl for m_current_variant.
+		return variant(*this, sample_count(), m_current_variant.m_info.size(), m_current_variant.m_info.alignment());
+	}
+	
 }
 
 #endif

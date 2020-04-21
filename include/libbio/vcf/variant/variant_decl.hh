@@ -41,6 +41,7 @@ namespace libbio::vcf {
 		
 	public:
 		using variant_base::variant_base;
+		inline variant &operator=(transient_variant const &other) &;
 	};
 }
 

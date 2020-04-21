@@ -88,13 +88,14 @@ namespace libbio::vcf {
 	template <typename t_other_string, typename t_other_format_access>
 	auto formatted_variant <t_string, t_format_access>::operator=(formatted_variant <t_other_string, t_other_format_access> const &other) & -> formatted_variant &
 	{
-		if (this != &other)
-		{
-			auto const [should_init_info, should_init_samples] = this->prepare_for_copy(other);
-			variant_tpl <t_string>::operator=(other);
-			t_format_access::operator=(other);
-			this->finish_copy(other, should_init_info, should_init_samples);
-		}
+		auto const vfptr(other.m_reader->get_variant_format_ptr());
+		libbio_assert(vfptr);
+		
+		auto const [should_init_info, should_init_samples] = this->prepare_for_copy(other);
+		variant_tpl <t_string>::operator=(other);
+		this->set_format_ptr(vfptr);
+		this->finish_copy(other, should_init_info, should_init_samples);
+		
 		return *this;
 	}
 	

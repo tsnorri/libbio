@@ -50,6 +50,7 @@ namespace libbio::vcf::detail {
 		inline variant_format_access(reader const &vcf_reader, transient_variant_format_access const &other);
 		
 		variant_format_ptr const &get_format_ptr(reader const &reader) const { return m_format; }
+		void set_format_ptr(variant_format_ptr const &ptr) { m_format = ptr; }
 	};
 }
 

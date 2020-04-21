@@ -20,6 +20,13 @@ namespace libbio::vcf {
 		m_id.clear();
 		m_alts.clear();
 	}
+	
+	
+	variant &variant::operator=(transient_variant const &other) &
+	{
+		variant_base::operator=(other);
+		return *this;
+	}
 }
 
 #endif
