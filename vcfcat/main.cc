@@ -162,11 +162,14 @@ namespace {
 	bool modify_variant(vcf::transient_variant &var, alt_number_map &alt_mapping, sample_name_span const &sample_names, bool const exclude_samples)
 	{
 		alt_mapping.clear();
-		
+
+		auto &samples(var.samples());
+		if (samples.empty())
+			return true;
+
 		auto const *gt_field(get_variant_format(var).gt);
 		auto const &reader(*var.reader());
 		auto const &parsed_sample_names(reader.sample_names());
-		auto &samples(var.samples());
 		
 		// Find the ALT values that are in use in the given samples.
 		{
@@ -250,33 +253,38 @@ namespace {
 			meta.output_vcf(stream);
 		});
 		
-		stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
-		if (sample_names.empty() || exclude_samples)
-		{
-			std::vector <std::string const *> output_sample_names(reader.sample_count());
-			std::size_t found_count{};
-			for (auto const &[name, number] : reader.sample_names())
-			{
-				libbio_assert_lt(0, number);
-
-				auto const did_find(std::find(sample_names.begin(), sample_names.end(), name) != sample_names.end());
-				if (exclude_samples == did_find)
-					continue;
-
-				output_sample_names[found_count] = &name;
-				++found_count;
-			}
-			output_sample_names.resize(found_count);
-			
-			for (auto const ptr : output_sample_names)
-				stream << '\t' << *ptr;
-		}
+		if (reader.sample_names().empty())
+			stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
 		else
 		{
-			for (auto const &name : sample_names)
-				stream << '\t' << name;
+			stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
+			if (sample_names.empty() || exclude_samples)
+			{
+				std::vector <std::string const *> output_sample_names(reader.sample_count());
+				std::size_t found_count{};
+				for (auto const &[name, number] : reader.sample_names())
+				{
+					libbio_assert_lt(0, number);
+
+					auto const did_find(std::find(sample_names.begin(), sample_names.end(), name) != sample_names.end());
+					if (exclude_samples == did_find)
+						continue;
+
+					output_sample_names[found_count] = &name;
+					++found_count;
+				}
+				output_sample_names.resize(found_count);
+			
+				for (auto const ptr : output_sample_names)
+					stream << '\t' << *ptr;
+			}
+			else
+			{
+				for (auto const &name : sample_names)
+					stream << '\t' << name;
+			}
+			stream << '\n';
 		}
-		stream << '\n';
 	}
 	
 	
