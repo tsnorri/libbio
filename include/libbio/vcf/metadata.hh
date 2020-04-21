@@ -195,6 +195,7 @@ namespace libbio::vcf {
 		typedef std::map <std::string,	metadata_format,	libbio::compare_strings_transparent>	format_map;	// By ID
 		typedef std::map <std::string,	metadata_alt,		libbio::compare_strings_transparent>	alt_map;	// By ALT ID
 		typedef std::map <std::string,	metadata_contig,	libbio::compare_strings_transparent>	contig_map;	// By ID
+		typedef std::vector <metadata_assembly>														assembly_vector;
 		
 	protected:
 		info_map							m_info;		// By ID
@@ -202,7 +203,7 @@ namespace libbio::vcf {
 		format_map							m_format;	// By ID
 		alt_map								m_alt;		// By ALT ID
 		contig_map							m_contig;	// By ID
-		std::vector <metadata_assembly>		m_assembly;
+		assembly_vector						m_assembly;
 		std::size_t							m_info_idx{};
 		
 	protected:
@@ -221,12 +222,18 @@ namespace libbio::vcf {
 		}
 		
 	public:
+		alt_map &alt() { return m_alt; }
+		alt_map const &alt() const { return m_alt; }
 		info_map &info() { return m_info; }
 		info_map const &info() const { return m_info; }
+		format_map &format() { return m_format; }
+		format_map const &format() const { return m_format; }
 		filter_map &filter() { return m_filter; }
 		filter_map const &filter() const { return m_filter; }
 		contig_map &contig() { return m_contig; }
 		contig_map const &contig() const { return m_contig; }
+		assembly_vector &assembly() { return m_assembly; }
+		assembly_vector const &assembly() const { return m_assembly; }
 		
 		template <typename t_fn>
 		void visit_all_metadata(t_fn &&cb) const
