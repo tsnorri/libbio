@@ -159,8 +159,11 @@ int main(int argc, char **argv)
 		std::vector <std::string> sample_names;
 		make_sample_names(inputs, sample_names);
 		
-		if (!format_checker.metadata_by_key().contains("GT"))
-			std::cout << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
+		{
+			auto const &format_meta(format_checker.metadata_by_key());
+			if (format_meta.end() == format_meta.find("GT"))
+				std::cout << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n";
+		}
 		
 		// Output the column headers.
 		std::cout << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
