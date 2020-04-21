@@ -10,6 +10,8 @@ src/vcf_reader_parser.cc
 tests/tests
 vcfcat/cmdline.h
 vcfcat/vcfcat
+vcfmerge/cmdline.h
+vcfmerge/vcfmerge
 
 # Prerequisites
 *.d

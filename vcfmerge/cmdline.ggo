@@ -1,0 +1,17 @@
+# Copyright (c) 2020 Tuukka Norri
+# This code is licensed under MIT license (see LICENSE for details).
+
+package		"vcfmerge"
+version		"0.1"
+purpose		"Merges multiple VCF files."
+description	"Outputs the variants in sorted order. Individual records are not modified."
+usage		"vcfmerge --input-list=list.txt|--input=input.vcf ... [ --generate-samples [ --sample-ploidy=... ] [ --samples-are-phased ]]"
+
+defgroup	"Input"	required
+groupoption	"input"					i	"Variant call file paths"							string	typestr = "filename"	group = "Input"												multiple
+groupoption	"input-list"			l	"Input list file"									string	typestr = "filename"	group = "Input"
+
+section "Other options"
+option		"generate-samples"		g	"Generate samples"									flag																						off
+option		"sample-ploidy"			-	"Sample ploidy"										int		typestr = "ploidy"		default = "1"	optional	dependon = "generate-samples"
+option		"samples-are-phased"	-	"Whether the samples should be marked as phased"	flag														dependon = "generate-samples"	off
