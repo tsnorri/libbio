@@ -6,6 +6,7 @@
 #ifndef LIBBIO_VCF_VARIANT_FORMATTED_VARIANT_DEF_HH
 #define LIBBIO_VCF_VARIANT_FORMATTED_VARIANT_DEF_HH
 
+#include <libbio/vcf/subfield/info_field_base_def.hh>
 #include <libbio/vcf/variant/formatted_variant_decl.hh>
 #include <libbio/vcf/vcf_reader_decl.hh>
 #include <range/v3/view/zip.hpp>
