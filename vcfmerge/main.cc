@@ -67,7 +67,7 @@ namespace {
 			}
 			catch (std::runtime_error &exc)
 			{
-				std::cerr << "Unable to open file " << names[i] << ": " << exc.what() << '\n';
+				std::cerr << "Unable to open file " << inputs[i].source_path << ": " << exc.what() << '\n';
 				std::exit(EXIT_FAILURE);
 			}
 		}
