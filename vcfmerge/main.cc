@@ -54,13 +54,23 @@ namespace {
 			out_sample_names.push_back(path.stem());
 		}
 	}
-	
-	
+
+
 	void read_inputs(std::vector <merge::vcf_input> &inputs, char **names, std::size_t const count)
 	{
 		inputs.resize(count);
 		for (std::size_t i(0); i < count; ++i)
-			inputs[i].open_file(names[i]);
+		{
+			try
+			{
+				inputs[i].open_file(names[i]);
+			}
+			catch (std::runtime_error &exc)
+			{
+				std::cerr << "Unable to open file " << names[i] << ": " << exc.what() << '\n';
+				std::exit(EXIT_FAILURE);
+			}
+		}
 	}
 	
 	
@@ -74,7 +84,17 @@ namespace {
 		
 		inputs.resize(names.size());
 		for (auto &&[name, input] : rsv::zip(names, inputs))
-			input.open_file(std::move(name));
+		{
+			try
+			{
+				input.open_file(std::move(name));
+			}
+			catch (std::runtime_error &exc)
+			{
+				std::cerr << "Unable to open file " << name << ": " << exc.what() << '\n';
+				std::exit(EXIT_FAILURE);
+			}
+		}
 	}
 }
 
