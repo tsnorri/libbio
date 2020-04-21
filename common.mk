@@ -2,7 +2,7 @@
 unexport SDKROOT
 
 # Default values.
-WARNING_FLAGS	?= -Wall -Werror -Wno-deprecated-declarations -Wno-unused
+WARNING_FLAGS	?= -Wall -Werror -Wno-deprecated-declarations -Wno-unused -Wno-misleading-indentation
 OPT_FLAGS		?= -O2 -g
 
 CFLAGS			?=
@@ -30,7 +30,7 @@ BOOST_ROOT		?= /usr
 BOOST_INCLUDE	?= -I$(BOOST_ROOT)/include
 
 CFLAGS			+= -std=c99   $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CFLAGS)
-CXXFLAGS		+= -std=c++17 $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CXXFLAGS)
+CXXFLAGS		+= -std=c++2a $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CXXFLAGS)
 CPPFLAGS		+= $(SYSTEM_CPPFLAGS) $(BOOST_INCLUDE) -I../include -I../lib/GSL/include -I../lib/range-v3/include
 LDFLAGS			+= $(SYSTEM_LDFLAGS)
 
