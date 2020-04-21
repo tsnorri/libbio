@@ -14,7 +14,7 @@
 namespace libbio::vcf {
 	
 	template <typename t_string>
-	std::size_t variant_end_pos(variant_tpl <t_string> const &var, vcf_info_field_end const &end_field)
+	std::size_t variant_end_pos(variant_tpl <t_string> const &var, info_field_end const &end_field)
 	{
 		if (end_field.get_metadata() && end_field.has_value(var))
 			return end_field(var);
