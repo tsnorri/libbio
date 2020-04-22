@@ -44,9 +44,28 @@ namespace libbio {
 	public:
 		buffer_base() = default;
 		
-		buffer_base(std::size_t size):
+		explicit buffer_base(std::size_t size):
 			m_size(size)
 		{
+		}
+		
+		buffer_base(buffer_base const &) = default;
+		buffer_base &operator=(buffer_base const &) & = default;
+		
+		buffer_base(buffer_base &&other):
+			m_size(other.m_size)
+		{
+			other.m_size = 0;
+		}
+		
+		buffer_base &operator=(buffer_base &&other) &
+		{
+			if (this != &other)
+			{
+				m_size = other.m_size;
+				other.m_size = 0;
+			}
+			return *this;
 		}
 		
 		std::size_t size() const { return m_size; }

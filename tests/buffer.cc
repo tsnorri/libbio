@@ -199,7 +199,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 
 
 TEMPLATE_PRODUCT_TEST_CASE(
-	"buffers can be copied without copying their contents",
+	"buffers can be copied without copying their contents when using zero_on_copy",
 	"[template][buffer][aligned_buffer]",
 	(
 		buffer_type <lb::buffer>::buffer_with_zero_on_copy,
@@ -296,6 +296,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 				THEN("the underlying buffer is moved")
 				{
 					REQUIRE(src.get() == nullptr);
+					REQUIRE(src.size() == 0);
 					REQUIRE(dst.get() == expected_address);
 					REQUIRE(dst.size() == count);
 					
@@ -311,6 +312,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 				THEN("the underlying buffer is moved")
 				{
 					REQUIRE(src.get() == nullptr);
+					REQUIRE(src.size() == 0);
 					REQUIRE(dst.get() == expected_address);
 					REQUIRE(dst.size() == count);
 					
