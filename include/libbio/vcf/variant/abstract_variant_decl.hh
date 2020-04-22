@@ -55,6 +55,11 @@ namespace libbio::vcf {
 		
 		inline abstract_variant(reader &vcf_reader, std::size_t const info_size, std::size_t const info_alignment);
 		
+		abstract_variant(abstract_variant const &) = default;
+		abstract_variant(abstract_variant &&) = default;
+		abstract_variant &operator=(abstract_variant const &) & = default;
+		abstract_variant &operator=(abstract_variant &&) & = default;
+		
 		void set_variant_index(std::size_t const idx)					{ m_variant_index = idx; }
 		void set_lineno(std::size_t const lineno)						{ m_lineno = lineno; }
 		void set_pos(std::size_t const pos)								{ m_pos = pos; }
