@@ -20,7 +20,7 @@ namespace libbio::vcf {
 			return end_field(var);
 		else
 			return var.zero_based_pos() + var.ref().size();
-	}	
+	}
 }
 
 #endif

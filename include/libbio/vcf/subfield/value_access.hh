@@ -23,39 +23,41 @@ namespace libbio::vcf {
 	template <typename t_type>
 	struct value_access_base
 	{
+		typedef t_type value_type;
+		
 		// Not currently needed b.c. all memory for INFO fields and samples is preallocated.
-		//static_assert(std::is_trivially_move_constructible_v <t_type>);
-		//static_assert(std::is_trivially_move_assignable_v <t_type>);
+		//static_assert(std::is_trivially_move_constructible_v <value_type>);
+		//static_assert(std::is_trivially_move_assignable_v <value_type>);
 		
 		// Access only by using static member functions.
 		value_access_base() = delete;
 		
-		// Construct t_type with placement new.
+		// Construct value_type with placement new.
 		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, metadata_base const &)
 		{
-			libbio_always_assert_eq(0, reinterpret_cast <std::uintptr_t>(mem) % alignof(t_type));
-			new (mem) t_type{};
+			libbio_always_assert_eq(0, reinterpret_cast <std::uintptr_t>(mem) % alignof(value_type));
+			new (mem) value_type{};
 		}
 		
 		// Call the destructor, no-op for primitive types.
 		static void destruct_ds(std::byte *mem) {}
 		
 		// Access the value, return a reference.
-		static t_type &access_ds(std::byte *mem) { return *reinterpret_cast <t_type *>(mem); }
-		static t_type const &access_ds(std::byte const *mem) { return *reinterpret_cast <t_type const *>(mem); }
+		static value_type &access_ds(std::byte *mem) { return *reinterpret_cast <value_type *>(mem); }
+		static value_type const &access_ds(std::byte const *mem) { return *reinterpret_cast <value_type const *>(mem); }
 		
 		// Reset the value for new variant or sample.
 		static void reset_ds(std::byte *mem) { /* No-op. */ }
 		
 		// Determine the byte size.
-		static constexpr std::size_t byte_size() { return sizeof(t_type); }
+		static constexpr std::size_t byte_size() { return sizeof(value_type); }
 		
 		// Determine the alignment.
-		static constexpr std::size_t alignment() { return alignof(t_type); }
+		static constexpr std::size_t alignment() { return alignof(value_type); }
 		
 		// Replace or add a value.
 		// This works for string views b.c. the buffer where the characters are located still exists.
-		static constexpr void add_value(std::byte *mem, t_type const &val) { access_ds(mem) = val; }
+		static constexpr void add_value(std::byte *mem, value_type const &val) { access_ds(mem) = val; }
 		
 		static void output_vcf_value(std::ostream &stream, std::byte *mem) { stream << access_ds(mem); }
 	};
@@ -69,6 +71,8 @@ namespace libbio::vcf {
 	template <>
 	struct primitive_value_access <std::int32_t> : public value_access_base <std::int32_t>
 	{
+		typedef std::int32_t value_type;
+		
 		static void output_vcf_value(std::ostream &stream, std::byte *mem)
 		{
 			auto const value(access_ds(mem));
@@ -81,10 +85,12 @@ namespace libbio::vcf {
 	template <typename t_type>
 	struct object_value_access : public value_access_base <t_type>
 	{
-		// Call t_type’s destructor.
+		typedef t_type value_type;
+		
+		// Call value_type’s destructor.
 		static void destruct_ds(std::byte *mem)
 		{
-			reinterpret_cast <t_type *>(mem)->~t_type();
+			reinterpret_cast <value_type *>(mem)->~value_type();
 		}
 	};
 	
@@ -95,6 +101,7 @@ namespace libbio::vcf {
 	{
 		static_assert(value_count_corresponds_to_vector(t_number));
 		typedef std::vector <t_element_type>	vector_type;
+		typedef vector_type						value_type;
 		
 		using object_value_access <vector_type>::access_ds;
 		

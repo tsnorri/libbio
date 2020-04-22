@@ -25,9 +25,9 @@ namespace libbio::vcf::detail {
 	
 	
 	// t_base is one of generic_info_field_base, generic_genotype_field_base.
-	// operator() defined in typed_field.
 	template <typename t_base, bool t_is_transient>
-	class generic_field_ds_access :	public virtual t_base::typed_field_base,
+	class generic_field_ds_access :	public virtual t_base::typed_field_base,							// For output_vcf_value()
+									public virtual t_base::template value_access_t <t_is_transient>,	// For the specific operator()
 									public subfield_concrete_ds_access <
 										typename t_base::typed_field_base::virtual_base,
 										generic_field_ds_access_helper <t_base>::template field_access_tpl,
@@ -36,6 +36,7 @@ namespace libbio::vcf::detail {
 	{
 	protected:
 		typedef typename t_base::typed_field_base							typed_field_base;
+		typedef typename t_base::template value_access_t <t_is_transient>	value_access_base;
 		
 		typedef value_type_mapping_t <
 			t_base::s_value_type(),
@@ -54,8 +55,13 @@ namespace libbio::vcf::detail {
 		typedef field_access_tpl <t_is_transient>							field_access;
 		typedef field_access_tpl <false>									non_transient_field_access;
 		
+		static_assert(std::is_same_v <container_type, std::remove_cvref_t <container_type>>);
+		static_assert(std::is_same_v <value_type, typename field_access::value_type>);
+		static_assert(std::is_same_v <value_type, typename value_access_base::value_type>);
+		static_assert(std::is_same_v <container_type, typename value_access_base::container_type>);
+		
 	public:
-		using typed_field_base::operator();
+		using value_access_base::operator();
 		using typed_field_base::output_vcf_value;
 	
 		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const override final
@@ -88,12 +94,15 @@ namespace libbio::vcf {
 	{
 	public:
 		template <bool t_transient>
-		using container_tpl	= variant_formatted_base_t <t_transient>;
+		using container_tpl	= variant_base_t <t_transient>;
 		
 		typedef typed_info_field_t <
 			value_count_corresponds_to_vector(t_number),
 			t_value_type
 		>															typed_field_base;
+			
+		template <bool t_transient>
+		using value_access_t = typename typed_field_base::template value_access_t <t_transient>;
 		
 	protected:
 		typedef subfield_access <t_number, t_value_type, true>	field_access; // May be transient b.c. field_access is only used for parse_and_assign and assign here.
@@ -133,7 +142,10 @@ namespace libbio::vcf {
 		typedef typed_genotype_field_t <
 			value_count_corresponds_to_vector(t_number),
 			t_value_type
-		>															typed_field_base;
+		>														typed_field_base;
+		
+		template <bool t_transient>
+		using value_access_t = typename typed_field_base::template value_access_t <t_transient>;
 		
 	protected:
 		typedef generic_field_parser <t_number, t_value_type>	parser_type;

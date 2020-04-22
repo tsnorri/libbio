@@ -21,8 +21,8 @@ namespace libbio::vcf {
 	
 	// Base class for info field descriptions.
 	class info_field_base :	public virtual subfield_base,
-							public subfield_ds_access <variant_formatted_base_t, true>,
-							public subfield_ds_access <variant_formatted_base_t, false>
+							public subfield_ds_access <variant_base_t, true>,
+							public subfield_ds_access <variant_base_t, false>
 	{
 		friend class reader;
 		
@@ -31,7 +31,7 @@ namespace libbio::vcf {
 		
 	public:
 		template <bool t_is_transient> 
-		using container_tpl = variant_formatted_base_t <t_is_transient>;
+		using container_tpl = variant_base_t <t_is_transient>;
 		
 		template <bool t_is_vector, metadata_value_type t_value_type>
 		using typed_field_type = typed_info_field_t <t_is_vector, t_value_type>;
@@ -40,14 +40,14 @@ namespace libbio::vcf {
 		metadata_info	*m_metadata{};
 		
 	protected:
-		using subfield_ds_access <variant_formatted_base_t, true>::reset;
-		using subfield_ds_access <variant_formatted_base_t, false>::reset;
-		using subfield_ds_access <variant_formatted_base_t, true>::construct_ds;
-		using subfield_ds_access <variant_formatted_base_t, false>::construct_ds;
-		using subfield_ds_access <variant_formatted_base_t, true>::destruct_ds;
-		using subfield_ds_access <variant_formatted_base_t, false>::destruct_ds;
-		using subfield_ds_access <variant_formatted_base_t, true>::copy_ds;
-		using subfield_ds_access <variant_formatted_base_t, false>::copy_ds;
+		using subfield_ds_access <variant_base_t, true>::reset;
+		using subfield_ds_access <variant_base_t, false>::reset;
+		using subfield_ds_access <variant_base_t, true>::construct_ds;
+		using subfield_ds_access <variant_base_t, false>::construct_ds;
+		using subfield_ds_access <variant_base_t, true>::destruct_ds;
+		using subfield_ds_access <variant_base_t, false>::destruct_ds;
+		using subfield_ds_access <variant_base_t, true>::copy_ds;
+		using subfield_ds_access <variant_base_t, false>::copy_ds;
 		
 		// Parse the contents of a string_view and assign the value to the variant.
 		// Needs to be overridden.
@@ -66,8 +66,8 @@ namespace libbio::vcf {
 		std::byte *buffer_start(abstract_variant const &ct) const { return ct.m_info.get(); }
 		
 	public:
-		using subfield_ds_access <variant_formatted_base_t, true>::output_vcf_value;
-		using subfield_ds_access <variant_formatted_base_t, false>::output_vcf_value;
+		using subfield_ds_access <variant_base_t, true>::output_vcf_value;
+		using subfield_ds_access <variant_base_t, false>::output_vcf_value;
 		
 		metadata_info *get_metadata() const final { return m_metadata; }
 		
