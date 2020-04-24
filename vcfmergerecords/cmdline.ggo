@@ -1,0 +1,11 @@
+# Copyright (c) 2020 Tuukka Norri
+# This code is licensed under MIT license (see LICENSE for details).
+
+package		"vcfmergerecords"
+version		"0.1"
+purpose		"Merges the samples of the records with the same POS and ALT"
+description	"Outputs the merged variants. Currently only GT is handled and all INFO fields are removed and records with different ALT values will be split."
+usage		"vcfmergerecords --input=input.vcf"
+
+option	"input"				i	"Variant call file paths"															string	typestr = "filename"	required
+option	"filter-fields-set"	-	"Remove variants with any value for the given field (used with e.g. CIPOS, CIEND)"	string	typestr = "identifier"	optional	multiple
