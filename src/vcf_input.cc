@@ -47,7 +47,7 @@ namespace libbio::vcf {
 		// Read until there's at least one newline in the buffer.
 		while (true)
 		{
-			char *data_start((char *) m_buffer.data()); // FIXME: hack, my libc++ does not yet have the non-const data().
+			char *data_start(m_buffer.data());
 			char *data(data_start + m_len);
 		
 			std::size_t space(m_buffer.size() - m_len);
