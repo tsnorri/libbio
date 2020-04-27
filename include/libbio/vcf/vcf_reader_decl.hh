@@ -120,8 +120,8 @@ namespace libbio::vcf {
 		void read_header();
 		void fill_buffer();
 		void reset();
-		bool parse_nc(callback_fn const &callback);
-		bool parse_nc(callback_fn &&callback);
+		bool parse_nc(callback_fn const &callback);	// Callback takes non-const transient_variant.
+		bool parse_nc(callback_fn &&callback);		// Callback takes non-const transient_variant.
 		bool parse(callback_cq_fn const &callback);
 		bool parse(callback_cq_fn &&callback);
 		bool parse_one_nc(callback_fn const &callback, parser_state &state);
