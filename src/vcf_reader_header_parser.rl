@@ -23,14 +23,14 @@ namespace libbio::vcf {
 	
 	void reader::read_header()
 	{
-		// FIXME: add a return value in order to allow re-filling the buffer when using the streaming VCF input.
-		
 		typedef metadata_base	meta_t;
+		
+		bool					should_continue(false);
 		
 		metadata_record_var		current_metadata;
 		metadata_base			*current_metadata_ptr{};
 		
-		char const				*file_start(m_fsm.p);
+		char const				*buffer_start(nullptr);
 		char const				*start(nullptr);			// Current string start.
 		char const				*line_start(nullptr);		// Current line start.
 		std::size_t				sample_name_idx(1);
@@ -270,7 +270,7 @@ namespace libbio::vcf {
 			column_names					= "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
 			sample_name						= ([^\t\n]+) >(start_string) %(end_sample_name);
 			sample_names					= sample_name ("\t" sample_name)*;
-			column_header					= (column_names ("\tFORMAT\t" >(has_samples) sample_names)? "\n" >(end_line) @{ fbreak; });
+			column_header					= (column_names ("\tFORMAT\t" >(has_samples) sample_names)? "\n" >(end_line) @{ should_continue = false; fbreak; });
 			
 			fileformat						= ("##fileformat=VCFv4." [0-9]+ "\n" >(end_line));
 			
@@ -278,8 +278,15 @@ namespace libbio::vcf {
 			main := fileformat @(goto_header_sub) $err(error);
 			
 			write init;
-			write exec;
 		}%%
+		
+		do
+		{
+			fill_buffer();
+			should_continue = true;
+			buffer_start = m_fsm.p;
+			%% write exec;
+		} while (should_continue);
 		
 		// Post-process the metadata descriptions.
 		m_delegate->vcf_reader_did_parse_metadata(*this);
@@ -289,7 +296,7 @@ namespace libbio::vcf {
 		// Assign the genotype offsets after reading FORMAT.
 		
 		// stream now points to the first variant.
-		m_input->set_position(m_fsm.p - file_start);
+		m_input->set_position(m_fsm.p - buffer_start);
 		m_input->store_first_variant_offset(1 + m_lineno);
 		
 		// Instantiate a variant.

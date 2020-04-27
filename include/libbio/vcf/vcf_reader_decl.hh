@@ -118,12 +118,11 @@ namespace libbio::vcf {
 		void set_input(class input &input) { m_input = &input; }
 		void set_variant_format(variant_format *fmt) { libbio_always_assert(fmt); m_current_format.reset(fmt); m_have_assigned_variant_format = true; }
 		void read_header();
-		void fill_buffer();
 		void reset();
-		bool parse_nc(callback_fn const &callback);	// Callback takes non-const transient_variant.
-		bool parse_nc(callback_fn &&callback);		// Callback takes non-const transient_variant.
-		bool parse(callback_cq_fn const &callback);
-		bool parse(callback_cq_fn &&callback);
+		void parse_nc(callback_fn const &callback);	// Callback takes non-const transient_variant.
+		void parse_nc(callback_fn &&callback);		// Callback takes non-const transient_variant.
+		void parse(callback_cq_fn const &callback);
+		void parse(callback_cq_fn &&callback);
 		bool parse_one_nc(callback_fn const &callback, parser_state &state);
 		bool parse_one_nc(callback_fn &&callback, parser_state &state);
 		bool parse_one(callback_cq_fn const &callback, parser_state &state);
@@ -166,6 +165,8 @@ namespace libbio::vcf {
 		inline info_field_end *get_end_field_ptr() const;
 		
 	protected:
+		void fill_buffer();
+		
 		void skip_to_next_nl();
 		void set_buffer_start(char const *p) { m_fsm.p = p; }
 		void set_buffer_end(char const *pe) { m_fsm.pe = pe; }

@@ -20,7 +20,7 @@ namespace libbio::vcf {
 	
 	// Parse the fields until m_max_parsed field, find the next newline and invoke the callback function.
 	template <int t_continue, int t_break, typename t_cb>
-	int reader::check_max_field(field const vcf_field, int const target, bool const stop_after_newline, t_cb const &cb, bool &retval)
+	int reader::check_max_field(field const vcf_field, int const target, bool const stop_after_newline, t_cb const &cb, bool &should_continue)
 	{
 		if (vcf_field <= m_max_parsed_field)
 			return target;
@@ -31,7 +31,7 @@ namespace libbio::vcf {
 		
 		if (!st)
 		{
-			retval = false;
+			should_continue = false;
 			return t_break;
 		}
 		else if (stop_after_newline)
@@ -42,13 +42,15 @@ namespace libbio::vcf {
 	}
 	
 	
+	// Returns whether there is still data to be parsed, i.e. if EOF was not reached.
 	template <typename t_cb>
 	bool reader::parse2(t_cb const &cb, parser_state &state, bool const stop_after_newline)
 	{
 		typedef transient_variant				var_t;
 		typedef variant_alt <std::string_view>	alt_t;
 		
-		bool retval(true);
+		bool should_continue(true);
+		bool eof_reached(false);
 		
 		info_field_base			*current_info_field{};
 		
@@ -228,7 +230,7 @@ namespace libbio::vcf {
 				
 				if (!cb(m_current_variant))
 				{
-					retval = false;
+					should_continue = false;
 					fhold;
 					fbreak;
 				}
@@ -356,7 +358,7 @@ namespace libbio::vcf {
 			chrom_id_f :=
 				(chrom_id sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::POS, fentry(pos_f), stop_after_newline, cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::POS, fentry(pos_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -364,7 +366,7 @@ namespace libbio::vcf {
 			pos_f :=
 				(pos sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::ID, fentry(id_f), stop_after_newline, cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::ID, fentry(id_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -372,7 +374,7 @@ namespace libbio::vcf {
 			id_f :=
 				(id_rec sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::REF, fentry(ref_f), stop_after_newline, cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::REF, fentry(ref_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -380,7 +382,7 @@ namespace libbio::vcf {
 			ref_f :=
 				(ref sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::ALT, fentry(alt_f), stop_after_newline, cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::ALT, fentry(alt_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -388,7 +390,7 @@ namespace libbio::vcf {
 			alt_f :=
 				(alt sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::QUAL, fentry(qual_f), stop_after_newline, cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::QUAL, fentry(qual_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -396,7 +398,7 @@ namespace libbio::vcf {
 			qual_f :=
 				(qual sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::FILTER, fentry(filter_f), stop_after_newline, cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::FILTER, fentry(filter_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -404,7 +406,7 @@ namespace libbio::vcf {
 			filter_f :=
 				(filter sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::INFO, fentry(info_f), stop_after_newline, cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::INFO, fentry(info_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -412,7 +414,7 @@ namespace libbio::vcf {
 			info_f :=
 				(info (sep | [\n]))
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::FORMAT, fentry(format_f), stop_after_newline, cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::FORMAT, fentry(format_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -420,7 +422,7 @@ namespace libbio::vcf {
 			format_f :=
 				(format sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::ALL, fentry(sample_rec_f), stop_after_newline, cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::ALL, fentry(sample_rec_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -445,23 +447,28 @@ namespace libbio::vcf {
 					m_current_variant.m_lineno = m_lineno;
 					m_current_line_start = 1 + fpc;
 					
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::CHROM, fentry(chrom_id_f), stop_after_newline, cb, retval);
+					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::CHROM, fentry(chrom_id_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error)
-				$eof{ retval = false; }; # Expected EOF. FIXME: should be true? Works anyway when using memory mapping.
+				$eof{ eof_reached = true; should_continue = false; };
 			
 			write init;
-			write exec;
 		}%%
 		
-		return retval;
+		do
+		{
+			fill_buffer();
+			%% write exec;
+		} while (should_continue && !stop_after_newline);
+		
+		return !eof_reached;
 	}
 	
 	
-	bool reader::parse_nc(callback_fn const &callback)							{ parser_state state; return parse2(callback, state, false); }
-	bool reader::parse_nc(callback_fn &&callback)								{ parser_state state; return parse2(callback, state, false); }
-	bool reader::parse(callback_cq_fn const &callback)							{ parser_state state; return parse2(callback, state, false); }
-	bool reader::parse(callback_cq_fn &&callback)								{ parser_state state; return parse2(callback, state, false); }
+	void reader::parse_nc(callback_fn const &callback)							{ parser_state state; parse2(callback, state, false); }
+	void reader::parse_nc(callback_fn &&callback)								{ parser_state state; parse2(callback, state, false); }
+	void reader::parse(callback_cq_fn const &callback)							{ parser_state state; parse2(callback, state, false); }
+	void reader::parse(callback_cq_fn &&callback)								{ parser_state state; parse2(callback, state, false); }
 	bool reader::parse_one_nc(callback_fn const &callback, parser_state &state)	{ return parse2(callback, state, true); }
 	bool reader::parse_one_nc(callback_fn &&callback, parser_state &state)		{ return parse2(callback, state, true); }
 	bool reader::parse_one(callback_cq_fn const &callback, parser_state &state)	{ return parse2(callback, state, true); }
