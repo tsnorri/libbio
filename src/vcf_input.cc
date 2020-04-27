@@ -21,17 +21,6 @@ namespace libbio::vcf {
 	}
 	
 	
-	bool stream_input_base::getline(std::string_view &dst)
-	{
-		bool const st(stream_getline());
-		if (!st)
-			return false;
-		
-		dst = std::string_view(m_buffer.data(), m_buffer.size());
-		return true;
-	}
-	
-	
 	void stream_input_base::store_first_variant_offset(std::size_t const lineno)
 	{
 		input::store_first_variant_offset(lineno);
@@ -97,23 +86,6 @@ namespace libbio::vcf {
 	{
 		m_range_start_offset = 0;
 		m_range_length = m_handle->size();
-	}
-	
-	
-	bool mmap_input::getline(std::string_view &dst)
-	{
-		auto const size(m_handle->size());
-		libbio_assert(m_pos <= size);
-		
-		auto const sv(m_handle->operator std::string_view());
-		auto const nl_pos(sv.find('\n', m_pos));
-		if (std::string_view::npos == nl_pos)
-			return false;
-		
-		// Found the newline, update the variables.
-		dst = sv.substr(m_pos, nl_pos - m_pos);
-		m_pos = 1 + nl_pos;
-		return true;
 	}
 	
 	
