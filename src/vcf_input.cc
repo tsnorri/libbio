@@ -84,6 +84,7 @@ namespace libbio::vcf {
 				m_pos += (data - data_start);
 				vcf_reader.set_buffer_start(data_start);
 				vcf_reader.set_buffer_end(data_start + m_pos + 1);
+				vcf_reader.set_eof(nullptr);
 				return;
 			}
 			
