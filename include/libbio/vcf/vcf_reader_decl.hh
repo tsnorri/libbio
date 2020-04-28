@@ -142,6 +142,8 @@ namespace libbio::vcf {
 		variant_format_ptr const &get_variant_format_ptr() const { return m_current_format; }
 		
 		inline variant make_empty_variant();
+		transient_variant &current_variant() { return m_current_variant; }
+		transient_variant const &current_variant() const { return m_current_variant; }
 		
 		std::size_t lineno() const { return m_lineno; }
 		std::size_t last_header_lineno() const { return m_input->last_header_lineno(); }
