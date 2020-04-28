@@ -3,6 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 #include <catch2/catch.hpp>
 #include <libbio/vcf/vcf_reader.hh>
 #include <map>
@@ -12,6 +14,7 @@
 #include <typeinfo>
 
 namespace gen	= Catch::Generators;
+namespace io	= boost::iostreams;
 namespace lb	= libbio;
 namespace rsv	= ranges::view;
 namespace vcf	= libbio::vcf;
@@ -638,27 +641,73 @@ namespace {
 	
 	class test_fixture
 	{
+	public:
+		enum class vcf_input_type : std::uint8_t
+		{
+			MMAP,
+			STREAM,
+			COMPRESSED_STREAM
+		};
+		
+		typedef vcf::seekable_stream_input <
+			lb::file_istream
+		>										stream_input;
+		typedef vcf::stream_input <
+			io::filtering_stream <io::input>
+		>										filtering_stream_input;
+		
 	protected:
-		lb::mmap_handle <char>					m_mmap_handle;
-		vcf::mmap_input							m_mmap_input;
-		vcf::stream_input <lb::file_istream>	m_stream_input;
-		vcf::reader								m_reader;
-		std::vector <std::string>				m_expected_info_keys{map_keys(s_type_test_expected_info_fields)};
-		std::vector <std::string>				m_expected_genotype_keys{map_keys(s_type_test_expected_genotype_fields)};
+		vcf::mmap_input				m_mmap_input;
+		
+		stream_input				m_stream_input{128};
+		
+		filtering_stream_input		m_filtering_stream_input;
+		lb::file_istream			m_compressed_input_stream;
+		
+		vcf::reader					m_reader;
+		std::vector <std::string>	m_expected_info_keys{map_keys(s_type_test_expected_info_fields)};
+		std::vector <std::string>	m_expected_genotype_keys{map_keys(s_type_test_expected_genotype_fields)};
 	
 	public:
-		void open_vcf_file(char const *name, bool const use_stream_input)
+		auto all_vcf_input_types() const
 		{
-			if (use_stream_input)
+			return lb::make_array <vcf_input_type>(
+				test_fixture::vcf_input_type::MMAP,
+				test_fixture::vcf_input_type::STREAM,
+				test_fixture::vcf_input_type::COMPRESSED_STREAM
+			);
+		}
+		
+		void open_vcf_file(char const *name, vcf_input_type const input_type)
+		{
+			switch (input_type)
 			{
-				lb::open_file_for_reading(name, m_stream_input.input_stream());
-				m_reader = vcf::reader(m_stream_input);
-			}
-			else
-			{
-				m_mmap_handle.open(name);
-				m_mmap_input = vcf::mmap_input(m_mmap_handle);
-				m_reader = vcf::reader(m_mmap_input);
+				case vcf_input_type::MMAP:
+					m_mmap_input.handle().open(name);
+					m_reader = vcf::reader(m_mmap_input);
+					break;
+				
+				case vcf_input_type::STREAM:
+					lb::open_file_for_reading(name, m_stream_input.stream());
+					m_reader = vcf::reader(m_stream_input);
+					break;
+				
+				case vcf_input_type::COMPRESSED_STREAM:
+				{
+					std::string compressed_file_name(name);
+					compressed_file_name += ".gz";
+					lb::open_file_for_reading(compressed_file_name, m_compressed_input_stream);
+					auto &filtering_stream(m_filtering_stream_input.stream());
+					filtering_stream.push(boost::iostreams::gzip_decompressor());
+					filtering_stream.push(m_compressed_input_stream);
+					filtering_stream.exceptions(std::istream::badbit);
+					m_reader = vcf::reader(m_filtering_stream_input);
+					break;
+				}
+				
+				default:
+					FAIL("Unexpected input type");
+					break;
 			}
 		}
 	
@@ -805,11 +854,15 @@ SCENARIO("The VCF reader can report EOF correctly", "[vcf_reader]")
 {
 	test_fixture fixture;
 	
-	auto const should_use_stream_input = GENERATE(false, true);
+	auto const vcf_input_type = GENERATE(
+		test_fixture::vcf_input_type::MMAP,
+		test_fixture::vcf_input_type::STREAM,
+		test_fixture::vcf_input_type::COMPRESSED_STREAM
+	);
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-simple.vcf", should_use_stream_input);
+		fixture.open_vcf_file("test-files/test-simple.vcf", vcf_input_type);
 		
 		WHEN("the file is parsed")
 		{
@@ -832,11 +885,15 @@ SCENARIO("The VCF reader can parse VCF header", "[vcf_reader]")
 {
 	test_fixture fixture;
 	
-	auto const should_use_stream_input = GENERATE(false, true);
+	auto const vcf_input_type = GENERATE(
+		test_fixture::vcf_input_type::MMAP,
+		test_fixture::vcf_input_type::STREAM,
+		test_fixture::vcf_input_type::COMPRESSED_STREAM
+	);
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-data-types.vcf", should_use_stream_input);
+		fixture.open_vcf_file("test-files/test-data-types.vcf", vcf_input_type);
 		// Don’t add the reserved fields.
 		
 		WHEN("the headers of the file are parsed")
@@ -863,16 +920,16 @@ SCENARIO("The VCF reader can parse VCF header", "[vcf_reader]")
 SCENARIO("The VCF reader can parse simple VCF records", "[vcf_reader")
 {
 	test_fixture fixture;
-	
+	auto const vcf_input_types(fixture.all_vcf_input_types());
 	auto const bool_values(lb::make_array <bool>(true, false));
 	auto const [
-		should_use_stream_input,
+		vcf_input_type,
 		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values)));
+	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values)));
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-simple.vcf", should_use_stream_input);
+		fixture.open_vcf_file("test-files/test-simple.vcf", vcf_input_type);
 		
 		WHEN("the file is parsed")
 		{
@@ -913,15 +970,16 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 {
 	test_fixture fixture;
 	
+	auto const vcf_input_types(fixture.all_vcf_input_types());
 	auto const bool_values(lb::make_array <bool>(true, false));
 	auto const [
-		should_use_stream_input,
+		vcf_input_type,
 		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values)));
+	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values)));
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-data-types.vcf", should_use_stream_input);
+		fixture.open_vcf_file("test-files/test-data-types.vcf", vcf_input_type);
 		
 		// Add to get GT.
 		fixture.add_reserved_keys();
@@ -977,19 +1035,20 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 
 SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]")
 {
+	test_fixture fixture;
+	
+	auto const vcf_input_types(fixture.all_vcf_input_types());
 	auto const bool_values(lb::make_array <bool>(true, false));
 	auto const [
-		should_use_stream_input,
+		vcf_input_type,
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
 		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values, bool_values)));
-	
-	test_fixture fixture;
+	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values, bool_values, bool_values)));
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-data-types.vcf", should_use_stream_input);
+		fixture.open_vcf_file("test-files/test-data-types.vcf", vcf_input_type);
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
 		
@@ -1025,19 +1084,20 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 
 SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_reader]")
 {
+	test_fixture fixture;
+	
+	auto const vcf_input_types(fixture.all_vcf_input_types());
 	auto const bool_values(lb::make_array <bool>(true, false));
 	auto const [
-		should_use_stream_input,
+		vcf_input_type,
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
 		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values, bool_values)));
-	
-	test_fixture fixture;
+	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values, bool_values, bool_values)));
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-data-types.vcf", should_use_stream_input);
+		fixture.open_vcf_file("test-files/test-data-types.vcf", vcf_input_type);
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
 		
@@ -1092,19 +1152,20 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 
 SCENARIO("Copying persistent variants works even if the format has changed", "[vcf_reader]")
 {
+	test_fixture fixture;
+	
+	auto const vcf_input_types(fixture.all_vcf_input_types());
 	auto const bool_values(lb::make_array <bool>(true, false));
 	auto const [
-		should_use_stream_input,
+		vcf_input_type,
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
 		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values, bool_values)));
-	
-	test_fixture fixture;
+	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values, bool_values, bool_values)));
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-data-types.vcf", should_use_stream_input);
+		fixture.open_vcf_file("test-files/test-data-types.vcf", vcf_input_type);
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
 		

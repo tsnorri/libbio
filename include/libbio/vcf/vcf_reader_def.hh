@@ -11,6 +11,19 @@
 
 
 namespace libbio::vcf {
+	
+	reader::reader(input_base &input):
+		m_input(&input)
+	{
+		input.reader_will_take_input();
+	}
+	
+	void reader::set_input(input_base &input)
+	{
+		input.reader_will_take_input();
+		m_input = &input;
+	}
+	
 	void reader::set_parsed_fields(field max_field) {
 		m_max_parsed_field = (
 			m_has_samples

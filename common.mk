@@ -21,6 +21,7 @@ CP				?= cp
 CXX				?= c++
 DOT				?= dot
 GENGETOPT		?= gengetopt
+GZIP			?= gzip
 MKDIR			?= mkdir
 PYTHON			?= python
 RAGEL			?= ragel

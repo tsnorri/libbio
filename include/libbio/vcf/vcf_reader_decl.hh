@@ -41,7 +41,6 @@ namespace libbio::vcf::detail {
 
 namespace libbio::vcf {
 	
-	class mmap_input;
 	class transient_variant;
 	
 	
@@ -49,6 +48,7 @@ namespace libbio::vcf {
 	{
 		friend class stream_input_base;
 		friend class mmap_input;
+		
 		friend class variant_format_access;
 		friend class transient_variant_format_access;
 		
@@ -87,7 +87,7 @@ namespace libbio::vcf {
 		void report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state, bool const in_header = false);
 
 	protected:
-		input							*m_input{nullptr};
+		input_base						*m_input{nullptr};
 		fsm								m_fsm;
 		metadata						m_metadata;
 		info_field_map					m_info_fields;
@@ -109,16 +109,12 @@ namespace libbio::vcf {
 	public:
 		reader() = default;
 		
-		reader(input &vcf_input):
-			m_input(&vcf_input)
-		{
-		}
+		inline reader(input_base &vcf_input);
 		
 		void set_delegate(reader_delegate &delegate) { m_delegate = &delegate; }
-		void set_input(class input &input) { m_input = &input; }
+		inline void set_input(input_base &input);
 		void set_variant_format(variant_format *fmt) { libbio_always_assert(fmt); m_current_format.reset(fmt); m_have_assigned_variant_format = true; }
 		void read_header();
-		void reset();
 		void parse_nc(callback_fn const &callback);	// Callback takes non-const transient_variant.
 		void parse_nc(callback_fn &&callback);		// Callback takes non-const transient_variant.
 		void parse(callback_cq_fn const &callback);
@@ -128,8 +124,8 @@ namespace libbio::vcf {
 		bool parse_one(callback_cq_fn const &callback, parser_state &state);
 		bool parse_one(callback_cq_fn &&callback, parser_state &state);
 		
-		input &vcf_input() { return *m_input; }
-		input const &vcf_input() const { return *m_input; }
+		input_base &vcf_input() { return *m_input; }
+		input_base const &vcf_input() const { return *m_input; }
 		char const *buffer_start() const { return m_fsm.p; }
 		char const *buffer_end() const { return m_fsm.pe; }
 		char const *eof() const { return m_fsm.eof; }

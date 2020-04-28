@@ -8,28 +8,35 @@
 #include <libbio/vcf/vcf_reader.hh>
 
 
-namespace ios = boost::iostreams;
+namespace {
+
+	void stream_read(std::istream &stream, char *dst, std::size_t const len)
+	{
+		try
+		{
+			stream.read(dst, len);
+		}
+		catch (std::ios_base::failure const &exc)
+		{
+			if (!stream.eof())
+				throw (exc);
+		}
+	}
+}
 
 
 namespace libbio::vcf {
 	
-	void stream_input_base::reset_to_first_variant_offset()
+	void stream_input_base::reader_will_take_input()
 	{
-		stream_reset();
-		m_len = 0;
-		m_pos = 0;
-	}
-	
-	
-	void stream_input_base::store_first_variant_offset(std::size_t const lineno)
-	{
-		input::store_first_variant_offset(lineno);
-		m_first_variant_offset = stream_tellg();
+		if (0 == m_buffer.size())
+			m_buffer.resize(1024);
 	}
 	
 	
 	void stream_input_base::fill_buffer(reader &vcf_reader)
 	{
+		auto &is(stream());
 		// Copy the remainder to the beginning.
 		if (m_pos + 1 < m_len)
 		{
@@ -51,11 +58,11 @@ namespace libbio::vcf {
 			char *data(data_start + m_len);
 		
 			std::size_t space(m_buffer.size() - m_len);
-			stream_read(data, space);
-			std::size_t const read_len(stream_gcount());
+			stream_read(is, data, space);
+			std::size_t const read_len(is.gcount());
 			m_len += read_len;
 		
-			if (stream_eof())
+			if (is.eof())
 			{
 				m_pos = m_len;
 				auto const end(data_start + m_len);
@@ -77,38 +84,19 @@ namespace libbio::vcf {
 				return;
 			}
 			
+			libbio_assert_lt(0, m_buffer.size());
 			m_buffer.resize(2 * m_buffer.size());
 		}
 	}
 	
 	
-	void mmap_input::reset_range()
-	{
-		m_range_start_offset = 0;
-		m_range_length = m_handle->size();
-	}
-	
-	
-	void mmap_input::store_first_variant_offset(std::size_t const lineno)
-	{
-		input::store_first_variant_offset(lineno);
-
-		m_first_variant_offset = m_pos;
-		m_range_length = m_handle->size() - m_pos;
-		m_range_start_offset = m_first_variant_offset;
-		m_range_start_lineno = m_first_variant_lineno;
-	}
-	
-	
 	void mmap_input::fill_buffer(reader &vcf_reader)
 	{
-		auto const bytes(m_handle->data());
-		auto const buffer_start(bytes + m_range_start_offset);
-		auto const buffer_end(bytes + m_range_start_offset + m_range_length);
+		auto const begin(m_handle.data());
+		auto const end(begin + m_handle.size());
 		
-		vcf_reader.set_lineno(m_range_start_lineno);
-		vcf_reader.set_buffer_start(buffer_start);
-		vcf_reader.set_buffer_end(buffer_end);
-		vcf_reader.set_eof(buffer_end);
+		vcf_reader.set_buffer_start(begin);
+		vcf_reader.set_buffer_end(end);
+		vcf_reader.set_eof(end);
 	}
 }

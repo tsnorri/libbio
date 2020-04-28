@@ -296,8 +296,7 @@ namespace libbio::vcf {
 		// Assign the genotype offsets after reading FORMAT.
 		
 		// stream now points to the first variant.
-		m_input->set_position(m_fsm.p - buffer_start);
-		m_input->store_first_variant_offset(1 + m_lineno);
+		m_input->set_first_variant_lineno(1 + m_lineno);
 		
 		// Instantiate a variant.
 		transient_variant var(*this, sample_count(), info_size, info_max_alignment);

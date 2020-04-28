@@ -68,6 +68,8 @@ namespace libbio::vcf {
 	}
 	
 	
+	// TODO: implement seeking.
+#if 0
 	// Seek to the beginning of the records.
 	void reader::reset()
 	{
@@ -82,6 +84,7 @@ namespace libbio::vcf {
 		m_current_format->m_fields_by_identifier.clear();
 		m_current_format_vec.clear();
 	}
+#endif
 	
 	
 	// Return the 1-based number of the given sample.

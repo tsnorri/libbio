@@ -25,18 +25,24 @@ OBJECTS	=	algorithm.o \
 			rle_bit_vector.o \
 			vcf_reader.o
 
+GENERATED_TEST_FILES = 	test-files/test-data-types.vcf.gz \
+						test-files/test-simple.vcf.gz
+
 CATCH2_HEADERS	= $(shell find ../lib/Catch2/include)
 
 all: tests
 
 
-tests: $(OBJECTS)
+tests: $(OBJECTS) $(GENERATED_TEST_FILES)
 	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) ../src/libbio.a $(BOOST_LIBS)
 
 
 clean:
-	$(RM) $(OBJECTS) tests
+	$(RM) $(OBJECTS) $(GENERATED_TEST_FILES) tests
 
 
 ../lib/Catch2/single_include/catch2/catch.hpp: $(CATCH2_HEADERS)
 	cd ../lib/Catch2 && $(PYTHON) scripts/generateSingleHeader.py
+
+%.vcf.gz: %.vcf
+	$(GZIP) -k $<

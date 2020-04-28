@@ -15,128 +15,128 @@ namespace libbio::vcf {
 	class reader;
 	
 	
-	class input
+	class input_base
 	{
+		friend class reader;
+		
 	protected:
-		std::size_t					m_first_variant_offset{0};
-		std::size_t					m_first_variant_lineno{1};
-		
+		std::size_t					m_first_variant_lineno{};
+	
 	public:
-		input() = default;
-		input(input const &other) = default;
+		virtual ~input_base() {}
 		
-		virtual ~input() {};
-		virtual void store_first_variant_offset(std::size_t const lineno) { m_first_variant_lineno = lineno; }
-		virtual void reset_to_first_variant_offset() {}
-		virtual void fill_buffer(reader &vcf_reader) = 0;
-		
-		virtual char const *buffer_start() const { return nullptr; }
-		virtual char const *buffer_end() const { return nullptr; }
-		virtual void set_position(std::size_t const pos) {}
+		std::size_t first_variant_lineno() const { return m_first_variant_lineno; }
 		std::size_t last_header_lineno() const { return m_first_variant_lineno - 1; }
+		
+	protected:
+		virtual void reader_will_take_input() {}
+		virtual char const *buffer_start() const = 0;
+		virtual void fill_buffer(reader &vcf_reader) = 0;
+		void set_first_variant_lineno(std::size_t lineno) { m_first_variant_lineno = lineno; }
 	};
-
-
-	class stream_input_base : public input
+	
+	
+	class seekable_input_base : public input_base
+	{
+		// TODO: implement seeking.
+	};
+	
+	
+	// fill_buffer, buffer_start and reader_will_take_input are implemented here.
+	class stream_input_base
 	{
 	protected:
 		std::string					m_buffer;
-		std::size_t					m_len{0};
-		std::size_t					m_pos{0};
-	
+		std::size_t					m_len{};
+		std::size_t					m_pos{};
+		
 	public:
-		stream_input_base():
-			m_buffer(128, '\0')
+		stream_input_base() = default;
+		
+		explicit stream_input_base(std::size_t const buffer_size):
+			m_buffer(buffer_size, '\0')
 		{
 		}
 		
 		virtual ~stream_input_base() {}
-	
-		virtual void store_first_variant_offset(std::size_t const lineno) override;
-		virtual void reset_to_first_variant_offset() override;
-		virtual void fill_buffer(reader &vcf_reader) override;
+		
+		virtual std::istream &stream() = 0;
+		virtual std::istream const &stream() const = 0;
 		
 	protected:
-		virtual void stream_reset() = 0;
-		virtual bool stream_getline() = 0;
-		virtual void stream_seekg(std::size_t const pos) = 0;
-		virtual std::size_t stream_tellg() = 0;
-		virtual void stream_read(char *data, std::size_t len) = 0;
-		virtual std::size_t stream_gcount() const = 0;
-		virtual bool stream_eof() const = 0;
+		char const *buffer_start() const { return m_buffer.data() + m_pos; }
+		void fill_buffer(reader &vcf_reader);
+		void reader_will_take_input();
+	};
+	
+	
+	template <typename t_stream, typename t_base>
+	class stream_input_tpl : public t_base, public stream_input_base
+	{
+	public:
+		typedef t_stream			stream_type;
+		
+	protected:
+		stream_type					m_stream;
+		
+	public:
+		stream_input_tpl() = default;
+		
+		explicit stream_input_tpl(std::size_t const buffer_size):
+			stream_input_base(buffer_size)
+		{
+		}
+		
+		stream_type &stream() override { return m_stream; }
+		stream_type const &stream() const override { return m_stream; }
+		
+	protected:
+		virtual void reader_will_take_input() override;
+		char const *buffer_start() const override { return stream_input_base::buffer_start(); }
+		void fill_buffer(reader &vcf_reader) override { stream_input_base::fill_buffer(vcf_reader); }
 	};
 	
 	
 	template <typename t_stream>
-	class stream_input final : public stream_input_base
+	class stream_input final : public stream_input_tpl <t_stream, input_base>
 	{
-	protected:
-		t_stream					m_stream;
-		
 	public:
-		using stream_input_base::stream_input_base;
-		
-		t_stream &input_stream() { return m_stream; }
-		
-	protected:
-		virtual void stream_reset() override
-		{
-			m_stream.clear();
-			m_stream.seekg(m_first_variant_offset);
-		}
-		
-		virtual bool stream_getline() override							{ return std::getline(m_stream, m_buffer).operator bool(); }
-		virtual void stream_seekg(std::size_t const pos) override		{ m_stream.seekg(pos); }
-		virtual std::size_t stream_tellg() override						{ return m_stream.tellg(); }
-		virtual std::size_t stream_gcount() const override				{ return m_stream.gcount(); }
-		virtual bool stream_eof() const override						{ return m_stream.eof(); }
-		
-		virtual void stream_read(char *data, std::size_t len) override
-		{
-			try
-			{
-				m_stream.read(data, len);
-			}
-			catch (std::ios_base::failure const &exc)
-			{
-				if (!m_stream.eof())
-					throw (exc);
-			}
-		}
+		using stream_input_tpl <t_stream, input_base>::stream_input_tpl;
 	};
-
-
-	class mmap_input final : public input
+	
+	
+	template <typename t_stream>
+	class seekable_stream_input final : public stream_input_tpl <t_stream, seekable_input_base>
+	{
+	public:
+		using stream_input_tpl <t_stream, seekable_input_base>::stream_input_tpl;
+	};
+	
+	
+	class mmap_input final : public seekable_input_base
 	{
 	public:
 		typedef mmap_handle <char> handle_type;
 		
 	protected:
-		handle_type const	*m_handle{nullptr};
-		std::size_t			m_pos{0};
-		std::size_t			m_range_start_lineno{1};
-		std::size_t			m_range_start_offset{0};
-		std::size_t			m_range_length{0};
-	
+		handle_type					m_handle{};
+		
 	public:
-		mmap_input() = default;
+		handle_type &handle() { return m_handle; }
+		handle_type const &handle() const { return m_handle; }
 		
-		mmap_input(handle_type const &handle):
-			m_handle(&handle)
-		{
-			reset_range();
-		}
-		
-		handle_type const &handle() const { return *m_handle; }
-		
-		virtual void store_first_variant_offset(std::size_t const lineno) override;
-		virtual void fill_buffer(reader &vcf_reader) override;
-		
-		virtual char const *buffer_start() const override { return m_handle->data(); }
-		virtual char const *buffer_end() const override { return m_handle->data() + m_handle->size(); }
-		void reset_range();
-		virtual void set_position(std::size_t const pos) override { m_pos = pos; }
+	protected:
+		char const *buffer_start() const override { return m_handle.data(); }
+		void fill_buffer(reader &vcf_reader) override;
 	};
+	
+	
+	template <typename t_stream, typename t_base>
+	void stream_input_tpl <t_stream, t_base>::reader_will_take_input()
+	{
+		t_base::reader_will_take_input();
+		stream_input_base::reader_will_take_input();
+	}
 }
 
 #endif
