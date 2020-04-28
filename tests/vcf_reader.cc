@@ -639,18 +639,27 @@ namespace {
 	class test_fixture
 	{
 	protected:
-		lb::mmap_handle <char> m_handle;
-		vcf::mmap_input m_input;
-		vcf::reader m_reader;
-		std::vector <std::string> m_expected_info_keys{map_keys(s_type_test_expected_info_fields)};
-		std::vector <std::string> m_expected_genotype_keys{map_keys(s_type_test_expected_genotype_fields)};
+		lb::mmap_handle <char>					m_mmap_handle;
+		vcf::mmap_input							m_mmap_input;
+		vcf::stream_input <lb::file_istream>	m_stream_input;
+		vcf::reader								m_reader;
+		std::vector <std::string>				m_expected_info_keys{map_keys(s_type_test_expected_info_fields)};
+		std::vector <std::string>				m_expected_genotype_keys{map_keys(s_type_test_expected_genotype_fields)};
 	
 	public:
-		void open_vcf_file(char const *name)
+		void open_vcf_file(char const *name, bool const use_stream_input)
 		{
-			m_handle.open(name);
-			m_input = vcf::mmap_input(m_handle);
-			m_reader = vcf::reader(m_input);
+			if (use_stream_input)
+			{
+				lb::open_file_for_reading(name, m_stream_input.input_stream());
+				m_reader = vcf::reader(m_stream_input);
+			}
+			else
+			{
+				m_mmap_handle.open(name);
+				m_mmap_input = vcf::mmap_input(m_mmap_handle);
+				m_reader = vcf::reader(m_mmap_input);
+			}
 		}
 	
 		void read_vcf_header()
@@ -796,9 +805,11 @@ SCENARIO("The VCF reader can report EOF correctly", "[vcf_reader]")
 {
 	test_fixture fixture;
 	
+	auto const should_use_stream_input = GENERATE(false, true);
+	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-simple.vcf");
+		fixture.open_vcf_file("test-files/test-simple.vcf", should_use_stream_input);
 		
 		WHEN("the file is parsed")
 		{
@@ -821,9 +832,11 @@ SCENARIO("The VCF reader can parse VCF header", "[vcf_reader]")
 {
 	test_fixture fixture;
 	
+	auto const should_use_stream_input = GENERATE(false, true);
+	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-data-types.vcf");
+		fixture.open_vcf_file("test-files/test-data-types.vcf", should_use_stream_input);
 		// Don’t add the reserved fields.
 		
 		WHEN("the headers of the file are parsed")
@@ -851,21 +864,25 @@ SCENARIO("The VCF reader can parse simple VCF records", "[vcf_reader")
 {
 	test_fixture fixture;
 	
-	auto const should_parse_one_by_one = GENERATE(false, true);
+	auto const bool_values(lb::make_array <bool>(true, false));
+	auto const [
+		should_use_stream_input,
+		should_parse_one_by_one
+	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values)));
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-simple.vcf");
-
+		fixture.open_vcf_file("test-files/test-simple.vcf", should_use_stream_input);
+		
 		WHEN("the file is parsed")
 		{
 			fixture.read_vcf_header();
 			fixture.get_reader().set_parsed_fields(vcf::field::ALL);
-
+			
 			THEN("each record matches the expected")
 			{
 				auto const expected_records(prepare_expected_records_for_test_simple_vcf());
-
+				
 				std::size_t idx{};
 				fixture.parse(
 					should_parse_one_by_one,
@@ -896,11 +913,15 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 {
 	test_fixture fixture;
 	
-	auto const should_parse_one_by_one = GENERATE(false, true);
+	auto const bool_values(lb::make_array <bool>(true, false));
+	auto const [
+		should_use_stream_input,
+		should_parse_one_by_one
+	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values)));
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-data-types.vcf");
+		fixture.open_vcf_file("test-files/test-data-types.vcf", should_use_stream_input);
 		
 		// Add to get GT.
 		fixture.add_reserved_keys();
@@ -958,16 +979,17 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 {
 	auto const bool_values(lb::make_array <bool>(true, false));
 	auto const [
+		should_use_stream_input,
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
 		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values)));
+	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values, bool_values)));
 	
 	test_fixture fixture;
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-data-types.vcf");
+		fixture.open_vcf_file("test-files/test-data-types.vcf", should_use_stream_input);
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
 		
@@ -1005,16 +1027,17 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 {
 	auto const bool_values(lb::make_array <bool>(true, false));
 	auto const [
+		should_use_stream_input,
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
 		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values)));
+	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values, bool_values)));
 	
 	test_fixture fixture;
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-data-types.vcf");
+		fixture.open_vcf_file("test-files/test-data-types.vcf", should_use_stream_input);
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
 		
@@ -1071,16 +1094,17 @@ SCENARIO("Copying persistent variants works even if the format has changed", "[v
 {
 	auto const bool_values(lb::make_array <bool>(true, false));
 	auto const [
+		should_use_stream_input,
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
 		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values)));
+	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values, bool_values)));
 	
 	test_fixture fixture;
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file("test-files/test-data-types.vcf");
+		fixture.open_vcf_file("test-files/test-data-types.vcf", should_use_stream_input);
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
 		

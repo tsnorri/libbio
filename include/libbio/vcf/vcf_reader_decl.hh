@@ -100,7 +100,7 @@ namespace libbio::vcf {
 		reader_delegate					*m_delegate{&detail::g_vcf_reader_default_delegate};
 		char const						*m_current_line_start{};
 		copyable_atomic <std::size_t>	m_counter{0};
-		std::size_t						m_lineno{1};							// Current line number.
+		std::size_t						m_lineno{0};							// Current line number.
 		std::size_t						m_variant_index{0};						// Current variant number (0-based).
 		field							m_max_parsed_field{};
 		bool							m_have_assigned_variant_format{};
