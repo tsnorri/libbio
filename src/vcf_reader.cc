@@ -97,7 +97,8 @@ namespace libbio::vcf {
 	void reader::fill_buffer()
 	{
 		libbio_assert(m_input);
-		m_input->fill_buffer(*this);
+		if (m_fsm.p == m_fsm.pe)
+			m_input->fill_buffer(*this);
 	}
 	
 	

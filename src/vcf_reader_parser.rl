@@ -217,14 +217,14 @@ namespace libbio::vcf {
 				}
 			}
 			
-			action end_sample {
+			action handle_sample {
 				if (m_current_format_vec.size() != subfield_idx)
 					throw std::runtime_error("Number of sample fields differs from FORMAT");
 				
 				++sample_idx;
 			}
 			
-			action end_last_sample {
+			action handle_last_sample {
 				if (m_sample_names.size() != sample_idx)
 					throw std::runtime_error("Number of samples differs from VCF headers");
 				
@@ -236,7 +236,10 @@ namespace libbio::vcf {
 				}
 				
 				++m_counter;
-				
+			}
+			
+			action end_last_sample {
+				fhold;
 				if (stop_after_newline)
 				{
 					fnext main;
@@ -351,8 +354,26 @@ namespace libbio::vcf {
 			sep				= [\t];		# Field separator
 			
 			# Handle a newline and continue.
-			main_nl			:= '\n' >to{ fhold; }	@{ fgoto main; }	$eof{ throw std::runtime_error("Got an unexpected EOF"); };
-			break_nl		:= '\n' >to{ fhold; }	@{ fbreak; }		$eof{ throw std::runtime_error("Got an unexpected EOF"); };
+			main_nl			:= '\n'
+								>to{ fhold; }
+								$err(error)
+								%eof{
+									// Check for EOF before going back to main.
+									eof_reached = true;
+									should_continue = false;
+									fbreak;
+								}
+								%from{ fhold; fgoto main; };	# Use %from b.c. the error handler would fire otherwise.
+			break_nl		:= '\n'
+								>to{ fhold; }
+								$err(error)
+								%eof{
+									// Check for EOF before stopping.
+									eof_reached = true;
+									should_continue = false;
+									fbreak;
+								}
+								%from{ fhold; fbreak; };		# Use %from b.c. the error handler would fire otherwise.
 			
 			# #CHROM
 			chrom_id_f :=
@@ -428,10 +449,17 @@ namespace libbio::vcf {
 			
 			# Sample records
 			sample_field	= ([^\t\n:]+) >(start_string) %(end_sample_field);
-			sample_rec		= (sample_field (":" sample_field)*) >(start_sample) %(end_sample);
-			sample_rec_f	:= (sample_rec ("\t" sample_rec)*)? %(end_last_sample) "\n" $err(error);
+			sample_rec		= (sample_field (":" sample_field)*) >(start_sample) %(handle_sample);
+			sample_rec_end	= "\n"
+								%eof{
+									// Check for EOF after the last sample and only after handling the newline.
+									eof_reached = true;
+									should_continue = false;
+									fbreak;
+								}
+								%from(end_last_sample);	# Use %from b.c. the error handler would fire otherwise.
+			sample_rec_f	:= (sample_rec ("\t" sample_rec)*)? %(handle_last_sample) sample_rec_end $err(error);
 			
-			# Line start.
 			# Apparently main has to be able to read a character, so use fhold.
 			# Allow EOF, though, with '?'.
 			main := any?

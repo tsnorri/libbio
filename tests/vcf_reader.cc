@@ -6,8 +6,7 @@
 #include <catch2/catch.hpp>
 #include <libbio/vcf/vcf_reader.hh>
 #include <map>
-#include <range/v3/view/enumerate.hpp>
-#include <range/v3/view/zip.hpp>
+#include <range/v3/all.hpp>
 #include <set>
 #include <string>
 #include <typeinfo>
@@ -17,7 +16,14 @@ namespace lb	= libbio;
 
 
 namespace {
-
+	
+	template <typename t_range>
+	auto from_range(t_range &&range)
+	{
+		return Catch::Generators::from_range(ranges::begin(range), ranges::end(range));
+	}
+	
+	
 	template <typename t_key, typename t_value, typename t_cmp>
 	void add_map_keys(std::map <t_key, t_value, t_cmp> const &map, std::vector <t_key> &dst)
 	{
@@ -418,6 +424,17 @@ namespace {
 	};
 	
 	
+	std::vector <expected_record> prepare_expected_records_for_test_simple_vcf()
+	{
+		std::vector <expected_record> expected_records{
+			{3,	8,	"a",		"C",	{"G"},		{},	{},	{}},
+			{4,	10,	"b",		"A",	{"C", "G"},	{},	{},	{}}
+		};
+		
+		return expected_records;
+	}
+	
+	
 	std::vector <expected_record> prepare_expected_records_for_test_data_types_vcf()
 	{
 		std::vector <expected_record> expected_records{
@@ -512,6 +529,22 @@ namespace {
 		expected_records[2].add_genotype_value("FORMAT_INTEGER_D",	s_type_test_expected_genotype_fields,	std::vector <int32_t>({8, 9, 10, 11}));
 		
 		return expected_records;
+	}
+	
+	
+	template <typename t_variant>
+	void check_record_against_expected_in_test_simple_vcf(
+		t_variant const &var,
+		expected_record const &expected
+	)
+	{
+		REQUIRE(var.chrom_id() == "chr1");
+		REQUIRE(var.lineno() == expected.lineno);
+		REQUIRE(var.pos() == expected.pos);
+		REQUIRE(var.id().size() == 1);
+		REQUIRE(var.id().front() == expected.id);
+		REQUIRE(var.ref() == expected.ref);
+		REQUIRE(var.alts().size() == expected.alts.size());
 	}
 	
 	
@@ -611,9 +644,9 @@ namespace {
 		std::vector <std::string> m_expected_genotype_keys{map_keys(s_type_test_expected_genotype_fields)};
 	
 	public:
-		void open_vcf_file()
+		void open_vcf_file(char const *name)
 		{
-			m_handle.open("test-files/test-data-types.vcf");
+			m_handle.open(name);
 			m_input = lb::vcf::mmap_input(m_handle);
 			m_reader = lb::vcf::reader(m_input);
 		}
@@ -642,6 +675,23 @@ namespace {
 		{
 			add_reserved_info_keys();
 			add_reserved_genotype_keys();
+		}
+		
+		void parse(bool one_by_one, lb::vcf::reader::callback_cq_fn const &fn)
+		{
+			if (one_by_one)
+			{
+				lb::vcf::reader::parser_state state;
+				bool should_continue(true);
+				do
+				{
+					should_continue = m_reader.parse_one(fn, state);
+				} while (should_continue);
+			}
+			else
+			{
+				m_reader.parse(fn);
+			}
 		}
 		
 		lb::vcf::reader &get_reader() { return m_reader; }
@@ -740,13 +790,38 @@ SCENARIO("VCF reader instantiation", "[vcf_reader]")
 }
 
 
+SCENARIO("The VCF reader can report EOF correctly", "[vcf_reader]")
+{
+	test_fixture fixture;
+	
+	GIVEN("a VCF file")
+	{
+		fixture.open_vcf_file("test-files/test-simple.vcf");
+		
+		WHEN("the file is parsed")
+		{
+			fixture.read_vcf_header();
+			auto &reader(fixture.get_reader());
+			reader.set_parsed_fields(lb::vcf::field::ALL);
+			
+			THEN("parse_one returns the correct status")
+			{
+				lb::vcf::reader::parser_state state;
+				REQUIRE(true == reader.parse_one([](lb::vcf::transient_variant const &var){ return true; }, state));
+				REQUIRE(false == reader.parse_one([](lb::vcf::transient_variant const &var){ return true; }, state));
+			}
+		}
+	}
+}
+
+
 SCENARIO("The VCF reader can parse VCF header", "[vcf_reader]")
 {
 	test_fixture fixture;
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file();
+		fixture.open_vcf_file("test-files/test-data-types.vcf");
 		// Don’t add the reserved fields.
 		
 		WHEN("the headers of the file are parsed")
@@ -769,13 +844,61 @@ SCENARIO("The VCF reader can parse VCF header", "[vcf_reader]")
 }
 
 
+// FIXME: combine the following two.
+SCENARIO("The VCF reader can parse simple VCF records", "[vcf_reader")
+{
+	test_fixture fixture;
+	
+	auto const should_parse_one_by_one = GENERATE(false, true);
+	
+	GIVEN("a VCF file")
+	{
+		fixture.open_vcf_file("test-files/test-simple.vcf");
+
+		WHEN("the file is parsed")
+		{
+			fixture.read_vcf_header();
+			fixture.get_reader().set_parsed_fields(lb::vcf::field::ALL);
+
+			THEN("each record matches the expected")
+			{
+				auto const expected_records(prepare_expected_records_for_test_simple_vcf());
+
+				std::size_t idx{};
+				fixture.parse(
+					should_parse_one_by_one,
+					[
+						&expected_records,
+						&fixture,
+						&idx
+					]
+					(lb::vcf::transient_variant const &var){
+						
+						REQUIRE(idx < expected_records.size());
+						auto const &expected(expected_records[idx]);
+						
+						check_record_against_expected_in_test_simple_vcf(var, expected);
+						
+						++idx;
+						return true;
+					}
+				);
+				
+				REQUIRE(idx == expected_records.size());
+			}
+		}
+	}
+}
+
 SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 {
 	test_fixture fixture;
 	
+	auto const should_parse_one_by_one = GENERATE(false, true);
+	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file();
+		fixture.open_vcf_file("test-files/test-data-types.vcf");
 		
 		// Add to get GT.
 		fixture.add_reserved_keys();
@@ -798,7 +921,8 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 				auto const expected_records(prepare_expected_records_for_test_data_types_vcf());
 				
 				std::size_t idx{};
-				fixture.get_reader().parse(
+				fixture.parse(
+					should_parse_one_by_one,
 					[
 						&expected_records,
 						&fixture,
@@ -830,17 +954,20 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 
 SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]")
 {
-	auto should_add_reserved_keys = GENERATE(false, true);
+	auto const bool_values(lb::make_array <bool>(true, false));
+	auto const [
+		should_add_reserved_keys,
+		should_use_copy_constructor_for_copying_variant,
+		should_parse_one_by_one
+	] = GENERATE_REF(from_range(ranges::view::cartesian_product(bool_values, bool_values, bool_values)));
 	
 	test_fixture fixture;
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file();
+		fixture.open_vcf_file("test-files/test-data-types.vcf");
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
-		
-		auto const should_use_copy_constructor_for_copying_variant = GENERATE(true, false);
 		
 		WHEN("the file is parsed")
 		{
@@ -849,8 +976,12 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 			
 			THEN("the variant records may be copied")
 			{
-				fixture.get_reader().parse(
-					[should_use_copy_constructor_for_copying_variant, &fixture](lb::vcf::transient_variant const &var){
+				fixture.parse(
+					should_parse_one_by_one,
+					[
+						should_use_copy_constructor_for_copying_variant = should_use_copy_constructor_for_copying_variant,
+						&fixture
+					](lb::vcf::transient_variant const &var){
 						
 						if (should_use_copy_constructor_for_copying_variant)
 							lb::vcf::variant persistent_variant(var);
@@ -870,17 +1001,20 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 
 SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_reader]")
 {
-	auto should_add_reserved_keys = GENERATE(false, true);
+	auto const bool_values(lb::make_array <bool>(true, false));
+	auto const [
+		should_add_reserved_keys,
+		should_use_copy_constructor_for_copying_variant,
+		should_parse_one_by_one
+	] = GENERATE_REF(from_range(ranges::view::cartesian_product(bool_values, bool_values, bool_values)));
 	
 	test_fixture fixture;
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file();
+		fixture.open_vcf_file("test-files/test-data-types.vcf");
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
-		
-		auto const should_use_copy_constructor_for_copying_variant = GENERATE(true, false);
 		
 		WHEN("the variant records have been copied")
 		{
@@ -891,9 +1025,10 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 			auto const &actual_genotype_fields(fixture.get_actual_genotype_fields());
 			
 			std::vector <lb::vcf::variant> persistent_variants;
-			fixture.get_reader().parse(
+			fixture.parse(
+				should_parse_one_by_one,
 				[
-					should_use_copy_constructor_for_copying_variant,
+					should_use_copy_constructor_for_copying_variant = should_use_copy_constructor_for_copying_variant,
 					&fixture,
 					&persistent_variants
 				](lb::vcf::transient_variant const &var){
@@ -932,17 +1067,20 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 
 SCENARIO("Copying persistent variants works even if the format has changed", "[vcf_reader]")
 {
-	auto should_add_reserved_keys = GENERATE(false, true);
+	auto const bool_values(lb::make_array <bool>(true, false));
+	auto const [
+		should_add_reserved_keys,
+		should_use_copy_constructor_for_copying_variant,
+		should_parse_one_by_one
+	] = GENERATE_REF(from_range(ranges::view::cartesian_product(bool_values, bool_values, bool_values)));
 	
 	test_fixture fixture;
 	
 	GIVEN("a VCF file")
 	{
-		fixture.open_vcf_file();
+		fixture.open_vcf_file("test-files/test-data-types.vcf");
 		if (should_add_reserved_keys)
 			fixture.add_reserved_keys();
-		
-		auto const should_use_copy_constructor_for_copying_variant = GENERATE(true, false);
 		
 		WHEN("the file is parsed")
 		{
@@ -961,9 +1099,10 @@ SCENARIO("Copying persistent variants works even if the format has changed", "[v
 				if (!should_use_copy_constructor_for_copying_variant)
 					dst_variant = fixture.get_reader().make_empty_variant();
 				
-				fixture.get_reader().parse(
+				fixture.parse(
+					should_parse_one_by_one,
 					[
-						should_use_copy_constructor_for_copying_variant,
+						should_use_copy_constructor_for_copying_variant = should_use_copy_constructor_for_copying_variant,
 						&actual_info_fields,
 						&actual_genotype_fields,
 						&expected_records,
