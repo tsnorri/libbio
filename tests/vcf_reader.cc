@@ -649,6 +649,13 @@ namespace {
 			COMPRESSED_STREAM
 		};
 		
+		enum class vcf_parsing_style : std::uint8_t
+		{
+			ALL_AT_ONCE,
+			ONE_BY_ONE,
+			STOP_EVERY_TIME
+		};
+		
 		typedef vcf::seekable_stream_input <
 			lb::file_istream
 		>										stream_input;
@@ -672,9 +679,18 @@ namespace {
 		auto all_vcf_input_types() const
 		{
 			return lb::make_array <vcf_input_type>(
-				test_fixture::vcf_input_type::MMAP,
-				test_fixture::vcf_input_type::STREAM,
-				test_fixture::vcf_input_type::COMPRESSED_STREAM
+				vcf_input_type::MMAP,
+				vcf_input_type::STREAM,
+				vcf_input_type::COMPRESSED_STREAM
+			);
+		}
+		
+		auto all_vcf_parsing_styles() const
+		{
+			return lb::make_array <vcf_parsing_style>(
+				vcf_parsing_style::ALL_AT_ONCE,
+				vcf_parsing_style::ONE_BY_ONE,
+				vcf_parsing_style::STOP_EVERY_TIME
 			);
 		}
 		
@@ -737,20 +753,50 @@ namespace {
 			add_reserved_genotype_keys();
 		}
 		
-		void parse(bool one_by_one, vcf::reader::callback_cq_fn const &fn)
+		void parse(vcf_parsing_style const parsing_style, vcf::reader::callback_cq_fn const &fn)
 		{
-			if (one_by_one)
+			switch (parsing_style)
 			{
-				vcf::reader::parser_state state;
-				bool should_continue(true);
-				do
+				case vcf_parsing_style::ALL_AT_ONCE:
 				{
-					should_continue = m_reader.parse_one(fn, state);
-				} while (should_continue);
-			}
-			else
-			{
-				m_reader.parse(fn);
+					m_reader.parse(fn);
+					break;
+				}
+				
+				case vcf_parsing_style::ONE_BY_ONE:
+				{
+					vcf::reader::parser_state state;
+					bool should_continue(true);
+					do
+					{
+						should_continue = m_reader.parse_one(fn, state);
+					} while (should_continue);
+					
+					break;
+				}
+				
+				case vcf_parsing_style::STOP_EVERY_TIME:
+				{
+					bool should_continue(false);
+					auto wrapper_fn([&fn, &should_continue](vcf::transient_variant const &var){
+						// If fn is actually supposed to stop, an exception could be used.
+						REQUIRE(fn(var));
+						should_continue = true;
+						return false;
+					});
+					
+					do
+					{
+						should_continue = false;
+						m_reader.parse(wrapper_fn);
+					} while (should_continue);
+					
+					break;
+				}
+				
+				default:
+					FAIL("Unexpected parsing style");
+					break;
 			}
 		}
 		
@@ -921,11 +967,11 @@ SCENARIO("The VCF reader can parse simple VCF records", "[vcf_reader")
 {
 	test_fixture fixture;
 	auto const vcf_input_types(fixture.all_vcf_input_types());
-	auto const bool_values(lb::make_array <bool>(true, false));
+	auto const vcf_parsing_styles(fixture.all_vcf_parsing_styles());
 	auto const [
 		vcf_input_type,
-		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values)));
+		vcf_parsing_style
+	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, vcf_parsing_styles)));
 	
 	GIVEN("a VCF file")
 	{
@@ -942,7 +988,7 @@ SCENARIO("The VCF reader can parse simple VCF records", "[vcf_reader")
 				
 				std::size_t idx{};
 				fixture.parse(
-					should_parse_one_by_one,
+					vcf_parsing_style,
 					[
 						&expected_records,
 						&fixture,
@@ -971,11 +1017,11 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 	test_fixture fixture;
 	
 	auto const vcf_input_types(fixture.all_vcf_input_types());
-	auto const bool_values(lb::make_array <bool>(true, false));
+	auto const vcf_parsing_styles(fixture.all_vcf_parsing_styles());
 	auto const [
 		vcf_input_type,
-		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values)));
+		vcf_parsing_style
+	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, vcf_parsing_styles)));
 	
 	GIVEN("a VCF file")
 	{
@@ -1003,7 +1049,7 @@ SCENARIO("The VCF reader can parse VCF records", "[vcf_reader]")
 				
 				std::size_t idx{};
 				fixture.parse(
-					should_parse_one_by_one,
+					vcf_parsing_style,
 					[
 						&expected_records,
 						&fixture,
@@ -1038,13 +1084,14 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 	test_fixture fixture;
 	
 	auto const vcf_input_types(fixture.all_vcf_input_types());
+	auto const vcf_parsing_styles(fixture.all_vcf_parsing_styles());
 	auto const bool_values(lb::make_array <bool>(true, false));
 	auto const [
 		vcf_input_type,
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
-		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values, bool_values, bool_values)));
+		vcf_parsing_style
+	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values, bool_values, vcf_parsing_styles)));
 	
 	GIVEN("a VCF file")
 	{
@@ -1060,7 +1107,7 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 			THEN("the variant records may be copied")
 			{
 				fixture.parse(
-					should_parse_one_by_one,
+					vcf_parsing_style,
 					[
 						should_use_copy_constructor_for_copying_variant = should_use_copy_constructor_for_copying_variant,
 						&fixture
@@ -1087,13 +1134,14 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 	test_fixture fixture;
 	
 	auto const vcf_input_types(fixture.all_vcf_input_types());
+	auto const vcf_parsing_styles(fixture.all_vcf_parsing_styles());
 	auto const bool_values(lb::make_array <bool>(true, false));
 	auto const [
 		vcf_input_type,
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
-		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values, bool_values, bool_values)));
+		vcf_parsing_style
+	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values, bool_values, vcf_parsing_styles)));
 	
 	GIVEN("a VCF file")
 	{
@@ -1111,7 +1159,7 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 			
 			std::vector <vcf::variant> persistent_variants;
 			fixture.parse(
-				should_parse_one_by_one,
+				vcf_parsing_style,
 				[
 					should_use_copy_constructor_for_copying_variant = should_use_copy_constructor_for_copying_variant,
 					&fixture,
@@ -1155,13 +1203,14 @@ SCENARIO("Copying persistent variants works even if the format has changed", "[v
 	test_fixture fixture;
 	
 	auto const vcf_input_types(fixture.all_vcf_input_types());
+	auto const vcf_parsing_styles(fixture.all_vcf_parsing_styles());
 	auto const bool_values(lb::make_array <bool>(true, false));
 	auto const [
 		vcf_input_type,
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
-		should_parse_one_by_one
-	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values, bool_values, bool_values)));
+		vcf_parsing_style
+	] = GENERATE_REF(from_range(rsv::cartesian_product(vcf_input_types, bool_values, bool_values, vcf_parsing_styles)));
 	
 	GIVEN("a VCF file")
 	{
@@ -1187,7 +1236,7 @@ SCENARIO("Copying persistent variants works even if the format has changed", "[v
 					dst_variant = fixture.get_reader().make_empty_variant();
 				
 				fixture.parse(
-					should_parse_one_by_one,
+					vcf_parsing_style,
 					[
 						should_use_copy_constructor_for_copying_variant = should_use_copy_constructor_for_copying_variant,
 						&actual_info_fields,

@@ -100,7 +100,7 @@ namespace libbio::vcf {
 	void reader::fill_buffer()
 	{
 		libbio_assert(m_input);
-		if (m_fsm.p == m_fsm.pe)
+		if (m_fsm.p == m_fsm.pe && (m_fsm.p != m_fsm.eof || m_fsm.p == nullptr))
 			m_input->fill_buffer(*this);
 	}
 	

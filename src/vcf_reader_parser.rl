@@ -231,7 +231,6 @@ namespace libbio::vcf {
 				if (!cb(m_current_variant))
 				{
 					should_continue = false;
-					fhold;
 					fbreak;
 				}
 				
@@ -361,6 +360,7 @@ namespace libbio::vcf {
 									// Check for EOF before going back to main.
 									eof_reached = true;
 									should_continue = false;
+									fhold;
 									fbreak;
 								}
 								%from{ fhold; fgoto main; };	# Use %from b.c. the error handler would fire otherwise.
@@ -371,6 +371,7 @@ namespace libbio::vcf {
 									// Check for EOF before stopping.
 									eof_reached = true;
 									should_continue = false;
+									fhold;
 									fbreak;
 								}
 								%from{ fhold; fbreak; };		# Use %from b.c. the error handler would fire otherwise.
@@ -455,6 +456,7 @@ namespace libbio::vcf {
 									// Check for EOF after the last sample and only after handling the newline.
 									eof_reached = true;
 									should_continue = false;
+									fhold;
 									fbreak;
 								}
 								%from(end_last_sample);	# Use %from b.c. the error handler would fire otherwise.
