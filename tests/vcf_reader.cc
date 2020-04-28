@@ -13,6 +13,7 @@
 
 namespace gen	= Catch::Generators;
 namespace lb	= libbio;
+namespace rsv	= ranges::view;
 
 
 namespace {
@@ -563,7 +564,7 @@ namespace {
 		REQUIRE(var.id().front() == expected.id);
 		REQUIRE(var.ref() == expected.ref);
 		REQUIRE(var.alts().size() == expected.alts.size());
-		for (auto const &[actual_alt, expected_alt] : ranges::view::zip(var.alts(), expected.alts))
+		for (auto const &[actual_alt, expected_alt] : rsv::zip(var.alts(), expected.alts))
 		{
 			REQUIRE(actual_alt.alt_sv_type == lb::vcf::sv_type::NONE);
 			REQUIRE(actual_alt.alt == expected_alt);
@@ -959,7 +960,7 @@ SCENARIO("Transient VCF records can be copied to persistent ones", "[vcf_reader]
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
 		should_parse_one_by_one
-	] = GENERATE_REF(from_range(ranges::view::cartesian_product(bool_values, bool_values, bool_values)));
+	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values)));
 	
 	test_fixture fixture;
 	
@@ -1006,7 +1007,7 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
 		should_parse_one_by_one
-	] = GENERATE_REF(from_range(ranges::view::cartesian_product(bool_values, bool_values, bool_values)));
+	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values)));
 	
 	test_fixture fixture;
 	
@@ -1047,7 +1048,7 @@ SCENARIO("Persistent VCF records can be used to access the variant data", "[vcf_
 			THEN("each copied record matches the expected")
 			{
 				auto const expected_records(prepare_expected_records_for_test_data_types_vcf());
-				for (auto const &[idx, var] : ranges::view::enumerate(persistent_variants))
+				for (auto const &[idx, var] : rsv::enumerate(persistent_variants))
 				{
 					REQUIRE(idx < expected_records.size());
 					auto const &expected(expected_records[idx]);
@@ -1072,7 +1073,7 @@ SCENARIO("Copying persistent variants works even if the format has changed", "[v
 		should_add_reserved_keys,
 		should_use_copy_constructor_for_copying_variant,
 		should_parse_one_by_one
-	] = GENERATE_REF(from_range(ranges::view::cartesian_product(bool_values, bool_values, bool_values)));
+	] = GENERATE_REF(from_range(rsv::cartesian_product(bool_values, bool_values, bool_values)));
 	
 	test_fixture fixture;
 	
