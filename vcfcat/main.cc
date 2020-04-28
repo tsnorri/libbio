@@ -298,31 +298,28 @@ namespace {
 		bool should_continue(false);
 		std::size_t lineno{};
 		alt_number_map alt_mapping;
-		do {
-			reader.fill_buffer();
-			should_continue = reader.parse_nc([&stream, &sample_names, exclude_samples, &alt_mapping, &lineno](vcf::transient_variant &var){
-
-				++lineno;
-				
-				if ((!sample_names.empty()) || exclude_samples)
+		reader.parse_nc([&stream, &sample_names, exclude_samples, &alt_mapping, &lineno](vcf::transient_variant &var){
+			++lineno;
+			
+			if ((!sample_names.empty()) || exclude_samples)
+			{
+				// FIXME: a variant may be excluded if there are no non-zero and non-missing GT values.
+				if (modify_variant(var, alt_mapping, sample_names, exclude_samples))
 				{
-					if (modify_variant(var, alt_mapping, sample_names, exclude_samples))
-					{
-						sample_filtering_variant_printer <vcf::transient_variant> printer(sample_names, alt_mapping, exclude_samples);
-						vcf::output_vcf(printer, stream, var);
-					}
+					sample_filtering_variant_printer <vcf::transient_variant> printer(sample_names, alt_mapping, exclude_samples);
+					vcf::output_vcf(printer, stream, var);
 				}
-				else
-				{
-					vcf::output_vcf(stream, var);
-				}
+			}
+			else
+			{
+				vcf::output_vcf(stream, var);
+			}
 
-				if (0 == lineno % 100000)
-					std::cerr << "Handled " << lineno << " lines…\n";
-				
-				return true;
-			});
-		} while (should_continue);
+			if (0 == lineno % 100000)
+				std::cerr << "Handled " << lineno << " lines…\n";
+			
+			return true;
+		});
 	}
 }
 
@@ -337,17 +334,14 @@ int main(int argc, char **argv)
 	std::cin.tie(nullptr);					// We don't require any input from the user.
 	
 	// Open the variant file.
-	lb::mmap_handle <char> input_handle;
+	vcf::mmap_input vcf_input;
 	lb::file_ostream output_stream;
 	
-	input_handle.open(args_info.input_arg);
+	vcf_input.handle().open(args_info.input_arg);
 	if (args_info.output_given)
 		lb::open_file_for_writing(args_info.output_arg, output_stream, lb::writing_open_mode::CREATE);
 	
 	sample_name_span const sample_names(const_cast <char const **>(args_info.sample_arg), args_info.sample_given);
-	
-	// Create a VCF input.
-	vcf::mmap_input vcf_input(input_handle);
 	
 	// Create the parser and add the fields listed in the specification to the metadata.
 	vcf::reader reader;
@@ -357,7 +351,6 @@ int main(int argc, char **argv)
 	// Parse.
 	reader.set_variant_format(new variant_format());
 	reader.set_input(vcf_input);
-	reader.fill_buffer();
 	reader.read_header();
 	reader.set_parsed_fields(vcf::field::ALL);
 	output_vcf(reader, args_info.output_given ? output_stream : std::cout, sample_names, (args_info.exclude_samples_given ?: sample_names.empty()));

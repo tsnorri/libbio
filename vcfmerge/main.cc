@@ -123,10 +123,7 @@ int main(int argc, char **argv)
 	
 	// Read the headers.
 	for (auto &input : inputs)
-	{
-		input.reader.fill_buffer();
 		input.reader.read_header();
-	}
 	
 	// Check that the metadata are compatible.
 	merge::metadata_checker <merge::compare_alt>	alt_checker;

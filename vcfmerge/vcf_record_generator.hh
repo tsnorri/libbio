@@ -16,6 +16,7 @@ namespace libbio::vcfmerge {
 	protected:
 		vcf::reader::parser_state	m_parser_state;
 		vcf::reader					*m_reader{};
+		bool						m_has_records{true};
 		
 	public:
 		vcf_record_generator() = default;
@@ -27,14 +28,17 @@ namespace libbio::vcfmerge {
 		
 		bool get_next_variant(vcf::variant &out_variant)
 		{
-			bool retval(false);
-			bool const st(m_reader->parse_one([this, &out_variant, &retval](vcf::transient_variant const &var) {
+			if (!m_has_records)
+				return false;
+			
+			m_has_records = false;
+			bool const st(m_reader->parse_one([this, &out_variant](vcf::transient_variant const &var) {
 				// Not reached on EOF.
 				out_variant = var;
-				retval = true;
+				m_has_records = true;
 				return true;
 			}, m_parser_state));
-			return retval;
+			return m_has_records;
 		}
 	};
 }

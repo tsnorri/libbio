@@ -16,14 +16,12 @@ namespace libbio::vcfmerge {
 	
 	struct vcf_input
 	{
-		libbio::mmap_handle <char>	file_handle;
 		libbio::vcf::mmap_input		input;
 		libbio::vcf::reader			reader;
 		vcf_record_generator		record_generator;
 		std::string					source_path;
 		
 		vcf_input():
-			input(file_handle),
 			reader(input),
 			record_generator(reader)
 		{
@@ -31,8 +29,7 @@ namespace libbio::vcfmerge {
 		
 		void open_file()
 		{
-			file_handle.open(source_path);
-			input.reset_range();
+			input.handle().open(source_path);
 			
 			vcf::add_reserved_info_keys(reader.info_fields());
 			vcf::add_reserved_genotype_keys(reader.genotype_fields());

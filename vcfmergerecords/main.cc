@@ -250,10 +250,9 @@ int main(int argc, char **argv)
 	std::ios_base::sync_with_stdio(false);	// Don't use C style IO after calling cmdline_parser.
 	
 	// Open the variant file.
-	lb::mmap_handle <char> input_handle;
-	input_handle.open(args_info.input_arg);
+	vcf::mmap_input vcf_input;
+	vcf_input.handle().open(args_info.input_arg);
 	
-	vcf::mmap_input vcf_input(input_handle);
 	vcf::reader reader(vcf_input);
 	merge::variant_printer variant_printer;
 	
@@ -264,7 +263,6 @@ int main(int argc, char **argv)
 	
 	// Read the headers.
 	reader.set_variant_format(new variant_format());
-	reader.fill_buffer();
 	reader.read_header();
 	reader.set_parsed_fields(vcf::field::ALL);
 	
@@ -290,58 +288,55 @@ int main(int argc, char **argv)
 	bool should_continue(false);
 	std::size_t lineno{};
 	std::size_t prev_pos{};
-	do {
-		reader.fill_buffer();
-		should_continue = reader.parse_nc(
-			[
-				&variant_printer,
-				&variants_in_current_position,
-				&empty_variant_list,
-				&reader,
-				&filtered_info_fields,
-				&lineno,
-				&prev_pos
-			](vcf::transient_variant &var){
-			
-				++lineno;
-				for (auto const *info_field : filtered_info_fields)
-				{
-					if (info_field->has_value(var))
-						return true;
-				}
-				
-				auto const current_pos(var.pos());
-				if (prev_pos != current_pos)
-				{
-					handle_variants(variants_in_current_position, variant_printer);
-					empty_variant_list.splice(empty_variant_list.end(), variants_in_current_position);
-				}
-				prev_pos = current_pos;
-				
-				// Make sure that there is an empty variant available.
-				if (empty_variant_list.empty())
-					empty_variant_list.emplace_front(reader.make_empty_variant());
-				
-				// Copy.
-				empty_variant_list.front() = var;
-				{
-					auto end_it(empty_variant_list.begin());
-					++end_it;
-					variants_in_current_position.splice(
-						variants_in_current_position.end(),
-						empty_variant_list,
-						empty_variant_list.begin(),
-						end_it
-					);
-				}
-				
-				if (0 == lineno % 100000)
-					std::cerr << "Handled " << lineno << " lines…\n";
-				
-				return true;
+	reader.parse_nc(
+		[
+			&variant_printer,
+			&variants_in_current_position,
+			&empty_variant_list,
+			&reader,
+			&filtered_info_fields,
+			&lineno,
+			&prev_pos
+		](vcf::transient_variant &var){
+		
+			++lineno;
+			for (auto const *info_field : filtered_info_fields)
+			{
+				if (info_field->has_value(var))
+					return true;
 			}
-		);
-	} while (should_continue);
+			
+			auto const current_pos(var.pos());
+			if (prev_pos != current_pos)
+			{
+				handle_variants(variants_in_current_position, variant_printer);
+				empty_variant_list.splice(empty_variant_list.end(), variants_in_current_position);
+			}
+			prev_pos = current_pos;
+			
+			// Make sure that there is an empty variant available.
+			if (empty_variant_list.empty())
+				empty_variant_list.emplace_front(reader.make_empty_variant());
+			
+			// Copy.
+			empty_variant_list.front() = var;
+			{
+				auto end_it(empty_variant_list.begin());
+				++end_it;
+				variants_in_current_position.splice(
+					variants_in_current_position.end(),
+					empty_variant_list,
+					empty_variant_list.begin(),
+					end_it
+				);
+			}
+			
+			if (0 == lineno % 100000)
+				std::cerr << "Handled " << lineno << " lines…\n";
+			
+			return true;
+		}
+	);
 	handle_variants(variants_in_current_position, variant_printer);
 	
 	return EXIT_SUCCESS;
