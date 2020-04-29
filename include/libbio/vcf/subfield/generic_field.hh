@@ -7,7 +7,7 @@
 #define LIBBIO_VCF_SUBFIELD_GENERIC_FIELD_HH
 
 #include <libbio/vcf/subfield/base.hh>
-#include <libbio/vcf/subfield/concrete_ds_access.hh>
+#include <libbio/vcf/subfield/concrete_container_access.hh>
 #include <libbio/vcf/subfield/decl.hh>
 #include <libbio/vcf/subfield/typed_field.hh>
 #include <libbio/vcf/subfield/utility/access.hh>
@@ -17,7 +17,7 @@
 namespace libbio::vcf::detail {
 	
 	template <typename t_base>
-	struct generic_field_ds_access_helper
+	struct generic_field_container_access_helper
 	{
 		template <bool B>
 		using field_access_tpl = subfield_access <t_base::s_number(), t_base::s_value_type(), B>;
@@ -26,11 +26,11 @@ namespace libbio::vcf::detail {
 	
 	// t_base is one of generic_info_field_base, generic_genotype_field_base.
 	template <typename t_base, bool t_is_transient>
-	class generic_field_ds_access :	public virtual t_base::typed_field_base,							// For output_vcf_value()
+	class generic_field_container_access :	public virtual t_base::typed_field_base,							// For output_vcf_value()
 									public virtual t_base::template value_access_t <t_is_transient>,	// For the specific operator()
-									public subfield_concrete_ds_access <
+									public subfield_concrete_container_access <
 										typename t_base::typed_field_base::virtual_base,
-										generic_field_ds_access_helper <t_base>::template field_access_tpl,
+										generic_field_container_access_helper <t_base>::template field_access_tpl,
 										t_is_transient
 									>
 	{
@@ -48,7 +48,7 @@ namespace libbio::vcf::detail {
 		using container_tpl = typename t_base::template container_tpl <B>;
 		
 		template <bool B>
-		using field_access_tpl = typename generic_field_ds_access_helper <t_base>::template field_access_tpl <B>;
+		using field_access_tpl = typename generic_field_container_access_helper <t_base>::template field_access_tpl <B>;
 		
 		typedef container_tpl <t_is_transient>								container_type;
 		typedef container_tpl <false>										non_transient_container_type;
@@ -168,8 +168,8 @@ namespace libbio::vcf {
 	template <typename t_base>
 	class generic_field final :
 		public t_base,
-		public detail::generic_field_ds_access <t_base, true>,
-		public detail::generic_field_ds_access <t_base, false>
+		public detail::generic_field_container_access <t_base, true>,
+		public detail::generic_field_container_access <t_base, false>
 	{
 		static_assert(
 			std::is_same_v <

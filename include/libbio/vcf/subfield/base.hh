@@ -87,10 +87,10 @@ namespace libbio::vcf {
 	
 	// Interface for the container in question (one of variant, transient_variant, variant_sample, transient_variant_sample).
 	template <template <bool> typename t_container_tpl, bool t_is_transient>
-	class subfield_ds_access
+	class subfield_container_access
 	{
 	public:
-		virtual ~subfield_ds_access() {}
+		virtual ~subfield_container_access() {}
 		
 	protected:
 		typedef t_container_tpl <t_is_transient>	container_type;

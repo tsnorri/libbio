@@ -29,7 +29,7 @@ namespace libbio::vcf::detail {
 	
 	
 	template <typename, bool>
-	class generic_field_ds_access;
+	class generic_field_container_access;
 }
 
 
@@ -44,7 +44,7 @@ namespace libbio::vcf {
 		static_assert(std::is_same_v <t_base, info_field_base> || std::is_same_v <t_base, genotype_field_base>);
 		
 		template <typename, bool>
-		friend class detail::generic_field_ds_access;
+		friend class detail::generic_field_container_access;
 		
 	public:
 		typedef t_base virtual_base;

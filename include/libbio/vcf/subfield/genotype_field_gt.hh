@@ -8,7 +8,7 @@
 
 #include <libbio/assert.hh>
 #include <libbio/vcf/subfield/base.hh>
-#include <libbio/vcf/subfield/concrete_ds_access.hh>
+#include <libbio/vcf/subfield/concrete_container_access.hh>
 #include <libbio/vcf/subfield/genotype_field_base_decl.hh>
 #include <libbio/vcf/subfield/utility/value_access.hh>
 #include <libbio/vcf/variant/sample.hh>
@@ -27,7 +27,7 @@ namespace libbio::vcf::detail {
 		using value_access_tpl = value_access;
 		
 		template <bool t_is_transient>
-		using base_class = subfield_concrete_ds_access <
+		using base_class = subfield_concrete_container_access <
 			genotype_field_base, 
 			value_access_tpl,
 			t_is_transient
@@ -36,7 +36,7 @@ namespace libbio::vcf::detail {
 	
 	
 	template <bool t_is_transient>
-	class genotype_field_gt_ds_access : public detail::genotype_field_gt_helper::base_class <t_is_transient>
+	class genotype_field_gt_container_access : public detail::genotype_field_gt_helper::base_class <t_is_transient>
 	{
 	protected:
 		typedef detail::genotype_field_gt_helper			helper_type;
@@ -63,8 +63,8 @@ namespace libbio::vcf::detail {
 namespace libbio::vcf {
 	
 	// Subclass for the GT field.
-	class genotype_field_gt final :	public detail::genotype_field_gt_ds_access <true>,
-									public detail::genotype_field_gt_ds_access <false>
+	class genotype_field_gt final :	public detail::genotype_field_gt_container_access <true>,
+									public detail::genotype_field_gt_container_access <false>
 	{
 	protected:
 		typedef detail::genotype_field_gt_helper::vector_type	vector_type;

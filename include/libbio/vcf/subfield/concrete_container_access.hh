@@ -28,7 +28,7 @@ namespace libbio::vcf::detail {
 		template <bool> typename t_access_tpl,
 		bool t_is_transient
 	>
-	class subfield_concrete_ds_access : public virtual t_base
+	class subfield_concrete_container_access : public virtual t_base
 	{
 		static_assert(std::is_same_v <t_base, info_field_base> || std::is_same_v <t_base, genotype_field_base>);
 		

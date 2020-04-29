@@ -20,8 +20,8 @@ namespace libbio::vcf {
 	
 	// Base class for genotype field descriptions.
 	class genotype_field_base :	public virtual subfield_base,
-								public subfield_ds_access <variant_sample_t, true>,
-								public subfield_ds_access <variant_sample_t, false>
+								public subfield_container_access <variant_sample_t, true>,
+								public subfield_container_access <variant_sample_t, false>
 	{
 		friend class reader;
 		
@@ -45,14 +45,14 @@ namespace libbio::vcf {
 		std::uint16_t	m_index{INVALID_INDEX};	// Index of this field in the memory block.
 		
 	protected:
-		using subfield_ds_access <variant_sample_t, true>::reset;
-		using subfield_ds_access <variant_sample_t, false>::reset;
-		using subfield_ds_access <variant_sample_t, true>::construct_ds;
-		using subfield_ds_access <variant_sample_t, false>::construct_ds;
-		using subfield_ds_access <variant_sample_t, true>::destruct_ds;
-		using subfield_ds_access <variant_sample_t, false>::destruct_ds;
-		using subfield_ds_access <variant_sample_t, true>::copy_ds;
-		using subfield_ds_access <variant_sample_t, false>::copy_ds;
+		using subfield_container_access <variant_sample_t, true>::reset;
+		using subfield_container_access <variant_sample_t, false>::reset;
+		using subfield_container_access <variant_sample_t, true>::construct_ds;
+		using subfield_container_access <variant_sample_t, false>::construct_ds;
+		using subfield_container_access <variant_sample_t, true>::destruct_ds;
+		using subfield_container_access <variant_sample_t, false>::destruct_ds;
+		using subfield_container_access <variant_sample_t, true>::copy_ds;
+		using subfield_container_access <variant_sample_t, false>::copy_ds;
 		
 		// Parse the contents of a string_view and assign the value to the sample.
 		// Needs to be overridden.
@@ -70,8 +70,8 @@ namespace libbio::vcf {
 		void set_index(std::uint16_t index) { m_index = index; }
 		
 	public:
-		using subfield_ds_access <variant_sample_t, true>::output_vcf_value;
-		using subfield_ds_access <variant_sample_t, false>::output_vcf_value;
+		using subfield_container_access <variant_sample_t, true>::output_vcf_value;
+		using subfield_container_access <variant_sample_t, false>::output_vcf_value;
 		
 		metadata_format *get_metadata() const final { return m_metadata; }
 		
