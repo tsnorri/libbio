@@ -7,7 +7,7 @@
 #define LIBBIO_VCF_SUBFIELD_BASE_HH
 
 #include <libbio/types.hh>
-#include <libbio/vcf/subfield/type_mapping.hh>
+#include <libbio/vcf/subfield/utility/type_mapping.hh>
 #include <libbio/vcf/variant/fwd.hh>
 #include <ostream>
 

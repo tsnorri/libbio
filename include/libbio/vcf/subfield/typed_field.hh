@@ -9,7 +9,7 @@
 #include <libbio/vcf/subfield/decl.hh>
 #include <libbio/vcf/subfield/genotype_field_base_decl.hh>
 #include <libbio/vcf/subfield/info_field_base_decl.hh>
-#include <libbio/vcf/subfield/type_mapping.hh>
+#include <libbio/vcf/subfield/utility/type_mapping.hh>
 
 
 namespace libbio::vcf::detail {

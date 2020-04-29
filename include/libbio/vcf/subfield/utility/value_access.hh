@@ -8,8 +8,8 @@
 
 #include <libbio/assert.hh>
 #include <libbio/types.hh>
-#include <libbio/vcf/subfield/type_mapping.hh>
-#include <libbio/vcf/subfield/vector_value_helper.hh>
+#include <libbio/vcf/subfield/utility/type_mapping.hh>
+#include <libbio/vcf/subfield/utility/vector_value_helper.hh>
 #include <libbio/vcf/metadata.hh>
 #include <ostream>
 #include <range/v3/algorithm/copy.hpp>

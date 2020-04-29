@@ -6,7 +6,7 @@
 #ifndef LIBBIO_VCF_SUBFIELD_PARSER_HH
 #define LIBBIO_VCF_SUBFIELD_PARSER_HH
 
-#include <libbio/vcf/subfield/access.hh>
+#include <libbio/vcf/subfield/utility/access.hh>
 
 
 namespace libbio::vcf {

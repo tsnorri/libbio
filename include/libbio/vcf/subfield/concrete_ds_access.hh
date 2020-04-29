@@ -8,7 +8,7 @@
 
 #include <libbio/assert.hh>
 #include <libbio/vcf/subfield/base.hh>
-#include <libbio/vcf/subfield/copy_value.hh>
+#include <libbio/vcf/subfield/utility/copy_value.hh>
 #include <ostream>
 
 

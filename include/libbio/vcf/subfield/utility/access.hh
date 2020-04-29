@@ -6,7 +6,7 @@
 #ifndef LIBBIO_VCF_SUBFIELD_ACCESS_HH
 #define LIBBIO_VCF_SUBFIELD_ACCESS_HH
 
-#include <libbio/vcf/subfield/value_access.hh>
+#include <libbio/vcf/subfield/utility/value_access.hh>
 #include <type_traits>
 
 

@@ -10,7 +10,7 @@
 #include <libbio/vcf/subfield/base.hh>
 #include <libbio/vcf/subfield/concrete_ds_access.hh>
 #include <libbio/vcf/subfield/genotype_field_base_decl.hh>
-#include <libbio/vcf/subfield/value_access.hh>
+#include <libbio/vcf/subfield/utility/value_access.hh>
 #include <libbio/vcf/variant/sample.hh>
 #include <ostream>
 

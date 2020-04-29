@@ -6,12 +6,12 @@
 #ifndef LIBBIO_VCF_SUBFIELD_GENERIC_FIELD_HH
 #define LIBBIO_VCF_SUBFIELD_GENERIC_FIELD_HH
 
-#include <libbio/vcf/subfield/access.hh>
 #include <libbio/vcf/subfield/base.hh>
 #include <libbio/vcf/subfield/concrete_ds_access.hh>
 #include <libbio/vcf/subfield/decl.hh>
-#include <libbio/vcf/subfield/parser.hh>
 #include <libbio/vcf/subfield/typed_field.hh>
+#include <libbio/vcf/subfield/utility/access.hh>
+#include <libbio/vcf/subfield/utility/parser.hh>
 
 
 namespace libbio::vcf::detail {
