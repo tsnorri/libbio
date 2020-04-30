@@ -24,6 +24,7 @@ namespace libbio::vcf::detail {
 		typedef typename t_field::template field_access_tpl <false>				non_transient_access_type;
 		typedef typename t_field::template container_tpl <t_is_transient>		container_type; // Transient or not.
 		typedef typename t_field::container_type								non_transient_container_type;
+		typedef typename access_type::value_type								value_type;
 		
 		// FIXME: why do these member functions take a memory address but access_ds and output_vcf_value do not?
 		static void construct_ds(t_field const &field, container_type const &ct, std::byte *mem, std::uint16_t const alt_count)
@@ -60,14 +61,16 @@ namespace libbio::vcf::detail {
 			access_type::reset_ds(mem + field.m_offset);
 		}
 		
-		static auto const &access_ds(t_field const &field, container_type const &ct)
+		static value_type const &access_ds(t_field const &field, container_type const &ct)
 		{
-			return access_type::access_ds(field.buffer_start(ct));
+			auto const &val(access_type::access_ds(field.buffer_start(ct) + field.m_offset));
+			return val;
 		}
 		
-		static auto &access_ds(t_field const &field, container_type &ct)
+		static value_type &access_ds(t_field const &field, container_type &ct)
 		{
-			return access_type::access_ds(field.buffer_start(ct));
+			auto &val(access_type::access_ds(field.buffer_start(ct) + field.m_offset));
+			return val;
 		}
 		
 		static void output_vcf_value(t_field const &field, std::ostream &stream, container_type const &ct)
@@ -122,22 +125,26 @@ namespace libbio::vcf::detail {
 		// To solve this, we abuse the final keyword b.c. as it implies override.
 		virtual value_type &operator()(container_type &ct) const final
 		{
-			return access_wrapper::access_ds(*this, ct);
+			auto &val(access_wrapper::access_ds(*this, ct));
+			return val;
 		}
 		
 		virtual value_type const &operator()(container_type const &ct) const final
 		{
-			return access_wrapper::access_ds(*this, ct);
+			auto const &val(access_wrapper::access_ds(*this, ct));
+			return val;
 		}
 		
 		virtual transient_value_type &operator()(transient_container_type &ct) const final
 		{
-			return transient_access_wrapper::access_ds(*this, ct);
+			auto &val(transient_access_wrapper::access_ds(*this, ct));
+			return val;
 		}
 		
 		virtual transient_value_type const &operator()(transient_container_type const &ct) const final
 		{
-			return transient_access_wrapper::access_ds(*this, ct);
+			auto const &val(transient_access_wrapper::access_ds(*this, ct));
+			return val;
 		}
 		
 	protected:
@@ -278,14 +285,14 @@ namespace libbio::vcf {
 		{
 			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			transient_field_access::add_value(mem + this->m_offset, 0);
-			return true;
+			return true; // FIXME: return parse_and_assign’s return value?
 		};
 		
 		virtual bool parse_and_assign(std::string_view const &sv, transient_variant &var, std::byte *mem) const override
 		{
 			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			parser_type::parse_and_assign(sv, mem + this->m_offset);
-			return true;
+			return true; // FIXME: return parse_and_assign’s return value?
 		}
 	};
 	

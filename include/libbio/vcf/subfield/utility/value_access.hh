@@ -43,8 +43,17 @@ namespace libbio::vcf {
 		static void destruct_ds(std::byte *mem) {}
 		
 		// Access the value, return a reference.
-		static value_type &access_ds(std::byte *mem) { return *reinterpret_cast <value_type *>(mem); }
-		static value_type const &access_ds(std::byte const *mem) { return *reinterpret_cast <value_type const *>(mem); }
+		static value_type &access_ds(std::byte *mem)
+		{
+			auto &val(*reinterpret_cast <value_type *>(mem));
+			return val;
+		}
+		
+		static value_type const &access_ds(std::byte const *mem)
+		{
+			auto const &val(*reinterpret_cast <value_type const *>(mem));
+			return val;
+		}
 		
 		// Reset the value for new variant or sample.
 		static void reset_ds(std::byte *mem) { /* No-op. */ }
@@ -57,7 +66,11 @@ namespace libbio::vcf {
 		
 		// Replace or add a value.
 		// This works for string views b.c. the buffer where the characters are located still exists.
-		static constexpr void add_value(std::byte *mem, value_type const &val) { access_ds(mem) = val; }
+		static constexpr void add_value(std::byte *mem, value_type const &val)
+		{
+			auto &dst(access_ds(mem));
+			dst = val;
+		}
 		
 		static void output_vcf_value(std::ostream &stream, std::byte *mem) { stream << access_ds(mem); }
 	};
@@ -118,7 +131,11 @@ namespace libbio::vcf {
 		}
 		
 		// Replace or add a value.
-		static void add_value(std::byte *mem, t_element_type const &val) { access_ds(mem).emplace_back(val); }
+		static void add_value(std::byte *mem, t_element_type const &val)
+		{
+			auto &dst(access_ds(mem));
+			dst.emplace_back(val);
+		}
 		
 		// Output the vector contents separated by “,”.
 		static void output_vcf_value(std::ostream &stream, std::byte *mem)
