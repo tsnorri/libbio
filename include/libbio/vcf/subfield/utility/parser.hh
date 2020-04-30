@@ -45,11 +45,11 @@ namespace libbio::vcf {
 	
 	
 	// Helper for implementing parse_and_assign(). Vectors are handled here.
-	template <std::int32_t t_number, metadata_value_type t_metadata_value_type>
+	template <metadata_value_type t_metadata_value_type, std::int32_t t_number>
 	class generic_field_parser
 	{
 	protected:
-		typedef subfield_access <t_number, t_metadata_value_type, true>	field_access;
+		typedef subfield_access <t_metadata_value_type, t_number, true>	field_access;
 		
 	protected:
 		bool parse_and_assign(std::string_view const &sv, std::byte *mem) const
@@ -96,7 +96,7 @@ namespace libbio::vcf {
 	
 	// Non-specialization for values with zero elements.
 	template <metadata_value_type t_metadata_value_type>
-	struct generic_field_parser <0, t_metadata_value_type>
+	struct generic_field_parser <t_metadata_value_type, 0>
 	{
 		bool parse_and_assign(std::string_view const &sv, std::byte *mem) const
 		{
@@ -107,10 +107,10 @@ namespace libbio::vcf {
 	
 	// Specialization for scalar values.
 	template <metadata_value_type t_metadata_value_type>
-	class generic_field_parser <1, t_metadata_value_type>
+	class generic_field_parser <t_metadata_value_type, 1>
 	{
 	protected:
-		typedef subfield_access <1, t_metadata_value_type, true>	field_access; // May be transient b.c. used only for parsing.
+		typedef subfield_access <t_metadata_value_type, 1, true>	field_access; // May be transient b.c. used only for parsing.
 		
 	protected:
 		bool parse_and_assign(std::string_view const &sv, std::byte *mem) const

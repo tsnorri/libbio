@@ -12,9 +12,9 @@
 
 namespace libbio::vcf::detail {
 	
-	// Templates for subfield_access’s base class. The necessary checks (e.g.
-	// t_metadata_value_type == FLAG <=> t_number == 0) are handled in value_type_mapping and hence
-	// not needed here.
+	// Templates for subfield_access’s base class when using the value type mapping.
+	// . The necessary checks (e.g. t_metadata_value_type == FLAG <=> t_number == 0)
+	// are handled in value_type_mapping and hence not needed here.
 	// vector_value_access_base does need the expected value count, though, so it is passed to the template
 	// but not used for specialization here.
 	
@@ -44,7 +44,7 @@ namespace libbio::vcf::detail {
 		typedef vector_value_access <t_type, t_number> type;
 	};
 	
-	template <std::int32_t t_number, metadata_value_type t_metadata_value_type, bool t_is_transient>
+	template <metadata_value_type t_metadata_value_type, std::int32_t t_number, bool t_is_transient>
 	using subfield_access_base_t = typename subfield_access_base <
 		value_type_mapping_t <
 			t_metadata_value_type,
@@ -59,9 +59,14 @@ namespace libbio::vcf::detail {
 namespace libbio::vcf {
 	
 	// Handle a VCF field (specified in ##INFO or ##FORMAT).
-	template <std::int32_t t_number, metadata_value_type t_metadata_value_type, bool t_is_transient>
-	struct subfield_access : public detail::subfield_access_base_t <t_number, t_metadata_value_type, t_is_transient>
+	template <metadata_value_type t_metadata_value_type, std::int32_t t_number, bool t_is_transient>
+	struct subfield_access : public detail::subfield_access_base_t <t_metadata_value_type, t_number, t_is_transient>
 	{
+		typedef typename detail::subfield_access_base_t <
+			t_metadata_value_type,
+			t_number,
+			t_is_transient
+		>::value_type value_type;
 	};
 }
 

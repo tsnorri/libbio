@@ -19,9 +19,7 @@ namespace libbio::vcf {
 	
 	
 	// Base class for genotype field descriptions.
-	class genotype_field_base :	public virtual subfield_base,
-								public subfield_container_access <variant_sample_t, true>,
-								public subfield_container_access <variant_sample_t, false>
+	class genotype_field_base :	public subfield_base
 	{
 		friend class reader;
 		
@@ -33,26 +31,48 @@ namespace libbio::vcf {
 	public:
 		enum { INVALID_INDEX = UINT16_MAX };
 		
-	public:
-		template <bool t_is_transient>
-		using container_tpl = variant_sample_t <t_is_transient>;
+	protected:
+		template <bool B>
+		using container_tpl = variant_sample_t <B>;
 		
-		template <bool t_is_vector, metadata_value_type t_value_type>
-		using typed_field_type = typed_genotype_field_t <t_is_vector, t_value_type>;
+	public:
+		template <enum metadata_value_type M, bool B>
+		using typed_field_type = typed_genotype_field_t <M, B>;
+		
+		typedef variant_sample_t <false>	container_type;
+		typedef variant_sample_t <true>		transient_container_type;
 		
 	protected:
 		metadata_format	*m_metadata{};
 		std::uint16_t	m_index{INVALID_INDEX};	// Index of this field in the memory block.
 		
 	protected:
-		using subfield_container_access <variant_sample_t, true>::reset;
-		using subfield_container_access <variant_sample_t, false>::reset;
-		using subfield_container_access <variant_sample_t, true>::construct_ds;
-		using subfield_container_access <variant_sample_t, false>::construct_ds;
-		using subfield_container_access <variant_sample_t, true>::destruct_ds;
-		using subfield_container_access <variant_sample_t, false>::destruct_ds;
-		using subfield_container_access <variant_sample_t, true>::copy_ds;
-		using subfield_container_access <variant_sample_t, false>::copy_ds;
+		// Mark the target s.t. no values have been read yet. (Currently used for vectors.)
+		virtual void reset(container_type const &ct, std::byte *mem) const = 0;
+		virtual void reset(transient_container_type const &ct, std::byte *mem) const = 0;
+	
+		// Construct the data structure.
+		virtual void construct_ds(container_type const &ct, std::byte *mem, std::uint16_t const alt_count) const = 0;
+		virtual void construct_ds(transient_container_type const &ct, std::byte *mem, std::uint16_t const alt_count) const = 0;
+	
+		// Destruct the datastructure.
+		virtual void destruct_ds(container_type const &ct, std::byte *mem) const = 0;
+		virtual void destruct_ds(transient_container_type const &ct, std::byte *mem) const = 0;
+	
+		// Copy the data structure.
+		virtual void copy_ds(
+			transient_container_type const &src_ct,
+			container_type const &dst_ct,
+			std::byte const *src,
+			std::byte *dst
+		) const = 0;
+	
+		virtual void copy_ds(
+			container_type const &src_ct,
+			container_type const &dst_ct,
+			std::byte const *src,
+			std::byte *dst
+		) const = 0;
 		
 		// Parse the contents of a string_view and assign the value to the sample.
 		// Needs to be overridden.
@@ -70,8 +90,10 @@ namespace libbio::vcf {
 		void set_index(std::uint16_t index) { m_index = index; }
 		
 	public:
-		using subfield_container_access <variant_sample_t, true>::output_vcf_value;
-		using subfield_container_access <variant_sample_t, false>::output_vcf_value;
+		// Output the field contents to a stream.
+		// In case of info_field, the value has to be present in the variant.
+		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const = 0;
+		virtual void output_vcf_value(std::ostream &stream, transient_container_type const &ct) const = 0;
 		
 		metadata_format *get_metadata() const final { return m_metadata; }
 		

@@ -89,7 +89,7 @@ namespace libbio::vcf {
 		
 	protected:
 		template <typename t_field>
-		void check_field(t_field const &field) const { check_field(field.number(), field.value_type()); }
+		void check_field(t_field const &field) const { check_field(field.number(), field.metadata_value_type()); }
 		
 		void check_field(std::int32_t const number, metadata_value_type const vt) const;
 		

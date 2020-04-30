@@ -36,7 +36,7 @@ namespace libbio::vcf {
 	
 	void info_field_base::assign_flag(transient_variant &dst) const
 	{
-		auto const vt(value_type());
+		auto const vt(metadata_value_type());
 		if (metadata_value_type::NOT_PROCESSED == vt)
 			return;
 		
@@ -61,7 +61,7 @@ namespace libbio::vcf {
 		if (var.m_assigned_info_fields[m_metadata->get_index()])
 		{
 			stream << sep << m_metadata->get_id();
-			if (metadata_value_type::FLAG != value_type())
+			if (metadata_value_type::FLAG != metadata_value_type())
 			{
 				stream << '=';
 				output_vcf_value(stream, var);

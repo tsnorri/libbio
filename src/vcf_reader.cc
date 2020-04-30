@@ -105,33 +105,33 @@ namespace libbio::vcf {
 	}
 	
 	
-	template <template <std::int32_t, metadata_value_type> typename t_field_tpl, metadata_value_type t_field_type, typename t_field_base_class>
+	template <template <metadata_value_type, std::int32_t> typename t_field_tpl, metadata_value_type t_field_type, typename t_field_base_class>
 	auto reader::instantiate_field(metadata_formatted_field const &meta) -> t_field_base_class *
 	{
 		switch (meta.get_number())
 		{
 			// Assume that one is a rather typical case.
 			case 1:
-				return new t_field_tpl <1, t_field_type>();
+				return new t_field_tpl <t_field_type, 1>();
 
 			case VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE:
-				return new t_field_tpl <VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE, t_field_type>();
+				return new t_field_tpl <t_field_type, VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE>();
 				
 			case VCF_NUMBER_ONE_PER_ALLELE:
-				return new t_field_tpl <VCF_NUMBER_ONE_PER_ALLELE, t_field_type>();
+				return new t_field_tpl <t_field_type, VCF_NUMBER_ONE_PER_ALLELE>();
 				
 			case VCF_NUMBER_ONE_PER_GENOTYPE:
-				return new t_field_tpl <VCF_NUMBER_ONE_PER_GENOTYPE, t_field_type>();
+				return new t_field_tpl <t_field_type, VCF_NUMBER_ONE_PER_GENOTYPE>();
 			
 			case VCF_NUMBER_UNKNOWN:
 			case VCF_NUMBER_DETERMINED_AT_RUNTIME:
 			default:
-				return new t_field_tpl <VCF_NUMBER_DETERMINED_AT_RUNTIME, t_field_type>();
+				return new t_field_tpl <t_field_type, VCF_NUMBER_DETERMINED_AT_RUNTIME>();
 		}
 	}
 	
 	
-	template <template <std::int32_t, metadata_value_type> typename t_field_tpl, typename t_key, typename t_field_map>
+	template <template <metadata_value_type, std::int32_t> typename t_field_tpl, typename t_key, typename t_field_map>
 	auto reader::find_or_add_field(metadata_formatted_field const &meta, t_key const &key, t_field_map &map, bool &did_add) -> typename t_field_map::mapped_type::element_type &
 	{
 		auto const it(map.find(key));
@@ -162,7 +162,7 @@ namespace libbio::vcf {
 				break;
 			
 			case metadata_value_type::FLAG:
-				val = new t_field_tpl <0, metadata_value_type::FLAG>();
+				val = new t_field_tpl <metadata_value_type::FLAG, 0>();
 				break;
 			
 			case metadata_value_type::UNKNOWN:

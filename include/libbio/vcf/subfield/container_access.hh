@@ -3,8 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_VCF_SUBFIELD_CONCRETE_DS_ACCESS_HH
-#define LIBBIO_VCF_SUBFIELD_CONCRETE_DS_ACCESS_HH
+#ifndef LIBBIO_VCF_SUBFIELD_CONTAINER_ACCESS_HH
+#define LIBBIO_VCF_SUBFIELD_CONTAINER_ACCESS_HH
 
 #include <libbio/assert.hh>
 #include <libbio/vcf/subfield/base.hh>
@@ -21,17 +21,15 @@ namespace libbio::vcf {
 
 namespace libbio::vcf::detail {
 	
+#if 0
 	// Generic implementation of accessors for one container type.
 	// m_metadata located in *_field_base.
 	template <
-		typename t_base,
 		template <bool> typename t_access_tpl,
 		bool t_is_transient
 	>
-	class subfield_concrete_container_access : public virtual t_base
+	class subfield_container_access
 	{
-		static_assert(std::is_same_v <t_base, info_field_base> || std::is_same_v <t_base, genotype_field_base>);
-		
 	protected:
 		template <bool B>
 		using container_tpl = typename t_base::template container_tpl <B>;
@@ -42,11 +40,6 @@ namespace libbio::vcf::detail {
 		typedef t_access_tpl <false>			non_transient_access_type;
 	
 	protected:
-		using t_base::construct_ds;
-		using t_base::destruct_ds;
-		using t_base::copy_ds;
-		using t_base::reset;
-	
 		// Construct the type in the memory block. The additional parameters are passed to the constructor if needed.
 		virtual void construct_ds(container_type const &ct, std::byte *mem, std::uint16_t const alt_count) const override final
 		{
@@ -77,12 +70,13 @@ namespace libbio::vcf::detail {
 			detail::copy_value(srcv, dstv);
 		}
 	
-		virtual void reset(container_type const &ct, std::byte *mem) const override final
+		virtual void reset(container_type const &ct, std::byte *mem) const
 		{
 			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			access_type::reset_ds(mem + this->m_offset);
 		}
 	};
+#endif
 }
 
 #endif

@@ -26,7 +26,7 @@ namespace libbio::vcf {
 		friend class transient_variant_format_access;
 		friend class variant_format_access;
 		
-		template <std::int32_t, metadata_value_type>
+		template <metadata_value_type, std::int32_t>
 		friend class generic_info_field_base;
 		
 		friend class info_field_base;

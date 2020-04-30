@@ -44,7 +44,7 @@ namespace libbio::vcf {
 		friend class genotype_field_base;
 		friend class storable_genotype_field_base;
 		
-		template <std::int32_t, metadata_value_type>
+		template <metadata_value_type, std::int32_t>
 		friend class generic_genotype_field_base;
 		
 	protected:
@@ -65,7 +65,7 @@ namespace libbio::vcf {
 		friend class genotype_field_base;
 		friend class genotype_field_gt;
 		
-		template <std::int32_t, metadata_value_type>
+		template <metadata_value_type, std::int32_t>
 		friend class generic_genotype_field_base;
 		
 	protected:

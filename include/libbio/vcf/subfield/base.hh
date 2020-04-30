@@ -34,10 +34,10 @@ namespace libbio::vcf {
 	class typed_field;
 	
 	// Aliases for easier castability.
-	template <bool t_is_vector, metadata_value_type t_value_type>
+	template <metadata_value_type t_value_type, bool t_is_vector>
 	using typed_info_field_t = typed_field <t_value_type, t_is_vector, info_field_base>;
 
-	template <bool t_is_vector, metadata_value_type t_value_type>
+	template <metadata_value_type t_value_type, bool t_is_vector>
 	using typed_genotype_field_t = typed_field <t_value_type, t_is_vector, genotype_field_base>;
 	
 	
@@ -57,7 +57,7 @@ namespace libbio::vcf {
 		virtual ~subfield_base() {}
 
 		// Value type according to the VCF header.
-		virtual metadata_value_type value_type() const = 0;
+		virtual metadata_value_type metadata_value_type() const = 0;
 		
 		// Number of items in this field according to the VCF header.
 		virtual std::int32_t number() const = 0;
@@ -82,43 +82,6 @@ namespace libbio::vcf {
 		
 		// Create a clone of this object.
 		virtual subfield_base *clone() const = 0;
-	};
-	
-	
-	// Interface for the container in question (one of variant, transient_variant, variant_sample, transient_variant_sample).
-	template <template <bool> typename t_container_tpl, bool t_is_transient>
-	class subfield_container_access
-	{
-	public:
-		virtual ~subfield_container_access() {}
-		
-	protected:
-		typedef t_container_tpl <t_is_transient>	container_type;
-		typedef t_container_tpl <false>				non_transient_container_type;
-		
-		// Mark the target s.t. no values have been read yet. (Currently used for vectors.)
-		virtual void reset(container_type const &ct, std::byte *mem) const = 0;
-		
-		// Construct the data structure.
-		virtual void construct_ds(container_type const &ct, std::byte *mem, std::uint16_t const alt_count) const = 0;
-		
-		// Destruct the datastructure.
-		virtual void destruct_ds(container_type const &ct, std::byte *mem) const = 0;
-		
-		// access_ds left out on purpose since its return type varies.
-		
-		// Copy the data structure.
-		virtual void copy_ds(
-			container_type const &src_ct,
-			non_transient_container_type const &dst_ct,
-			std::byte const *src,
-			std::byte *dst
-		) const = 0;
-			
-	public:
-		// Output the field contents to a stream.
-		// In case of info_field, the value has to be present in the variant.
-		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const = 0;
 	};
 }
 

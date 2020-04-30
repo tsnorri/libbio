@@ -94,7 +94,7 @@ namespace {
 					actual_number == expected.number ||
 					(actual_field.value_type_is_vector() && actual_number == vcf::VCF_NUMBER_DETERMINED_AT_RUNTIME)
 			));
-			REQUIRE(actual_field.value_type() == expected.value_type);
+			REQUIRE(actual_field.metadata_value_type() == expected.value_type);
 			
 			// Predefined fields do not have metadata unless declared in VCF headers.
 			if (should_have_metadata)
@@ -370,10 +370,10 @@ namespace {
 		
 			REQUIRE_NOTHROW([&field, &ct, &expected_value](){
 				visit_value_type(
-					field.value_type(),
+					field.metadata_value_type(),
 					field.value_type_is_vector(),
 					[&field, &ct, &expected_value](auto const value_type, auto const is_vector){
-						typedef typename t_field::template typed_field_type <is_vector(), value_type()> typed_field_type;
+						typedef typename t_field::template typed_field_type <value_type(), is_vector()> typed_field_type;
 						
 						auto const &typed_field(dynamic_cast <typed_field_type const &>(field));
 						auto const &unprocessed_value(typed_field(ct));
