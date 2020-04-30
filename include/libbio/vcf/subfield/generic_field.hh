@@ -105,6 +105,8 @@ namespace libbio::vcf::detail {
 		typedef generic_field_access <generic_field_tpl, true>	transient_access_wrapper;
 		
 	public:
+		using t_base::output_vcf_value;
+		
 		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const override
 		{
 			access_wrapper::output_vcf_value(*this, stream, ct);
