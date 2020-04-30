@@ -30,7 +30,7 @@ namespace libbio::vcf {
 	void stream_input_base::reader_will_take_input()
 	{
 		if (0 == m_buffer.size())
-			m_buffer.resize(1024);
+			m_buffer.resize(65536);
 	}
 	
 	
