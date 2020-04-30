@@ -7,6 +7,7 @@
 #define LIBBIO_VCF_SUBFIELD_TYPE_MAPPING_HH
 
 #include <libbio/types.hh>
+#include <vector>
 
 
 namespace libbio::vcf {
