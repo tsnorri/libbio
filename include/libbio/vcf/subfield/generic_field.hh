@@ -320,7 +320,7 @@ namespace libbio::vcf {
 		static constexpr metadata_value_type s_value_type() { return t_value_type; }
 		
 	protected:
-		virtual bool parse_and_assign(std::string_view const &sv, transient_variant_sample &var, std::byte *mem) const override final
+		virtual bool parse_and_assign(std::string_view const &sv, transient_variant const &var, transient_variant_sample &sample, std::byte *mem) const override final
 		{
 			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			return parser_type::parse_and_assign(sv, mem + this->m_offset);

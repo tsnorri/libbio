@@ -43,7 +43,7 @@ namespace libbio::vcf {
 		typedef typename base_class::transient_container_type		transient_container_type;
 		
 	protected:
-		virtual bool parse_and_assign(std::string_view const &sv, transient_variant_sample &sample, std::byte *mem) const override;
+		virtual bool parse_and_assign(std::string_view const &sv, transient_variant const &var, transient_variant_sample &sample, std::byte *mem) const override;
 		virtual genotype_field_gt *clone() const override { return new genotype_field_gt(*this); }
 		
 	public:

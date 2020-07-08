@@ -200,7 +200,7 @@ namespace libbio::vcf {
 				auto const &format_ptr(m_current_format_vec[subfield_idx]);
 				auto &samples(m_current_variant.m_samples);
 				libbio_always_assert_lt_msg(sample_idx, samples.size(), "Samples should be preallocated.");
-				format_ptr->parse_and_assign(field_value, samples[sample_idx]);
+				format_ptr->parse_and_assign(field_value, m_current_variant, samples[sample_idx]);
 				
 				++subfield_idx;
 			}

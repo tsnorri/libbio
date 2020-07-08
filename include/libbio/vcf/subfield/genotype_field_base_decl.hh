@@ -76,10 +76,10 @@ namespace libbio::vcf {
 		
 		// Parse the contents of a string_view and assign the value to the sample.
 		// Needs to be overridden.
-		virtual bool parse_and_assign(std::string_view const &sv, transient_variant_sample &sample, std::byte *mem) const = 0;
+		virtual bool parse_and_assign(std::string_view const &sv, transient_variant const &var, transient_variant_sample &sample, std::byte *mem) const = 0;
 		
 		inline void prepare(transient_variant_sample &dst) const;
-		inline void parse_and_assign(std::string_view const &sv, transient_variant_sample &dst) const;
+		inline void parse_and_assign(std::string_view const &sv, transient_variant const &var, transient_variant_sample &dst) const;
 		virtual genotype_field_base *clone() const override = 0;
 		
 		// Access the container’s buffer, for use with operator().

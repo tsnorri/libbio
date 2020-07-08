@@ -19,12 +19,12 @@ namespace libbio::vcf {
 	}
 	
 	
-	void genotype_field_base::parse_and_assign(std::string_view const &sv, transient_variant_sample &dst) const
+	void genotype_field_base::parse_and_assign(std::string_view const &sv, transient_variant const &var, transient_variant_sample &dst) const
 	{
 		// May be called multiple times for a vector subfield.
 		libbio_assert(m_metadata);
 		libbio_assert_neq(this->get_index(), INVALID_INDEX);
-		if (this->parse_and_assign(sv, dst, dst.m_sample_data.get()))
+		if (this->parse_and_assign(sv, var, dst, dst.m_sample_data.get()))
 			dst.m_assigned_genotype_fields[this->get_index()] = true;
 	}
 	

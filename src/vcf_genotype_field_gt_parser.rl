@@ -34,7 +34,7 @@ namespace libbio::vcf {
 	}
 	
 	
-	bool genotype_field_gt::parse_and_assign(std::string_view const &sv, transient_variant_sample &sample, std::byte *mem) const
+	bool genotype_field_gt::parse_and_assign(std::string_view const &sv, transient_variant const &var, transient_variant_sample &sample, std::byte *mem) const
 	{
 		// Mixed phasing is possible, e.g. in VCF 4.2 specification p. 26: 0/1|2: triploid with a single phased allele.
 		// (The specification says it is tetraploid but this is likely a bug.)
@@ -64,6 +64,8 @@ namespace libbio::vcf {
 			}
 			
 			action end_part {
+				if (sample_genotype::NULL_ALLELE != idx)
+					libbio_always_assert_lte_msg(idx, var.alts().size(), "Found a genotype value greater than ALT count for variant on line ", var.lineno() , ".");
 				value_access::add_value(mem, sample_genotype(idx, is_phased));
 			}
 			

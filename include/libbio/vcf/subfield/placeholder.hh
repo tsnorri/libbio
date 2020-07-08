@@ -61,7 +61,7 @@ namespace libbio::vcf {
 	
 	class genotype_field_placeholder final : public detail::subfield_placeholder_base <genotype_field_base>
 	{
-		bool parse_and_assign(std::string_view const &sv, transient_variant_sample &sample, std::byte *mem) const override { /* No-op. */ return false; }
+		bool parse_and_assign(std::string_view const &sv, transient_variant const &var, transient_variant_sample &sample, std::byte *mem) const override { /* No-op. */ return false; }
 		genotype_field_placeholder *clone() const override { return new genotype_field_placeholder(*this); }
 	};
 }
