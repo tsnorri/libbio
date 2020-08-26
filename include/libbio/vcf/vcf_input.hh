@@ -36,6 +36,14 @@ namespace libbio::vcf {
 	};
 	
 	
+	class empty_input : public input_base
+	{
+	protected:
+		virtual char const *buffer_start() const override { return nullptr; }
+		virtual void fill_buffer(reader &vcf_reader) override;
+	};
+	
+	
 	class seekable_input_base : public input_base
 	{
 		// TODO: implement seeking.

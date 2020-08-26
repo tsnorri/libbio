@@ -46,6 +46,7 @@ namespace libbio::vcf {
 	
 	class reader
 	{
+		friend class empty_input;
 		friend class stream_input_base;
 		friend class mmap_input;
 		
@@ -124,6 +125,7 @@ namespace libbio::vcf {
 		bool parse_one(callback_cq_fn const &callback, parser_state &state);
 		bool parse_one(callback_cq_fn &&callback, parser_state &state);
 		
+		bool has_input() const { return (m_input ? true : false); }
 		input_base &vcf_input() { return *m_input; }
 		input_base const &vcf_input() const { return *m_input; }
 		char const *buffer_start() const { return m_fsm.p; }

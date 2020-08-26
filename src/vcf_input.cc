@@ -27,6 +27,14 @@ namespace {
 
 namespace libbio::vcf {
 	
+	void empty_input::fill_buffer(reader &vcf_reader)
+	{
+		vcf_reader.set_buffer_start(nullptr);
+		vcf_reader.set_buffer_end(nullptr);
+		vcf_reader.set_eof(nullptr);
+	}
+	
+	
 	void stream_input_base::reader_will_take_input()
 	{
 		if (0 == m_buffer.size())
