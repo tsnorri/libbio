@@ -577,7 +577,7 @@ namespace libbio {
 		if (!std::equal(m_values.cbegin(), m_values.cend() - 1, other.m_values.cbegin(), other.m_values.cend() - 1))
 			return false;
 		
-		auto const mask(extent_mask(extent_size));
+		auto const mask(this->extent_mask(extent_size));
 		return (*m_values.crbegin() & mask) == (*other.m_values.crbegin() & mask);
 	}
 }
