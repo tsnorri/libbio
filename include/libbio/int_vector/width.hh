@@ -12,16 +12,18 @@
 namespace libbio { namespace detail {
 	
 	// Traits / mixins.
-	
-	template <unsigned int t_bits, typename t_word>
-	struct int_vector_width_base
+	template <typename t_int_vector>
+	constexpr inline auto int_vector_extent_mask(t_int_vector const &vec, std::size_t const size) -> typename t_int_vector::word_type
 	{
-		constexpr inline t_word extent_mask(std::size_t const extent_size);
-	};
+		typedef typename t_int_vector::word_type word_type;
+		libbio_assert(size <= vec.element_count_in_word());
+		word_type const mask(~word_type(0));
+		return mask >> ((vec.element_count_in_word() - size) * vec.element_bits());
+	}
 	
 	
 	template <unsigned int t_bits, typename t_word>
-	class int_vector_width : public int_vector_width_base <t_bits, t_word>
+	class int_vector_width
 	{
 	public:
 		typedef t_word		word_type;
@@ -44,13 +46,14 @@ namespace libbio { namespace detail {
 		constexpr std::uint8_t element_count_in_word() const { return ELEMENT_COUNT; }
 		constexpr std::uint8_t bits_before_element(std::uint8_t const el_idx) const { return t_bits * el_idx; }
 		constexpr word_type element_mask() const { return ELEMENT_MASK; }
-		constexpr inline word_type extent_mask(std::size_t const extent_size, word_type const mask);
+		constexpr inline word_type extent_mask(std::size_t const extent_size) const { return int_vector_extent_mask(*this, extent_size); }
+		constexpr inline word_type extent_mask(std::size_t const extent_size, word_type const mask) const;
 	};
 	
 	
 	// Specialization for runtime-defined element size.
 	template <typename t_word>
-	class int_vector_width <0, t_word> : public int_vector_width_base <0, t_word>
+	class int_vector_width <0, t_word>
 	{
 	public:
 		typedef t_word		word_type;
@@ -74,24 +77,16 @@ namespace libbio { namespace detail {
 		std::uint8_t element_bits() const { return m_bits; }
 		void set_element_bits(std::uint8_t const bits) { m_bits = bits; }
 		
-		std::uint8_t element_count_in_word() const { return WORD_BITS / m_bits; }
-		std::uint8_t bits_before_element(std::uint8_t const el_idx) const { return m_bits * el_idx; }
-		word_type element_mask() const { return (std::numeric_limits <word_type>::max() >> (WORD_BITS - m_bits)); }
-		inline word_type extent_mask(std::size_t const extent_size, word_type const mask);
+		constexpr std::uint8_t element_count_in_word() const { return WORD_BITS / m_bits; }
+		constexpr std::uint8_t bits_before_element(std::uint8_t const el_idx) const { return m_bits * el_idx; }
+		constexpr word_type element_mask() const { return (std::numeric_limits <word_type>::max() >> (WORD_BITS - m_bits)); }
+		constexpr inline word_type extent_mask(std::size_t const extent_size) const { return int_vector_extent_mask(*this, extent_size); }
+		constexpr inline word_type extent_mask(std::size_t const extent_size, word_type const mask) const;
 	};
 	
 	
 	template <unsigned int t_bits, typename t_word>
-	constexpr auto int_vector_width_base <t_bits, t_word>::extent_mask(std::size_t const size) -> t_word
-	{
-		libbio_assert(size <= this->element_count_in_word());
-		t_word const mask(~t_word(0));
-		return mask >> ((this->element_count_in_word() - size) * this->element_bits());
-	}
-	
-	
-	template <unsigned int t_bits, typename t_word>
-	constexpr auto int_vector_width <t_bits, t_word>::extent_mask(std::size_t const size, word_type const mask) -> word_type
+	constexpr auto int_vector_width <t_bits, t_word>::extent_mask(std::size_t const size, word_type const mask) const -> word_type
 	{
 		libbio_assert(size <= this->element_count_in_word());
 		return fill_bit_pattern <ELEMENT_BITS>(mask) >> ((this->element_count_in_word() - size) * this->element_bits());
@@ -99,7 +94,7 @@ namespace libbio { namespace detail {
 	
 	
 	template <typename t_word>
-	auto int_vector_width <0, t_word>::extent_mask(std::size_t const size, word_type const mask) -> word_type
+	constexpr auto int_vector_width <0, t_word>::extent_mask(std::size_t const size, word_type const mask) const -> word_type
 	{
 		libbio_assert(size <= this->element_count_in_word());
 		return fill_bit_pattern(mask, this->element_bits()) >> ((this->element_count_in_word() - size) * this->element_bits());
