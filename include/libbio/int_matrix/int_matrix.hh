@@ -253,6 +253,8 @@ namespace libbio {
 		const_slice_type const_column(std::size_t const column, std::size_t const first = 0) const						{ return matrices::const_column(*this, column, first, this->number_of_rows()); }
 		const_slice_type const_row(std::size_t const row, std::size_t const first, std::size_t const limit) const		{ return matrices::const_row(*this, row, first, limit); }
 		const_slice_type const_column(std::size_t const column, std::size_t const first, std::size_t const limit) const	{ return matrices::const_column(*this, column, first, limit); }
+		
+		bool operator==(int_matrix_tpl const &other) const;
 	};
 }
 
@@ -291,6 +293,13 @@ namespace libbio {
 	
 	template <unsigned int t_bits, typename t_word = std::uint64_t>
 	using atomic_int_matrix = int_matrix_tpl <t_bits, t_word, detail::atomic_int_matrix_trait>;
+	
+	
+	template <unsigned int t_bits, typename t_word, template <typename, unsigned int, typename> typename t_trait>
+	bool int_matrix_tpl <t_bits, t_word, t_trait>::operator==(int_matrix_tpl const &other) const
+	{
+		return m_data == other.m_data && m_stride == other.m_stride;
+	}
 	
 	
 	template <unsigned int t_bits, typename t_word, template <typename, unsigned int, typename> typename t_trait>
