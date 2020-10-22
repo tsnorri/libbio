@@ -283,9 +283,17 @@ namespace libbio::vcf {
 		// Assign a value, used for FLAG.
 		virtual bool assign(std::byte *mem) const override
 		{
-			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
-			transient_field_access::add_value(mem + this->m_offset, 0);
-			return true; // FIXME: return parse_and_assign’s return value?
+			if constexpr (metadata_value_type::FLAG == t_value_type)
+			{
+				libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
+				transient_field_access::add_value(mem + this->m_offset, 0);
+				return true;
+			}
+			else
+			{
+				libbio_fail("This member function should only be called for fields of type metadata_value_type::FLAG");
+				return false;
+			}
 		};
 		
 		virtual bool parse_and_assign(std::string_view const &sv, transient_variant &var, std::byte *mem) const override
