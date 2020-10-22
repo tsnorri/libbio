@@ -17,7 +17,7 @@
 namespace lb	= libbio;
 namespace vcf	= libbio::vcf;
 
-typedef std::span <char const *>			sample_name_span;
+typedef std::vector <std::string>			sample_name_vector;
 typedef std::map <std::size_t, std::size_t>	alt_number_map;
 
 
@@ -43,14 +43,14 @@ namespace {
 		typedef t_variant	variant_type;
 		
 	protected:
-		sample_name_span const	*m_sample_names{};
-		alt_number_map const	*m_alt_mapping{};
-		bool const				m_exclude_samples{};
+		sample_name_vector const	*m_sample_names{};
+		alt_number_map const		*m_alt_mapping{};
+		bool const					m_exclude_samples{};
 		
 	public:
 		sample_filtering_variant_printer() = default;
 		
-		sample_filtering_variant_printer(sample_name_span const &sample_names, alt_number_map const &alt_mapping, bool const exclude_samples):
+		sample_filtering_variant_printer(sample_name_vector const &sample_names, alt_number_map const &alt_mapping, bool const exclude_samples):
 			m_sample_names(&sample_names),
 			m_alt_mapping(&alt_mapping),
 			m_exclude_samples(exclude_samples)
@@ -122,7 +122,7 @@ namespace {
 			for (auto const &pair : parsed_sample_names)
 			{
 				auto const &name(pair.first);
-				if (std::find(m_sample_names->begin(), m_sample_names->end(), name) == m_sample_names->end())
+				if (!std::binary_search(m_sample_names->begin(), m_sample_names->end(), name))
 				{
 					auto const idx1(pair.second);
 					cb(idx1);
@@ -133,6 +133,7 @@ namespace {
 		{
 			for (auto const &name : *m_sample_names)
 			{
+				auto const it(parsed_sample_names.find(name));
 				auto const idx1(parsed_sample_names.find(name)->second);
 				cb(idx1);
 			}
@@ -140,7 +141,7 @@ namespace {
 	}
 	
 	
-	void check_sample_names(vcf::reader const &reader, sample_name_span const &sample_names)
+	void check_sample_names(vcf::reader const &reader, sample_name_vector const &sample_names)
 	{
 		// Check whether the given sample names actually exist.
 		auto const &parsed_sample_names(reader.sample_names());
@@ -159,7 +160,7 @@ namespace {
 	}
 	
 	
-	bool modify_variant(vcf::transient_variant &var, alt_number_map &alt_mapping, sample_name_span const &sample_names, bool const exclude_samples)
+	bool modify_variant(vcf::transient_variant &var, alt_number_map &alt_mapping, sample_name_vector const &sample_names, bool const exclude_samples)
 	{
 		alt_mapping.clear();
 
@@ -179,7 +180,7 @@ namespace {
 				auto &sample(samples[idx]);
 				for (auto const &gt : (*gt_field)(sample))
 				{
-					if (vcf::sample_genotype::NULL_ALLELE == gt.alt)
+					if (vcf::sample_genotype::NULL_ALLELE == gt.alt || 0 == gt.alt)
 						continue;
 					alt_mapping.emplace(gt.alt, 0);
 				}
@@ -190,9 +191,8 @@ namespace {
 				for (auto const &pair : parsed_sample_names)
 				{
 					auto const &name(pair.first);
-					auto const it(std::find(sample_names.begin(), sample_names.end(), name));
 					// Check whether the current sample name is also in the excluded list.
-					if (it != sample_names.end())
+					if (std::binary_search(sample_names.begin(), sample_names.end(), name))
 						continue;
 					
 					auto const idx1(pair.second);
@@ -204,14 +204,14 @@ namespace {
 				for (auto const &name : sample_names)
 				{
 					auto const it(parsed_sample_names.find(name));
-					libbio_assert_neq(it, parsed_sample_names.end());
-					
-					auto const idx1(it->second);
-					cb(idx1);
+					if (parsed_sample_names.end() != it)
+					{
+						auto const idx1(it->second);
+						cb(idx1);
+					}
 				}
 			}
 			
-			alt_mapping.erase(0);
 			if (alt_mapping.empty())
 				return false;
 		}
@@ -244,7 +244,7 @@ namespace {
 	}
 	
 	
-	void output_header(vcf::reader const &reader, std::ostream &stream, sample_name_span const &sample_names, bool const exclude_samples)
+	void output_header(vcf::reader const &reader, std::ostream &stream, sample_name_vector const &sample_names, bool const exclude_samples)
 	{
 		auto const &metadata(reader.metadata());
 		
@@ -266,7 +266,8 @@ namespace {
 				{
 					libbio_assert_lt(0, number);
 
-					auto const did_find(std::find(sample_names.begin(), sample_names.end(), name) != sample_names.end());
+					// FIXME: this does not actually work b.c. it assumes that sample_names is always sorted.
+					auto const did_find(std::binary_search(sample_names.begin(), sample_names.end(), name));
 					if (exclude_samples == did_find)
 						continue;
 
@@ -288,10 +289,12 @@ namespace {
 	}
 	
 	
-	void output_vcf(vcf::reader &reader, std::ostream &stream, sample_name_span const &sample_names, bool const exclude_samples)
+	void output_vcf(vcf::reader &reader, std::ostream &stream, sample_name_vector const &sample_names, bool const exclude_samples)
 	{
+		/*
 		if (!sample_names.empty())
 			check_sample_names(reader, sample_names);
+		*/
 		
 		output_header(reader, stream, sample_names, exclude_samples);
 		
@@ -341,7 +344,21 @@ int main(int argc, char **argv)
 	if (args_info.output_given)
 		lb::open_file_for_writing(args_info.output_arg, output_stream, lb::writing_open_mode::CREATE);
 	
-	sample_name_span const sample_names(const_cast <char const **>(args_info.sample_arg), args_info.sample_given);
+	// Fill sample_names.
+	sample_name_vector sample_names;
+	for (std::size_t i(0); i < args_info.sample_given; ++i)
+		sample_names.emplace_back(args_info.sample_arg[i]);
+	if (args_info.sample_names_given)
+	{
+		lb::file_istream stream;
+		lb::open_file_for_reading(args_info.sample_names_arg, stream);
+		std::string line;
+		while (std::getline(stream, line))
+			sample_names.push_back(line);
+	}
+	// Sort if excluded (for std::binary_search).
+	if (args_info.exclude_samples_given)
+		std::sort(sample_names.begin(), sample_names.end());
 	
 	// Create the parser and add the fields listed in the specification to the metadata.
 	vcf::reader reader;
