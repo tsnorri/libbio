@@ -360,7 +360,7 @@ namespace libbio { namespace detail {
 	void int_vector_trait <t_vector, t_bits, t_word>::resize(std::size_t new_size, word_type bit_pattern)
 	{
 		auto &self(as_vector());
-		self.m_values.resize(std::ceil(1.0 * new_size / self.element_count_in_word()));
+		self.m_values.resize(std::ceil(1.0 * new_size / self.element_count_in_word()), bit_pattern);
 		self.m_size = new_size;
 	}
 	
