@@ -188,11 +188,7 @@ namespace libbio { namespace pbwt {
 		character_index_vector const &output_divergence() const { return m_output_divergence; }
 		count_vector const &character_counts() const { return m_character_counts; }
 		string_index_vector const &previous_positions() const { return m_previous_positions; }
-		
-		// FIXME: remove some of these.
 		divergence_count_list const &divergence_value_counts() const { return m_divergence_value_counts; }
-		divergence_count_list const &last_divergence_value_counts() const { return m_divergence_value_counts; }
-		divergence_count_list const &output_divergence_value_counts() const { return m_divergence_value_counts; }
 		
 		std::size_t sequence_length() const { return m_sequences->front().size(); }
 		std::size_t size() const { return m_sequences->size(); }
