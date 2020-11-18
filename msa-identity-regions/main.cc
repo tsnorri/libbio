@@ -3,6 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <boost/iterator/function_output_iterator.hpp>
 #include <iostream>
 #include <libbio/consecutive_alphabet.hh>
 #include <libbio/fasta_reader.hh>
@@ -79,15 +80,58 @@ namespace {
 	};
 	
 	
-	void report_match(
-		position_type const pos,
-		string_index_type const current_matched_string,
-		string_index_type const str_idx,
-		position_type const match_length
-	)
+	struct match_record
 	{
-		std::cout << pos << '\t' << current_matched_string << '\t' << str_idx << '\t' << match_length << '\n';
+		position_type		match_length{};
+		string_index_type	matched_string{};
+		string_index_type	matching_string{};
+		
+		match_record(
+			string_index_type	matched_string_,
+			string_index_type	matching_string_,
+			position_type		match_length_
+		):
+			match_length(match_length_),
+			matched_string(matched_string_),
+			matching_string(matching_string_)
+		{
+		}
+	};
+	
+	typedef std::vector <match_record>	match_record_vector;
+	
+	
+	// Compare match records without considering match length.
+	bool operator<(match_record const &lhs, match_record const &rhs)
+	{
+		return std::make_tuple(lhs.matched_string, lhs.matching_string) < std::make_tuple(rhs.matched_string, rhs.matching_string);
 	}
+	
+	
+	// Output a match.
+	void report_match(position_type const pos, match_record const &rec)
+	{
+		std::cout << pos << '\t' << rec.matched_string << '\t' << rec.matching_string << '\t' << rec.match_length << '\n';
+	}
+	
+	
+	// For use with Boost’s function output iterator.
+	class match_reporter
+	{
+	protected:
+		position_type	m_pos{};
+		
+	public:
+		match_reporter(position_type const pos):
+			m_pos(pos)
+		{
+		}
+		
+		void operator()(match_record const &rec)
+		{
+			report_match(m_pos - 1, rec);
+		}
+	};
 }
 
 
@@ -143,61 +187,97 @@ int main(int argc, char **argv)
 		// Find the matching regions.
 		std::cout << "Position\tMatched string\tMatching string\tMatch length\n";
 		std::size_t const expected_match_length(args_info.length_arg);
+		
+		match_record_vector match_records;
+		match_record_vector prev_match_records;
+		
 		pbwt_context pbwt_ctx(sequences, alphabet);
 		pbwt_ctx.prepare();
-		pbwt_ctx.process <>([&pbwt_ctx, &prev_n_position_1, &sequences, expected_match_length, ignore_n](){
-			auto const &string_indices(pbwt_ctx.output_permutation());
-			auto const &divergence(pbwt_ctx.output_divergence());
-			auto current_matched_string(string_indices[0]);
-			auto const pos(pbwt_ctx.sequence_idx()); // Character position, i.e. column.
-			
-			// Track the rightmost position of N’s if needed.
-			if (ignore_n)
-			{
-				auto const res(ranges::equal_range(
-					string_indices,
-					'N',
-					ranges::less(),
-					[&sequences, pos](string_index_type const idx) -> character_type {
-						auto const &seq(sequences[idx]);
-						return seq[pos];
-					}
-				));
+		pbwt_ctx.process <>(
+			[
+				&pbwt_ctx,
+				&prev_n_position_1,
+				&sequences,
+				&match_records,
+				&prev_match_records,
+				expected_match_length,
+				ignore_n
+			](){
+				auto const &string_indices(pbwt_ctx.output_permutation());
+				auto const &divergence(pbwt_ctx.output_divergence());
+				auto current_matched_string(string_indices[0]);
+				auto const pos(pbwt_ctx.sequence_idx()); // Character position, i.e. column.
 				
-				for (auto const idx : res)
-					prev_n_position_1[idx] = 1 + pos;
+				match_records.clear();
 				
-				// Check the length of the matching suffix and report if needed.
-				// This part is almost identical to the else branch but not quite.
-				for (auto const &[str_idx, d] : rsv::zip(string_indices, divergence) | rsv::tail)
+				// Track the rightmost position of N’s if needed.
+				if (ignore_n)
 				{
-					auto const match_start_1(std::max(d, prev_n_position_1[str_idx]));
-					auto const match_length(1 + pos - match_start_1);
-					if (expected_match_length <= match_length)
-						report_match(pos, current_matched_string, str_idx, match_length);
-					else if (1 + pos - d < expected_match_length)
+					auto const res(ranges::equal_range(
+						string_indices,
+						'N',
+						ranges::less(),
+						[&sequences, pos](string_index_type const idx) -> character_type {
+							auto const &seq(sequences[idx]);
+							return seq[pos];
+						}
+					));
+					
+					for (auto const idx : res)
+						prev_n_position_1[idx] = 1 + pos;
+					
+					// Check the length of the matching suffix and report if needed.
+					// This part is almost identical to the else branch but not quite.
+					for (auto const &[str_idx, d] : rsv::zip(string_indices, divergence) | rsv::tail)
 					{
-						// Begin tracking the current string.
-						current_matched_string = str_idx;
+						auto const match_start_1(std::max(d, prev_n_position_1[str_idx]));
+						auto const match_length(1 + pos - match_start_1);
+						if (expected_match_length <= match_length)
+							match_records.emplace_back(current_matched_string, str_idx, match_length);
+						else if (1 + pos - d < expected_match_length)
+						{
+							// Begin tracking the current string.
+							current_matched_string = str_idx;
+						}
 					}
 				}
-			}
-			else
-			{
-				// Check the length of the matching suffix and report if needed.
-				for (auto const &[str_idx, d] : rsv::zip(string_indices, divergence) | rsv::tail)
+				else
 				{
-					auto const match_length(1 + pos - d);
-					if (expected_match_length <= match_length)
-						report_match(pos, current_matched_string, str_idx, match_length);
-					else
+					// Check the length of the matching suffix and report if needed.
+					for (auto const &[str_idx, d] : rsv::zip(string_indices, divergence) | rsv::tail)
 					{
-						// Begin tracking the current string.
-						current_matched_string = str_idx;
+						auto const match_length(1 + pos - d);
+						if (expected_match_length <= match_length)
+							match_records.emplace_back(current_matched_string, str_idx, match_length);
+						else
+						{
+							// Begin tracking the current string.
+							current_matched_string = str_idx;
+						}
 					}
 				}
+				
+				// Report the matches that are missing from the current list.
+				std::sort(match_records.begin(), match_records.end());
+				std::set_difference(
+					prev_match_records.begin(),
+					prev_match_records.end(),
+					match_records.begin(),
+					match_records.end(),
+					boost::make_function_output_iterator(match_reporter(pos))
+				);
+				
+				using std::swap;
+				swap(match_records, prev_match_records);
 			}
-		});
+		);
+		
+		// Handle the last set of records.
+		{
+			auto const last_pos(sequences.front().size() - 1);
+			for (auto const &rec : prev_match_records)
+				report_match(last_pos, rec);
+		}
 	}
 	
 	return EXIT_SUCCESS;
