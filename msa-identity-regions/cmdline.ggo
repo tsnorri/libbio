@@ -1,0 +1,12 @@
+# Copyright (c) 2020 Tuukka Norri
+# This code is licensed under MIT license (see LICENSE for details).
+
+package		"msa_identity_regions"
+version		"0.1"
+purpose		"Find identity regions in a multiple sequence alignment of m strings of length n in O(mn) time."
+description	"For each position (column) in the MSA, outputs the indices of the strings that belong to the same equivalence. class. The equivalence class is determined by a matching suffix of at least the given length up to the position in question."
+usage		"msa_identity_regions --input=input.a2m --length=..."
+
+option		"input"				i	"Input A2M file path"					string	typestr = "filename"	required
+option		"length"			l	"Length threshold"						long							required
+option		"ignore-n"			-	"Ignore subsequences with N’s"			flag	off
