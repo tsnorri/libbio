@@ -6,7 +6,7 @@
 #ifndef LIBBIO_VARIANT_HH
 #define LIBBIO_VARIANT_HH
 
-#include <boost/function_output_iterator.hpp>
+#include <boost/iterator/function_output_iterator.hpp>
 #include <boost/range/iterator_range_core.hpp>
 #include <libbio/assert.hh>
 #include <libbio/cxxcompat.hh>
