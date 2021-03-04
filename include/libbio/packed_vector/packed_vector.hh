@@ -12,6 +12,7 @@
 #include <libbio/assert.hh>
 #include <libbio/packed_vector/iterator.hh>
 #include <range/v3/algorithm/copy.hpp>
+#include <range/v3/iterator/stream_iterators.hpp>
 #include <range/v3/view/transform.hpp>
 
 
