@@ -77,12 +77,36 @@ namespace libbio {
 	}
 	
 	
+	int open_file_for_reading(std::string const &fname)
+	{
+		return open_file_for_reading(fname.data());
+	}
+	
+	
 	std::pair <int, bool> try_open_file_for_reading(char const *fname)
 	{
 		int fd(open(fname, O_RDONLY));
 		if (-1 == fd)
 			return std::make_pair(-1, false);
 		return std::make_pair(fd, true);
+	}
+	
+	
+	int open_temporary_file_for_writing(std::string &path_template)
+	{
+		int const fd(mkstemp(path_template.data()));
+		if (-1 == fd)
+			handle_file_error(path_template.data());
+		return fd;
+	}
+	
+	
+	int open_temporary_file_for_writing(std::string &path_template, int suffixlen)
+	{
+		int const fd(mkstemps(path_template.data(), suffixlen));
+		if (-1 == fd)
+			handle_file_error(path_template.data());
+		return fd;
 	}
 	
 	
