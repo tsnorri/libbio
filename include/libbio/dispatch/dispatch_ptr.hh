@@ -23,7 +23,7 @@ namespace libbio {
 		{
 		}
 		
-		dispatch_ptr(t_dispatch ptr, bool retain = false):
+		explicit dispatch_ptr(t_dispatch ptr, bool retain = false):
 			m_ptr(ptr)
 		{
 			if (m_ptr && retain)
@@ -57,6 +57,7 @@ namespace libbio {
 			return !(*this == other);
 		}
 		
+		// std::unique_ptr has explicit operator bool, so we should probably too.
 		explicit operator bool() const noexcept
 		{
 			return (m_ptr ? true : false);
