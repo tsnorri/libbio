@@ -9,6 +9,7 @@
 #include <libbio/dispatch/dispatch_caller.hh>
 #include <libbio/dispatch/dispatch_fn.hh>
 #include <libbio/dispatch/dispatch_ptr.hh>
+#include <libbio/dispatch/dispatch_semaphore_lock.hh>
 #include <libbio/dispatch/for_each.hh>
 
 #endif
