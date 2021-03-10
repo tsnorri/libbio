@@ -4,6 +4,7 @@
  */
 
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <unistd.h>
 #include <libbio/file_handle.hh>
@@ -17,7 +18,7 @@ namespace libbio {
 		{
 			auto const res(close(m_fd));
 			if (0 != res)
-				std::cerr << "ERROR: unable to close file handle: " << strerror(errno) << '\n';
+				std::cerr << "ERROR: unable to close file handle: " << std::strerror(errno) << '\n';
 		}
 	}
 }

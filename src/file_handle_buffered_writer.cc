@@ -3,6 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <cstring>
 #include <libbio/buffered_writer/file_handle_buffered_writer.hh>
 #include <unistd.h>
 
@@ -16,7 +17,7 @@ namespace libbio {
 		{
 			auto const res(write(this->m_fd, this->m_buffer.data(), byte_count));
 			if (res != this->m_position)
-				throw std::runtime_error(strerror(errno));
+				throw std::runtime_error(std::strerror(errno));
 			this->m_position = 0;
 			this->m_output_position += byte_count;
 		}
