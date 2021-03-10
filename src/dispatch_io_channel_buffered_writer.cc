@@ -28,8 +28,8 @@ namespace libbio {
 			// Create dispatch data and schedule a writing operation.
 			auto concurrent_queue(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0));
 			
-			dispatch_ptr dispatch_data(dispatch_data_create(buffer, byte_count, concurrent_queue, ^{ this->m_writing_lock.unlock(); }));
 			auto const *buffer(m_writing_buffer.data());
+			dispatch_ptr dispatch_data(dispatch_data_create(buffer, byte_count, concurrent_queue, ^{ this->m_writing_lock.unlock(); }));
 			
 			dispatch_io_write(*m_io_channel, this->m_output_position, *dispatch_data, concurrent_queue, ^(bool done, dispatch_data_t data, int error){
 				if (error)
