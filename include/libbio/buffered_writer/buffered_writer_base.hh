@@ -53,7 +53,9 @@ namespace libbio {
 		buffered_writer_base &operator<<(std::string_view const sv);
 		buffered_writer_base &operator<<(character_count c);
 		
-		std::size_t tellp() const { return m_output_position; }
+		std::size_t tellp() const { return m_position + m_output_position; }
+		std::size_t position() const { return m_position; }
+		std::size_t output_position() const { return m_output_position; }
 		
 		virtual void flush() = 0;
 	};

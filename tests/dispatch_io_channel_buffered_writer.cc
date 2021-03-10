@@ -41,7 +41,8 @@ SCENARIO("dispatch_io_channel_buffered_writer can write to a file", "[file_handl
 					writer << seq;
 					
 					// The output position should match the buffer size until flush() is called.
-					REQUIRE(writer.tellp() == 16);
+					REQUIRE(writer.output_position() == 16);
+					REQUIRE(writer.tellp() == seq.size());
 				}
 				
 				THEN("the file contents match the original sequence")
