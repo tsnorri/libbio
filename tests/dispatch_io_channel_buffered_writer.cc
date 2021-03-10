@@ -27,14 +27,15 @@ SCENARIO("dispatch_io_channel_buffered_writer can write to a file", "[file_handl
 			// Open the same file for reading to prevent it from being unlinked.
 			lb::file_handle read_handle(lb::open_file_for_reading(path_template));
 			
-			// Create a queue for writing to the file.
-			lb::dispatch_ptr io_queue(dispatch_queue_create("fi.iki.tsnorri.libbio.test-writer-queue", DISPATCH_QUEUE_SERIAL));
+			// Create a queue for handling exceptions.
+			// FIXME: an exception handler is needed.
+			lb::dispatch_ptr reporting_queue(dispatch_queue_create("fi.iki.tsnorri.libbio.test-reporting-queue", DISPATCH_QUEUE_SERIAL));
 			
 			WHEN("written to a file")
 			{
 				{
 					// Write to the temporary file.
-					lb::dispatch_io_channel_buffered_writer writer(temp_handle.release(), 16, *io_queue);
+					lb::dispatch_io_channel_buffered_writer writer(temp_handle.release(), 16, *reporting_queue);
 					REQUIRE(-1 == temp_handle.get());
 					
 					writer << seq;
