@@ -47,7 +47,7 @@ namespace libbio {
 				throw std::runtime_error("Unable to create IO channel");
 		}
 			
-		~dispatch_io_channel_buffered_writer() { close(); }
+		~dispatch_io_channel_buffered_writer() { if (m_io_channel) close(); }
 		
 		dispatch_io_channel_buffered_writer(dispatch_io_channel_buffered_writer &&) = default;
 		dispatch_io_channel_buffered_writer &operator=(dispatch_io_channel_buffered_writer &&) & = default;
