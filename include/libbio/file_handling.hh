@@ -47,6 +47,8 @@ namespace libbio {
 	int open_temporary_file_for_writing(std::string &path_template);
 	int open_temporary_file_for_writing(std::string &path_template, int suffixlen);
 	
+	int open_file_for_writing(char const *fname, writing_open_mode const mode);
+	int open_file_for_writing(std::string const &fname, writing_open_mode const mode);
 	void open_file_for_writing(char const *fname, file_ostream &stream, writing_open_mode const mode);
 	void open_file_for_writing(std::string const &fname, file_ostream &stream, writing_open_mode const mode);
 	

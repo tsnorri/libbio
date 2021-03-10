@@ -34,12 +34,6 @@ namespace libbio {
 	}
 	
 	
-	void open_file_for_writing(std::string const &fname, file_ostream &stream, writing_open_mode const mode)
-	{
-		open_file_for_writing(fname.c_str(), stream, mode);
-	}
-	
-	
 	bool try_open_file_for_reading(std::string const &fname, file_istream &stream)
 	{
 		return try_open_file_for_reading(fname.c_str(), stream);
@@ -108,9 +102,9 @@ namespace libbio {
 			handle_file_error(path_template.data());
 		return fd;
 	}
-	
-	
-	void open_file_for_writing(char const *fname, file_ostream &stream, writing_open_mode const mode)
+
+
+	int open_file_for_writing(char const *fname, writing_open_mode const mode)
 	{
 		auto const flags(
 			O_WRONLY |
@@ -121,8 +115,28 @@ namespace libbio {
 		if (-1 == fd)
 			handle_file_error(fname);
 		
+		return fd;
+	}
+
+
+	int open_file_for_writing(std::string const &fname, writing_open_mode const mode)
+	{
+		return open_file_for_writing(fname.c_str(), mode);
+	}
+
+
+	void open_file_for_writing(char const *fname, file_ostream &stream, writing_open_mode const mode)
+	{
+		auto const fd(open_file_for_writing(fname, mode));
+		// FIXME: check that anything below does not throw.
 		ios::file_descriptor_sink sink(fd, ios::close_handle);
 		stream.open(sink);
+	}
+
+
+	void open_file_for_writing(std::string const &fname, file_ostream &stream, writing_open_mode const mode)
+	{
+		open_file_for_writing(fname.c_str(), stream, mode);
 	}
 	
 	
