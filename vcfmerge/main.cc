@@ -203,7 +203,7 @@ int main(int argc, char **argv)
 		merge::variant_printer <vcf::variant> printer(inputs.size(), sample_ploidy, args_info.samples_are_phased_flag);
 		while (!variants.empty())
 		{
-			// Get the next vairant.
+			// Get the next variant.
 			auto node(variants.extract(variants.begin()));
 			auto &sourced_var(node.value());
 			auto const idx(sourced_var.input_index);
