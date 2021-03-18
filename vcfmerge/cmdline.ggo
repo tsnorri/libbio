@@ -11,7 +11,13 @@ defgroup	"Input"	required
 groupoption	"input"					i	"Variant call file paths"							string	typestr = "filename"	group = "Input"												multiple
 groupoption	"input-list"			l	"Input list file"									string	typestr = "filename"	group = "Input"
 
+defmode "Merge samples"		modedesc = "Attempt to merge the samples given in the input"
+modeoption	"merge-samples"			m	"Generate samples"																					mode = "Merge samples"		required
+modeoption	"rename-samples"		-	"Rename the samples in the inputs"																	mode = "Merge samples"		optional
+
+defmode "Generate samples"	modedesc = "Generate samples for the input variants"
+modeoption	"generate-samples"		g	"Generate samples"																					mode = "Generate samples"	required
+
 section " Other options"
-option		"generate-samples"		g	"Generate samples"									flag																						off
-option		"sample-ploidy"			-	"Sample ploidy"										int		typestr = "ploidy"		default = "1"	optional	dependon = "generate-samples"
-option		"samples-are-phased"	-	"Whether the samples should be marked as phased"	flag														dependon = "generate-samples"	off
+option		"sample-ploidy"			-	"Sample ploidy"										int		typestr = "ploidy"		default = "1"								optional
+option		"samples-are-phased"	-	"Whether the samples should be marked as phased"	flag																						off
