@@ -1,0 +1,11 @@
+# Copyright (c) 2021 Tuukka Norri
+# This code is licensed under MIT license (see LICENSE for details).
+
+package		"vcf-visualize-genotype"
+version		"0.1"
+purpose		"Visualize the GT values in a VCF."
+usage		"vcf_visualize_genotype --variants=variants.graph [<options>] > image.pcx"
+description	"GT values from zero to 7 are handled. Outputs the visualization as PNG to stdout such that columns correspond to variant records and rows to chromosome copies in samples."
+
+option		"variants"	a	"Variant file path"	string	typestr = "filename"	required
+option		"ploidy"	p	"Ploidy"			short							required
