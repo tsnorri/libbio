@@ -4,7 +4,7 @@
  */
 
 #include <boost/gil.hpp>
-#include <boost/gil/extension/io/png.hpp>
+#include <boost/gil/extension/io/tiff.hpp>
 #include <libbio/utility/misc.hh>
 #include <libbio/vcf/vcf_reader.hh>
 #include <range/v3/view/enumerate.hpp>
@@ -98,8 +98,11 @@ int main(int argc, char **argv)
 	vcf::mmap_input vcf_input;
 	vcf_input.handle().open(args_info.variants_arg);
 	
+	std::cerr << "Counting variants…" << std::flush;
 	auto const variant_count(count_variants(vcf_input));
+	std::cerr << ' ' << variant_count << '\n';
 	
+	std::cerr << "Processing…\n";
 	vcf::reader reader(vcf_input);
 	
 	vcf::add_reserved_info_keys(reader.info_fields());
@@ -135,10 +138,16 @@ int main(int argc, char **argv)
 		}
 		
 		++variant_idx;
+
+		if (0 == variant_idx % 100000)
+			std::cerr << "Handled " << variant_idx << " variants…\n";
+
 		return true;
 	});
 	
-	gil::write_view(std::cout, image_view, gil::image_write_info <gil::png_tag>{});
+	gil::image_write_info <gil::tiff_tag> write_info;
+	write_info._compression = COMPRESSION_LZW;
+	gil::write_view(std::cout, image_view, write_info);
 	
 	return EXIT_SUCCESS;
 }

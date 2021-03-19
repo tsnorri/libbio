@@ -3,7 +3,7 @@
 
 package		"vcfmergerecords"
 version		"0.1"
-purpose		"Merges the samples of the records with the same POS and ALT"
+purpose		"Merges the samples of the records with the same POS, REF and ALT"
 description	"Outputs the merged variants. Currently only GT is handled and all INFO fields are removed and records with different ALT values will be split."
 usage		"vcfmergerecords --input=input.vcf"
 
