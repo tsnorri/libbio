@@ -78,6 +78,7 @@ namespace libbio::vcf {
 		virtual void set_value_type(metadata_value_type const vt)		{ throw std::runtime_error("Not implemented"); }
 		
 	public:
+		virtual metadata_type type() const = 0;
 		virtual void output_vcf(std::ostream &stream) const = 0;
 	};
 	
@@ -114,6 +115,7 @@ namespace libbio::vcf {
 		
 	public:
 		std::size_t get_index() const { return m_index; }
+		virtual metadata_type type() const override { return metadata_type::INFO; }
 		virtual void output_vcf(std::ostream &stream) const override;
 		
 	protected:
@@ -126,6 +128,7 @@ namespace libbio::vcf {
 		friend class reader;
 		
 	public:
+		virtual metadata_type type() const override { return metadata_type::FORMAT; }
 		virtual void output_vcf(std::ostream &stream) const override;
 	};
 	
@@ -136,6 +139,7 @@ namespace libbio::vcf {
 		LIBBIO_VCF_METADATA_STR_FIELD(description);
 		
 	public:
+		virtual metadata_type type() const override { return metadata_type::FILTER; }
 		virtual void output_vcf(std::ostream &stream) const override;
 	};
 	
@@ -146,6 +150,7 @@ namespace libbio::vcf {
 		LIBBIO_VCF_METADATA_STR_FIELD(description);
 
 	public:
+		virtual metadata_type type() const override { return metadata_type::ALT; }
 		virtual void output_vcf(std::ostream &stream) const override;
 	};
 	
@@ -155,6 +160,7 @@ namespace libbio::vcf {
 		LIBBIO_VCF_METADATA_STR_FIELD(assembly);
 		
 	public:
+		virtual metadata_type type() const override { return metadata_type::ASSEMBLY; }
 		virtual void output_vcf(std::ostream &stream) const override;
 	};
 	
@@ -165,6 +171,7 @@ namespace libbio::vcf {
 		LIBBIO_VCF_METADATA_INT32_FIELD(length);
 		
 	public:
+		virtual metadata_type type() const override { return metadata_type::CONTIG; }
 		virtual void output_vcf(std::ostream &stream) const override;
 	};
 	

@@ -51,6 +51,18 @@ namespace libbio::vcf {
 	};
 	
 	
+	enum class metadata_type : std::uint8_t
+	{
+		UNKNOWN = 0,
+		INFO,
+		FORMAT,
+		FILTER,
+		ALT,
+		ASSEMBLY,
+		CONTIG
+	};
+	
+	
 	enum class metadata_value_type : std::uint8_t
 	{
 		UNKNOWN = 0,
