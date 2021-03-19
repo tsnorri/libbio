@@ -9,9 +9,14 @@ src/vcf_reader_header_parser.pdf
 src/vcf_reader_parser.cc
 tests/tests
 vcfcat/cmdline.h
+vcfcat/cmdline.c
 vcfcat/vcfcat
 vcfmerge/cmdline.h
+vcfmerge/cmdline.c
 vcfmerge/vcfmerge
+vcfmergerecords/cmdline.c
+vcfmergerecords/cmdline.h
+
 
 # Prerequisites
 *.d
