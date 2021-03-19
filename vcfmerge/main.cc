@@ -247,16 +247,15 @@ namespace {
 			}
 			else
 			{
-				for (auto const &input : inputs)
+				std::stringstream buffer;
+				for (auto const &[input_idx, input] : rsv::enumerate(inputs))
 				{
-					fs::path path(input.source_path);
-				
-					auto const count(input.reader.sample_count());
-					for (std::size_t i(0); i < count; ++i)
+					
+					for (auto const sample_idx : rsv::iota(std::size_t(0), input.reader.sample_count()))
 					{
-						auto &name(out_sample_names.emplace_back(path.stem()));
-						name += '.';
-						name += (1 + i);
+						buffer.str(std::string()); // Clear the buffer.
+						buffer << "SAMPLE" << (1 + input_idx) << '.' << (1 + sample_idx);
+						out_sample_names.emplace_back(buffer.str());
 					}
 				}
 			}
