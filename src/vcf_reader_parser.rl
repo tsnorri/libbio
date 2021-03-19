@@ -225,7 +225,7 @@ namespace libbio::vcf {
 			}
 			
 			action handle_last_sample {
-				if (m_sample_names.size() != sample_idx)
+				if (m_sample_indices_by_name.size() != sample_idx)
 					throw std::runtime_error("Number of samples differs from VCF headers");
 				
 				if (!cb(m_current_variant))

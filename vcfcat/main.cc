@@ -102,7 +102,7 @@ namespace {
 	void sample_filtering_variant_printer <t_variant>::output_samples(std::ostream &os, variant_type const &var) const
 	{
 		auto const &reader(var.reader());
-		auto const &parsed_sample_names(reader->sample_names());
+		auto const &parsed_sample_names(reader->sample_indices_by_name());
 		bool is_first(true);
 		auto const &samples(var.samples());
 		
@@ -144,7 +144,7 @@ namespace {
 	void check_sample_names(vcf::reader const &reader, sample_name_vector const &sample_names)
 	{
 		// Check whether the given sample names actually exist.
-		auto const &parsed_sample_names(reader.sample_names());
+		auto const &parsed_sample_names(reader.sample_indices_by_name());
 		bool can_continue(true);
 		for (auto const &name : sample_names)
 		{
@@ -170,7 +170,7 @@ namespace {
 
 		auto const *gt_field(get_variant_format(var).gt);
 		auto const &reader(*var.reader());
-		auto const &parsed_sample_names(reader.sample_names());
+		auto const &parsed_sample_names(reader.sample_indices_by_name());
 		
 		// Find the ALT values that are in use in the given samples.
 		{
@@ -253,7 +253,7 @@ namespace {
 			meta.output_vcf(stream);
 		});
 		
-		if (reader.sample_names().empty())
+		if (reader.sample_indices_by_name().empty())
 			stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
 		else
 		{
@@ -262,7 +262,7 @@ namespace {
 			{
 				std::vector <std::string const *> output_sample_names(reader.sample_count());
 				std::size_t found_count{};
-				for (auto const &[name, number] : reader.sample_names())
+				for (auto const &[name, number] : reader.sample_indices_by_name())
 				{
 					libbio_assert_lt(0, number);
 

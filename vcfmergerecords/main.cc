@@ -64,8 +64,8 @@ namespace {
 		});
 		
 		std::cout << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
-		for (auto const &kv : reader.sample_names())
-			std::cout << '\t' << kv.second;
+		for (auto const &name : reader.sample_names_by_index())
+			std::cout << '\t' << name;
 		std::cout << '\n';
 	}
 	

@@ -68,7 +68,7 @@ namespace libbio::vcf {
 	}
 	
 	
-	// TODO: implement seeking.
+	// TODO: Implement seeking. Currently this is possible (to some extent) by using a MMAP data source and a separate reader.
 #if 0
 	// Seek to the beginning of the records.
 	void reader::reset()
@@ -90,8 +90,8 @@ namespace libbio::vcf {
 	// Return the 1-based number of the given sample.
 	std::size_t reader::sample_no(std::string const &sample_name) const
 	{
-		auto const it(m_sample_names.find(sample_name));
-		if (it == m_sample_names.cend())
+		auto const it(m_sample_indices_by_name.find(sample_name));
+		if (it == m_sample_indices_by_name.cend())
 			return 0;
 		return it->second;
 	}

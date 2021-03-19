@@ -59,6 +59,7 @@ namespace libbio::vcf {
 	public:
 		typedef std::function <bool(transient_variant &var)>						callback_fn;
 		typedef std::function <bool(transient_variant const &var)>					callback_cq_fn;
+		typedef std::vector <std::string>											sample_name_vector;
 		typedef std::map <std::string, std::size_t, compare_strings_transparent>	sample_name_map; // Use a transparent comparator.
 		
 		// Enough state information to make it possible to resume parsing from the start of a line.
@@ -96,7 +97,8 @@ namespace libbio::vcf {
 		genotype_field_map				m_genotype_fields;
 		variant_format_ptr				m_current_format{new variant_format()};
 		genotype_ptr_vector				m_current_format_vec;					// Non-owning, contents point to m_current_format’s fields.
-		sample_name_map					m_sample_names;
+		sample_name_vector				m_sample_names_by_index;
+		sample_name_map					m_sample_indices_by_name;
 		transient_variant				m_current_variant;
 		reader_delegate					*m_delegate{&detail::g_vcf_reader_default_delegate};
 		char const						*m_current_line_start{};
@@ -150,8 +152,9 @@ namespace libbio::vcf {
 		std::size_t lineno() const { return m_lineno; }
 		std::size_t last_header_lineno() const { return m_input->last_header_lineno(); }
 		std::size_t sample_no(std::string const &sample_name) const;
-		std::size_t sample_count() const { return m_sample_names.size(); }
-		sample_name_map const &sample_names() const { return m_sample_names; }
+		std::size_t sample_count() const { return m_sample_names_by_index.size(); }
+		sample_name_vector const &sample_names_by_index() const { return m_sample_names_by_index; }
+		sample_name_map const &sample_indices_by_name() const { return m_sample_indices_by_name; }
 		inline void set_parsed_fields(field max_field);
 		std::size_t counter_value() const { return m_counter; } // Thread-safe.
 		inline std::pair <std::size_t, std::size_t> current_line_range() const; // Valid in parse()’s callback. FIXME: make this work also for the stream input.
