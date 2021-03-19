@@ -60,7 +60,16 @@ namespace {
 		
 		std::cout << "##fileformat=VCFv4.3\n";
 		metadata.visit_all_metadata([](vcf::metadata_base const &meta){
-			meta.output_vcf(std::cout);
+			switch (meta.type())
+			{
+				// Skip INFO because we set the field contents to undefined.
+				case lb::vcf::metadata_type::INFO:
+					break;
+
+				default:
+					meta.output_vcf(std::cout);
+					break;
+			}
 		});
 		
 		std::cout << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
