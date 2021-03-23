@@ -60,10 +60,14 @@ namespace libbio {
 		bool								m_is_installed{};
 		
 	public:
+		progress_indicator() = default;
+		
+		// Moving and copying is disabled b.c. we have a std::mutex.
+		
+		~progress_indicator() { end_logging(); uninstall(); }
+		
 		bool is_stderr_interactive() const { return isatty(fileno(stderr)); }
 		bool is_installed() const { return m_is_installed; }
-		
-		progress_indicator() = default;
 		
 		void end_logging();
 		void end_logging_no_update();
