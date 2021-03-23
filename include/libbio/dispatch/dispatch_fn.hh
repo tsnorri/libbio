@@ -72,20 +72,22 @@ namespace libbio { namespace detail {
 		static void call_fn(void *dispatch_context)
 		{
 			libbio_assert(dispatch_context);
-			auto *ctx(reinterpret_cast <dispatch_fn_context *>(dispatch_context));
+			// Make sure the context gets destroyed even if it calls std::exit.
+			std::unique_ptr <dispatch_fn_context> ctx(reinterpret_cast <dispatch_fn_context *>(dispatch_context));
 			do_call_fn(*ctx);
-			delete ctx;
 		}
 	};
 }}
 
 
 namespace libbio {
+
+	// FIXME: some of the following functions assume that the dispatch queues get drained before exiting. If the blocks are just released without executing, context_type::call_fn will not be called and the destructor of the lambda function will not be called either. To solve this, the context_type could be wrapped inside a std::shared_ptr, which in turn could be copied to a block. On the other hand it could be the library user’s responsibility to make sure that all relevant blocks have been executed before exiting.
 	
 	template <typename Fn>
 	void dispatch_async_fn(dispatch_queue_t queue, Fn fn)
 	{
-		// A new expression doesn't leak memory if the object construction throws an exception.
+		// A new expression does not leak memory if the object construction throws an exception.
 		typedef detail::dispatch_fn_context <Fn> context_type;
 		auto *ctx(new context_type(std::move(fn)));
 		dispatch_async_f(queue, ctx, &context_type::call_fn);
