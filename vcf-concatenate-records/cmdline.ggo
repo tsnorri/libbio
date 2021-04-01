@@ -1,0 +1,11 @@
+# Copyright (c) 2021 Tuukka Norri
+# This code is licensed under MIT license (see LICENSE for details).
+
+package		"vcf_concatenate_records"
+version		"0.1"
+purpose		"Concatenates records with adjacent positions"
+description	"Outputs the concatenated variants."
+usage		"vcf_concatenate_records --reference=input.fasta --variants=input.vcf"
+
+option	"reference"	r	"Reference FASTA file path"	string	typestr = "filename"	required
+option	"variants"	a	"Variant call file path"	string	typestr = "filename"	required
