@@ -191,18 +191,24 @@ int main(int argc, char **argv)
 		std::cerr << "ERROR: Only files with one sample are handled.\n";
 		std::exit(EXIT_FAILURE);
 	}
-	
+
 	// Parse and output.
 	output_header(reader);
 	bool is_first(true);
 	variant variant_buffer;
+	std::size_t prev_pos{};
 	std::size_t prev_end_pos{SIZE_MAX};
+	std::size_t overlapping_variants{};
+	bool const list_overlapping_variants(args_info.list_overlapping_variants_flag);
 	reader.parse_nc(
 		[
 			&reference,
 			&is_first,
 			&variant_buffer,
-			&prev_end_pos
+			&prev_pos,
+			&prev_end_pos,
+			&overlapping_variants,
+			list_overlapping_variants
 		](vcf::transient_variant const &var){
 			
 			libbio_assert_eq(1, var.samples().size());
@@ -214,12 +220,28 @@ int main(int argc, char **argv)
 			libbio_always_assert_eq_msg(1, gt.size(), "Only haploid samples are handled");
 			if (!gt.front().alt)
 				return true;
+
+			libbio_always_assert_eq(1, var.alts().size());
+			auto const &alt(var.alts().front());
+
+			// Skip ALT equal to REF.
+			if (lb::vcf::sv_type::NONE == alt.alt_sv_type && var.ref() == alt.alt)
+				return true;
 			
 			// Compare to the previous position.
 			// FIXME: check chrom_id.
+			// FIXME: check the END value, too.
 			auto const current_pos(var.zero_based_pos());
-			libbio_always_assert(SIZE_MAX == prev_end_pos || prev_end_pos <= current_pos);
-			if (prev_end_pos != current_pos)
+			auto const current_end_pos(current_pos + var.ref().size());
+			if (SIZE_MAX != prev_end_pos && current_pos < prev_end_pos)
+			{
+				++overlapping_variants;
+				if (list_overlapping_variants)
+					std::cerr << "NOTICE: Skipping overlapping variant on line " << var.lineno() <<
+					" ([" << prev_pos << ", " << prev_end_pos << ") vs. [" << current_pos << ", " << current_end_pos << ")).\n";
+				return true;
+			}
+			else if (prev_end_pos != current_pos)
 			{
 				// The previous variant is too far away. Output the buffer contents.
 				output_if_needed(variant_buffer, prev_end_pos, reference);
@@ -232,8 +254,6 @@ int main(int argc, char **argv)
 			// Append to the buffer.
 			variant_buffer.ref += var.ref();
 			
-			libbio_always_assert_eq(1, var.alts().size());
-			auto const &alt(var.alts().front());
 			switch (alt.alt_sv_type)
 			{
 				case lb::vcf::sv_type::NONE:
@@ -248,14 +268,16 @@ int main(int argc, char **argv)
 					std::exit(EXIT_FAILURE);
 			}
 			
-			// FIXME: check the END value, too.
-			prev_end_pos = current_pos + var.ref().size();
+			prev_pos = current_pos;
+			prev_end_pos = current_end_pos;
 			
 			return true;
 		}
 	);
 	
 	output_if_needed(variant_buffer, prev_end_pos, reference);
+
+	std::cerr << "Skipped " << overlapping_variants << " variants due to overlaps.\n";
 	
 	return EXIT_SUCCESS;
 }
