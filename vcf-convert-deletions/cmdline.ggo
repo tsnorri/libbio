@@ -1,0 +1,11 @@
+# Copyright (c) 2021 Tuukka Norri
+# This code is licensed under MIT license (see LICENSE for details).
+
+package		"vcf_convert_deletions"
+version		"0.1"
+purpose		"Convert records (p, X, <DEL>) to (p - 1, αX, α)."
+description	"Writes the records to stdout."
+usage		"vcf_convert_deletions --reference=input.fasta --variants=input.vcf"
+
+option	"reference"	r	"Reference FASTA file path"	string	typestr = "filename"	required
+option	"variants"	a	"Variant call file path"	string	typestr = "filename"	required
