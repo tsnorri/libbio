@@ -27,6 +27,7 @@ namespace libbio::vcf {
 		
 		std::size_t first_variant_lineno() const { return m_first_variant_lineno; }
 		std::size_t last_header_lineno() const { return m_first_variant_lineno - 1; }
+		virtual char const *path() const { return "(unknown)"; }
 		
 	protected:
 		virtual void reader_will_take_input() {}
@@ -132,6 +133,7 @@ namespace libbio::vcf {
 	public:
 		handle_type &handle() { return m_handle; }
 		handle_type const &handle() const { return m_handle; }
+		char const *path() const override { return m_handle.path().data(); }
 		
 	protected:
 		char const *buffer_start() const override { return m_handle.data(); }

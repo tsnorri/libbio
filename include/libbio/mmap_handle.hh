@@ -49,6 +49,8 @@ namespace libbio {
 		void open(int fd);
 		void open(std::string const &path);
 		void close();
+
+		std::string const &path() const { return m_path; }
 		
 		t_type const *data() const { return m_content; }
 		std::size_t size() const { return m_mapped_size; }
