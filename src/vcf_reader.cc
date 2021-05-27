@@ -39,6 +39,8 @@ namespace libbio::vcf {
 	
 	void reader::report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state, bool const in_header)
 	{
+		// FIXME: wrap everything to the exception.
+
 		if (in_header)
 			std::cerr << "Unexpected character in VCF header ";
 		else
@@ -55,7 +57,7 @@ namespace libbio::vcf {
 		<< "** Last 128 charcters from the buffer:" << std::endl
 		<< buffer_end << std::endl;
 
-		abort();
+		throw std::runtime_error("Unexpected character");
 	}
 	
 	
