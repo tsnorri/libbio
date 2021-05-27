@@ -26,6 +26,13 @@ namespace libbio {
 		virtual ~file_handle_buffered_writer() { flush(); }
 		
 		void flush() override;
+
+		file_handle_buffered_writer(file_handle_buffered_writer &&) = default;
+		file_handle_buffered_writer &operator=(file_handle_buffered_writer &&) & = default;
+		
+		// Copying not allowed.
+		file_handle_buffered_writer(file_handle_buffered_writer const &) = delete;
+		file_handle_buffered_writer &operator=(file_handle_buffered_writer const &) = delete;
 	};
 }
 #endif
