@@ -191,6 +191,7 @@ namespace libbio {
 		std::size_t reserved_size() const { return m_data.reserved_size(); }
 		std::size_t word_size() const { return m_data.word_size(); }
 		void set_size(std::size_t new_size) { m_data.set_size(new_size); }
+		void resize(std::size_t new_size, word_type bit_pattern) { m_data.resize(new_size, bit_pattern); }
 		std::size_t const number_of_columns() const { return m_data.size() / m_stride; }
 		std::size_t const number_of_rows() const { return m_stride; }
 		std::size_t const stride() const { return m_stride; }
