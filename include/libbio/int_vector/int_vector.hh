@@ -170,7 +170,6 @@ namespace libbio {
 		
 		static_assert(t_bits <= WORD_BITS);
 		static_assert(0 == t_bits || 0 == WORD_BITS % t_bits);
-		
 	protected:
 		typedef typename trait_type::value_vector										value_vector;
 		
@@ -467,7 +466,7 @@ namespace libbio { namespace detail {
 		
 		auto const shift_left((self.m_size % self.element_count_in_word()) * self.element_bits());
 		auto const shift_right(WORD_BITS - shift_left);
-		for (auto const &pair : self.m_values | ranges::view::sliding(2))
+		for (auto const &pair : self.m_values | ranges::views::sliding(2))
 		{
 			pair[0] >>= shift_right;
 			pair[0] |= (pair[1] << shift_left);
@@ -550,7 +549,7 @@ namespace libbio {
 	template <unsigned int t_bits, typename t_word, template <typename, unsigned int, typename> typename t_trait>
 	std::ostream &operator<<(std::ostream &os, int_vector_tpl <t_bits, t_word, t_trait> const &vec)
 	{
-		ranges::copy(vec | ranges::view::transform([](auto val){ return +val; }), ranges::make_ostream_joiner(os, "\t"));
+		ranges::copy(vec | ranges::views::transform([](auto val){ return +val; }), ranges::make_ostream_joiner(os, "\t"));
 		return os;
 	}
 	

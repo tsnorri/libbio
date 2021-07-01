@@ -309,7 +309,7 @@ namespace libbio {
 		for (std::size_t i(0); i < row_count; ++i)
 		{
 			auto const &row(matrix.row(i));
-			ranges::copy(row | ranges::view::transform([](auto val){ return +val; }), ranges::make_ostream_joiner(os, "\t"));
+			ranges::copy(row | ranges::views::transform([](auto val){ return +val; }), ranges::make_ostream_joiner(os, "\t"));
 			os << '\n';
 		}
 		return os;

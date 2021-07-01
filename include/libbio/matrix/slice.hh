@@ -69,7 +69,7 @@ namespace libbio { namespace detail {
 	template <typename t_matrix>
 	std::ostream &operator<<(std::ostream &os, matrix_slice <t_matrix> const &slice)
 	{
-		ranges::copy(slice | ranges::view::transform([](auto val){ return +val; }), ranges::make_ostream_joiner(os, "\t"));
+		ranges::copy(slice | ranges::views::transform([](auto val){ return +val; }), ranges::make_ostream_joiner(os, "\t"));
 		return os;
 	}
 }}
