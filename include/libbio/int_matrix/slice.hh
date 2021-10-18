@@ -41,7 +41,9 @@ namespace libbio { namespace detail {
 		using matrix_slice <t_matrix>::matrix_slice;
 		
 		// Check whether the starting position of the slice is word aligned.
-		bool is_word_aligned() const { return 0 == this->m_slice.start() % this->matrix().element_count_in_word(); }
+		bool is_word_aligned_at_start() const { return 0 == this->m_slice.start() % this->matrix().element_count_in_word() && 1 == this->m_slice.stride(); }
+		
+		bool is_word_aligned() const { return is_word_aligned_at_start() && 0 == (this->m_slice.start() + this->m_slice.size()) % this->matrix().element_count_in_word(); }
 		
 		word_range to_word_range() { return to_word_range <word_range>(*this); }
 		const_word_range to_word_range() const { return to_const_word_range(); }

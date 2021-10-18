@@ -43,7 +43,7 @@ namespace libbio { namespace matrices {
 	)
 	{
 		libbio_assert(src.size() <= dst.size());
-		libbio_always_assert(dst.is_word_aligned());
+		libbio_always_assert(dst.is_word_aligned_at_start());
 		auto dst_it(dst.word_begin());
 		src.to_word_range().apply_aligned([&dst_it](auto word, std::size_t element_count){
 			dst_it->store(word);
