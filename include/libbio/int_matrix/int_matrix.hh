@@ -195,7 +195,7 @@ namespace libbio {
 		std::size_t const number_of_columns() const { return m_data.size() / m_stride; }
 		std::size_t const number_of_rows() const { return m_stride; }
 		std::size_t const stride() const { return m_stride; }
-		void set_stride(std::size_t const stride) { m_stride = stride; }
+		inline void set_stride(std::size_t const stride);
 		constexpr std::size_t word_bits() const { return m_data.word_bits(); }
 		
 		vector_type const &values() const { return m_data; }
@@ -300,6 +300,16 @@ namespace libbio {
 	bool int_matrix_tpl <t_bits, t_word, t_trait>::operator==(int_matrix_tpl const &other) const
 	{
 		return m_data == other.m_data && m_stride == other.m_stride;
+	}
+
+
+	template <unsigned int t_bits, typename t_word, template <typename, unsigned int, typename> typename t_trait>
+	void int_matrix_tpl <t_bits, t_word, t_trait>::set_stride(std::size_t const stride)
+	{
+		m_stride = stride;
+#ifndef LIBBIO_NDEBUG
+		m_columns = number_of_columns();
+#endif
 	}
 	
 	
