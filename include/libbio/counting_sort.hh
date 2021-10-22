@@ -183,11 +183,10 @@ namespace libbio {
 		
 		// Make space for the identifiers.
 		auto const identifier_range_size(1 + max_identifier - min_identifier);
-		if (counts.size() < identifier_range_size)
-			counts.resize(identifier_range_size);
+		counts.resize(identifier_range_size);
 		
 		// Set the initial counts to zero.
-		std::fill(counts.begin(), counts.begin() + identifier_range_size, 0);
+		std::fill(counts.begin(), counts.end(), 0);
 		
 		// Count the items.
 		for (auto const &val : src)
