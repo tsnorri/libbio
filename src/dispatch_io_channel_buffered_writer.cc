@@ -3,6 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#if !(defined(LIBBIO_NO_DISPATCH) && LIBBIO_NO_DISPATCH)
+
 #include <libbio/buffered_writer/dispatch_io_channel_buffered_writer.hh>
 #include <mutex>
 #include <unistd.h>
@@ -56,3 +58,5 @@ namespace libbio {
 		dispatch_io_close(*m_io_channel, 0);
 	}
 }
+
+#endif
