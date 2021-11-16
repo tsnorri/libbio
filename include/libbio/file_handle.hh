@@ -42,6 +42,9 @@ namespace libbio {
 		
 		// Releases ownership.
 		file_descriptor_type release() { auto const retval(m_fd); m_fd = -1; return retval; }
+		
+		void seek(std::size_t const pos); // throws
+		std::size_t read(std::size_t const len, char * const dst); // throws
 	};
 	
 	
