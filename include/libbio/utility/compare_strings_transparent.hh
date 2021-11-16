@@ -68,25 +68,25 @@ namespace libbio {
 		
 		// Span
 		template <std::size_t t_n>
-		inline bool operator()(std::string const &lhs, std::span <char *, t_n> const &rhs) const
+		inline bool operator()(std::string const &lhs, std::span <char, t_n> const &rhs) const
 		{
 			return detail::compare_char_span::compare(lhs, rhs);
 		}
 		
 		template <std::size_t t_n>
-		inline bool operator()(std::string const &lhs, std::span <char const *, t_n> const &rhs) const
+		inline bool operator()(std::string const &lhs, std::span <char const, t_n> const &rhs) const
 		{
 			return detail::compare_char_span::compare(lhs, rhs);
 		}
 		
 		template <std::size_t t_n>
-		inline bool operator()(std::span <char *, t_n> const &lhs, std::string const &rhs) const
+		inline bool operator()(std::span <char, t_n> const &lhs, std::string const &rhs) const
 		{
 			return detail::compare_char_span::compare(lhs, rhs);
 		}
 		
 		template <std::size_t t_n>
-		inline bool operator()(std::span <char const *, t_n> const &lhs, std::string const &rhs) const
+		inline bool operator()(std::span <char const, t_n> const &lhs, std::string const &rhs) const
 		{
 			return detail::compare_char_span::compare(lhs, rhs);
 		}
