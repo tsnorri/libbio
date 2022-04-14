@@ -12,7 +12,24 @@
 
 namespace libbio { namespace detail {
 	
+	template <typename t_owner, bool = std::is_invocable_v <t_owner>>
+	struct dispatch_caller_default_fn
+	{
+		inline static constexpr void(t_owner::*value)(){nullptr};
+	};
+	
+	template <typename t_owner>
+	struct dispatch_caller_default_fn <t_owner, true> // Check for operator().
+	{
+		inline static constexpr void(t_owner::*value)(){&t_owner::operator()};
+	};
+	
+	template <typename t_owner>
+	inline constexpr void(t_owner::*dispatch_caller_default_fn_v)() = dispatch_caller_default_fn <t_owner>::value;
+	
+	
 	template <typename t_owner, void(t_owner::*t_fn)()>
+	requires (nullptr != t_fn)
 	void call_member_function(void *ctx)
 	{
 		t_owner *owner(static_cast <t_owner *>(ctx));
@@ -22,41 +39,42 @@ namespace libbio { namespace detail {
 
 
 namespace libbio {
+	
 	// Allow passing pointer-to-member-function to dispatch_async_f without std::function.
 	template <typename t_owner>
 	class dispatch_caller
 	{
 	protected:
-		t_owner	*m_owner{nullptr};
+		t_owner	*m_owner{};
 		
 	public:
-		dispatch_caller(t_owner *owner): m_owner(owner) { libbio_assert(m_owner); }
+		dispatch_caller(t_owner &owner): m_owner(&owner) {}
 		
-		template <void(t_owner::*t_fn)()>
+		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
 		void async(dispatch_queue_t queue)
 		{
 			dispatch_async_f(queue, m_owner, detail::call_member_function <t_owner, t_fn>);
 		}
 		
-		template <void(t_owner::*t_fn)()>
+		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
 		void sync(dispatch_queue_t queue)
 		{
 			dispatch_sync_f(queue, m_owner, detail::call_member_function <t_owner, t_fn>);
 		}
 		
-		template <void(t_owner::*t_fn)()>
+		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
 		void barrier_async(dispatch_queue_t queue)
 		{
 			dispatch_barrier_async_f(queue, m_owner, detail::call_member_function <t_owner, t_fn>);
 		}
 		
-		template <void(t_owner::*t_fn)()>
+		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
 		void group_async(dispatch_group_t group, dispatch_queue_t queue)
 		{
 			dispatch_group_async_f(group, queue, m_owner, detail::call_member_function <t_owner, t_fn>);
 		}
 		
-		template <void(t_owner::*t_fn)()>
+		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
 		void source_set_event_handler(dispatch_source_t source)
 		{
 			dispatch_set_context(source, m_owner);
@@ -64,8 +82,10 @@ namespace libbio {
 		}
 	};
 	
+	
+	// Safe if owner exists until the block has been run.
 	template <typename t_owner>
-	dispatch_caller <t_owner> dispatch(t_owner *owner)
+	dispatch_caller <t_owner> dispatch(t_owner &owner)
 	{
 		return dispatch_caller <t_owner>(owner);
 	}

@@ -41,10 +41,10 @@ namespace libbio {
 		}
 		
 		dispatch_source_set_timer(*m_message_timer, dispatch_time(DISPATCH_TIME_NOW, 0), 100 * 1000 * 1000, 50 * 1000 * 1000);
-		dispatch(this).source_set_event_handler <&progress_indicator::handle_window_size_change_mt>(*m_signal_source);
+		dispatch(*this).source_set_event_handler <&progress_indicator::handle_window_size_change_mt>(*m_signal_source);
 		
 		// Set the initial window size.
-		dispatch(this).async <&progress_indicator::handle_window_size_change_mt>(main_queue);
+		dispatch(*this).async <&progress_indicator::handle_window_size_change_mt>(main_queue);
 		
 		dispatch_resume(*m_signal_source);
 	}
@@ -79,21 +79,21 @@ namespace libbio {
 		m_start_time = ch::steady_clock::now();
 		m_current_max = m_delegate->progress_step_max();
 		
-		dispatch(this).async <&progress_indicator::resume_timer_mt>(dispatch_get_main_queue());
+		dispatch(*this).async <&progress_indicator::resume_timer_mt>(dispatch_get_main_queue());
 	}
 	
 	
 	void progress_indicator::end_logging()
 	{
 		if (m_is_installed)
-			dispatch(this).sync <&progress_indicator::end_logging_mt>(dispatch_get_main_queue());
+			dispatch(*this).sync <&progress_indicator::end_logging_mt>(dispatch_get_main_queue());
 	}
 
 	
 	void progress_indicator::end_logging_no_update()
 	{
 		if (m_is_installed)
-			dispatch(this).sync <&progress_indicator::end_logging_no_update_mt>(dispatch_get_main_queue());
+			dispatch(*this).sync <&progress_indicator::end_logging_no_update_mt>(dispatch_get_main_queue());
 	}
 	
 	
@@ -103,7 +103,7 @@ namespace libbio {
 		std::cerr << "\33[?25l";
 
 		m_timer_active = true;
-		dispatch(this).source_set_event_handler <&progress_indicator::update_mt>(*m_message_timer);
+		dispatch(*this).source_set_event_handler <&progress_indicator::update_mt>(*m_message_timer);
 		dispatch_resume(*m_message_timer);
 	}
 	
