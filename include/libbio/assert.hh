@@ -24,10 +24,14 @@
 		if (!(TEST)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, MESSAGE); \
 	} while (false)
 
-#define libbio_assert_test_bin(LHS, RHS, TEST, MESSAGE)	do { \
+#define libbio_assert_test_bin(LHS, RHS, TEST, LHS_, OP_, RHS_)	do { \
 		auto const &assert_lhs(LHS); \
 		auto const &assert_rhs(RHS); \
-		if (!(TEST(assert_lhs, assert_rhs))) ::libbio::detail::assertion_failure(__FILE__, __LINE__, MESSAGE); \
+		if (!(TEST(assert_lhs, assert_rhs))) \
+		{ \
+			auto const assert_msg(::libbio::detail::assertion_failure_message(assert_lhs, assert_rhs, LHS_, OP_, RHS_)); \
+			::libbio::detail::assertion_failure(__FILE__, __LINE__, assert_msg); \
+		} \
 	} while (false)
 
 #define libbio_assert_test_msg(TEST, ...)				do { \
@@ -44,12 +48,12 @@
 	} while (false)
 
 #define libbio_always_assert(X)					libbio_assert_test((X),										#X)
-#define libbio_always_assert_lt(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lt,			libbio_stringify(X < Y))
-#define libbio_always_assert_lte(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lte,			libbio_stringify(X <= Y))
-#define libbio_always_assert_gt(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lte,			libbio_stringify(X > Y))
-#define libbio_always_assert_gte(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lt,			libbio_stringify(X >= Y))
-#define libbio_always_assert_eq(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_equal,		libbio_stringify(X == Y))
-#define libbio_always_assert_neq(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_equal,		libbio_stringify(X != Y))
+#define libbio_always_assert_lt(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lt,			#X, "<",  #Y)
+#define libbio_always_assert_lte(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lte,			#X, "<=", #Y)
+#define libbio_always_assert_gt(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lte,			#X, ">",  #Y)
+#define libbio_always_assert_gte(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lt,			#X, ">=", #Y)
+#define libbio_always_assert_eq(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_equal,		#X, "==", #Y)
+#define libbio_always_assert_neq(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_equal,		#X, "!=", #Y)
 
 #define libbio_always_assert_msg(X, ...)		libbio_assert_test_msg((X),																__VA_ARGS__)
 #define libbio_always_assert_lt_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lt((X), (Y)),		libbio_stringify(X < Y),	__VA_ARGS__)
@@ -100,6 +104,40 @@
 
 namespace libbio { namespace detail {
 
+	template <typename t_type>
+	struct has_formatted_output_function_helper
+	{
+		template <typename T>
+		static decltype(std::declval <std::ostream>() << std::declval <T>()) test(T const *);
+		
+		template <typename>
+		static std::false_type test(...);
+		
+		constexpr static inline bool value{std::is_same_v <std::ostream &, decltype(test <t_type>(nullptr))>};
+	};
+
+	template <typename t_type>
+	constexpr inline bool has_formatted_output_function_v = has_formatted_output_function_helper <t_type>::value;
+	
+	
+	template <typename t_lhs, typename t_rhs>
+	std::string assertion_failure_message(t_lhs const &lhs, t_rhs const &rhs, char const *lhs_, char const *op_, char const *rhs_)
+	{
+		// FIXME: use std::format.
+		std::stringstream stream;
+		
+		if constexpr (has_formatted_output_function_v <t_lhs> && has_formatted_output_function_v <t_rhs>)
+			stream << lhs_ << ' ' << op_ << ' ' << rhs_ << " (lhs: " << lhs << ", rhs: " << rhs << ')';
+		else
+			stream << lhs_ << ' ' << op_ << ' ' << rhs_;
+		
+		return stream.str();
+	}
+
+	static_assert(has_formatted_output_function_v <int const>);
+	static_assert(has_formatted_output_function_v <int>);
+
+	
 	// Copying a standard library class derived from std::exception
 	// is not permitted to throw exceptions, so try to avoid it here, too.
 	struct assertion_failure_cause
@@ -140,6 +178,11 @@ namespace libbio { namespace detail {
 	
 	void assertion_failure(char const *file, long const line, char const *assertion);
 	void assertion_failure(char const *file, long const line);
+
+	inline void assertion_failure(char const *file, long const line, std::string const &assertion)
+	{
+		assertion_failure(file, line, assertion.c_str());
+	}
 	
 	// Concatenate the arguments and call assertion_failure.
 	template <typename t_arg>
