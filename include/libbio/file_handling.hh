@@ -13,6 +13,41 @@
 
 namespace libbio {
 	
+	typedef boost::iostreams::stream <boost::iostreams::file_descriptor_source>	file_istream;
+	typedef boost::iostreams::stream <boost::iostreams::file_descriptor_sink>	file_ostream;
+	typedef boost::iostreams::stream <boost::iostreams::file_descriptor>		file_iostream;
+}
+
+
+namespace libbio::detail {
+	
+	template <typename t_stream>
+	struct is_file_descriptor_stream : public std::false_type {};
+	
+	template <> struct is_file_descriptor_stream <file_istream>  : public std::true_type {};
+	template <> struct is_file_descriptor_stream <file_ostream>  : public std::true_type {};
+	template <> struct is_file_descriptor_stream <file_iostream> : public std::true_type {};
+	
+	template <typename t_stream>
+	constexpr static inline bool is_file_descriptor_stream_v = is_file_descriptor_stream <t_stream>::value;
+	
+	
+	template <typename t_stream, typename t_category>
+	constexpr static inline bool has_iostreams_category_v = std::is_base_of_v <t_category, typename t_stream::category>;
+	
+	
+	template <typename t_stream>
+	constexpr static inline bool is_fd_input_iostream_v =	is_file_descriptor_stream_v <t_stream> &&
+															has_iostreams_category_v <t_stream, boost::iostreams::input>;
+	
+	template <typename t_stream>
+	constexpr static inline bool is_fd_output_iostream_v =	is_file_descriptor_stream_v <t_stream> &&
+															has_iostreams_category_v <t_stream, boost::iostreams::output>;
+}
+
+
+namespace libbio {
+	
 	enum writing_open_mode : std::uint32_t
 	{
 		NONE		= 0x0,
@@ -20,7 +55,7 @@ namespace libbio {
 		OVERWRITE	= 0x2
 	};
 	
-	inline constexpr writing_open_mode
+	constexpr inline writing_open_mode
 	make_writing_open_mode(std::initializer_list <std::underlying_type_t <writing_open_mode>> const &list)
 	{
 		std::underlying_type_t <writing_open_mode> retval{};
@@ -30,31 +65,85 @@ namespace libbio {
 	}
 	
 	
-	typedef boost::iostreams::stream <boost::iostreams::file_descriptor_source>	file_istream;
-	typedef boost::iostreams::stream <boost::iostreams::file_descriptor_sink>	file_ostream;
-	
 	void handle_file_error(char const *fname);
 	
 	int open_file_for_reading(char const *fname);
 	int open_file_for_reading(std::string const &fname);
-	void open_file_for_reading(char const *fname, file_istream &stream);
-	void open_file_for_reading(std::string const &fname, file_istream &stream);
-
-	bool try_open_file_for_reading(std::string const &fname, file_istream &stream);
-	bool try_open_file_for_reading(char const *fname, file_istream &stream);
 	std::pair <int, bool> try_open_file_for_reading(char const *fname);
-	
-	int open_temporary_file_for_writing(std::string &path_template);
-	int open_temporary_file_for_writing(std::string &path_template, int suffixlen);
 	
 	int open_file_for_writing(char const *fname, writing_open_mode const mode);
 	int open_file_for_writing(std::string const &fname, writing_open_mode const mode);
-	void open_file_for_writing(char const *fname, file_ostream &stream, writing_open_mode const mode);
-	void open_file_for_writing(std::string const &fname, file_ostream &stream, writing_open_mode const mode);
+	
+	int open_file_for_rw(char const *fname, writing_open_mode const mode);
+	int open_file_for_rw(std::string const &fname, writing_open_mode const mode);
+	int open_temporary_file_for_rw(std::string &path_template);
+	int open_temporary_file_for_rw(std::string &path_template, int suffixlen);
+	void open_file_for_rw(char const *fname, file_iostream &stream, writing_open_mode const mode);
+	void open_file_for_rw(std::string const &fname, file_iostream &stream, writing_open_mode const mode);
 	
 	bool get_file_path(int fd, std::string &buffer);
 	
 	
+	template <typename t_stream>
+	void open_file_for_reading(char const *fname, t_stream &stream)
+	requires(detail::is_fd_input_iostream_v <t_stream>)
+	{
+		int const fd(open_file_for_reading(fname));
+		stream.open(fd, boost::iostreams::close_handle);
+		stream.exceptions(std::istream::badbit);
+	}
+	
+	
+	template <typename t_stream>
+	void open_file_for_reading(std::string const &fname, t_stream &stream)
+	requires(detail::is_fd_input_iostream_v <t_stream>)
+	{
+		open_file_for_reading(fname.c_str(), stream);
+	}
+	
+	
+	template <typename t_stream>
+	bool try_open_file_for_reading(char const *fname, t_stream &stream)
+	requires(detail::is_fd_input_iostream_v <t_stream>)
+	{
+		auto const [fd, did_open] = try_open_file_for_reading(fname);
+		if (!did_open)
+			return false;
+	
+		stream.open(fd, boost::iostreams::close_handle);
+		stream.exceptions(std::istream::badbit);
+		return true;
+	}
+	
+	
+	template <typename t_stream>
+	bool try_open_file_for_reading(std::string const &fname, t_stream &stream)
+	requires(detail::is_fd_input_iostream_v <t_stream>)
+	{
+		return try_open_file_for_reading(fname.c_str(), stream);
+	}
+	
+	
+	template <typename t_stream>
+	void open_file_for_writing(char const *fname, t_stream &stream, writing_open_mode const mode)
+	requires(detail::is_fd_output_iostream_v <t_stream>)
+	{
+		auto const fd(open_file_for_writing(fname, mode));
+		// FIXME: check that anything below does not throw.
+		stream.open(fd, boost::iostreams::close_handle);
+		stream.exceptions(std::istream::badbit); // FIXME: is this correct?
+	}
+	
+	
+	template <typename t_stream>
+	void open_file_for_writing(std::string const &fname, t_stream &stream, writing_open_mode const mode)
+	requires(detail::is_fd_output_iostream_v <t_stream>)
+	{
+		open_file_for_writing(fname.c_str(), stream, mode);
+	}
+	
+	
+	// FIXME: add check for seekable input?
 	template <typename t_stream, typename t_vector>
 	void read_from_stream(t_stream &stream, t_vector &buffer)
 	{

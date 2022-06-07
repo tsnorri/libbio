@@ -28,40 +28,6 @@ namespace libbio {
 	}
 	
 	
-	void open_file_for_reading(std::string const &fname, file_istream &stream)
-	{
-		open_file_for_reading(fname.c_str(), stream);
-	}
-	
-	
-	bool try_open_file_for_reading(std::string const &fname, file_istream &stream)
-	{
-		return try_open_file_for_reading(fname.c_str(), stream);
-	}
-	
-	
-	void open_file_for_reading(char const *fname, file_istream &stream)
-	{
-		int const fd(open_file_for_reading(fname));
-		ios::file_descriptor_source source(fd, ios::close_handle);
-		stream.open(source);
-		stream.exceptions(std::istream::badbit);
-	}
-	
-	
-	bool try_open_file_for_reading(char const *fname, file_istream &stream)
-	{
-		auto const [fd, did_open] = try_open_file_for_reading(fname);
-		if (!did_open)
-			return false;
-		
-		ios::file_descriptor_source source(fd, ios::close_handle);
-		stream.open(source);
-		stream.exceptions(std::istream::badbit);
-		return true;
-	}
-	
-	
 	int open_file_for_reading(char const *fname)
 	{
 		int fd(open(fname, O_RDONLY));
@@ -81,12 +47,12 @@ namespace libbio {
 	{
 		int fd(open(fname, O_RDONLY));
 		if (-1 == fd)
-			return std::make_pair(-1, false);
-		return std::make_pair(fd, true);
+			return {-1, false};
+		return {fd, true};
 	}
 	
 	
-	int open_temporary_file_for_writing(std::string &path_template)
+	int open_temporary_file_for_rw(std::string &path_template)
 	{
 		int const fd(mkstemp(path_template.data()));
 		if (-1 == fd)
@@ -95,15 +61,15 @@ namespace libbio {
 	}
 	
 	
-	int open_temporary_file_for_writing(std::string &path_template, int suffixlen)
+	int open_temporary_file_for_rw(std::string &path_template, int suffixlen)
 	{
 		int const fd(mkstemps(path_template.data(), suffixlen));
 		if (-1 == fd)
 			handle_file_error(path_template.data());
 		return fd;
 	}
-
-
+	
+	
 	int open_file_for_writing(char const *fname, writing_open_mode const mode)
 	{
 		auto const flags(
@@ -117,26 +83,46 @@ namespace libbio {
 		
 		return fd;
 	}
-
-
+	
+	
 	int open_file_for_writing(std::string const &fname, writing_open_mode const mode)
 	{
 		return open_file_for_writing(fname.c_str(), mode);
 	}
-
-
-	void open_file_for_writing(char const *fname, file_ostream &stream, writing_open_mode const mode)
+	
+	
+	int open_file_for_rw(char const *fname, writing_open_mode const mode)
 	{
-		auto const fd(open_file_for_writing(fname, mode));
-		// FIXME: check that anything below does not throw.
-		ios::file_descriptor_sink sink(fd, ios::close_handle);
-		stream.open(sink);
+		auto const flags(
+			O_RDWR |
+			(mode & writing_open_mode::CREATE		? O_CREAT : 0) |		// Create if requested.
+			(mode & writing_open_mode::OVERWRITE	? O_TRUNC : O_EXCL)		// Truncate if OVERWRITE given, otherwise require that the file does not exist.
+		);
+		int const fd(open(fname, flags, S_IRUSR | S_IWUSR));
+		if (-1 == fd)
+			handle_file_error(fname);
+		
+		return fd;
 	}
-
-
-	void open_file_for_writing(std::string const &fname, file_ostream &stream, writing_open_mode const mode)
+	
+	
+	int open_file_for_rw(std::string const &fname, writing_open_mode const mode)
 	{
-		open_file_for_writing(fname.c_str(), stream, mode);
+		return open_file_for_rw(fname.c_str(), mode);
+	}
+	
+	
+	void open_file_for_rw(char const *fname, file_iostream &stream, writing_open_mode const mode)
+	{
+		int const fd(open_file_for_rw(fname, mode));
+		stream.open(fd, boost::iostreams::close_handle);
+		stream.exceptions(std::istream::badbit);
+	}
+	
+	
+	void open_file_for_rw(std::string const &fname, file_iostream &stream, writing_open_mode const mode)
+	{
+		open_file_for_rw(fname.c_str(), stream, mode);
 	}
 	
 	
@@ -160,9 +146,7 @@ namespace libbio {
 		
 		auto const pos(buffer.find('\0'));
 		if (std::string::npos == pos)
-			buffer[PATH_MAX] = '\0';
-		else
-			buffer[pos] = '\0';
+			return false;
 		
 		return true;
 #endif
