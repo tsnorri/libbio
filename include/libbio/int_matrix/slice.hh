@@ -33,9 +33,18 @@ namespace libbio { namespace detail {
 		typedef int_vector_word_range <vector_type>				word_range;
 		typedef int_vector_word_range <vector_type const>		const_word_range;
 		
+		typedef std::span <word_type>							span;
+		typedef std::span <word_type const>						const_span;
+		
 	protected:
 		template <typename t_word_range, typename t_caller>
 		t_word_range to_word_range(t_caller &caller) const;
+		
+		template <typename t_span, typename t_caller>
+		t_span to_span(t_caller &caller) const;
+		
+		template <typename t_iterator>
+		auto convert_to_word_iterator(t_iterator &&it) const { return it.to_vector_iterator().to_word_iterator(); }
 
 	public:
 		using matrix_slice <t_matrix>::matrix_slice;
@@ -48,7 +57,17 @@ namespace libbio { namespace detail {
 		word_range to_word_range() { return to_word_range <word_range>(*this); }
 		const_word_range to_word_range() const { return to_const_word_range(); }
 		const_word_range to_const_word_range() const { return to_word_range <const_word_range>(*this); }
-		word_iterator word_begin() { return this->begin().to_vector_iterator().to_word_iterator(); }
+		span to_span() { return to_span <span>(*this); }
+		const_span to_span() const { return to_span <const_span>(*this); }
+		const_span to_const_span() const { return to_span <const_span>(*this); }
+		
+		// These ultimately throw unless *this is word aligned. (See int_vector_iterator_base::to_word_iterator().)
+		word_iterator word_begin() { return convert_to_word_iterator(this->begin()); }
+		const_word_iterator word_begin() const { return convert_to_word_iterator(this->begin()); }
+		const_word_iterator word_cbegin() const { return convert_to_word_iterator(this->begin()); }
+		word_iterator word_end() { return convert_to_word_iterator(this->begin()); }
+		const_word_iterator word_end() const { return convert_to_word_iterator(this->begin()); }
+		const_word_iterator word_cend() const { return convert_to_word_iterator(this->begin()); }
 	};
 	
 	
@@ -58,6 +77,16 @@ namespace libbio { namespace detail {
 	{
 		libbio_assert(1 == caller.m_slice.stride());
 		return t_word_range(caller.matrix().values(), caller.begin().to_vector_iterator(), caller.end().to_vector_iterator());
+	}
+	
+	
+	template <typename t_matrix>
+	template <typename t_span, typename t_caller>
+	auto int_matrix_slice <t_matrix>::to_span(t_caller &caller) const -> t_span
+	{
+		libbio_assert(caller.is_word_aligned()); // Also require that the last element is word aligned.
+		libbio_assert(1 == caller.m_slice.stride());
+		return t_span(convert_to_word_iterator(caller.begin()), convert_to_word_iterator(caller.end()));
 	}
 }}
 
