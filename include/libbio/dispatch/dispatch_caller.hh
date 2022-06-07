@@ -12,16 +12,16 @@
 
 namespace libbio { namespace detail {
 	
-	template <typename t_owner, bool = std::is_invocable_v <t_owner>>
+	template <typename t_owner, bool = std::is_invocable_v <t_owner>> // Check for operator().
 	struct dispatch_caller_default_fn
 	{
-		inline static constexpr void(t_owner::*value)(){nullptr};
+		inline static constexpr void(t_owner::*value)(){nullptr}; // No default target.
 	};
 	
 	template <typename t_owner>
-	struct dispatch_caller_default_fn <t_owner, true> // Check for operator().
+	struct dispatch_caller_default_fn <t_owner, true>
 	{
-		inline static constexpr void(t_owner::*value)(){&t_owner::operator()};
+		inline static constexpr void(t_owner::*value)(){&t_owner::operator()}; // Call operator().
 	};
 	
 	template <typename t_owner>
@@ -51,30 +51,35 @@ namespace libbio {
 		dispatch_caller(t_owner &owner): m_owner(&owner) {}
 		
 		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
+		requires (nullptr != t_fn)
 		void async(dispatch_queue_t queue)
 		{
 			dispatch_async_f(queue, m_owner, detail::call_member_function <t_owner, t_fn>);
 		}
 		
 		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
+		requires (nullptr != t_fn)
 		void sync(dispatch_queue_t queue)
 		{
 			dispatch_sync_f(queue, m_owner, detail::call_member_function <t_owner, t_fn>);
 		}
 		
 		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
+		requires (nullptr != t_fn)
 		void barrier_async(dispatch_queue_t queue)
 		{
 			dispatch_barrier_async_f(queue, m_owner, detail::call_member_function <t_owner, t_fn>);
 		}
 		
 		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
+		requires (nullptr != t_fn)
 		void group_async(dispatch_group_t group, dispatch_queue_t queue)
 		{
 			dispatch_group_async_f(group, queue, m_owner, detail::call_member_function <t_owner, t_fn>);
 		}
 		
 		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
+		requires (nullptr != t_fn)
 		void source_set_event_handler(dispatch_source_t source)
 		{
 			dispatch_set_context(source, m_owner);
