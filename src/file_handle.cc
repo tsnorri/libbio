@@ -23,13 +23,13 @@ namespace libbio {
 	}
 	
 	
-	void file_handle::seek(std::size_t const pos)
+	std::size_t file_handle::seek(std::size_t const pos, int const whence)
 	{
-		auto const res(::lseek(m_fd, pos, SEEK_SET));
+		auto const res(::lseek(m_fd, pos, whence));
 		if (-1 == res)
 			throw std::runtime_error(std::strerror(errno));
-		else if (res != pos)
-			throw std::runtime_error("Unable to seek");
+		
+		return res;
 	}
 	
 	
@@ -39,5 +39,13 @@ namespace libbio {
 		if (-1 == res)
 			throw std::runtime_error(std::strerror(errno));
 		return res;
+	}
+	
+	
+	void file_handle::truncate(std::size_t const len)
+	{
+		auto const res(::ftruncate(m_fd, len));
+		if (-1  == res)
+			throw std::runtime_error(std::strerror(errno));
 	}
 }
