@@ -21,7 +21,7 @@ SCENARIO("file_handle_buffered_writer can write to a file", "[file_handling]")
 			std::string path_template("/tmp/libbio_unit_test_XXXXXX"); // FIXME: replace /tmp with the value of an environment variable.
 			
 			// Create a temporary file.
-			lb::file_handle temp_handle(lb::open_temporary_file_for_writing(path_template));
+			lb::file_handle temp_handle((lb::open_temporary_file_for_rw(path_template)));
 			
 			// Open the same file for reading to prevent it from being unlinked.
 			lb::file_handle read_handle(lb::open_file_for_reading(path_template));
