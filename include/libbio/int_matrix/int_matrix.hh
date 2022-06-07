@@ -295,6 +295,8 @@ namespace libbio {
 	template <unsigned int t_bits, typename t_word = std::uint64_t>
 	using atomic_int_matrix = int_matrix_tpl <t_bits, t_word, detail::atomic_int_matrix_trait>;
 	
+	typedef int_matrix <1>	bit_matrix;
+	
 	
 	template <unsigned int t_bits, typename t_word, template <typename, unsigned int, typename> typename t_trait>
 	bool int_matrix_tpl <t_bits, t_word, t_trait>::operator==(int_matrix_tpl const &other) const
