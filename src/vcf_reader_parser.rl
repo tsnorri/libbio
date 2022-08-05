@@ -271,12 +271,15 @@ namespace libbio::vcf {
 				%{ HANDLE_STRING_END_VAR(&var_t::set_id, subfield_idx++); };
 			id_rec		= (id_part (';' id_part)*) >{ subfield_idx = 0; };
 			
-			ref			= ([ACGTN]+)
+			nt_syms		= [ACGTN];
+			#nt_syms		= [ACGTUiRYKMSWBDHVN];	# Enable to allow the ambiguous nucleotide symbols.
+
+			ref			= (nt_syms+)
 				>(start_string)
 				%{ HANDLE_STRING_END_VAR(&var_t::set_ref); };
 			
 			# FIXME: add breakends.
-			simple_alt			= ([ACGTN]+);
+			simple_alt			= (nt_syms+);
 			alt_allele_missing	= '*';
 			
 			# Structural variants.
@@ -460,7 +463,7 @@ namespace libbio::vcf {
 									fbreak;
 								}
 								%from(end_last_sample);	# Use %from b.c. the error handler would fire otherwise.
-			sample_rec_f	:= (sample_rec ("\t" sample_rec)*)? %(handle_last_sample) sample_rec_end $err(error);
+			sample_rec_f	:= ((sample_rec ("\t" sample_rec)*)? %(handle_last_sample) sample_rec_end) $err(error);
 			
 			# Apparently main has to be able to read a character, so use fhold.
 			# Allow EOF, though, with '?'.
