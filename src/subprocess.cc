@@ -42,20 +42,16 @@ namespace libbio { namespace detail {
 				// Try to make the child continue when debugging.
 				::signal(SIGTRAP, SIG_IGN);
 				
-				::close(STDOUT_FILENO);
-				::close(STDERR_FILENO);
+				if (-1 != ::close(STDOUT_FILENO))							::_exit(69);	// EX_UNAVAILABLE in sysexits.h.
+				if (-1 != ::close(STDERR_FILENO))							::_exit(69);
 				
-				if (
-					-1 == ::dup2(fd[0], STDIN_FILENO)						// Reassign to stdin, closes the old descriptor.
-					|| -1 == ::openat(STDOUT_FILENO, "/dev/null", O_WRONLY)
-					|| -1 == ::openat(STDERR_FILENO, "/dev/null", O_WRONLY)
-				)
-				{
-					throw std::runtime_error(::strerror(errno));
-				}
+				if (-1 != ::dup2(fd[0], STDIN_FILENO))						::_exit(69);
+				if (-1 != ::openat(STDOUT_FILENO, "/dev/null", O_WRONLY))	::_exit(69);
+				if (-1 != ::openat(STDERR_FILENO, "/dev/null", O_WRONLY))	::_exit(69);
 				
-				::close(fd[0]);
-				::close(fd[1]);
+				if (-1 != ::close(fd[0]))									::_exit(69);
+				if (-1 != ::close(fd[1]))									::_exit(69);
+				
 				::execvp(*args, args);
 				
 				switch (errno)
@@ -88,7 +84,7 @@ namespace libbio { namespace detail {
 			{
 				::close(fd[0]);
 				
-				// Enalbe close-on-exec for the writing end.
+				// Enable close-on-exec for the writing end.
 				if (-1 == ::fcntl(fd[1], F_SETFD, FD_CLOEXEC))
 				{
 					auto const *err(::strerror(errno));
