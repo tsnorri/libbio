@@ -16,10 +16,18 @@ namespace libbio {
 	{
 		if (-1 != m_fd)
 		{
-			auto const res(close(m_fd));
+			auto const res(::close(m_fd));
 			if (0 != res)
 				std::cerr << "ERROR: unable to close file handle: " << std::strerror(errno) << '\n';
 		}
+	}
+	
+	
+	void file_handle::close()
+	{
+		// FIXME: should we check the status?
+		::close(m_fd);
+		m_fd = -1;
 	}
 	
 	
