@@ -48,6 +48,7 @@ namespace libbio::detail {
 
 namespace libbio {
 	
+	// FIXME: make this enum class, add operator| and operator&.
 	enum writing_open_mode : std::uint32_t
 	{
 		NONE		= 0x0,

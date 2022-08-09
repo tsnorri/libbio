@@ -22,7 +22,7 @@ namespace libbio {
 	
 	void handle_file_error(char const *fname)
 	{
-		char const *errmsg(strerror(errno));
+		char const *errmsg(::strerror(errno));
 		std::cerr << "Got an error while trying to open '" << fname << "': " << errmsg << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
@@ -30,7 +30,7 @@ namespace libbio {
 	
 	int open_file_for_reading(char const *fname)
 	{
-		int fd(open(fname, O_RDONLY));
+		int fd(::open(fname, O_RDONLY | O_CLOEXEC));
 		if (-1 == fd)
 			handle_file_error(fname);
 		return fd;
@@ -45,7 +45,7 @@ namespace libbio {
 	
 	std::pair <int, bool> try_open_file_for_reading(char const *fname)
 	{
-		int fd(open(fname, O_RDONLY));
+		int fd(::open(fname, O_RDONLY | O_CLOEXEC));
 		if (-1 == fd)
 			return {-1, false};
 		return {fd, true};
@@ -54,7 +54,7 @@ namespace libbio {
 	
 	int open_temporary_file_for_rw(std::string &path_template)
 	{
-		int const fd(mkstemp(path_template.data()));
+		int const fd(::mkstemp(path_template.data()));
 		if (-1 == fd)
 			handle_file_error(path_template.data());
 		return fd;
@@ -63,7 +63,7 @@ namespace libbio {
 	
 	int open_temporary_file_for_rw(std::string &path_template, int suffixlen)
 	{
-		int const fd(mkstemps(path_template.data(), suffixlen));
+		int const fd(::mkstemps(path_template.data(), suffixlen));
 		if (-1 == fd)
 			handle_file_error(path_template.data());
 		return fd;
@@ -73,11 +73,12 @@ namespace libbio {
 	int open_file_for_writing(char const *fname, writing_open_mode const mode)
 	{
 		auto const flags(
+			O_CLOEXEC |
 			O_WRONLY |
 			(mode & writing_open_mode::CREATE		? O_CREAT : 0) |		// Create if requested.
 			(mode & writing_open_mode::OVERWRITE	? O_TRUNC : O_EXCL)		// Truncate if OVERWRITE given, otherwise require that the file does not exist.
 		);
-		int const fd(open(fname, flags, S_IRUSR | S_IWUSR));
+		int const fd(::open(fname, flags, S_IRUSR | S_IWUSR));
 		if (-1 == fd)
 			handle_file_error(fname);
 		
@@ -94,11 +95,12 @@ namespace libbio {
 	int open_file_for_rw(char const *fname, writing_open_mode const mode)
 	{
 		auto const flags(
+			O_CLOEXEC |
 			O_RDWR |
 			(mode & writing_open_mode::CREATE		? O_CREAT : 0) |		// Create if requested.
 			(mode & writing_open_mode::OVERWRITE	? O_TRUNC : O_EXCL)		// Truncate if OVERWRITE given, otherwise require that the file does not exist.
 		);
-		int const fd(open(fname, flags, S_IRUSR | S_IWUSR));
+		int const fd(::open(fname, flags, S_IRUSR | S_IWUSR));
 		if (-1 == fd)
 			handle_file_error(fname);
 		
@@ -133,14 +135,14 @@ namespace libbio {
 
 #ifdef __linux__
 		auto const readlink_path(boost::str(boost::format("/proc/self/fd/%d") % fd));
-		auto const size(readlink(readlink_path.c_str(), buffer.data(), PATH_MAX));
+		auto const size(::readlink(readlink_path.c_str(), buffer.data(), PATH_MAX));
 		if (-1 == size)
 			return false;
 		
 		buffer[size] = '\0';
 		return true;
 #else
-		auto const status(fcntl(fd, F_GETPATH, buffer.data()));
+		auto const status(::fcntl(fd, F_GETPATH, buffer.data()));
 		if (-1 == status)
 			return false;
 		
