@@ -6,6 +6,7 @@ include ../common.mk
 OBJECTS		=	assert.o \
 				buffered_writer_base.o \
 				dispatch_io_channel_buffered_writer.o \
+				dispatch_utility.o \
 				fasta_reader.o \
 				file_handle.o \
 				file_handle_buffered_writer.o \
@@ -14,6 +15,7 @@ OBJECTS		=	assert.o \
 				progress_indicator.o \
 				sequence_container.o \
 				sequence_reader.o \
+				subprocess.o \
 				types.o \
 				utility.o \
 				vcf_genotype_field_gt_parser.o \
