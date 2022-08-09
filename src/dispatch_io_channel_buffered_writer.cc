@@ -55,7 +55,17 @@ namespace libbio {
 		// The lock is released only after the last writing operation has concluded.
 		// Close the file after that.
 		std::lock_guard const lock(m_writing_lock);
-		dispatch_io_close(*m_io_channel, 0);
+		
+		if (m_owns_file_descriptor)
+		{
+			auto const fd(dispatch_io_get_descriptor(*m_io_channel));
+			dispatch_io_close(*m_io_channel, 0);
+			::close(fd);
+		}
+		else
+		{
+			dispatch_io_close(*m_io_channel, 0);
+		}
 	}
 }
 

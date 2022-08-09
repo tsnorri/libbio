@@ -12,6 +12,28 @@
 
 namespace libbio {
 	
+	enum class dispatch_io_channel_flags : std::uint8_t
+	{
+		NONE					= 0x0,
+		HAS_RANDOM_ACCESS		= 0x1,
+		OWNS_FILE_DESCRIPTOR	= 0x2
+	};
+	
+	
+	constexpr inline dispatch_io_channel_flags
+	operator|(dispatch_io_channel_flags const ll, dispatch_io_channel_flags const rr)
+	{
+		return static_cast <dispatch_io_channel_flags>(libbio::to_underlying(ll) | libbio::to_underlying(rr));
+	}
+	
+	
+	constexpr inline dispatch_io_channel_flags
+	operator&(dispatch_io_channel_flags const ll, dispatch_io_channel_flags const rr)
+	{
+		return static_cast <dispatch_io_channel_flags>(libbio::to_underlying(ll) & libbio::to_underlying(rr));
+	}
+	
+	
 	class dispatch_io_channel_buffered_writer final : public buffered_writer_base
 	{
 	protected:
@@ -19,17 +41,26 @@ namespace libbio {
 		dispatch_ptr <dispatch_queue_t>	m_reporting_queue;
 		dispatch_semaphore_lock			m_writing_lock;
 		buffer_type						m_writing_buffer;
+		bool							m_owns_file_descriptor{};
 		
 	public:
 		dispatch_io_channel_buffered_writer() = default;
 		
 		// FIXME: error handling could be done in some other way than throwing.
-		dispatch_io_channel_buffered_writer(dispatch_fd_t fd, std::size_t buffer_size, dispatch_queue_t reporting_queue):
+		dispatch_io_channel_buffered_writer(dispatch_fd_t fd, std::size_t buffer_size, dispatch_queue_t reporting_queue, dispatch_io_channel_flags const ff = dispatch_io_channel_flags::HAS_RANDOM_ACCESS):
 			buffered_writer_base(buffer_size),
-			m_io_channel(dispatch_io_create(DISPATCH_IO_RANDOM, fd, reporting_queue, ^(int error){ if (error) throw std::runtime_error(strerror(error)); })),
+			m_io_channel(
+				dispatch_io_create( // According to the man page, does not close() the file descriptor.
+					to_underlying(ff & dispatch_io_channel_flags::HAS_RANDOM_ACCESS) ? DISPATCH_IO_RANDOM : DISPATCH_IO_STREAM,
+					fd,
+					reporting_queue,
+					^(int error){ if (error) throw std::runtime_error(strerror(error)); }
+				)
+			),
 			m_reporting_queue(reporting_queue, true),
 			m_writing_lock(1),
-			m_writing_buffer(buffer_size, 0)
+			m_writing_buffer(buffer_size, 0),
+			m_owns_file_descriptor(to_underlying(ff & dispatch_io_channel_flags::OWNS_FILE_DESCRIPTOR) ? true : false)
 		{
 			if (!m_io_channel)
 				throw std::runtime_error("Unable to create IO channel");
