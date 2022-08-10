@@ -5,7 +5,6 @@ package		"vcf-private-variants"
 version		"0.1"
 purpose		"List private variants for a given set of samples."
 usage		"vcf_visualize_genotype --variants=variants.graph [<options>] > image.pcx"
-description	"GT values from zero to 7 are handled. Outputs the visualization as PNG to stdout such that columns correspond to variant records and rows to chromosome copies in samples."
 
 option		"variants"	a	"Variant file path"	string	typestr = "filename"	required
 option		"sample"	s	"Sample identifier"	string				required	multiple
