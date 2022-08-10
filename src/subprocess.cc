@@ -91,6 +91,8 @@ namespace libbio { namespace detail {
 					::close(fd[1]);
 					throw std::runtime_error(err);
 				}
+				
+				break;
 			}
 		}
 		
