@@ -6,8 +6,8 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-#include <unistd.h>
 #include <libbio/file_handle.hh>
+#include <unistd.h>
 
 
 namespace libbio {
@@ -54,6 +54,14 @@ namespace libbio {
 	{
 		auto const res(::ftruncate(m_fd, len));
 		if (-1  == res)
+			throw std::runtime_error(std::strerror(errno));
+	}
+	
+	
+	void file_handle::stat(struct ::stat &sb)
+	{
+		auto const res(::fstat(m_fd, &sb));
+		if (-1 == res)
 			throw std::runtime_error(std::strerror(errno));
 	}
 }
