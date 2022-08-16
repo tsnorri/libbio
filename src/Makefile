@@ -1,7 +1,7 @@
 -include ../local.mk
 include ../common.mk
 
-.PRECIOUS: fasta_reader.cc vcf_reader_parser.cc vcf_reader_header_parser.cc vcf_genotype_field_gt_parser.cc
+.PRECIOUS: fasta_reader.cc subprocess_argument_parser.cc vcf_reader_parser.cc vcf_reader_header_parser.cc vcf_genotype_field_gt_parser.cc
 
 OBJECTS		=	assert.o \
 				buffered_writer_base.o \
@@ -16,6 +16,7 @@ OBJECTS		=	assert.o \
 				sequence_container.o \
 				sequence_reader.o \
 				subprocess.o \
+				subprocess_argument_parser.o \
 				types.o \
 				utility.o \
 				vcf_genotype_field_gt_parser.o \

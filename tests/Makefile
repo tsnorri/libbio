@@ -25,6 +25,7 @@ OBJECTS	=	algorithm.o \
 			radix_sort.o \
 			reverse_word.o \
 			rle_bit_vector.o \
+			subprocess_argument_parser.o \
 			vcf_reader.o
 
 GENERATED_TEST_FILES = 	test-files/test-data-types.vcf.gz \
