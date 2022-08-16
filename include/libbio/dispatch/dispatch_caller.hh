@@ -44,46 +44,49 @@ namespace libbio {
 	template <typename t_owner>
 	class dispatch_caller
 	{
+	public:
+		typedef t_owner owner_type;
+		
 	protected:
 		t_owner	*m_owner{};
 		
 	public:
-		dispatch_caller(t_owner &owner): m_owner(&owner) {}
+		dispatch_caller(owner_type &owner): m_owner(&owner) {}
 		
-		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
+		template <void(owner_type::*t_fn)() = detail::dispatch_caller_default_fn_v <owner_type>>
 		requires (nullptr != t_fn)
 		void async(dispatch_queue_t queue)
 		{
-			dispatch_async_f(queue, m_owner, detail::call_member_function <t_owner, t_fn>);
+			dispatch_async_f(queue, m_owner, detail::call_member_function <owner_type, t_fn>);
 		}
 		
-		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
+		template <void(owner_type::*t_fn)() = detail::dispatch_caller_default_fn_v <owner_type>>
 		requires (nullptr != t_fn)
 		void sync(dispatch_queue_t queue)
 		{
-			dispatch_sync_f(queue, m_owner, detail::call_member_function <t_owner, t_fn>);
+			dispatch_sync_f(queue, m_owner, detail::call_member_function <owner_type, t_fn>);
 		}
 		
-		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
+		template <void(owner_type::*t_fn)() = detail::dispatch_caller_default_fn_v <owner_type>>
 		requires (nullptr != t_fn)
 		void barrier_async(dispatch_queue_t queue)
 		{
-			dispatch_barrier_async_f(queue, m_owner, detail::call_member_function <t_owner, t_fn>);
+			dispatch_barrier_async_f(queue, m_owner, detail::call_member_function <owner_type, t_fn>);
 		}
 		
-		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
+		template <void(owner_type::*t_fn)() = detail::dispatch_caller_default_fn_v <owner_type>>
 		requires (nullptr != t_fn)
 		void group_async(dispatch_group_t group, dispatch_queue_t queue)
 		{
-			dispatch_group_async_f(group, queue, m_owner, detail::call_member_function <t_owner, t_fn>);
+			dispatch_group_async_f(group, queue, m_owner, detail::call_member_function <owner_type, t_fn>);
 		}
 		
-		template <void(t_owner::*t_fn)() = detail::dispatch_caller_default_fn_v <t_owner>>
+		template <void(owner_type::*t_fn)() = detail::dispatch_caller_default_fn_v <owner_type>>
 		requires (nullptr != t_fn)
 		void source_set_event_handler(dispatch_source_t source)
 		{
 			dispatch_set_context(source, m_owner);
-			dispatch_source_set_event_handler_f(source, detail::call_member_function <t_owner, t_fn>);
+			dispatch_source_set_event_handler_f(source, detail::call_member_function <owner_type, t_fn>);
 		}
 	};
 	
