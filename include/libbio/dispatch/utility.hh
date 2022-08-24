@@ -6,6 +6,8 @@
 #ifndef LIBBIO_DISPATCH_DISPATCH_UTILITY_HH
 #define LIBBIO_DISPATCH_DISPATCH_UTILITY_HH
 
+#if !(defined(LIBBIO_NO_DISPATCH) && LIBBIO_NO_DISPATCH)
+
 #include <dispatch/dispatch.h>
 
 
@@ -22,5 +24,7 @@ namespace libbio {
 	void install_dispatch_sigchld_handler(dispatch_queue_t queue, dispatch_block_t block);
 	void install_dispatch_sigchld_handler(dispatch_queue_t queue, sigchld_handler &handler);
 }
+
+#endif
 
 #endif

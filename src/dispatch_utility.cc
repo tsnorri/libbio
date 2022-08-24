@@ -3,6 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#if !(defined(LIBBIO_NO_DISPATCH) && LIBBIO_NO_DISPATCH)
+
 #include <libbio/dispatch/utility.hh>
 #include <sys/wait.h>
 
@@ -81,3 +83,5 @@ namespace libbio {
 		});
 	}
 }
+
+#endif
