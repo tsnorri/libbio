@@ -3,6 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <algorithm>
 #include <libbio/buffered_writer/buffered_writer_base.hh>
 
 
