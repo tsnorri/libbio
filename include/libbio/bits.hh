@@ -16,9 +16,9 @@ namespace libbio { namespace bits { namespace detail {
 	constexpr inline std::uint8_t count_bits_set_(t_integer val)
 	{
 		// Adapted from https://graphics.stanford.edu/~seander/bithacks.html, in public domain.
-		val = val - ((val >> 1) & t_integer(~t_integer(0))/3);
+		val = val - ((val >> 1) & (t_integer(~t_integer(0))/3));
 		val = (val & t_integer(~t_integer(0)) / 15 * 3) + ((val >> 2) & t_integer(~t_integer(0)) / 15 * 3);
-		val = (val + (val >> 4) & t_integer(~t_integer(0)) / 255 * 15);
+		val = (val + (val >> 4)) & t_integer(~t_integer(0)) / 255 * 15;
 		return t_integer(val * (t_integer(~t_integer(0)) / 255)) >> (sizeof(t_integer) - 1) * CHAR_BIT;
 	}
 	
