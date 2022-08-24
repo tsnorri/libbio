@@ -38,7 +38,7 @@ namespace libbio::vcf {
 		typedef std::vector <metadata_filter const *>		filter_ptr_vector;
 		
 	protected:
-		reader												*m_reader{};
+		class reader										*m_reader{};
 		aligned_buffer <std::byte, buffer_base::zero_tag>	m_info{};			// Zero on copy b.c. the types may not be TriviallyCopyable.
 		// FIXME: if the range contains only trivially copyable types, copy the bytes.
 		filter_ptr_vector									m_filters{};
@@ -53,7 +53,7 @@ namespace libbio::vcf {
 		abstract_variant() = default;
 		virtual ~abstract_variant() {}
 		
-		inline abstract_variant(reader &vcf_reader, std::size_t const info_size, std::size_t const info_alignment);
+		inline abstract_variant(class reader &vcf_reader, std::size_t const info_size, std::size_t const info_alignment);
 		
 		abstract_variant(abstract_variant const &) = default;
 		abstract_variant(abstract_variant &&) = default;

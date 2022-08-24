@@ -91,7 +91,7 @@ namespace libbio::vcf {
 	protected:
 		input_base						*m_input{nullptr};
 		fsm								m_fsm;
-		metadata						m_metadata;
+		class metadata					m_metadata;
 		info_field_map					m_info_fields;
 		info_field_ptr_vector			m_info_fields_in_headers;
 		genotype_field_map				m_genotype_fields;

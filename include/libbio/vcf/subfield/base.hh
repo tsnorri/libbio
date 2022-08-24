@@ -57,7 +57,7 @@ namespace libbio::vcf {
 		virtual ~subfield_base() {}
 
 		// Value type according to the VCF header.
-		virtual metadata_value_type metadata_value_type() const = 0;
+		virtual enum metadata_value_type metadata_value_type() const = 0;
 		
 		// Number of items in this field according to the VCF header.
 		virtual std::int32_t number() const = 0;

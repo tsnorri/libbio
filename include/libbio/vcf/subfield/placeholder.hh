@@ -20,7 +20,7 @@ namespace libbio::vcf::detail {
 		typedef typename t_base::transient_container_type	transient_container_type;
 		
 	public:
-		metadata_value_type metadata_value_type() const override { return metadata_value_type::NOT_PROCESSED; }
+		enum metadata_value_type metadata_value_type() const override { return metadata_value_type::NOT_PROCESSED; }
 		
 	protected:
 		std::uint16_t byte_size() const override { return 0; }

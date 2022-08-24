@@ -33,8 +33,8 @@ namespace libbio::vcf {
 		
 		constexpr static bool is_typed_field() { return true; }
 		
-		constexpr bool value_type_is_vector() const									{ return t_is_vector; }
-		constexpr metadata_value_type metadata_value_type() const override final	{ return t_value_type; }
+		constexpr bool value_type_is_vector() const										{ return t_is_vector; }
+		constexpr enum metadata_value_type metadata_value_type() const override final	{ return t_value_type; }
 		
 		virtual value_type &operator()(container_type &) const = 0;
 		virtual value_type const &operator()(container_type const &) const = 0;
