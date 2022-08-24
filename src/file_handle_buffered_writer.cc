@@ -5,6 +5,7 @@
 
 #include <cstring>
 #include <libbio/buffered_writer/file_handle_buffered_writer.hh>
+#include <stdexcept>
 #include <unistd.h>
 
 
@@ -15,8 +16,8 @@ namespace libbio {
 		auto const byte_count(this->m_position);
 		if (byte_count)
 		{
-			auto const res(write(this->m_fd, this->m_buffer.data(), byte_count));
-			if (res != this->m_position)
+			auto const res(::write(this->m_fd, this->m_buffer.data(), byte_count));
+			if (res < 0 || std::size_t(res) != this->m_position)
 				throw std::runtime_error(std::strerror(errno));
 			this->m_position = 0;
 			this->m_output_position += byte_count;
