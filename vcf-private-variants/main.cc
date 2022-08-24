@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 	}
 	std::sort(private_set.begin(), private_set.end());
 	
-	// Should be checked by gengetopt, hence no libbio_always_assert..
+	// Should be checked by gengetopt, hence no libbio_always_assert.
 	libbio_assert(!private_set.empty());
 	
 	// Parse the variants.
