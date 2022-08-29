@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019 Tuukka Norri
+ * Copyright (c) 2017-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -19,9 +19,36 @@
 namespace libbio::vcf {
 	
 	// Parse the fields until m_max_parsed field, find the next newline and invoke the callback function.
-	template <int t_continue, int t_break, typename t_cb>
-	int reader::check_max_field(field const vcf_field, int const target, bool const stop_after_newline, t_cb const &cb, bool &should_continue)
+	// In case the compiler decides this function is not worth inlining, we try to save some space by
+	// taking the next field identifier and the next machine state (vcf_field and target) as function parameters,
+	// not template parameters.
+	template <int t_continue, int t_break, bool t_should_validate_chrom_and_pos, typename t_cb>
+	int reader::next_state(field const vcf_field, int const target, bool const stop_after_newline, t_cb const &cb, bool &should_continue)
 	{
+		if constexpr (t_should_validate_chrom_and_pos)
+		{
+			// Reached only if CHROM and POS are parsed, since t_should_validate_chrom_and_pos is true.
+			switch (m_chrom_pos_validator->validate(m_current_variant))
+			{
+				case variant_validation_result::PASS:
+					break;
+				
+				case variant_validation_result::SKIP:
+				{
+					skip_to_next_nl();
+					if (stop_after_newline)
+						return t_break;
+					return t_continue;
+				}
+				
+				case variant_validation_result::STOP:
+				{
+					should_continue = false;
+					return t_break;
+				}
+			}
+		}
+		
 		if (vcf_field <= m_max_parsed_field)
 			return target;
 		
@@ -65,7 +92,6 @@ namespace libbio::vcf {
 		bool					alt_is_complex(false);		// Is the current ALT “complex” (includes *).
 		bool					info_is_flag(false);
 		
-		// FIXME: add error actions to other machines than main?
 		%%{
 			machine vcf_parser;
 			
@@ -383,7 +409,7 @@ namespace libbio::vcf {
 			chrom_id_f :=
 				(chrom_id sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::POS, fentry(pos_f), stop_after_newline, cb, should_continue);
+					fgoto *next_state <fentry(main_nl), fentry(break_nl)>(field::POS, fentry(pos_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -391,7 +417,7 @@ namespace libbio::vcf {
 			pos_f :=
 				(pos sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::ID, fentry(id_f), stop_after_newline, cb, should_continue);
+					fgoto *next_state <fentry(main_nl), fentry(break_nl), true>(field::ID, fentry(id_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -399,7 +425,7 @@ namespace libbio::vcf {
 			id_f :=
 				(id_rec sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::REF, fentry(ref_f), stop_after_newline, cb, should_continue);
+					fgoto *next_state <fentry(main_nl), fentry(break_nl)>(field::REF, fentry(ref_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -407,7 +433,7 @@ namespace libbio::vcf {
 			ref_f :=
 				(ref sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::ALT, fentry(alt_f), stop_after_newline, cb, should_continue);
+					fgoto *next_state <fentry(main_nl), fentry(break_nl)>(field::ALT, fentry(alt_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -415,7 +441,7 @@ namespace libbio::vcf {
 			alt_f :=
 				(alt sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::QUAL, fentry(qual_f), stop_after_newline, cb, should_continue);
+					fgoto *next_state <fentry(main_nl), fentry(break_nl)>(field::QUAL, fentry(qual_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -423,7 +449,7 @@ namespace libbio::vcf {
 			qual_f :=
 				(qual sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::FILTER, fentry(filter_f), stop_after_newline, cb, should_continue);
+					fgoto *next_state <fentry(main_nl), fentry(break_nl)>(field::FILTER, fentry(filter_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -431,7 +457,7 @@ namespace libbio::vcf {
 			filter_f :=
 				(filter sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::INFO, fentry(info_f), stop_after_newline, cb, should_continue);
+					fgoto *next_state <fentry(main_nl), fentry(break_nl)>(field::INFO, fentry(info_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -439,7 +465,7 @@ namespace libbio::vcf {
 			info_f :=
 				(info (sep | [\n]))
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::FORMAT, fentry(format_f), stop_after_newline, cb, should_continue);
+					fgoto *next_state <fentry(main_nl), fentry(break_nl)>(field::FORMAT, fentry(format_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -447,7 +473,7 @@ namespace libbio::vcf {
 			format_f :=
 				(format sep)
 				@{
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::ALL, fentry(sample_rec_f), stop_after_newline, cb, should_continue);
+					fgoto *next_state <fentry(main_nl), fentry(break_nl)>(field::ALL, fentry(sample_rec_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error);
 			
@@ -467,6 +493,7 @@ namespace libbio::vcf {
 			
 			# Apparently main has to be able to read a character, so use fhold.
 			# Allow EOF, though, with '?'.
+			# FIXME: make chrom_id_f a definition instead of instantiation and use it here.
 			main := any?
 				${
 					fhold;
@@ -480,7 +507,7 @@ namespace libbio::vcf {
 					m_current_variant.m_lineno = m_lineno;
 					m_current_line_start = 1 + fpc;
 					
-					fgoto *check_max_field <fentry(main_nl), fentry(break_nl)>(field::CHROM, fentry(chrom_id_f), stop_after_newline, cb, should_continue);
+					fgoto *next_state <fentry(main_nl), fentry(break_nl)>(field::CHROM, fentry(chrom_id_f), stop_after_newline, cb, should_continue);
 				}
 				$err(error)
 				$eof{ eof_reached = true; should_continue = false; };

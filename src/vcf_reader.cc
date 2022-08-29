@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020 Tuukka Norri
+ * Copyright (c) 2017-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -14,8 +14,10 @@
 
 namespace libbio::vcf::detail {
 
-	reader_default_delegate  g_vcf_reader_default_delegate;
-
+	reader_default_delegate	g_vcf_reader_default_delegate;
+	variant_no_op_validator	g_vcf_reader_default_variant_validator;
+	
+	
 	template <typename t_base>
 	struct placeholder_field_helper
 	{

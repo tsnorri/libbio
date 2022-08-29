@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020 Tuukka Norri
+ * Copyright (c) 2017-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -22,20 +22,43 @@
 
 namespace libbio::vcf {
 	class reader;
-
+	
+	
+	enum class variant_validation_result
+	{
+		PASS,
+		SKIP,
+		STOP
+	};
+	
+	
 	struct reader_delegate
 	{
+		virtual ~reader_delegate() {}
 		virtual void vcf_reader_did_parse_metadata(reader &vcf_reader) = 0;
 	};
 
 	struct reader_default_delegate : public reader_delegate
 	{
-		void vcf_reader_did_parse_metadata(reader &vcf_reader) {}
+		void vcf_reader_did_parse_metadata(reader &vcf_reader) override {}
+	};
+	
+	
+	struct variant_validator
+	{
+		virtual ~variant_validator() {}
+		virtual variant_validation_result validate(transient_variant const &variant) = 0;
+	};
+	
+	struct variant_no_op_validator : public variant_validator
+	{
+		variant_validation_result validate(transient_variant const &variant) override { return variant_validation_result::PASS; }
 	};
 }
 
 namespace libbio::vcf::detail {
-	extern reader_default_delegate g_vcf_reader_default_delegate;
+	extern reader_default_delegate	g_vcf_reader_default_delegate;
+	extern variant_no_op_validator	g_vcf_reader_default_variant_validator;
 }
 
 
@@ -83,8 +106,8 @@ namespace libbio::vcf {
 		template <typename> struct caller;
 		template <typename> friend struct caller;
 		
-		template <int t_continue, int t_break, typename t_cb>
-		inline int check_max_field(field const vcf_field, int const target, bool const stop_after_parsing, t_cb const &cb, bool &retval);
+		template <int t_continue, int t_break, bool t_should_validate_chrom_and_pos = false, typename t_cb>
+		inline int next_state(field const vcf_field, int const target, bool const stop_after_parsing, t_cb const &cb, bool &retval);
 		
 		void report_unexpected_character(char const *current_character, std::size_t const pos, int const current_state, bool const in_header = false);
 
@@ -99,8 +122,9 @@ namespace libbio::vcf {
 		genotype_ptr_vector				m_current_format_vec;					// Non-owning, contents point to m_current_format’s fields.
 		sample_name_vector				m_sample_names_by_index;
 		sample_name_map					m_sample_indices_by_name;
-		transient_variant				m_current_variant;
+		transient_variant				m_current_variant;						// FIXME: Consider moving to parser_state. On the other hand, most of the data members have to do with state.
 		reader_delegate					*m_delegate{&detail::g_vcf_reader_default_delegate};
+		variant_validator				*m_chrom_pos_validator{&detail::g_vcf_reader_default_variant_validator};
 		char const						*m_current_line_start{};
 		copyable_atomic <std::size_t>	m_counter{0};
 		std::size_t						m_lineno{0};							// Current line number.
@@ -115,6 +139,7 @@ namespace libbio::vcf {
 		inline reader(input_base &vcf_input);
 		
 		void set_delegate(reader_delegate &delegate) { m_delegate = &delegate; }
+		void set_variant_validator(variant_validator &validator) { m_chrom_pos_validator = &validator; }
 		inline void set_input(input_base &input);
 		void set_variant_format(variant_format *fmt) { libbio_always_assert(fmt); m_current_format.reset(fmt); m_have_assigned_variant_format = true; }
 		void read_header();
