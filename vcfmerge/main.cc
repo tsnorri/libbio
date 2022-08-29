@@ -223,7 +223,7 @@ namespace {
 				for (auto const &input : inputs)
 				{
 					auto const &reader(input.reader);
-					auto const &sample_names(reader.sample_names());
+					auto const &sample_names(reader.sample_indices_by_name());
 					
 					for (auto const &[sample_name, sample_idx] : sample_names)
 					{
