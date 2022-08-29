@@ -4,6 +4,7 @@ include ../common.mk
 .PRECIOUS: fasta_reader.cc subprocess_argument_parser.cc vcf_reader_parser.cc vcf_reader_header_parser.cc vcf_genotype_field_gt_parser.cc
 
 OBJECTS		=	assert.o \
+				bed_reader.o \
 				buffered_writer_base.o \
 				dispatch_io_channel_buffered_writer.o \
 				dispatch_utility.o \
@@ -25,6 +26,7 @@ OBJECTS		=	assert.o \
 				vcf_reader_header_parser.o \
 				vcf_reader_parser.o \
 				vcf_reader.o \
+				vcf_region_variant_validator.o \
 				vcf_subfield.o \
 				vcf_variant_format.o
 
