@@ -9,6 +9,7 @@
 #include <array>
 #include <boost/core/demangle.hpp>
 #include <boost/format.hpp>
+#include <charconv>
 #include <cstring>
 #include <libbio/cxxcompat.hh>
 #include <ostream>
@@ -95,6 +96,14 @@ namespace libbio {
 	{
 		vec.resize(size);
 		std::fill(vec.begin(), vec.end(), 0);
+	}
+	
+	
+	template <typename t_dst>
+	bool parse_integer(std::string_view const &str, t_dst &dst)
+	{
+		auto const res(std::from_chars(str.data(), str.data() + str.size(), dst));
+		return (std::errc() == res.ec);
 	}
 }
 
