@@ -14,5 +14,6 @@
 #include <libbio/utility/make_const.hh>
 #include <libbio/utility/misc.hh>
 #include <libbio/utility/smallest_unsigned_lockfree.hh>
+#include <libbio/utility/string_hash.hh>
 
 #endif
