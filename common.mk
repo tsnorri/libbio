@@ -2,7 +2,8 @@
 unexport SDKROOT
 
 # Default values.
-WARNING_FLAGS	?= -Wall -Werror -Wno-deprecated-declarations -Wno-unused -Wno-misleading-indentation
+# Boost uses some deprecated builtins (as of Clang 14).
+WARNING_FLAGS	?= -Wall -Werror -Wno-deprecated-declarations -Wno-deprecated-builtins -Wno-unused -Wno-misleading-indentation
 OPT_FLAGS		?= -O2 -g
 
 CFLAGS			?=
@@ -23,6 +24,7 @@ DOT				?= dot
 GENGETOPT		?= gengetopt
 GZIP			?= gzip
 MKDIR			?= mkdir
+PATCH			?= patch
 PYTHON			?= python
 RAGEL			?= ragel
 RM				?= rm
@@ -30,9 +32,10 @@ RM				?= rm
 BOOST_ROOT		?= /usr
 BOOST_INCLUDE	?= -I$(BOOST_ROOT)/include
 
+# Make Boost not use std::unary_function and std::binary_function with BOOST_NO_CXX98_FUNCTION_BASE. (These have been deprecated.)
 CFLAGS			+= -std=c99   $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CFLAGS)
 CXXFLAGS		+= -std=c++2b $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CXXFLAGS)
-CPPFLAGS		+= -I../include -I../lib/GSL/include -I../lib/range-v3/include $(BOOST_INCLUDE) $(SYSTEM_CPPFLAGS)
+CPPFLAGS		+= -I../include -I../lib/GSL/include -I../lib/range-v3/include $(BOOST_INCLUDE) $(SYSTEM_CPPFLAGS) -DBOOST_NO_CXX98_FUNCTION_BASE
 LDFLAGS			+= $(SYSTEM_LDFLAGS)
 
 # Assume that swift-corelibs-libdispatch is a submodule of the containing project (for now).
