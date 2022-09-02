@@ -6,6 +6,7 @@
 #include <boost/format.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <libbio/assert.hh>
+#include <libbio/vcf/parse_error.hh>
 #include <libbio/vcf/subfield.hh>
 #include <libbio/vcf/variant.hh>
 #include <libbio/vcf/vcf_reader.hh>
@@ -128,7 +129,7 @@ namespace libbio::vcf {
 				if (boost::spirit::qi::parse(qual_sv.begin(), qual_sv.end(), boost::spirit::qi::float_, qual))
 					m_current_variant.set_qual(qual);
 				else
-					throw std::runtime_error("Unable to parse the given value");
+					throw parse_error("Unable to parse the given value as floating point", qual_sv);;
 			}
 			
 			action end_info_key {
@@ -136,10 +137,10 @@ namespace libbio::vcf {
 				std::string_view const key_sv(start, fpc - start);
 				auto const it(m_info_fields.find(key_sv));
 				if (m_info_fields.cend() == it)
-					throw std::runtime_error("Unknown INFO key");
+					throw parse_error("Unknown INFO key", key_sv);
 				current_info_field = it->second.get();
 				if (!current_info_field->m_metadata)
-					throw std::runtime_error("Found INFO field not declared in the VCF header");
+					throw parse_error("Found INFO field not declared in the VCF header", key_sv);
 			}
 			
 			action end_info_val {
@@ -147,7 +148,7 @@ namespace libbio::vcf {
 				libbio_assert(current_info_field);
 				libbio_assert(current_info_field->m_metadata);
 				if (!current_info_field->m_metadata->check_subfield_index(subfield_idx))
-					throw std::runtime_error("More values in INFO field than declared");
+					throw parse_error("More values in INFO field than declared");
 				
 				std::string_view const val_sv(start, fpc - start);
 				current_info_field->parse_and_assign(val_sv, m_current_variant);
@@ -192,10 +193,10 @@ namespace libbio::vcf {
 			action end_filter_name {
 				{
 					auto const &filters(m_current_variant.m_reader->metadata().filter());
-					auto const filter_name(std::string_view(start, fpc - start));
+					std::string_view const filter_name(start, fpc - start);
 					auto const it(filters.find(filter_name));
 					if (filters.end() == it)
-						throw std::runtime_error((boost::format("Unknown FILTER name ‘%s’") % filter_name).str());
+						throw parse_error("Unknown FILTER name", filter_name);
 					m_current_variant.m_filters.emplace_back(&it->second);
 				}
 			}
@@ -221,7 +222,7 @@ namespace libbio::vcf {
 			action end_sample_field {
 				std::string_view const field_value(start, fpc - start);
 				if (! (subfield_idx < m_current_format_vec.size()))
-					throw std::runtime_error("More fields in current sample than specified in FORMAT");
+					throw parse_error("More fields in current sample than specified in FORMAT");
 				
 				auto const &format_ptr(m_current_format_vec[subfield_idx]);
 				auto &samples(m_current_variant.m_samples);
@@ -245,14 +246,14 @@ namespace libbio::vcf {
 			
 			action handle_sample {
 				if (m_current_format_vec.size() != subfield_idx)
-					throw std::runtime_error("Number of sample fields differs from FORMAT");
+					throw parse_error("Number of sample fields differs from FORMAT");
 				
 				++sample_idx;
 			}
 			
 			action handle_last_sample {
 				if (m_sample_indices_by_name.size() != sample_idx)
-					throw std::runtime_error("Number of samples differs from VCF headers");
+					throw parse_error("Number of samples differs from VCF headers");
 				
 				if (!cb(m_current_variant))
 				{
@@ -275,7 +276,7 @@ namespace libbio::vcf {
 			}
 			
 			action error {
-				report_unexpected_character(fpc, fpc - m_current_line_start, fcurs);
+				report_unexpected_character(fpc, fpc - m_current_line_or_buffer_start, fcurs);
 			}
 			
 			tab			= '\t';
@@ -505,7 +506,7 @@ namespace libbio::vcf {
 					m_current_variant.reset();
 					m_current_variant.m_variant_index = m_variant_index++;
 					m_current_variant.m_lineno = m_lineno;
-					m_current_line_start = 1 + fpc;
+					m_current_line_or_buffer_start = 1 + fpc;
 					
 					fgoto *next_state <fentry(main_nl), fentry(break_nl)>(field::CHROM, fentry(chrom_id_f), stop_after_newline, cb, should_continue);
 				}

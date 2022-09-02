@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Tuukka Norri
+ * Copyright (c) 2020-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -300,7 +300,7 @@ namespace libbio::vcf {
 		virtual bool parse_and_assign(std::string_view const &sv, transient_variant &var, std::byte *mem) const override
 		{
 			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
-			parser_type::parse_and_assign(sv, mem + this->m_offset);
+			parser_type::parse_and_assign(sv, mem + this->m_offset, this->get_metadata());
 			return true; // FIXME: return parse_and_assign’s return value?
 		}
 	};
@@ -332,7 +332,7 @@ namespace libbio::vcf {
 		virtual bool parse_and_assign(std::string_view const &sv, transient_variant const &var, transient_variant_sample &sample, std::byte *mem) const override final
 		{
 			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
-			return parser_type::parse_and_assign(sv, mem + this->m_offset);
+			return parser_type::parse_and_assign(sv, mem + this->m_offset, this->get_metadata());
 		}
 	};
 	

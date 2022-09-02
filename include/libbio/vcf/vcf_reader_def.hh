@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Tuukka Norri
+ * Copyright (c) 2019-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -58,13 +58,11 @@ namespace libbio::vcf {
 		return retval;
 	}
 	
-	std::pair <std::size_t, std::size_t> reader::current_line_range() const
+	std::string_view reader::buffer_tail() const
 	{
-		auto const buffer_start(m_input->buffer_start());
-		return std::pair <std::size_t, std::size_t>(
-			m_current_line_start - buffer_start,
-			m_fsm.p - buffer_start
-		);
+		// Return a view that contains the buffer contents from as close to the beginning of
+		// the current line as possible.
+		return std::string_view(m_current_line_or_buffer_start, m_fsm.p - m_current_line_or_buffer_start);
 	}
 	
 	variant reader::make_empty_variant()

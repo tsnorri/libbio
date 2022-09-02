@@ -1,33 +1,21 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #include <boost/spirit/include/qi.hpp>
 #include <charconv>
+#include <libbio/vcf/parse_error.hh>
 #include <libbio/vcf/subfield.hh>
 
 
 namespace lb	= libbio;
-
-
-namespace {
-
-	template <typename t_map, typename t_key, typename t_ptr_value>
-	void add_to_map(t_map &map, t_key const &key, t_ptr_value const ptr_value)
-	{
-		map.emplace(
-			std::piecewise_construct,
-			std::forward_as_tuple(key),
-			std::forward_as_tuple(ptr_value)
-		);
-	}
-}
+namespace vcf	= libbio::vcf;
 
 
 namespace libbio::vcf {
 	
-	bool subfield_parser <metadata_value_type::INTEGER>::parse(std::string_view const &sv, value_type &dst)
+	bool subfield_parser <metadata_value_type::INTEGER>::parse(std::string_view const &sv, value_type &dst, metadata_formatted_field const *field_ptr)
 	{
 		auto const *start(sv.data());
 		auto const *end(start + sv.size());
@@ -38,13 +26,13 @@ namespace libbio::vcf {
 			if ("." == sv)
 				return false;
 			
-			throw std::runtime_error("Unable to parse the given value");
+			throw parse_error("Unable to parse the given value as an integer", sv, field_ptr);
 		}
 		return true;
 	}
 	
 	
-	bool subfield_parser <metadata_value_type::FLOAT>::parse(std::string_view const &sv, value_type &dst)
+	bool subfield_parser <metadata_value_type::FLOAT>::parse(std::string_view const &sv, value_type &dst, metadata_formatted_field const *field_ptr)
 	{
 		// libc++ does not yet have from_chars for float.
 #if 0
@@ -57,7 +45,7 @@ namespace libbio::vcf {
 			if ("." == sv)
 				return false;
 			
-			throw std::runtime_error("Unable to parse the given value");
+			throw parse_error("Unable to parse the given value as floating point", sv);
 		}
 #endif
 		
@@ -67,7 +55,7 @@ namespace libbio::vcf {
 			if ("." == sv)
 				return false;
 			
-			throw std::runtime_error("Unable to parse the given value");
+			throw parse_error("Unable to parse the given value as floating point", sv, field_ptr);
 		}
 		return true;
 	}
@@ -75,46 +63,46 @@ namespace libbio::vcf {
 	
 	void add_reserved_info_keys(info_field_map &dst)
 	{
-		add_to_map(dst, "AA",			new info_field_aa());
-		add_to_map(dst, "AC",			new info_field_ac());
-		add_to_map(dst, "AD",			new info_field_ad());
-		add_to_map(dst, "ADF",			new info_field_adf());
-		add_to_map(dst, "ADR",			new info_field_adr());
-		add_to_map(dst, "AF",			new info_field_af());
-		add_to_map(dst, "AN",			new info_field_an());
-		add_to_map(dst, "BQ",			new info_field_bq());
-		add_to_map(dst, "CIGAR",		new info_field_cigar());
-		add_to_map(dst, "DB",			new info_field_db());
-		add_to_map(dst, "DP",			new info_field_dp());
-		add_to_map(dst, "END",			new info_field_end());
-		add_to_map(dst, "H2",			new info_field_h2());
-		add_to_map(dst, "H3",			new info_field_h3());
-		add_to_map(dst, "MQ",			new info_field_mq());
-		add_to_map(dst, "MQ0",			new info_field_mq0());
-		add_to_map(dst, "NS",			new info_field_ns());
-		add_to_map(dst, "SB",			new info_field_sb());
-		add_to_map(dst, "SOMATIC",		new info_field_somatic());
-		add_to_map(dst, "VALIDATED",	new info_field_validated());
-		add_to_map(dst, "1000G",		new info_field_1000g());
+		add_subfield <info_field_aa>			(dst, "AA");
+		add_subfield <info_field_ac>			(dst, "AC");
+		add_subfield <info_field_ad>			(dst, "AD");
+		add_subfield <info_field_adf>			(dst, "ADF");
+		add_subfield <info_field_adr>			(dst, "ADR");
+		add_subfield <info_field_af>			(dst, "AF");
+		add_subfield <info_field_an>			(dst, "AN");
+		add_subfield <info_field_bq>			(dst, "BQ");
+		add_subfield <info_field_cigar>			(dst, "CIGAR");
+		add_subfield <info_field_db>			(dst, "DB");
+		add_subfield <info_field_dp>			(dst, "DP");
+		add_subfield <info_field_end>			(dst, "END");
+		add_subfield <info_field_h2>			(dst, "H2");
+		add_subfield <info_field_h3>			(dst, "H3");
+		add_subfield <info_field_mq>			(dst, "MQ");
+		add_subfield <info_field_mq0>			(dst, "MQ0");
+		add_subfield <info_field_ns>			(dst, "NS");
+		add_subfield <info_field_sb>			(dst, "SB");
+		add_subfield <info_field_somatic>		(dst, "SOMATIC");
+		add_subfield <info_field_validated>		(dst, "VALIDATED");
+		add_subfield <info_field_1000g>			(dst, "1000G");
 	}
 	
 	
 	void add_reserved_genotype_keys(genotype_field_map &dst)
 	{
-		add_to_map(dst, "AD",			new genotype_field_ad());
-		add_to_map(dst, "ADF",			new genotype_field_adf());
-		add_to_map(dst, "ADR",			new genotype_field_adr());
-		add_to_map(dst, "DP",			new genotype_field_dp());
-		add_to_map(dst, "EC",			new genotype_field_ec());
-		add_to_map(dst, "FT",			new genotype_field_ft());
-		add_to_map(dst, "GL",			new genotype_field_gl());
-		add_to_map(dst, "GP",			new genotype_field_gp());
-		add_to_map(dst, "GQ",			new genotype_field_gq());
-		add_to_map(dst, "GT",			new genotype_field_gt());
-		add_to_map(dst, "HQ",			new genotype_field_hq());
-		add_to_map(dst, "MQ",			new genotype_field_mq());
-		add_to_map(dst, "PL",			new genotype_field_pl());
-		add_to_map(dst, "PQ",			new genotype_field_pq());
-		add_to_map(dst, "PS",			new genotype_field_ps());
+		add_subfield <genotype_field_ad>	(dst, "AD");
+		add_subfield <genotype_field_adf>	(dst, "ADF");
+		add_subfield <genotype_field_adr>	(dst, "ADR");
+		add_subfield <genotype_field_dp>	(dst, "DP");
+		add_subfield <genotype_field_ec>	(dst, "EC");
+		add_subfield <genotype_field_ft>	(dst, "FT");
+		add_subfield <genotype_field_gl>	(dst, "GL");
+		add_subfield <genotype_field_gp>	(dst, "GP");
+		add_subfield <genotype_field_gq>	(dst, "GQ");
+		add_subfield <genotype_field_gt>	(dst, "GT");
+		add_subfield <genotype_field_hq>	(dst, "HQ");
+		add_subfield <genotype_field_mq>	(dst, "MQ");
+		add_subfield <genotype_field_pl>	(dst, "PL");
+		add_subfield <genotype_field_pq>	(dst, "PQ");
+		add_subfield <genotype_field_ps>	(dst, "PS");
 	}
 }

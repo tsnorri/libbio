@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -85,6 +85,7 @@ namespace libbio::vcf {
 	
 	class metadata_formatted_field : public metadata_base
 	{
+		friend class reader;
 		friend class info_field_base;
 		friend class genotype_field_base;
 		
@@ -99,6 +100,18 @@ namespace libbio::vcf {
 		LIBBIO_VCF_METADATA_NUMBER_FIELD;
 		LIBBIO_VCF_METADATA_VALUE_TYPE_FIELD;
 	};
+	
+	
+	inline std::ostream &operator<<(std::ostream &os, metadata_formatted_field const &ff)
+	{
+		os << "ID: " << ff.get_id();
+		os << " Number: ";
+		output_vcf_value(os, ff.get_number());
+		os << " Value type: ";
+		output_vcf_value(os, ff.get_value_type());
+		os << " Description: " << ff.get_description();
+		return os;
+	}
 	
 	
 	class metadata_info final : public metadata_formatted_field

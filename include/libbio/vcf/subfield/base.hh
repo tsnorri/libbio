@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Tuukka Norri
+ * Copyright (c) 2019-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -41,6 +41,25 @@ namespace libbio::vcf {
 	using typed_genotype_field_t = typed_field <t_value_type, t_is_vector, genotype_field_base>;
 	
 	
+	enum class subfield_type : std::uint8_t
+	{
+		UNKNOWN = 0,
+		INFO,
+		GENOTYPE
+	};
+	
+	
+	inline char const *subfield_type_name(subfield_type const st)
+	{
+		switch (st)
+		{
+			case subfield_type::UNKNOWN:	return "Unknown";
+			case subfield_type::INFO:		return "Info";
+			case subfield_type::GENOTYPE:	return "Genotype";
+		}
+	}
+	
+	
 	// Base class and interface for field descriptions (specified by ##INFO, ##FORMAT).
 	class subfield_base
 	{
@@ -69,6 +88,9 @@ namespace libbio::vcf {
 		
 		// Whether the field uses the enumerated VCF type mapping.
 		virtual bool uses_vcf_type_mapping() const { return false; }
+		
+		// Subfield type (info or genotype)
+		virtual enum subfield_type subfield_type() const { return subfield_type::UNKNOWN; }
 		
 	protected:
 		std::uint16_t get_offset() const { return m_offset; }

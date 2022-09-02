@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Tuukka Norri
+ * Copyright (c) 2019-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -21,24 +21,24 @@ namespace libbio::vcf {
 	struct subfield_parser_base { static constexpr bool type_needs_parsing() { return true; } };
 	
 	// Specializations for the different value types.
-	template <> struct subfield_parser <metadata_value_type::INTEGER> : public subfield_parser_base
+	template <> struct subfield_parser <metadata_value_type::INTEGER> final : public subfield_parser_base
 	{
 		typedef field_type_mapping_t <metadata_value_type::INTEGER, true>	value_type;
-		static bool parse(std::string_view const &sv, value_type &dst);
+		static bool parse(std::string_view const &sv, value_type &dst, metadata_formatted_field const *field);
 	};
 	
-	template <> struct subfield_parser <metadata_value_type::FLOAT> : public subfield_parser_base
+	template <> struct subfield_parser <metadata_value_type::FLOAT> final : public subfield_parser_base
 	{
 		typedef field_type_mapping_t <metadata_value_type::FLOAT, true>	value_type;
-		static bool parse(std::string_view const &sv, value_type &dst);
+		static bool parse(std::string_view const &sv, value_type &dst, metadata_formatted_field const *field);
 	};
 	
-	template <> struct subfield_parser <metadata_value_type::STRING> : public subfield_parser_base
+	template <> struct subfield_parser <metadata_value_type::STRING> final : public subfield_parser_base
 	{
 		static constexpr bool type_needs_parsing() { return false; }
 	};
 	
-	template <> struct subfield_parser <metadata_value_type::CHARACTER> : public subfield_parser_base
+	template <> struct subfield_parser <metadata_value_type::CHARACTER> final : public subfield_parser_base
 	{
 		static constexpr bool type_needs_parsing() { return false; }
 	};
@@ -52,7 +52,7 @@ namespace libbio::vcf {
 		typedef subfield_access <t_metadata_value_type, t_number, true>	field_access;
 		
 	protected:
-		bool parse_and_assign(std::string_view const &sv, std::byte *mem) const
+		bool parse_and_assign(std::string_view const &sv, std::byte *mem, metadata_formatted_field const *field) const
 		{
 			// mem needs to include the offset.
 			if constexpr (t_metadata_value_type == metadata_value_type::FLAG)
@@ -76,7 +76,7 @@ namespace libbio::vcf {
 						auto const length(end_pos == std::string_view::npos ? end_pos : end_pos - start_pos);
 						auto const sv_part(sv.substr(start_pos, length)); // npos is valid for end_pos.
 						
-						parser_type::parse(sv_part, value);
+						parser_type::parse(sv_part, value, field);
 						field_access::add_value(mem, value);
 						
 						if (std::string_view::npos == end_pos)
@@ -98,7 +98,7 @@ namespace libbio::vcf {
 	template <metadata_value_type t_metadata_value_type>
 	struct generic_field_parser <t_metadata_value_type, 0>
 	{
-		bool parse_and_assign(std::string_view const &sv, std::byte *mem) const
+		bool parse_and_assign(std::string_view const &sv, std::byte *mem, metadata_formatted_field const *field) const
 		{
 			libbio_fail("parse_and_assign should not be called for FLAG type fields");
 			return false;
@@ -113,7 +113,7 @@ namespace libbio::vcf {
 		typedef subfield_access <t_metadata_value_type, 1, true>	field_access; // May be transient b.c. used only for parsing.
 		
 	protected:
-		bool parse_and_assign(std::string_view const &sv, std::byte *mem) const
+		bool parse_and_assign(std::string_view const &sv, std::byte *mem, metadata_formatted_field const *field) const
 		{
 			// mem needs to include the offset.
 			if constexpr (t_metadata_value_type == metadata_value_type::FLAG)
@@ -127,7 +127,7 @@ namespace libbio::vcf {
 				if constexpr (parser_type::type_needs_parsing())
 				{
 					typename parser_type::value_type value{};
-					parser_type::parse(sv, value);
+					parser_type::parse(sv, value, field);
 					field_access::add_value(mem, value);
 				}
 				else

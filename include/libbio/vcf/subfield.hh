@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -10,5 +10,6 @@
 #include <libbio/vcf/subfield/genotype_field_base_def.hh>
 #include <libbio/vcf/subfield/genotype_field_gt.hh>
 #include <libbio/vcf/subfield/info_field_base_def.hh>
+#include <libbio/vcf/subfield/utility/add_subfield.hh>
 
 #endif

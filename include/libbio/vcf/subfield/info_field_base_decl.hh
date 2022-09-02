@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Tuukka Norri
+ * Copyright (c) 2019-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -103,6 +103,8 @@ namespace libbio::vcf {
 		
 		// Check whether the variant has a value for this INFO field.
 		inline bool has_value(abstract_variant const &var) const;
+		
+		enum subfield_type subfield_type() const final { return subfield_type::INFO; }
 	};
 	
 	

@@ -36,11 +36,15 @@ namespace libbio::vcf {
 	{
 		virtual ~reader_delegate() {}
 		virtual void vcf_reader_did_parse_metadata(reader &vcf_reader) = 0;
+		virtual bool vcf_reader_should_replace_non_matching_subfield(std::string const &, info_field_base const &, metadata_info const &) = 0;
+		virtual bool vcf_reader_should_replace_non_matching_subfield(std::string const &, genotype_field_base const &, metadata_format const &) = 0;
 	};
-
+	
 	struct reader_default_delegate : public reader_delegate
 	{
 		void vcf_reader_did_parse_metadata(reader &vcf_reader) override {}
+		bool vcf_reader_should_replace_non_matching_subfield(std::string const &, info_field_base const &, metadata_info const &) override;
+		bool vcf_reader_should_replace_non_matching_subfield(std::string const &, genotype_field_base const &, metadata_format const &) override;
 	};
 	
 	
@@ -125,7 +129,7 @@ namespace libbio::vcf {
 		transient_variant				m_current_variant;						// FIXME: Consider moving to parser_state. On the other hand, most of the data members have to do with state.
 		reader_delegate					*m_delegate{&detail::g_vcf_reader_default_delegate};
 		variant_validator				*m_chrom_pos_validator{&detail::g_vcf_reader_default_variant_validator};
-		char const						*m_current_line_start{};
+		char const						*m_current_line_or_buffer_start{};
 		copyable_atomic <std::size_t>	m_counter{0};
 		std::size_t						m_lineno{0};							// Current line number.
 		std::size_t						m_variant_index{0};						// Current variant number (0-based).
@@ -182,7 +186,7 @@ namespace libbio::vcf {
 		sample_name_map const &sample_indices_by_name() const { return m_sample_indices_by_name; }
 		inline void set_parsed_fields(field max_field);
 		std::size_t counter_value() const { return m_counter; } // Thread-safe.
-		inline std::pair <std::size_t, std::size_t> current_line_range() const; // Valid in parse()’s callback. FIXME: make this work also for the stream input.
+		inline std::string_view buffer_tail() const; // Valid in parse()’s callback.
 		
 		template <typename t_key, typename t_dst>
 		inline void get_info_field_ptr(t_key const &key, t_dst &dst) const;
@@ -216,8 +220,8 @@ namespace libbio::vcf {
 		template <template <metadata_value_type, std::int32_t> typename t_field_tpl, metadata_value_type t_field_type, typename t_field_base_class>
 		auto instantiate_field(metadata_formatted_field const &meta) -> t_field_base_class *;
 		
-		template <template <metadata_value_type, std::int32_t> typename t_field_tpl, typename t_key, typename t_field_map>
-		auto find_or_add_field(metadata_formatted_field const &meta, t_key const &key, t_field_map &map, bool &did_add) ->
+		template <template <metadata_value_type, std::int32_t> typename t_field_tpl, typename t_meta, typename t_key, typename t_field_map>
+		auto find_or_add_field(t_meta &meta, t_key const &key, t_field_map &map) ->
 			typename t_field_map::mapped_type::element_type &;
 	};
 }

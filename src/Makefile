@@ -23,6 +23,7 @@ OBJECTS		=	assert.o \
 				vcf_genotype_field_gt_parser.o \
 				vcf_input.o \
 				vcf_metadata.o \
+				vcf_reader_default_delegate.o \
 				vcf_reader_header_parser.o \
 				vcf_reader_parser.o \
 				vcf_reader.o \

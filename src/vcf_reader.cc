@@ -81,7 +81,7 @@ namespace libbio::vcf {
 		m_input->reset_to_first_variant_offset();
 		m_lineno = m_input->last_header_lineno();
 		m_fsm.eof = nullptr;
-		m_current_line_start = nullptr;
+		m_current_line_or_buffer_start = nullptr;
 		m_counter = 0;
 		m_variant_index = 0;
 		
@@ -105,7 +105,10 @@ namespace libbio::vcf {
 	{
 		libbio_assert(m_input);
 		if (m_fsm.p == m_fsm.pe && (m_fsm.p != m_fsm.eof || m_fsm.p == nullptr))
+		{
 			m_input->fill_buffer(*this);
+			m_current_line_or_buffer_start = m_input->buffer_start();
+		}
 	}
 	
 	
@@ -135,56 +138,62 @@ namespace libbio::vcf {
 	}
 	
 	
-	template <template <metadata_value_type, std::int32_t> typename t_field_tpl, typename t_key, typename t_field_map>
-	auto reader::find_or_add_field(metadata_formatted_field const &meta, t_key const &key, t_field_map &map, bool &did_add) -> typename t_field_map::mapped_type::element_type &
+	template <template <metadata_value_type, std::int32_t> typename t_field_tpl, typename t_meta, typename t_key, typename t_field_map>
+	auto reader::find_or_add_field(t_meta &meta, t_key const &key, t_field_map &map) -> typename t_field_map::mapped_type::element_type &
 	{
-		auto const it(map.find(key));
-		if (map.end() != it)
+		auto const res(map.try_emplace(key));
+		auto &field_ptr(res.first->second);
+		if (!res.second)
 		{
-			did_add = false;
-			return *it->second;
+			// Did not add.
+			auto &field(*field_ptr);
+			if ((
+				field.metadata_value_type() == meta.get_value_type() &&
+				field.number() == meta.get_number() // FIXME: We could take the special values into account when comparing.
+			) || !m_delegate->vcf_reader_should_replace_non_matching_subfield(key, field, meta))
+			{
+				field.m_metadata = &meta;
+				return field;
+			}
 		}
 		
+		// Did add or the delegate asks to replace.
 		typedef typename t_field_map::mapped_type::element_type field_base_class;
-		field_base_class *val{};
+		field_base_class *ptr{};
 		switch (meta.get_value_type())
 		{
 			case metadata_value_type::INTEGER:
-				val = instantiate_field <t_field_tpl, metadata_value_type::INTEGER, field_base_class>(meta);
+				ptr = instantiate_field <t_field_tpl, metadata_value_type::INTEGER, field_base_class>(meta);
 				break;
 				
 			case metadata_value_type::FLOAT:
-				val = instantiate_field <t_field_tpl, metadata_value_type::FLOAT, field_base_class>(meta);
+				ptr = instantiate_field <t_field_tpl, metadata_value_type::FLOAT, field_base_class>(meta);
 				break;
 			
 			case metadata_value_type::CHARACTER:
-				val = instantiate_field <t_field_tpl, metadata_value_type::CHARACTER, field_base_class>(meta);
+				ptr = instantiate_field <t_field_tpl, metadata_value_type::CHARACTER, field_base_class>(meta);
 				break;
 				
 			case metadata_value_type::STRING:
-				val = instantiate_field <t_field_tpl, metadata_value_type::STRING, field_base_class>(meta);
+				ptr = instantiate_field <t_field_tpl, metadata_value_type::STRING, field_base_class>(meta);
 				break;
 			
 			case metadata_value_type::FLAG:
-				val = new t_field_tpl <metadata_value_type::FLAG, 0>();
+				ptr = new t_field_tpl <metadata_value_type::FLAG, 0>();
 				break;
 			
 			case metadata_value_type::UNKNOWN:
 			case metadata_value_type::NOT_PROCESSED:
 			default:
-				val = detail::placeholder_field_helper <field_base_class>::get_placeholder().clone();
+				ptr = detail::placeholder_field_helper <field_base_class>::get_placeholder().clone();
 				break;
 		}
 		
-		auto const res(map.emplace(
-			std::piecewise_construct,
-			std::forward_as_tuple(key),
-			std::forward_as_tuple(val)
-		));
-		
-		libbio_always_assert(res.second);
-		did_add = true;
-		return *res.first->second;
+		libbio_always_assert(ptr);
+		field_ptr.reset(ptr);
+		meta.check_field(*ptr);
+		ptr->m_metadata = &meta;
+		return *field_ptr;
 	}
 	
 	
@@ -193,20 +202,12 @@ namespace libbio::vcf {
 		bool did_add(false);
 		for (auto &[key, meta] : m_metadata.m_info)
 		{
-			auto &info_field(find_or_add_field <info_field>(meta, key, m_info_fields, did_add));
-			if (did_add)
-				meta.check_field(info_field);
-			info_field.m_metadata = &meta;
+			auto &info_field(find_or_add_field <info_field>(meta, key, m_info_fields));
 			m_info_fields_in_headers.emplace_back(&info_field);
 		}
 		
 		for (auto &[key, meta] : m_metadata.m_format)
-		{
-			auto &genotype_field(find_or_add_field <genotype_field>(meta, key, m_genotype_fields, did_add));
-			if (did_add)
-				meta.check_field(genotype_field);
-			genotype_field.m_metadata = &meta;
-		}
+			find_or_add_field <genotype_field>(meta, key, m_genotype_fields);
 	}
 	
 	

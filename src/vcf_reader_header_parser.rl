@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019 Tuukka Norri
+ * Copyright (c) 2017-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -13,7 +13,7 @@
 
 
 #define BEGIN_METADATA(CLASS)	(current_metadata_ptr = &current_metadata.emplace <CLASS>())
-#define END_METADATA(CLASS)		do { \
+#define END_METADATA(CLASS)		do { /* add_metadata() takes an rvalue reference. */ \
 									m_metadata.add_metadata(std::move(std::get <CLASS>(current_metadata))); \
 									current_metadata_ptr = nullptr; \
 								} while (false)

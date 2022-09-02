@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Tuukka Norri
+ * Copyright (c) 2019-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -101,6 +101,8 @@ namespace libbio::vcf {
 		// (The field could just be removed from FORMAT but instead the
 		// specification allows MISSING value to be specified. See VCF 4.3 Section 1.6.2.)
 		inline bool has_value(variant_sample_base const &sample) const;
+		
+		enum subfield_type subfield_type() const final { return subfield_type::GENOTYPE; }
 	};
 	
 	
