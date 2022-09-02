@@ -1,8 +1,11 @@
 # Ignore Xcode's setting since the SDK may contain older versions of Clang and libc++.
 unexport SDKROOT
 
+SHELL			?= /bin/bash
+
 # Default values.
-WARNING_FLAGS	?= -Wall -Werror -Wno-deprecated-declarations -Wno-unused -Wno-misleading-indentation
+# Boost uses some deprecated builtins (as of Clang 14).
+WARNING_FLAGS	?= -Wall -Werror -Wno-deprecated-declarations -Wno-deprecated-builtins -Wno-unused -Wno-misleading-indentation
 OPT_FLAGS		?= -O2 -g
 
 CFLAGS			?=
@@ -23,6 +26,7 @@ DOT				?= dot
 GENGETOPT		?= gengetopt
 GZIP			?= gzip
 MKDIR			?= mkdir
+PATCH			?= patch
 PYTHON			?= python
 RAGEL			?= ragel
 RM				?= rm

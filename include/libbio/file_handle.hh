@@ -7,6 +7,7 @@
 #define LIBBIO_FILE_HANDLE_HH
 
 #include <algorithm>
+#include <cstdio>
 #include <sys/stat.h>
 #include <utility>
 
