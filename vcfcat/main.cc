@@ -11,6 +11,7 @@
 #include <libbio/vcf/variant_printer.hh>
 #include <libbio/vcf/vcf_reader.hh>
 #include <map>
+#include <numeric>
 #include "cmdline.h"
 
 
@@ -242,6 +243,80 @@ namespace {
 		
 		return true;
 	}
+
+
+	bool check_zygosity(vcf::transient_variant::variant_sample_type const &sample, std::uint64_t const expected_zygosity, vcf::genotype_field_gt const &gt_field)
+	{
+		static_assert(0x7fff == vcf::sample_genotype::NULL_ALLELE); // Should be positive and small enough s.t. the sum can fit into std::uint64_t or similar.
+		auto const &gt(gt_field(sample));
+		auto const zygosity(std::accumulate(gt.begin(), gt.end(), std::uint64_t(0), [](auto const acc, vcf::sample_genotype const &sample_gt){
+			return acc + sample_gt.alt;
+		}));
+		return zygosity == expected_zygosity;
+	}
+
+
+	bool check_zygosity(vcf::transient_variant const &var, std::int16_t const expected_zygosity)
+	{
+		auto const *gt_field(get_variant_format(var).gt);
+		for (auto const &sample : var.samples())
+		{
+			if (check_zygosity(sample, expected_zygosity, *gt_field))
+				return true;
+		}
+
+		return false;
+	}
+
+
+	bool check_zygosity(
+		vcf::reader const &reader,
+		vcf::transient_variant const &var,
+		std::int16_t const expected_zygosity,
+		std::vector <std::string> const &sample_names,
+		bool const should_exclude_samples
+	)
+	{
+		auto const *gt_field(get_variant_format(var).gt);
+		auto const &parsed_sample_names(reader.sample_indices_by_name());
+		auto const &samples(var.samples());
+
+		if (should_exclude_samples)
+		{
+			for (auto const &pair : parsed_sample_names)
+			{
+				auto const &name(pair.first);
+				// Check whether the current sample name is also in the excluded list.
+				if (std::binary_search(sample_names.begin(), sample_names.end(), name))
+					continue;
+
+				auto const idx1(pair.second);
+				libbio_assert_lt(0, idx1);
+				auto const &sample(samples[idx1 - 1]);
+				if (check_zygosity(sample, expected_zygosity, *gt_field))
+					return true;
+			}
+
+			return false;
+		}
+		else
+		{
+			for (auto const &sample_name : sample_names)
+			{
+				auto const it(parsed_sample_names.find(sample_name));
+				if (parsed_sample_names.end() == it)
+					continue;
+
+				auto const idx1(it->second);
+				libbio_assert_lt(0, idx1);
+				auto const &sample(samples[idx1 - 1]);
+				if (check_zygosity(sample, expected_zygosity, *gt_field))
+					return true;
+			}
+
+			return false;
+		}
+	}
 	
 	
 	void output_header(vcf::reader const &reader, std::ostream &stream, sample_name_vector const &sample_names, bool const exclude_samples)
@@ -289,7 +364,7 @@ namespace {
 	}
 	
 	
-	void output_vcf(vcf::reader &reader, std::ostream &stream, sample_name_vector const &sample_names, bool const exclude_samples)
+	void output_vcf(vcf::reader &reader, std::ostream &stream, sample_name_vector const &sample_names, bool const exclude_samples, std::int16_t const expected_zygosity)
 	{
 		/*
 		if (!sample_names.empty())
@@ -301,13 +376,16 @@ namespace {
 		bool should_continue(false);
 		std::size_t lineno{};
 		alt_number_map alt_mapping;
-		reader.parse_nc([&stream, &sample_names, exclude_samples, &alt_mapping, &lineno](vcf::transient_variant &var){
+		reader.parse_nc([&reader, &stream, &sample_names, exclude_samples, &alt_mapping, &lineno, expected_zygosity](vcf::transient_variant &var){
 			++lineno;
-			
+
 			if ((!sample_names.empty()) || exclude_samples)
 			{
 				// FIXME: a variant may be excluded if there are no non-zero and non-missing GT values.
-				if (modify_variant(var, alt_mapping, sample_names, exclude_samples))
+				if (
+					modify_variant(var, alt_mapping, sample_names, exclude_samples) &&
+					(-1 == expected_zygosity || check_zygosity(reader, var, expected_zygosity, sample_names, exclude_samples))
+				)
 				{
 					sample_filtering_variant_printer <vcf::transient_variant> printer(sample_names, alt_mapping, exclude_samples);
 					vcf::output_vcf(printer, stream, var);
@@ -315,7 +393,8 @@ namespace {
 			}
 			else
 			{
-				vcf::output_vcf(stream, var);
+				if (-1 == expected_zygosity || check_zygosity(var, expected_zygosity))
+					vcf::output_vcf(stream, var);
 			}
 
 			if (0 == lineno % 100000)
@@ -331,12 +410,20 @@ int main(int argc, char **argv)
 {
 	gengetopt_args_info args_info;
 	if (0 != cmdline_parser(argc, argv, &args_info))
-		exit(EXIT_FAILURE);
+		std::exit(EXIT_FAILURE);
 	
 	std::ios_base::sync_with_stdio(false);	// Don't use C style IO after calling cmdline_parser.
 	std::cin.tie(nullptr);					// We don't require any input from the user.
+
+	// Check the zygosity parameter.
+	if (args_info.zygosity_arg < -1)
+	{
+		std::cerr << "ERROR: Zygosity should be either non-negative or -1 for no filtering." << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
 	
 	// Open the variant file.
+	// FIXME: use stream input, handle compressed input.
 	vcf::mmap_input vcf_input;
 	lb::file_ostream output_stream;
 	
@@ -360,7 +447,7 @@ int main(int argc, char **argv)
 	if (args_info.exclude_samples_given)
 		std::sort(sample_names.begin(), sample_names.end());
 	
-	// Create the parser and add the fields listed in the specification to the metadata.
+	// Instantiate the parser and add the fields listed in the specification to the metadata.
 	vcf::reader reader;
 	vcf::add_reserved_info_keys(reader.info_fields());
 	vcf::add_reserved_genotype_keys(reader.genotype_fields());
@@ -370,7 +457,13 @@ int main(int argc, char **argv)
 	reader.set_input(vcf_input);
 	reader.read_header();
 	reader.set_parsed_fields(vcf::field::ALL);
-	output_vcf(reader, args_info.output_given ? output_stream : std::cout, sample_names, (args_info.exclude_samples_given ?: sample_names.empty()));
+	output_vcf(
+		reader,
+		args_info.output_given ? output_stream : std::cout,
+		sample_names,
+		(args_info.exclude_samples_given ?: sample_names.empty()),
+		args_info.zygosity_arg
+	);
 	
 	return EXIT_SUCCESS;
 }
