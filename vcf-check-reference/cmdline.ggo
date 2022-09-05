@@ -1,0 +1,11 @@
+# Copyright (c) 2022 Tuukka Norri
+# This code is licensed under MIT license (see LICENSE for details).
+
+package		"vcf-check-reference"
+version		"0.1"
+purpose		"Check that the REF column values in a VCF file matches the reference sequence."
+usage		"vcf_check_reference --variants=input.vcf --reference=ref.fasta"
+
+option		"variants"			a	"Variant call file path"			string	typestr = "filename"	required
+option		"reference"			r	"Reference FASTA path"				string	typestr = "filename"	required
+option		"chromosome"		c	"Chromosome identifier in the VCF"	string	typestr = "chr"			optional

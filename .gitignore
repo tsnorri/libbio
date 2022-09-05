@@ -13,6 +13,9 @@ src/vcf_reader_header_parser.cc
 src/vcf_reader_header_parser.pdf
 src/vcf_reader_parser.cc
 tests/tests
+vcf-check-reference/cmdline.c
+vcf-check-reference/cmdline.h
+vcf-check-reference/vcf_check_reference
 vcf-concatenate-records/cmdline.c
 vcf-concatenate-records/cmdline.h
 vcf-concatenate-records/vcf_concatenate_records
