@@ -11,6 +11,9 @@
 #include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/zip.hpp>
 
+namespace lb	= libbio;
+namespace vcf	= libbio::vcf;
+
 
 namespace libbio::vcf::detail {
 
@@ -33,6 +36,136 @@ namespace libbio::vcf::detail {
 	struct placeholder_field_helper <genotype_field_base>
 	{
 		static genotype_field_base &get_placeholder() { return reader_support::get_instance().get_genotype_field_placeholder(); }
+	};
+	
+	
+	class metadata_setup_helper
+	{
+	public:
+		template <template <vcf::metadata_value_type, std::int32_t> typename t_field_tpl, vcf::metadata_value_type t_field_type, typename t_field_base_class>
+		static auto instantiate_field(vcf::metadata_formatted_field const &meta) -> t_field_base_class *
+		{
+			switch (meta.get_number())
+			{
+				// Assume that one is a rather typical case.
+				case 1:
+					return new t_field_tpl <t_field_type, 1>();
+
+				case vcf::VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE:
+					return new t_field_tpl <t_field_type, vcf::VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE>();
+				
+				case vcf::VCF_NUMBER_ONE_PER_ALLELE:
+					return new t_field_tpl <t_field_type, vcf::VCF_NUMBER_ONE_PER_ALLELE>();
+				
+				case vcf::VCF_NUMBER_ONE_PER_GENOTYPE:
+					return new t_field_tpl <t_field_type, vcf::VCF_NUMBER_ONE_PER_GENOTYPE>();
+			
+				case vcf::VCF_NUMBER_UNKNOWN:
+				case vcf::VCF_NUMBER_DETERMINED_AT_RUNTIME:
+				default:
+					return new t_field_tpl <t_field_type, vcf::VCF_NUMBER_DETERMINED_AT_RUNTIME>();
+			}
+		}
+	
+	
+		template <template <vcf::metadata_value_type, std::int32_t> typename t_field_tpl, typename t_meta, typename t_key, typename t_field_map>
+		static auto find_or_add_field(
+			t_meta &meta,
+			t_key const &key,
+			t_field_map &map,
+			vcf::reader_delegate &delegate
+		) -> typename t_field_map::mapped_type::element_type &
+		{
+			auto const res(map.try_emplace(key));
+			auto &field_ptr(res.first->second);
+			if (!res.second)
+			{
+				// Did not add.
+				auto &field(*field_ptr);
+				if ((
+					field.metadata_value_type() == meta.get_value_type() &&
+					field.number() == meta.get_number() // FIXME: We could take the special values into account when comparing.
+				) || !delegate.vcf_reader_should_replace_non_matching_subfield(key, field, meta))
+				{
+					field.m_metadata = &meta;
+					return field;
+				}
+			}
+		
+			// Did add or the delegate asks to replace.
+			typedef typename t_field_map::mapped_type::element_type field_base_class;
+			field_base_class *ptr{};
+			switch (meta.get_value_type())
+			{
+				case vcf::metadata_value_type::INTEGER:
+					ptr = instantiate_field <t_field_tpl, vcf::metadata_value_type::INTEGER, field_base_class>(meta);
+					break;
+				
+				case vcf::metadata_value_type::FLOAT:
+					ptr = instantiate_field <t_field_tpl, vcf::metadata_value_type::FLOAT, field_base_class>(meta);
+					break;
+			
+				case vcf::metadata_value_type::CHARACTER:
+					ptr = instantiate_field <t_field_tpl, vcf::metadata_value_type::CHARACTER, field_base_class>(meta);
+					break;
+				
+				case vcf::metadata_value_type::STRING:
+					ptr = instantiate_field <t_field_tpl, vcf::metadata_value_type::STRING, field_base_class>(meta);
+					break;
+			
+				case vcf::metadata_value_type::FLAG:
+					ptr = new t_field_tpl <vcf::metadata_value_type::FLAG, 0>();
+					break;
+			
+				case vcf::metadata_value_type::UNKNOWN:
+				case vcf::metadata_value_type::NOT_PROCESSED:
+				default:
+					ptr = vcf::detail::placeholder_field_helper <field_base_class>::get_placeholder().clone();
+					break;
+			}
+		
+			libbio_always_assert(ptr);
+			field_ptr.reset(ptr);
+			meta.check_field(*ptr);
+			ptr->m_metadata = &meta;
+			return *field_ptr;
+		}
+	
+	
+		template <typename t_field>
+		static std::pair <std::uint16_t, std::uint16_t> sort_and_assign_field_offsets(std::vector <t_field *> &field_vec)
+		{
+			if (!field_vec.empty())
+			{
+				std::sort(field_vec.begin(), field_vec.end(), [](auto const lhs, auto const rhs) -> bool {
+					auto const la(lhs->alignment());
+					auto const ls(lhs->byte_size());
+					auto const ra(rhs->alignment());
+					auto const rs(rhs->byte_size());
+				
+					return std::tie(la, ls) > std::tie(ra, rs);
+				});
+		
+				// Determine and assign the offsets.
+				std::uint16_t next_offset(0);
+				std::uint16_t max_alignment(1);
+				for (auto &field : field_vec)
+				{
+					auto const alignment(field->alignment());
+					libbio_assert_lt(0, alignment);
+					max_alignment = std::max(alignment, max_alignment);
+					if (0 != next_offset % alignment)
+						next_offset = alignment * (next_offset / alignment + 1);
+				
+					field->set_offset(next_offset);
+					next_offset += field->byte_size();
+				}
+			
+				return {next_offset, max_alignment};
+			}
+		
+			return {0, 1};
+		}
 	};
 }
 
@@ -112,138 +245,17 @@ namespace libbio::vcf {
 	}
 	
 	
-	template <template <metadata_value_type, std::int32_t> typename t_field_tpl, metadata_value_type t_field_type, typename t_field_base_class>
-	auto reader::instantiate_field(metadata_formatted_field const &meta) -> t_field_base_class *
-	{
-		switch (meta.get_number())
-		{
-			// Assume that one is a rather typical case.
-			case 1:
-				return new t_field_tpl <t_field_type, 1>();
-
-			case VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE:
-				return new t_field_tpl <t_field_type, VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE>();
-				
-			case VCF_NUMBER_ONE_PER_ALLELE:
-				return new t_field_tpl <t_field_type, VCF_NUMBER_ONE_PER_ALLELE>();
-				
-			case VCF_NUMBER_ONE_PER_GENOTYPE:
-				return new t_field_tpl <t_field_type, VCF_NUMBER_ONE_PER_GENOTYPE>();
-			
-			case VCF_NUMBER_UNKNOWN:
-			case VCF_NUMBER_DETERMINED_AT_RUNTIME:
-			default:
-				return new t_field_tpl <t_field_type, VCF_NUMBER_DETERMINED_AT_RUNTIME>();
-		}
-	}
-	
-	
-	template <template <metadata_value_type, std::int32_t> typename t_field_tpl, typename t_meta, typename t_key, typename t_field_map>
-	auto reader::find_or_add_field(t_meta &meta, t_key const &key, t_field_map &map) -> typename t_field_map::mapped_type::element_type &
-	{
-		auto const res(map.try_emplace(key));
-		auto &field_ptr(res.first->second);
-		if (!res.second)
-		{
-			// Did not add.
-			auto &field(*field_ptr);
-			if ((
-				field.metadata_value_type() == meta.get_value_type() &&
-				field.number() == meta.get_number() // FIXME: We could take the special values into account when comparing.
-			) || !m_delegate->vcf_reader_should_replace_non_matching_subfield(key, field, meta))
-			{
-				field.m_metadata = &meta;
-				return field;
-			}
-		}
-		
-		// Did add or the delegate asks to replace.
-		typedef typename t_field_map::mapped_type::element_type field_base_class;
-		field_base_class *ptr{};
-		switch (meta.get_value_type())
-		{
-			case metadata_value_type::INTEGER:
-				ptr = instantiate_field <t_field_tpl, metadata_value_type::INTEGER, field_base_class>(meta);
-				break;
-				
-			case metadata_value_type::FLOAT:
-				ptr = instantiate_field <t_field_tpl, metadata_value_type::FLOAT, field_base_class>(meta);
-				break;
-			
-			case metadata_value_type::CHARACTER:
-				ptr = instantiate_field <t_field_tpl, metadata_value_type::CHARACTER, field_base_class>(meta);
-				break;
-				
-			case metadata_value_type::STRING:
-				ptr = instantiate_field <t_field_tpl, metadata_value_type::STRING, field_base_class>(meta);
-				break;
-			
-			case metadata_value_type::FLAG:
-				ptr = new t_field_tpl <metadata_value_type::FLAG, 0>();
-				break;
-			
-			case metadata_value_type::UNKNOWN:
-			case metadata_value_type::NOT_PROCESSED:
-			default:
-				ptr = detail::placeholder_field_helper <field_base_class>::get_placeholder().clone();
-				break;
-		}
-		
-		libbio_always_assert(ptr);
-		field_ptr.reset(ptr);
-		meta.check_field(*ptr);
-		ptr->m_metadata = &meta;
-		return *field_ptr;
-	}
-	
-	
 	void reader::associate_metadata_with_field_descriptions()
 	{
 		bool did_add(false);
 		for (auto &[key, meta] : m_metadata.m_info)
 		{
-			auto &info_field(find_or_add_field <info_field>(meta, key, m_info_fields));
+			auto &info_field(detail::metadata_setup_helper::find_or_add_field <info_field>(meta, key, m_info_fields, *m_delegate));
 			m_info_fields_in_headers.emplace_back(&info_field);
 		}
 		
 		for (auto &[key, meta] : m_metadata.m_format)
-			find_or_add_field <genotype_field>(meta, key, m_genotype_fields);
-	}
-	
-	
-	template <typename t_field>
-	std::pair <std::uint16_t, std::uint16_t> reader::sort_and_assign_field_offsets(std::vector <t_field *> &field_vec) const
-	{
-		if (!field_vec.empty())
-		{
-			std::sort(field_vec.begin(), field_vec.end(), [](auto const lhs, auto const rhs) -> bool {
-				auto const la(lhs->alignment());
-				auto const ls(lhs->byte_size());
-				auto const ra(rhs->alignment());
-				auto const rs(rhs->byte_size());
-				
-				return std::tie(la, ls) > std::tie(ra, rs);
-			});
-		
-			// Determine and assign the offsets.
-			std::uint16_t next_offset(0);
-			std::uint16_t max_alignment(1);
-			for (auto &field : field_vec)
-			{
-				auto const alignment(field->alignment());
-				libbio_assert_lt(0, alignment);
-				max_alignment = std::max(alignment, max_alignment);
-				if (0 != next_offset % alignment)
-					next_offset = alignment * (next_offset / alignment + 1);
-				
-				field->set_offset(next_offset);
-				next_offset += field->byte_size();
-			}
-			
-			return std::make_pair(next_offset, max_alignment);
-		}
-		
-		return std::make_pair(0, 1);
+			auto &genotype_field(detail::metadata_setup_helper::find_or_add_field <genotype_field>(meta, key, m_genotype_fields, *m_delegate));
 	}
 	
 	
@@ -253,7 +265,7 @@ namespace libbio::vcf {
 		for (auto const &[key, field_ptr] : m_info_fields)
 			field_ptr->set_offset(subfield_base::INVALID_OFFSET);
 		
-		return sort_and_assign_field_offsets(m_info_fields_in_headers);
+		return detail::metadata_setup_helper::sort_and_assign_field_offsets(m_info_fields_in_headers);
 	}
 	
 	
@@ -301,7 +313,7 @@ namespace libbio::vcf {
 			field_ptr->set_offset(subfield_base::INVALID_OFFSET);
 		
 		auto format_vec(m_current_format_vec); // Copy b.c. the field order needs to be preserved.
-		auto const retval(sort_and_assign_field_offsets(format_vec));
+		auto const retval(detail::metadata_setup_helper::sort_and_assign_field_offsets(format_vec));
 		for (auto const &[idx, field_ptr] : ranges::view::enumerate(format_vec))
 			field_ptr->set_index(idx);
 		return retval;

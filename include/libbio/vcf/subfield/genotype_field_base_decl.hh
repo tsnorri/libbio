@@ -13,6 +13,11 @@
 #include <libbio/vcf/variant/sample.hh>
 
 
+namespace libbio::vcf::detail {
+	class metadata_setup_helper; // Fwd.
+}
+
+
 namespace libbio::vcf {
 	
 	class variant_format;
@@ -22,6 +27,7 @@ namespace libbio::vcf {
 	class genotype_field_base :	public subfield_base
 	{
 		friend class reader;
+		friend class detail::metadata_setup_helper;
 		
 		template <typename, typename>
 		friend class formatted_variant;

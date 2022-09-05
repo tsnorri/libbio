@@ -16,6 +16,11 @@
 #include <vector>
 
 
+namespace libbio::vcf::detail {
+	class metadata_setup_helper; // Fwd.
+}
+
+
 namespace libbio::vcf {
 	
 	class transient_variant;
@@ -88,6 +93,7 @@ namespace libbio::vcf {
 		friend class reader;
 		friend class info_field_base;
 		friend class genotype_field_base;
+		friend class detail::metadata_setup_helper;
 		
 	protected:
 		template <typename t_field>

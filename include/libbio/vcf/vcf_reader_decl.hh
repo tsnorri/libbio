@@ -207,22 +207,12 @@ namespace libbio::vcf {
 		
 		void associate_metadata_with_field_descriptions();
 		
-		template <typename t_field>
-		std::pair <std::uint16_t, std::uint16_t> sort_and_assign_field_offsets(std::vector <t_field *> &field_vec) const;
-		
 		template <typename t_cb>
 		inline bool parse2(t_cb const &cb, parser_state &state, bool const stop_after_newline);
 		
 		std::pair <std::uint16_t, std::uint16_t> assign_info_field_offsets();
 		std::pair <std::uint16_t, std::uint16_t> assign_format_field_indices_and_offsets();
 		void parse_format(std::string_view const &new_format);
-		
-		template <template <metadata_value_type, std::int32_t> typename t_field_tpl, metadata_value_type t_field_type, typename t_field_base_class>
-		auto instantiate_field(metadata_formatted_field const &meta) -> t_field_base_class *;
-		
-		template <template <metadata_value_type, std::int32_t> typename t_field_tpl, typename t_meta, typename t_key, typename t_field_map>
-		auto find_or_add_field(t_meta &meta, t_key const &key, t_field_map &map) ->
-			typename t_field_map::mapped_type::element_type &;
 	};
 }
 
