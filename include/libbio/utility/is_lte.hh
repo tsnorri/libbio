@@ -18,7 +18,7 @@ namespace libbio { namespace detail {
 		static_assert(is_integral_rr_v <t_lhs>);
 		static_assert(is_integral_rr_v <t_rhs>);
 		
-		static inline bool check(t_lhs &&lhs, t_rhs &&rhs) { return lhs <= rhs; }
+		constexpr static inline bool check(t_lhs &&lhs, t_rhs &&rhs) { return lhs <= rhs; }
 	};
 	
 	
@@ -28,7 +28,7 @@ namespace libbio { namespace detail {
 		static_assert(is_integral_rr_v <t_lhs>);
 		static_assert(is_integral_rr_v <t_rhs>);
 		
-		static inline bool check(t_lhs &&lhs, t_rhs &&rhs) { return (lhs <= 0) || (make_unsigned_rr_t <t_lhs>(lhs) <= rhs); }
+		constexpr static inline bool check(t_lhs &&lhs, t_rhs &&rhs) { return (lhs <= 0) || (make_unsigned_rr_t <t_lhs>(lhs) <= rhs); }
 	};
 	
 	
@@ -38,14 +38,14 @@ namespace libbio { namespace detail {
 		static_assert(is_integral_rr_v <t_lhs>);
 		static_assert(is_integral_rr_v <t_rhs>);
 		
-		static inline bool check(t_lhs &&lhs, t_rhs &&rhs) { return (0 <= rhs) && (lhs <= make_unsigned_rr_t <t_rhs>(rhs)); }
+		constexpr static inline bool check(t_lhs &&lhs, t_rhs &&rhs) { return (0 <= rhs) && (lhs <= make_unsigned_rr_t <t_rhs>(rhs)); }
 	};
 	
 	
 	template <typename t_lhs, typename t_rhs>
 	struct lte
 	{
-		static inline bool check(t_lhs &&lhs, t_rhs &&rhs)
+		constexpr static inline bool check(t_lhs &&lhs, t_rhs &&rhs)
 		{
 			if constexpr (is_integral_rr_v <t_lhs> && is_integral_rr_v <t_rhs>)
 				return lte_integral <t_lhs, t_rhs>::check(std::forward <t_lhs>(lhs), std::forward <t_rhs>(rhs));
@@ -59,7 +59,7 @@ namespace libbio { namespace detail {
 namespace libbio {
 
 	template <typename t_lhs, typename t_rhs>
-	inline bool is_lte(t_lhs &&lhs, t_rhs &&rhs) { return detail::lte <t_lhs, t_rhs>::check(std::forward <t_lhs>(lhs), std::forward <t_rhs>(rhs)); }
+	constexpr inline bool is_lte(t_lhs &&lhs, t_rhs &&rhs) { return detail::lte <t_lhs, t_rhs>::check(std::forward <t_lhs>(lhs), std::forward <t_rhs>(rhs)); }
 }
 
 #endif
