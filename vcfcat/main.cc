@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -364,7 +364,14 @@ namespace {
 	}
 	
 	
-	void output_vcf(vcf::reader &reader, std::ostream &stream, sample_name_vector const &sample_names, bool const exclude_samples, std::int16_t const expected_zygosity)
+	void output_vcf(
+		vcf::reader &reader,
+		std::ostream &stream,
+		sample_name_vector const &sample_names,
+		bool const exclude_samples,
+		char const *expected_chr_id,
+		std::int16_t const expected_zygosity
+	)
 	{
 		/*
 		if (!sample_names.empty())
@@ -376,32 +383,48 @@ namespace {
 		bool should_continue(false);
 		std::size_t lineno{};
 		alt_number_map alt_mapping;
-		reader.parse_nc([&reader, &stream, &sample_names, exclude_samples, &alt_mapping, &lineno, expected_zygosity](vcf::transient_variant &var){
-			++lineno;
+		reader.parse_nc(
+			[
+				&reader,
+				&stream,
+				&sample_names,
+				exclude_samples,
+				&alt_mapping,
+				&lineno,
+				expected_chr_id,	// Pointer
+				expected_zygosity	// std::int16_t
+			](vcf::transient_variant &var){
+				++lineno;
 
-			if ((!sample_names.empty()) || exclude_samples)
-			{
-				// FIXME: a variant may be excluded if there are no non-zero and non-missing GT values.
-				if (
-					modify_variant(var, alt_mapping, sample_names, exclude_samples) &&
-					(-1 == expected_zygosity || check_zygosity(reader, var, expected_zygosity, sample_names, exclude_samples))
-				)
+				// FIXME: use vcf::reader’s filtering facility (and try to output correct line number counts anyway).
+				if (expected_chr_id && var.chrom_id() != expected_chr_id)
+					goto continue_parsing;
+
+				if ((!sample_names.empty()) || exclude_samples)
 				{
-					sample_filtering_variant_printer <vcf::transient_variant> printer(sample_names, alt_mapping, exclude_samples);
-					vcf::output_vcf(printer, stream, var);
+					// FIXME: a variant may be excluded if there are no non-zero and non-missing GT values.
+					if (
+						modify_variant(var, alt_mapping, sample_names, exclude_samples) &&
+						(-1 == expected_zygosity || check_zygosity(reader, var, expected_zygosity, sample_names, exclude_samples))
+					)
+					{
+						sample_filtering_variant_printer <vcf::transient_variant> printer(sample_names, alt_mapping, exclude_samples);
+						vcf::output_vcf(printer, stream, var);
+					}
 				}
-			}
-			else
-			{
-				if (-1 == expected_zygosity || check_zygosity(var, expected_zygosity))
-					vcf::output_vcf(stream, var);
-			}
+				else
+				{
+					if (-1 == expected_zygosity || check_zygosity(var, expected_zygosity))
+						vcf::output_vcf(stream, var);
+				}
 
-			if (0 == lineno % 100000)
-				std::cerr << "Handled " << lineno << " lines…\n";
-			
-			return true;
-		});
+			continue_parsing:
+				if (0 == lineno % 100000)
+					std::cerr << "Handled " << lineno << " lines…\n";
+				
+				return true;
+			}
+		);
 	}
 }
 
@@ -462,6 +485,7 @@ int main(int argc, char **argv)
 		args_info.output_given ? output_stream : std::cout,
 		sample_names,
 		(args_info.exclude_samples_given ?: sample_names.empty()),
+		args_info.chromosome_arg,
 		args_info.zygosity_arg
 	);
 	
