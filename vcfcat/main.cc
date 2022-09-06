@@ -12,6 +12,7 @@
 #include <libbio/vcf/vcf_reader.hh>
 #include <map>
 #include <numeric>
+#include <range/v3/view/take_while.hpp>
 #include "cmdline.h"
 
 
@@ -48,8 +49,9 @@ namespace {
 		using base_class::output_sample;
 
 		virtual ~variant_printer_base() {}
-		virtual void prepare(vcf::reader const &reader) {}
-		virtual void begin_variant(vcf::reader const &reader) {}
+		virtual void prepare(vcf::reader &reader) {}
+		virtual void begin_variant(vcf::reader &reader) {}
+		virtual void end_variant(vcf::reader &reader) {}
 	};
 	
 	
@@ -68,8 +70,9 @@ namespace {
 		void output_format(std::ostream &os, variant_type const &var) const override;
 		void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const override;
 
-		void prepare(vcf::reader const &reader) override;
-		void begin_variant(vcf::reader const &reader) override;
+		void prepare(vcf::reader &reader) override;
+		void begin_variant(vcf::reader &reader) override;
+		void end_variant(vcf::reader &reader) override;
 	};
 	
 	
@@ -130,24 +133,50 @@ namespace {
 	}
 	
 	
-	void order_preserving_variant_printer_base::prepare(vcf::reader const &reader)
+	void order_preserving_variant_printer_base::prepare(vcf::reader &reader)
 	{
 		auto const &info_fields(reader.info_fields_in_headers());
-		m_info_fields.resize(info_fields.size());
-		for (auto const field_ptr : info_fields)
-			m_info_fields[field_ptr->get_metadata()->get_index()] = field_ptr;
+		m_info_fields.clear();
+		m_info_fields.resize(info_fields.size(), nullptr);
 	}
 	
 	
-	void order_preserving_variant_printer_base::begin_variant(vcf::reader const &reader)
+	void order_preserving_variant_printer_base::begin_variant(vcf::reader &reader)
 	{
 		m_genotype_fields = &reader.get_current_variant_format();
+		
+		auto const &info_fields(reader.info_fields_in_headers());
+		m_info_fields.clear();
+		m_info_fields.resize(info_fields.size(), nullptr);
+		
+		for (auto const info_field_ptr : info_fields)
+		{
+			auto const info_meta_ptr(info_field_ptr->get_metadata());
+			auto const idx(info_meta_ptr->get_record_index());
+			if (UINT16_MAX == idx)
+				continue;
+			
+			m_info_fields[idx] = info_field_ptr;
+		}
+	}
+
+
+	void order_preserving_variant_printer_base::end_variant(vcf::reader &reader)
+	{
+		for (auto const field_ptr : reader.info_fields_in_headers())
+			field_ptr->get_metadata()->reset_record_index();
 	}
 	
 	
 	void order_preserving_variant_printer_base::output_info(std::ostream &os, variant_type const &var) const
 	{
-		output_info(os, var, m_info_fields | rsv::indirect);
+		output_info(
+			os,
+			var,
+			m_info_fields
+			| rsv::take_while([](auto const ptr){ return ptr != nullptr; })
+			| rsv::indirect
+		);
 	}
 	
 	
@@ -506,8 +535,9 @@ namespace {
 				}
 
 			continue_parsing:
-				if (0 == lineno % 100000)
-					std::cerr << "Handled " << lineno << " lines…\n";
+				printer.end_variant(reader);
+				if (0 == lineno % 1000000)
+					lb::log_time(std::cerr) << "Handled " << lineno << " lines…\n";
 				
 				return true;
 			}
