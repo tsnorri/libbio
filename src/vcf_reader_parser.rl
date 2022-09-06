@@ -87,6 +87,7 @@ namespace libbio::vcf {
 		std::int64_t			integer(0);					// Currently read from the input.
 		std::size_t				sample_idx(0);				// Current sample idx (1-based).
 		std::size_t				subfield_idx(0);			// Current index in multi-part fields.
+		std::uint16_t			info_field_idx(0);			// Current INFO field index in the current record.
 		int						cs(0);
 		bool					integer_is_negative(false);	// Re-initialized in HANDLE_INTEGER_END.
 		bool					gt_is_phased(false);		// Is the current GT phased.
@@ -141,6 +142,7 @@ namespace libbio::vcf {
 				current_info_field = it->second.get();
 				if (!current_info_field->m_metadata)
 					throw parse_error("Found INFO field not declared in the VCF header", key_sv);
+				current_info_field->m_metadata->m_record_index = info_field_idx++;
 			}
 			
 			action end_info_val {
@@ -183,6 +185,7 @@ namespace libbio::vcf {
 			}
 			
 			action start_info {
+				info_field_idx = 0;
 				for (auto const *field_ptr : m_info_fields_in_headers)
 					field_ptr->prepare(m_current_variant);
 			}
