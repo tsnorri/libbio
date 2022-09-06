@@ -71,13 +71,13 @@ namespace libbio::vcf {
 			
 			action end_part {
 				if (sample_genotype::NULL_ALLELE == idx || idx <= var.alts().size())
-					value_access::add_value(mem, sample_genotype(idx, is_phased));
+					value_access::add_value(mem + this->m_offset, sample_genotype(idx, is_phased));
 				else
 				{
 					// FIXME: handle the error condition some other way.
 					std::cerr << "Found genotype value (" << idx << ") greater than ALT count (" << var.alts().size() << ") for line " << var.lineno() << "; substituting with zero. Variant:\n";
 					output_vcf(std::cerr, var);
-					value_access::add_value(mem, sample_genotype(0, is_phased));
+					value_access::add_value(mem + this->m_offset, sample_genotype(0, is_phased));
 				}
 			}
 			
