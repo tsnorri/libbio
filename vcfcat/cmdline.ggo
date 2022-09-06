@@ -7,10 +7,11 @@ purpose		"Read and output a VCF file; mainly for testing the VCF parser."
 description	"Outputs the input variant file as parsed. Not all field values are currently stored."
 usage		"vcfcat --input=input.vcf [ --output=output.vcf ] [ --sample=name ... ]"
 
-option		"input"				i	"Variant call file path"					string	typestr = "filename"					required
-option		"output"			o	"Output file path, defaults to stdout"		string	typestr = "filename"					optional
-option		"sample"			s	"Output only the given sample(s)"			string	typestr = "name"						optional	multiple
-option		"sample-names"		S	"Read the sample names from a file"			string	typestr = "path"						optional
-option		"exclude-samples"	x	"Exclude the given samples instead"			flag											off
-option		"chromosome"		c	"Filter by chromosome identifier"			string	typestr = "chr"							optional
-option		"zygosity"			z	"Filter by number of set GT field values"	short	typestr = "count"		default = "-1"	optional
+option		"input"					i	"Variant call file path"						string	typestr = "filename"					required
+option		"output"				o	"Output file path, defaults to stdout"			string	typestr = "filename"					optional
+option		"sample"				s	"Output only the given sample(s)"				string	typestr = "name"						optional	multiple
+option		"sample-names"			S	"Read the sample names from a file"				string	typestr = "path"						optional
+option		"exclude-samples"		x	"Exclude the given samples instead"				flag											off
+option		"chromosome"			c	"Filter by chromosome identifier"				string	typestr = "chr"							optional
+option		"zygosity"				z	"Filter by number of set GT field values"		short	typestr = "count"		default = "-1"	optional
+option		"preserve-field-order"	p	"Preserve the info and genotype field order"	flag											off

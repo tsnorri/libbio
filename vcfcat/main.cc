@@ -16,6 +16,7 @@
 
 
 namespace lb	= libbio;
+namespace rsv	= ranges::views;
 namespace vcf	= libbio::vcf;
 
 typedef std::vector <std::string>			sample_name_vector;
@@ -37,11 +38,57 @@ namespace {
 	};
 	
 	
-	template <typename t_variant>
-	class sample_filtering_variant_printer final : public vcf::variant_printer_base <t_variant>
+	class variant_printer_base : public vcf::variant_printer_base <vcf::transient_variant>
+	{
+		typedef vcf::variant_printer_base <vcf::transient_variant>	base_class;
+		
+	public:
+		using base_class::output_info;
+		using base_class::output_format;
+		using base_class::output_sample;
+
+		virtual ~variant_printer_base() {}
+		virtual void prepare(vcf::reader const &reader) {}
+		virtual void begin_variant(vcf::reader const &reader) {}
+	};
+	
+	
+	class order_preserving_variant_printer_base : public variant_printer_base
+	{
+	protected:
+		vcf::info_field_ptr_vector		m_info_fields;			// Non-owning.
+		vcf::genotype_ptr_vector const	*m_genotype_fields{};	// Non-owning.
+
+	public:
+		using variant_printer_base::output_info;
+		using variant_printer_base::output_format;
+		using variant_printer_base::output_sample;
+
+		void output_info(std::ostream &os, variant_type const &var) const override;
+		void output_format(std::ostream &os, variant_type const &var) const override;
+		void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const override;
+
+		void prepare(vcf::reader const &reader) override;
+		void begin_variant(vcf::reader const &reader) override;
+	};
+	
+	
+	template <typename t_base>
+	class variant_printer final : public t_base
 	{
 	public:
-		typedef t_variant	variant_type;
+		typedef typename t_base::variant_type	variant_type;
+
+	public:
+		using t_base::t_base;
+	};
+	
+	
+	template <typename t_base>
+	class sample_filtering_variant_printer final : public t_base
+	{
+	public:
+		typedef typename t_base::variant_type	variant_type;
 		
 	protected:
 		sample_name_vector const	*m_sample_names{};
@@ -58,8 +105,8 @@ namespace {
 		{
 		}
 		
-		virtual inline void output_alt(std::ostream &os, variant_type const &var) const override;
-		virtual inline void output_samples(std::ostream &os, variant_type const &var) const override;
+		void output_alt(std::ostream &os, variant_type const &var) const override;
+		void output_samples(std::ostream &os, variant_type const &var) const override;
 	};
 	
 	
@@ -80,6 +127,43 @@ namespace {
 	{
 		libbio_assert(var.reader()->has_assigned_variant_format());
 		return static_cast <variant_format const &>(var.get_format());
+	}
+	
+	
+	void order_preserving_variant_printer_base::prepare(vcf::reader const &reader)
+	{
+		auto const &info_fields(reader.info_fields_in_headers());
+		m_info_fields.resize(info_fields.size());
+		for (auto const field_ptr : info_fields)
+			m_info_fields[field_ptr->get_metadata()->get_index()] = field_ptr;
+	}
+	
+	
+	void order_preserving_variant_printer_base::begin_variant(vcf::reader const &reader)
+	{
+		m_genotype_fields = &reader.get_current_variant_format();
+	}
+	
+	
+	void order_preserving_variant_printer_base::output_info(std::ostream &os, variant_type const &var) const
+	{
+		output_info(os, var, m_info_fields | rsv::indirect);
+	}
+	
+	
+	void order_preserving_variant_printer_base::output_format(std::ostream &os, variant_type const &var) const
+	{
+		output_format(os, var, *m_genotype_fields | rsv::indirect);
+	}
+
+
+	void order_preserving_variant_printer_base::output_sample(
+		std::ostream &os,
+		variant_type const &var,
+		variant_sample_type const &sample
+	) const
+	{
+		output_sample(os, var, sample, *m_genotype_fields | rsv::indirect);
 	}
 	
 	
@@ -365,8 +449,10 @@ namespace {
 	
 	void output_vcf(
 		vcf::reader &reader,
+		variant_printer_base &printer,
 		std::ostream &stream,
 		sample_name_vector const &sample_names,
+		alt_number_map &alt_mapping,
 		bool const exclude_samples,
 		char const *expected_chr_id,
 		std::int16_t const expected_zygosity
@@ -378,13 +464,14 @@ namespace {
 		*/
 		
 		output_header(reader, stream, sample_names, exclude_samples);
+		printer.prepare(reader);
 		
 		bool should_continue(false);
 		std::size_t lineno{};
-		alt_number_map alt_mapping;
 		reader.parse_nc(
 			[
 				&reader,
+				&printer,
 				&stream,
 				&sample_names,
 				exclude_samples,
@@ -398,6 +485,8 @@ namespace {
 				// FIXME: use vcf::reader’s filtering facility (and try to output correct line number counts anyway).
 				if (expected_chr_id && var.chrom_id() != expected_chr_id)
 					goto continue_parsing;
+				
+				printer.begin_variant(reader);
 
 				if ((!sample_names.empty()) || exclude_samples)
 				{
@@ -407,14 +496,13 @@ namespace {
 						(-1 == expected_zygosity || check_zygosity(reader, var, expected_zygosity, sample_names, exclude_samples))
 					)
 					{
-						sample_filtering_variant_printer <vcf::transient_variant> printer(sample_names, alt_mapping, exclude_samples);
 						vcf::output_vcf(printer, stream, var);
 					}
 				}
 				else
 				{
 					if (-1 == expected_zygosity || check_zygosity(var, expected_zygosity))
-						vcf::output_vcf(stream, var);
+						vcf::output_vcf(printer, stream, var);
 				}
 
 			continue_parsing:
@@ -424,6 +512,51 @@ namespace {
 				return true;
 			}
 		);
+	}
+
+
+	void output_vcf(
+		vcf::reader &reader,
+		variant_printer_base &variant_printer,
+		lb::file_ostream &output_stream,
+		sample_name_vector const &sample_names,
+		alt_number_map &alt_mapping,
+		gengetopt_args_info const &args_info
+	)
+	{
+		output_vcf(
+			reader,
+			variant_printer,
+			args_info.output_given ? output_stream : std::cout,
+			sample_names,
+			alt_mapping,
+			(args_info.exclude_samples_given ?: sample_names.empty()),
+			args_info.chromosome_arg,
+			args_info.zygosity_arg
+		);
+	}
+
+
+	template <typename t_variant_printer_base>
+	void output_vcf(
+		vcf::reader &reader,
+		lb::file_ostream &output_stream,
+		sample_name_vector const &sample_names,
+		gengetopt_args_info const &args_info
+	)
+	{
+		bool const should_exclude_samples(args_info.exclude_samples_given ?: sample_names.empty());
+		alt_number_map alt_mapping;
+		if (should_exclude_samples)
+		{
+			sample_filtering_variant_printer <t_variant_printer_base> printer(sample_names, alt_mapping, should_exclude_samples);
+			output_vcf(reader, printer, output_stream, sample_names, alt_mapping, args_info);
+		}
+		else
+		{
+			variant_printer <t_variant_printer_base> printer{};
+			output_vcf(reader, printer, output_stream, sample_names, alt_mapping, args_info);
+		}
 	}
 }
 
@@ -478,14 +611,11 @@ int main(int argc, char **argv)
 	reader.set_input(vcf_input);
 	reader.read_header();
 	reader.set_parsed_fields(vcf::field::ALL);
-	output_vcf(
-		reader,
-		args_info.output_given ? output_stream : std::cout,
-		sample_names,
-		(args_info.exclude_samples_given ?: sample_names.empty()),
-		args_info.chromosome_arg,
-		args_info.zygosity_arg
-	);
+	
+	if (args_info.preserve_field_order_flag)
+		output_vcf <order_preserving_variant_printer_base>(reader, output_stream, sample_names, args_info);
+	else
+		output_vcf <variant_printer_base>(reader, output_stream, sample_names, args_info);
 	
 	return EXIT_SUCCESS;
 }
