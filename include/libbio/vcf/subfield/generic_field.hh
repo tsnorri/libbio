@@ -334,6 +334,20 @@ namespace libbio::vcf {
 			libbio_always_assert_neq(subfield_base::INVALID_OFFSET, this->m_offset);
 			return parser_type::parse_and_assign(sv, mem + this->m_offset, this->get_metadata());
 		}
+		
+		template <typename t_container>
+		void output_vcf_value_(std::ostream &stream, t_container const &ct) const
+		{
+			// Check if this value is set in the sample, otherwise output the undefined value.
+			if (this->has_value(ct))
+				base_class::output_vcf_value(stream, ct);
+			else
+				stream << '.';
+		}
+		
+		using base_class::output_vcf_value;
+		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const override { output_vcf_value_(stream, ct); }
+		virtual void output_vcf_value(std::ostream &stream, transient_container_type const &ct) const override { output_vcf_value_(stream, ct); }
 	};
 	
 	

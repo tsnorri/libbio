@@ -17,9 +17,13 @@ namespace lb	= libbio;
 
 namespace libbio::vcf {
 	
-	// FIXME: move to another module.
+	// FIXME: move to some other translation unit.
 	void output_genotype(std::ostream &stream, std::vector <sample_genotype> const &genotype)
 	{
+		// The genotype should not be empty b.c. the missing value “.” cannot
+		// be distinguished from haploid genotype with a null allele.
+		libbio_assert(!genotype.empty());
+		
 		bool is_first(true);
 		for (auto const &gt : genotype)
 		{
