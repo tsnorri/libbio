@@ -10,6 +10,8 @@
 #include <ostream>
 #include <range/v3/algorithm/copy.hpp>
 #include <range/v3/iterator/stream_iterators.hpp>
+#include <range/v3/view/indirect.hpp>
+#include <range/v3/view/map.hpp>
 #include <range/v3/view/remove_if.hpp>
 
 
@@ -40,6 +42,17 @@ namespace libbio::vcf {
 		virtual inline void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const;
 		virtual inline void output_samples(std::ostream &os, variant_type const &var) const;
 		
+		// Templates so that a view may be passed as info_fields or genotype_fields.
+		template <typename t_fields>
+		inline void output_info(std::ostream &os, variant_type const &var, t_fields const &info_fields) const;
+		
+		template <typename t_fields>
+		inline void output_format(std::ostream &os, variant_type const &var, t_fields const &genotype_fields) const;
+		
+		template <typename t_fields>
+		inline void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample, t_fields const &genotype_fields) const;
+		
+		// Convenience function.
 		void output_variant(std::ostream &os, variant_type const &var) const;
 	};
 	
@@ -92,7 +105,7 @@ namespace libbio::vcf {
 		else
 		{
 			ranges::copy(
-				var.alts() | ranges::view::transform([](auto const &va) -> typename variant_type::string_type const & { return va.alt; }),
+				var.alts() | ranges::views::transform([](auto const &va) -> typename variant_type::string_type const & { return va.alt; }),
 				ranges::make_ostream_joiner(os, ",")
 			);
 		}
@@ -121,9 +134,32 @@ namespace libbio::vcf {
 		else
 		{
 			ranges::copy(
-				var.filters() | ranges::view::transform([](auto const *filter){ return filter->get_id(); }),
+				var.filters() | ranges::views::transform([](auto const *filter){ return filter->get_id(); }),
 				ranges::make_ostream_joiner(os, ";")
 			);
+		}
+	}
+
+
+	template <typename t_variant>
+	template <typename t_fields>
+	void variant_printer_base <t_variant>::output_info(
+		std::ostream &os,
+		variant_type const &var,
+		t_fields const &info_fields
+	) const
+	{
+		if (info_fields.empty())
+		{
+			os << '.';
+			return;
+		}
+
+		bool is_first(true);
+		for (auto const &field : info_fields)
+		{
+			if (field.output_vcf_value(os, var, (is_first ? "" : ";")))
+				is_first = false;
 		}
 	}
 	
@@ -134,20 +170,25 @@ namespace libbio::vcf {
 		// INFO
 		auto const *reader(var.reader());
 		libbio_always_assert(reader);
+		output_info(os, var, reader->info_fields_in_headers() | ranges::views::indirect);
+	}
 
-		auto const &info_fields(reader->info_fields_in_headers());
-		if (info_fields.empty())
-		{
-			os << '.';
-			return;
-		}
 
-		bool is_first(true);
-		for (auto const *field_ptr : reader->info_fields_in_headers())
-		{
-			if (field_ptr->output_vcf_value(os, var, (is_first ? "" : ";")))
-				is_first = false;
-		}
+	template <typename t_variant>
+	template <typename t_fields>
+	void variant_printer_base <t_variant>::output_format(std::ostream &os, variant_type const &var, t_fields const &fields) const
+	{
+		ranges::copy(
+			fields	|	ranges::views::remove_if([](auto const &ff) -> bool {
+							return (metadata_value_type::NOT_PROCESSED == ff.metadata_value_type());
+						})
+					|	ranges::views::transform([](auto const &ff) -> std::string const & {
+							auto const *meta(ff.get_metadata());
+							libbio_assert(meta);
+							return meta->get_id();
+						}),
+			ranges::make_ostream_joiner(os, ":")
+		);
 	}
 	
 	
@@ -156,33 +197,36 @@ namespace libbio::vcf {
 	{
 		// FORMAT
 		auto const &fields(var.get_format().fields_by_identifier());
-		ranges::copy(
-			fields	|	ranges::view::remove_if([](auto const &kv) -> bool {
-							return (metadata_value_type::NOT_PROCESSED == kv.second->metadata_value_type());
-						})
-					|	ranges::view::transform([](auto const &kv) -> std::string const & {
-							auto const *meta(kv.second->get_metadata());
-							libbio_assert(meta);
-							return meta->get_id(); 
-						}),
-			ranges::make_ostream_joiner(os, ":")
-		);
+		output_format(os, var, fields | ranges::views::values | ranges::views::indirect);
+	}
+	
+	
+	template <typename t_variant>
+	template <typename t_fields>
+	void variant_printer_base <t_variant>::output_sample(
+		std::ostream &os,
+		variant_type const &var,
+		variant_sample_type const &sample,
+		t_fields const &fields
+	) const
+	{
+		// One sample
+		bool is_first(true);
+		for (auto const &field : fields)
+		{
+			if (!is_first)
+				os << ':';
+			field.output_vcf_value(os, sample);
+			is_first = false;
+		}
 	}
 	
 	
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const
 	{
-		// One sample
 		auto const &fields(var.get_format().fields_by_identifier());
-		bool is_first(true);
-		for (auto const &kv : fields)
-		{
-			if (!is_first)
-				os << ':';
-			kv.second->output_vcf_value(os, sample);
-			is_first = false;
-		}
+		output_sample(os, var, sample, fields | ranges::views::values | ranges::views::indirect);
 	}
 	
 	
