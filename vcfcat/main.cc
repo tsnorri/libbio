@@ -341,7 +341,6 @@ namespace {
 				{
 					libbio_assert_lt(0, number);
 
-					// FIXME: this does not actually work b.c. it assumes that sample_names is always sorted.
 					auto const did_find(std::binary_search(sample_names.begin(), sample_names.end(), name));
 					if (exclude_samples == did_find)
 						continue;
@@ -466,9 +465,8 @@ int main(int argc, char **argv)
 		while (std::getline(stream, line))
 			sample_names.push_back(line);
 	}
-	// Sort if excluded (for std::binary_search).
-	if (args_info.exclude_samples_given)
-		std::sort(sample_names.begin(), sample_names.end());
+	// Sort.
+	std::sort(sample_names.begin(), sample_names.end());
 	
 	// Instantiate the parser and add the fields listed in the specification to the metadata.
 	vcf::reader reader;
