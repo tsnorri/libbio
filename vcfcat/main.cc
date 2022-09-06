@@ -484,7 +484,7 @@ int main(int argc, char **argv)
 		reader,
 		args_info.output_given ? output_stream : std::cout,
 		sample_names,
-		args_info.exclude_samples_given,
+		(args_info.exclude_samples_given ?: sample_names.empty()),
 		args_info.chromosome_arg,
 		args_info.zygosity_arg
 	);
