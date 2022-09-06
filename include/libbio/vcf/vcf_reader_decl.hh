@@ -173,6 +173,7 @@ namespace libbio::vcf {
 		genotype_field_map const &genotype_fields() const { return m_genotype_fields; }
 		variant_format const &get_variant_format() const { return *m_current_format; }
 		variant_format_ptr const &get_variant_format_ptr() const { return m_current_format; }
+		genotype_ptr_vector const &get_current_variant_format() const { return m_current_format_vec; }
 		
 		inline variant make_empty_variant();
 		transient_variant &current_variant() { return m_current_variant; }

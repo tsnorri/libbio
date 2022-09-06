@@ -33,6 +33,8 @@ namespace libbio::vcf {
 		char const				*buffer_start(nullptr);
 		char const				*start(nullptr);			// Current string start.
 		char const				*line_start(nullptr);		// Current line start.
+		std::uint16_t			info_metadata_idx{};
+		std::uint16_t			format_metadata_idx{};
 		std::size_t				sample_name_idx(1);
 		std::int64_t			integer(0);					// Currently read from the input.
 		bool					integer_is_negative(false);
@@ -63,9 +65,9 @@ namespace libbio::vcf {
 				integer += fc - '0';
 			}
 			
-			action meta_record_info			{ BEGIN_METADATA(metadata_info); }
+			action meta_record_info			{ BEGIN_METADATA(metadata_info); current_metadata_ptr->m_index = info_metadata_idx++; }
 			action meta_record_filter		{ BEGIN_METADATA(metadata_filter); }
-			action meta_record_format		{ BEGIN_METADATA(metadata_format); }
+			action meta_record_format		{ BEGIN_METADATA(metadata_format); current_metadata_ptr->m_index = format_metadata_idx++; }
 			action meta_record_alt			{ BEGIN_METADATA(metadata_alt); }
 			action meta_record_assembly		{ BEGIN_METADATA(metadata_assembly); }
 			action meta_record_contig		{ BEGIN_METADATA(metadata_contig); }

@@ -59,6 +59,12 @@ namespace libbio::vcf {
 	{
 		friend class reader;
 		
+	protected:
+		std::uint16_t	m_index{};
+		
+	public:
+		std::uint16_t get_index() const { return m_index; } // FIXME: make this work for other headers in addition to INFO and FORMAT.
+		
 	public:
 		virtual ~metadata_base() {}
 		
@@ -126,14 +132,10 @@ namespace libbio::vcf {
 		friend class metadata;
 		
 	protected:
-		std::size_t					m_index{};
-		
-	protected:
 		LIBBIO_VCF_METADATA_STR_FIELD(source);
 		LIBBIO_VCF_METADATA_STR_FIELD(version);
 		
 	public:
-		std::size_t get_index() const { return m_index; }
 		virtual metadata_type type() const override { return metadata_type::INFO; }
 		virtual void output_vcf(std::ostream &stream) const override;
 		
@@ -230,10 +232,9 @@ namespace libbio::vcf {
 		alt_map								m_alt;		// By ALT ID
 		contig_map							m_contig;	// By ID
 		assembly_vector						m_assembly;
-		std::size_t							m_info_idx{};
 		
 	protected:
-		void add_metadata(metadata_info &&m)		{ m.m_index = m_info_idx++; m_info.emplace(m.get_id(), std::move(m)); }
+		void add_metadata(metadata_info &&m)		{ m_info.emplace(m.get_id(), std::move(m)); }
 		void add_metadata(metadata_filter &&m)		{ m_filter.emplace(m.get_id(), std::move(m)); }
 		void add_metadata(metadata_format &&m)		{ m_format.emplace(m.get_id(), std::move(m)); }
 		void add_metadata(metadata_alt &&m)			{ m_alt.emplace(m.get_id(), std::move(m)); }
