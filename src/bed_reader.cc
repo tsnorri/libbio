@@ -31,9 +31,9 @@ namespace libbio {
 			
 			m_curr_pos = 0;
 			
-			auto const chr_id(read_next_field(sv, delegate));
-			auto const begin_str(read_next_field(sv, delegate));
-			auto const end_str(read_next_field(sv, delegate));
+			auto const chr_id(read_next_field(sv, false, delegate));
+			auto const begin_str(read_next_field(sv, false, delegate));
+			auto const end_str(read_next_field(sv, true, delegate));
 		
 			std::size_t begin{};
 			std::size_t end{};
@@ -48,10 +48,10 @@ namespace libbio {
 	}
 	
 	
-	std::string_view bed_reader::read_next_field(std::string_view const rec, bed_reader_delegate &delegate)
+	std::string_view bed_reader::read_next_field(std::string_view const rec, bool const is_last, bed_reader_delegate &delegate)
 	{
 		auto const tab_pos(rec.find('\t', m_curr_pos));
-		if (std::string::npos == tab_pos)
+		if (std::string::npos == tab_pos && !is_last)
 			delegate.bed_reader_reported_error(m_lineno);
 	
 		auto const retval(rec.substr(m_curr_pos, tab_pos - m_curr_pos));

@@ -35,7 +35,7 @@ namespace libbio {
 		std::size_t	m_curr_pos{};
 	
 	protected:
-		std::string_view read_next_field(std::string_view const rec, bed_reader_delegate &delegate);
+		std::string_view read_next_field(std::string_view const rec, bool const is_last, bed_reader_delegate &delegate);
 		
 	public:
 		void read_regions(char const *path, bed_reader_delegate &delegate);
