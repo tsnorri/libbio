@@ -51,13 +51,13 @@ namespace {
 		virtual ~variant_printer_base() {}
 		virtual void prepare(vcf::reader &reader) {}
 		virtual void begin_variant(vcf::reader &reader) {}
-		virtual void end_variant(vcf::reader &reader) {}
 	};
 	
 	
 	class order_preserving_variant_printer_base : public variant_printer_base
 	{
 	protected:
+		vcf::reader						*m_reader{};			// Non-owning.
 		vcf::info_field_ptr_vector		m_info_fields;			// Non-owning.
 		vcf::genotype_ptr_vector const	*m_genotype_fields{};	// Non-owning.
 
@@ -72,7 +72,6 @@ namespace {
 
 		void prepare(vcf::reader &reader) override;
 		void begin_variant(vcf::reader &reader) override;
-		void end_variant(vcf::reader &reader) override;
 	};
 	
 	
@@ -135,36 +134,13 @@ namespace {
 	
 	void order_preserving_variant_printer_base::prepare(vcf::reader &reader)
 	{
-		auto const &info_fields(reader.info_fields_in_headers());
-		m_info_fields.clear();
-		m_info_fields.resize(info_fields.size(), nullptr);
+		m_reader = &reader;
 	}
 	
 	
 	void order_preserving_variant_printer_base::begin_variant(vcf::reader &reader)
 	{
 		m_genotype_fields = &reader.get_current_variant_format();
-		
-		auto const &info_fields(reader.info_fields_in_headers());
-		m_info_fields.clear();
-		m_info_fields.resize(info_fields.size(), nullptr);
-		
-		for (auto const info_field_ptr : info_fields)
-		{
-			auto const info_meta_ptr(info_field_ptr->get_metadata());
-			auto const idx(info_meta_ptr->get_record_index());
-			if (UINT16_MAX == idx)
-				continue;
-			
-			m_info_fields[idx] = info_field_ptr;
-		}
-	}
-
-
-	void order_preserving_variant_printer_base::end_variant(vcf::reader &reader)
-	{
-		for (auto const field_ptr : reader.info_fields_in_headers())
-			field_ptr->get_metadata()->reset_record_index();
 	}
 	
 	
@@ -173,8 +149,7 @@ namespace {
 		output_info(
 			os,
 			var,
-			m_info_fields
-			| rsv::take_while([](auto const ptr){ return ptr != nullptr; })
+			m_reader->current_record_info_fields()
 			| rsv::indirect
 		);
 	}
@@ -533,9 +508,8 @@ namespace {
 					if (-1 == expected_zygosity || check_zygosity(var, expected_zygosity))
 						vcf::output_vcf(printer, stream, var);
 				}
-
+				
 			continue_parsing:
-				printer.end_variant(reader);
 				if (0 == lineno % 1000000)
 					lb::log_time(std::cerr) << "Handled " << lineno << " lines…\n";
 				
