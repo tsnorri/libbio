@@ -49,7 +49,7 @@ namespace libbio::vcf {
 	};
 	
 	
-	inline char const *subfield_type_name(subfield_type const st)
+	constexpr inline char const *subfield_type_name(subfield_type const st)
 	{
 		switch (st)
 		{
@@ -81,20 +81,20 @@ namespace libbio::vcf {
 		// Number of items in this field according to the VCF header.
 		virtual std::int32_t number() const = 0;
 		
-		bool value_type_is_vector() const { return value_count_corresponds_to_vector(number()); }
+		constexpr bool value_type_is_vector() const { return value_count_corresponds_to_vector(number()); }
 		
 		// Get the metadata pointer.
 		virtual metadata_base *get_metadata() const = 0;
 		
 		// Whether the field uses the enumerated VCF type mapping.
-		virtual bool uses_vcf_type_mapping() const { return false; }
+		constexpr virtual bool uses_vcf_type_mapping() const { return false; }
 		
 		// Subfield type (info or genotype)
-		virtual enum subfield_type subfield_type() const { return subfield_type::UNKNOWN; }
+		constexpr virtual enum subfield_type subfield_type() const { return subfield_type::UNKNOWN; }
 		
 	protected:
-		std::uint16_t get_offset() const { return m_offset; }
-		void set_offset(std::uint16_t offset) { m_offset = offset; }
+		constexpr std::uint16_t get_offset() const { return m_offset; }
+		constexpr void set_offset(std::uint16_t offset) { m_offset = offset; }
 		
 		// Alignment of this field.
 		virtual std::uint16_t alignment() const = 0;

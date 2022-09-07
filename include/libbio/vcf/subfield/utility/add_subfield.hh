@@ -35,7 +35,7 @@ namespace libbio::vcf::detail {
 	
 	
 	template <typename t_fn>
-	inline bool is_callable_or_valid_std_function(t_fn &&fn)
+	constexpr inline bool is_callable_or_valid_std_function(t_fn &&fn)
 	{
 		// Currently we don’t make sure that fn is actually callable,
 		// just that if it is a std::function, it is non-empty.
@@ -46,7 +46,7 @@ namespace libbio::vcf::detail {
 	}
 	
 	
-	inline bool compare_subfields(vcf::subfield_base const &lhs, vcf::subfield_base const &rhs)
+	constexpr inline bool compare_subfields(vcf::subfield_base const &lhs, vcf::subfield_base const &rhs)
 	{
 		return (
 			lhs.metadata_value_type() == rhs.metadata_value_type() &&

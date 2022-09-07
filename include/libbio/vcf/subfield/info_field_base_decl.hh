@@ -92,7 +92,7 @@ namespace libbio::vcf {
 		std::byte *buffer_start(abstract_variant const &ct) const { return ct.m_info.get(); }
 		
 	public:
-		metadata_info *get_metadata() const final { return m_metadata; }
+		constexpr metadata_info *get_metadata() const final { return m_metadata; }
 		
 		// Output the field contents to a stream.
 		// In case of info_field, the value has to be present in the variant.
@@ -108,9 +108,9 @@ namespace libbio::vcf {
 		) const;
 		
 		// Check whether the variant has a value for this INFO field.
-		inline bool has_value(abstract_variant const &var) const;
+		constexpr inline bool has_value(abstract_variant const &var) const;
 		
-		enum subfield_type subfield_type() const final { return subfield_type::INFO; }
+		constexpr enum subfield_type subfield_type() const final { return subfield_type::INFO; }
 	};
 	
 	

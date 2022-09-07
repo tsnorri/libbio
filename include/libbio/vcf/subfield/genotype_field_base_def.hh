@@ -29,7 +29,7 @@ namespace libbio::vcf {
 	}
 	
 	
-	bool genotype_field_base::has_value(variant_sample_base const &sample) const
+	constexpr bool genotype_field_base::has_value(variant_sample_base const &sample) const
 	{
 		libbio_assert_neq(this->get_index(), INVALID_INDEX);
 		return sample.m_assigned_genotype_fields[this->get_index()];

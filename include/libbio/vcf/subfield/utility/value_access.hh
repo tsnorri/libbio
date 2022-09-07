@@ -33,40 +33,40 @@ namespace libbio::vcf {
 		value_access_base() = delete;
 		
 		// Construct value_type with placement new.
-		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, metadata_base const &)
+		constexpr static void construct_ds(std::byte *mem, std::uint16_t const alt_count, metadata_base const &)
 		{
 			libbio_always_assert_eq(0, reinterpret_cast <std::uintptr_t>(mem) % alignof(value_type));
 			new (mem) value_type{};
 		}
 		
 		// Call the destructor, no-op for primitive types.
-		static void destruct_ds(std::byte *mem) {}
+		constexpr static void destruct_ds(std::byte *mem) {}
 		
 		// Access the value, return a reference.
-		static value_type &access_ds(std::byte *mem)
+		constexpr static value_type &access_ds(std::byte *mem)
 		{
 			auto &val(*reinterpret_cast <value_type *>(mem));
 			return val;
 		}
 		
-		static value_type const &access_ds(std::byte const *mem)
+		constexpr static value_type const &access_ds(std::byte const *mem)
 		{
 			auto const &val(*reinterpret_cast <value_type const *>(mem));
 			return val;
 		}
 		
 		// Reset the value for new variant or sample.
-		static void reset_ds(std::byte *mem) { /* No-op. */ }
+		constexpr static void reset_ds(std::byte *mem) { /* No-op. */ }
 		
 		// Determine the byte size.
-		static constexpr std::size_t byte_size() { return sizeof(value_type); }
+		constexpr static std::size_t byte_size() { return sizeof(value_type); }
 		
 		// Determine the alignment.
-		static constexpr std::size_t alignment() { return alignof(value_type); }
+		constexpr static std::size_t alignment() { return alignof(value_type); }
 		
 		// Replace or add a value.
 		// This works for string views b.c. the buffer where the characters are located still exists.
-		static constexpr void add_value(std::byte *mem, value_type const &val)
+		constexpr static void add_value(std::byte *mem, value_type const &val)
 		{
 			auto &dst(access_ds(mem));
 			dst = val;

@@ -64,8 +64,8 @@ namespace libbio::vcf {
 		std::uint16_t	m_index_of_type{};
 		
 	public:
-		std::uint16_t get_index() const { return m_index; }
-		std::uint16_t get_index_of_type() const { return m_index_of_type; }
+		constexpr std::uint16_t get_index() const { return m_index; }
+		constexpr std::uint16_t get_index_of_type() const { return m_index_of_type; }
 		
 	public:
 		virtual ~metadata_base() {}

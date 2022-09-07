@@ -92,8 +92,8 @@ namespace libbio::vcf {
 		std::byte *buffer_start(variant_sample_base const &vs) const { return vs.m_sample_data.get(); }
 		
 	public:
-		std::uint16_t get_index() const { return m_index; }
-		void set_index(std::uint16_t index) { m_index = index; }
+		constexpr std::uint16_t get_index() const { return m_index; }
+		constexpr void set_index(std::uint16_t index) { m_index = index; }
 		
 	public:
 		// Output the field contents to a stream.
@@ -106,9 +106,9 @@ namespace libbio::vcf {
 		// Check whether the sample has a value for this genotype field.
 		// (The field could just be removed from FORMAT but instead the
 		// specification allows MISSING value to be specified. See VCF 4.3 Section 1.6.2.)
-		inline bool has_value(variant_sample_base const &sample) const;
+		constexpr inline bool has_value(variant_sample_base const &sample) const;
 		
-		enum subfield_type subfield_type() const final { return subfield_type::GENOTYPE; }
+		constexpr enum subfield_type subfield_type() const final { return subfield_type::GENOTYPE; }
 	};
 	
 	

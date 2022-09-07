@@ -18,7 +18,7 @@ namespace libbio::vcf {
 	template <metadata_value_type t_metadata_value_type>
 	struct subfield_parser {};
 	
-	struct subfield_parser_base { static constexpr bool type_needs_parsing() { return true; } };
+	struct subfield_parser_base { constexpr static bool type_needs_parsing() { return true; } };
 	
 	// Specializations for the different value types.
 	template <> struct subfield_parser <metadata_value_type::INTEGER> final : public subfield_parser_base
@@ -35,12 +35,12 @@ namespace libbio::vcf {
 	
 	template <> struct subfield_parser <metadata_value_type::STRING> final : public subfield_parser_base
 	{
-		static constexpr bool type_needs_parsing() { return false; }
+		constexpr static bool type_needs_parsing() { return false; }
 	};
 	
 	template <> struct subfield_parser <metadata_value_type::CHARACTER> final : public subfield_parser_base
 	{
-		static constexpr bool type_needs_parsing() { return false; }
+		constexpr static bool type_needs_parsing() { return false; }
 	};
 	
 	
@@ -98,7 +98,7 @@ namespace libbio::vcf {
 	template <metadata_value_type t_metadata_value_type>
 	struct generic_field_parser <t_metadata_value_type, 0>
 	{
-		bool parse_and_assign(std::string_view const &sv, std::byte *mem, metadata_formatted_field const *field) const
+		constexpr bool parse_and_assign(std::string_view const &sv, std::byte *mem, metadata_formatted_field const *field) const
 		{
 			libbio_fail("parse_and_assign should not be called for FLAG type fields");
 			return false;

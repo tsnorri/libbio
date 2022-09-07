@@ -27,7 +27,7 @@ namespace libbio::vcf {
 	}
 	
 	
-	bool info_field_base::has_value(abstract_variant const &var) const
+	constexpr bool info_field_base::has_value(abstract_variant const &var) const
 	{
 		libbio_assert(m_metadata);
 		return var.m_assigned_info_fields[m_metadata->get_index()];

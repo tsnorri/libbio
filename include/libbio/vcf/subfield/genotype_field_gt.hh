@@ -48,8 +48,8 @@ namespace libbio::vcf {
 		
 	public:
 		// As per VCF 4.3 specification Table 2.
-		virtual enum metadata_value_type metadata_value_type() const override { return metadata_value_type::STRING; }
-		virtual std::int32_t number() const override { return 1; }
+		constexpr virtual enum metadata_value_type metadata_value_type() const override { return metadata_value_type::STRING; }
+		constexpr virtual std::int32_t number() const override { return 1; }
 		
 		using detail::generic_field_tpl <genotype_field_gt_base>::output_vcf_value;
 		virtual void output_vcf_value(std::ostream &stream, container_type const &ct) const override { output_genotype(stream, (*this)(ct)); }

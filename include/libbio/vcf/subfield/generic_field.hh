@@ -277,8 +277,8 @@ namespace libbio::vcf {
 		typedef typename base_class::parser_type						parser_type;
 		
 	public:
-		static constexpr std::int32_t s_number() { return t_number; }
-		static constexpr metadata_value_type s_value_type() { return t_value_type; }
+		constexpr static std::int32_t s_number() { return t_number; }
+		constexpr static metadata_value_type s_value_type() { return t_value_type; }
 		
 	protected:
 		// Assign a value, used for FLAG.
