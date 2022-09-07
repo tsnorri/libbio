@@ -3,8 +3,7 @@ include ../common.mk
 
 .PRECIOUS: fasta_reader.cc subprocess_argument_parser.cc vcf_reader_parser.cc vcf_reader_header_parser.cc vcf_genotype_field_gt_parser.cc
 
-OBJECTS		=	assert.o \
-				bed_reader.o \
+OBJECTS		=	bed_reader.o \
 				buffered_writer_base.o \
 				dispatch_io_channel_buffered_writer.o \
 				dispatch_utility.o \

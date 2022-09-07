@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018 Tuukka Norri
+ * Copyright (c) 2017-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -24,14 +24,11 @@
 		if (!(TEST)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, MESSAGE); \
 	} while (false)
 
-#define libbio_assert_test_bin(LHS, RHS, TEST, LHS_, OP_, RHS_)	do { \
+#define libbio_assert_test_bin(LHS, RHS, TEST, MESSAGE)	do { \
 		auto const &assert_lhs(LHS); \
 		auto const &assert_rhs(RHS); \
 		if (!(TEST(assert_lhs, assert_rhs))) \
-		{ \
-			auto const assert_msg(::libbio::detail::assertion_failure_message(assert_lhs, assert_rhs, LHS_, OP_, RHS_)); \
-			::libbio::detail::assertion_failure(__FILE__, __LINE__, assert_msg); \
-		} \
+			::libbio::detail::assertion_failure(__FILE__, __LINE__, assert_lhs, assert_rhs, MESSAGE); \
 	} while (false)
 
 #define libbio_assert_test_msg(TEST, ...)				do { \
@@ -48,12 +45,12 @@
 	} while (false)
 
 #define libbio_always_assert(X)					libbio_assert_test((X),										#X)
-#define libbio_always_assert_lt(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lt,			#X, "<",  #Y)
-#define libbio_always_assert_lte(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lte,			#X, "<=", #Y)
-#define libbio_always_assert_gt(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lte,			#X, ">",  #Y)
-#define libbio_always_assert_gte(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lt,			#X, ">=", #Y)
-#define libbio_always_assert_eq(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_equal,		#X, "==", #Y)
-#define libbio_always_assert_neq(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_equal,		#X, "!=", #Y)
+#define libbio_always_assert_lt(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lt,			libbio_stringify(X <  #Y))
+#define libbio_always_assert_lte(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lte,			libbio_stringify(X <= #Y))
+#define libbio_always_assert_gt(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lte,			libbio_stringify(X >  #Y))
+#define libbio_always_assert_gte(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lt,			libbio_stringify(X >= #Y))
+#define libbio_always_assert_eq(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_equal,		libbio_stringify(X == #Y))
+#define libbio_always_assert_neq(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_equal,		libbio_stringify(X != #Y))
 
 #define libbio_always_assert_msg(X, ...)		libbio_assert_test_msg((X),																__VA_ARGS__)
 #define libbio_always_assert_lt_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lt((X), (Y)),		libbio_stringify(X < Y),	__VA_ARGS__)
@@ -120,22 +117,8 @@ namespace libbio { namespace detail {
 	constexpr inline bool has_formatted_output_function_v = has_formatted_output_function_helper <t_type>::value;
 	
 	
-	template <typename t_lhs, typename t_rhs>
-	std::string assertion_failure_message(t_lhs const &lhs, t_rhs const &rhs, char const *lhs_, char const *op_, char const *rhs_)
-	{
-		// FIXME: use std::format.
-		std::stringstream stream;
-		
-		if constexpr (has_formatted_output_function_v <t_lhs> && has_formatted_output_function_v <t_rhs>)
-			stream << lhs_ << ' ' << op_ << ' ' << rhs_ << " (lhs: " << lhs << ", rhs: " << rhs << ')';
-		else
-			stream << lhs_ << ' ' << op_ << ' ' << rhs_;
-		
-		return stream.str();
-	}
-
-	static_assert(has_formatted_output_function_v <int const>);
-	static_assert(has_formatted_output_function_v <int>);
+	static_assert(has_formatted_output_function_v <long const>);
+	static_assert(has_formatted_output_function_v <long>);
 
 	
 	// Copying a standard library class derived from std::exception
@@ -147,11 +130,11 @@ namespace libbio { namespace detail {
 		std::string		reason;
 		std::string		file;
 		buffer_type		what;
-		int				line{};
+		long			line{};
 
 		assertion_failure_cause() = default;
 
-		assertion_failure_cause(char const *file_, int line_):
+		assertion_failure_cause(char const *file_, long line_):
 			file(file_),
 			what(
 				buffer_type::buffer_with_allocated_buffer(
@@ -162,7 +145,7 @@ namespace libbio { namespace detail {
 		{
 		}
 
-		assertion_failure_cause(char const *file_, int line_, std::string &&reason_):
+		assertion_failure_cause(char const *file_, long line_, std::string &&reason_):
 			reason(std::move(reason_)),
 			file(file_),
 			what(
@@ -174,31 +157,63 @@ namespace libbio { namespace detail {
 		{
 		}
 	};
-	
-	
-	void assertion_failure(char const *file, long const line, char const *assertion);
-	void assertion_failure(char const *file, long const line);
 
-	inline void assertion_failure(char const *file, long const line, std::string const &assertion)
-	{
-		assertion_failure(file, line, assertion.c_str());
-	}
-	
+
+	// Fwd.
+	[[noreturn]] constexpr inline void assertion_failure(char const *file, long const line);
+	[[noreturn]] constexpr inline void assertion_failure(char const *file, long const line, char const *assertion);
+	[[noreturn]] inline void assertion_failure(char const *file, long const line, std::string const &assertion);
+
+
 	// Concatenate the arguments and call assertion_failure.
 	template <typename t_arg>
-	void assertion_failure(char const *file, long const line, std::stringstream &stream, t_arg const &arg)
+	[[noreturn]] void assertion_failure(char const *file, long const line, std::stringstream &stream, t_arg const &arg)
 	{
 		stream << arg;
 		auto const &string(stream.str()); // Keep the result of str() here to prevent a dangling pointer.
 		assertion_failure(file, line, string.c_str()); // Copies the result of c_str().
 	}
 	
+
 	// Concatenate the arguments and call assertion_failure.
 	template <typename t_arg, typename ... t_rest>
-	void assertion_failure(char const *file, long const line, std::stringstream &stream, t_arg const &first, t_rest ... rest)
+	[[noreturn]] void assertion_failure(char const *file, long const line, std::stringstream &stream, t_arg const &first, t_rest ... rest)
 	{
 		stream << first;
 		assertion_failure(file, line, stream, rest...);
+	}
+
+
+	template <typename t_lhs, typename t_rhs>
+	[[noreturn]] void assertion_failure_(char const *file, long const line, t_lhs const &lhs, t_rhs const &rhs, char const *message)
+	{
+		// Clang++ 14 is not happy about the use of std::stringstream in a constexpr function even if in the false branch
+		// of if consteval, so we build the message here instead.
+		if constexpr (has_formatted_output_function_v <t_lhs> && has_formatted_output_function_v <t_rhs>)
+		{
+			// FIXME: use std::format.
+			std::stringstream stream;
+			stream << message << " (lhs: " << lhs << ", rhs: " << rhs << ')';
+			assertion_failure(file, line, stream.str());
+		}
+		else
+		{
+			assertion_failure(file, line, message);
+		}
+	}
+
+
+	template <typename t_lhs, typename t_rhs>
+	[[noreturn]] constexpr void assertion_failure(char const *file, long const line, t_lhs const &lhs, t_rhs const &rhs, char const *message)
+	{
+		if consteval
+		{
+			assertion_failure(file, line, message);
+		}
+		else
+		{
+			assertion_failure_(file, line, lhs, rhs, message);
+		}
 	}
 }}
 
@@ -216,12 +231,12 @@ namespace libbio {
 	public:
 		assertion_failure_exception() = default;
 
-		assertion_failure_exception(char const *file, int line, std::string &&reason):
+		assertion_failure_exception(char const *file, long line, std::string &&reason):
 			m_cause(new detail::assertion_failure_cause(file, line, std::move(reason)))
 		{
 		}
 
-		assertion_failure_exception(char const *file, int line):
+		assertion_failure_exception(char const *file, long line):
 			m_cause(new detail::assertion_failure_cause(file, line))
 		{
 		}
@@ -229,8 +244,36 @@ namespace libbio {
 		virtual char const *what() const noexcept override { return m_cause->what.get(); }
 		std::string const &file() const noexcept { return m_cause->file; }
 		std::string const &reason() const noexcept { return m_cause->reason; }
-		int line() const noexcept { return m_cause->line; }
+		long line() const noexcept { return m_cause->line; }
 	};
+}
+
+
+namespace libbio::detail {
+
+	template <typename t_exception, typename ... t_args>
+	[[noreturn]] constexpr void throw_with_trace(t_args ... args)
+	{
+		throw boost::enable_error_info(t_exception(args...)) << traced(boost::stacktrace::stacktrace());
+	}
+
+	
+	[[noreturn]] constexpr inline void assertion_failure(char const *file, long const line)
+	{
+		throw_with_trace <assertion_failure_exception>(file, line);
+	}
+
+
+	[[noreturn]] constexpr inline void assertion_failure(char const *file, long const line, char const *assertion)
+	{
+		throw_with_trace <assertion_failure_exception> (file, line, assertion);
+	}
+
+
+	[[noreturn]] inline void assertion_failure(char const *file, long const line, std::string const &assertion)
+	{
+		assertion_failure(file, line, assertion.c_str());
+	}
 }
 
 #endif
