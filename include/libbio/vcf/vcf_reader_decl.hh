@@ -121,6 +121,7 @@ namespace libbio::vcf {
 		class metadata					m_metadata;
 		info_field_map					m_info_fields;
 		info_field_ptr_vector			m_info_fields_in_headers;
+		info_field_ptr_vector			m_current_record_info_fields;
 		genotype_field_map				m_genotype_fields;
 		variant_format_ptr				m_current_format{new variant_format()};
 		genotype_ptr_vector				m_current_format_vec;					// Non-owning, contents point to m_current_format’s fields.
@@ -169,6 +170,8 @@ namespace libbio::vcf {
 		info_field_map &info_fields() { return m_info_fields; }
 		info_field_map const &info_fields() const { return m_info_fields; }
 		info_field_ptr_vector const &info_fields_in_headers() const { return m_info_fields_in_headers; }
+		info_field_ptr_vector const &current_record_info_fields() const { return m_current_record_info_fields; }
+		
 		genotype_field_map &genotype_fields() { return m_genotype_fields; }
 		genotype_field_map const &genotype_fields() const { return m_genotype_fields; }
 		variant_format const &get_variant_format() const { return *m_current_format; }

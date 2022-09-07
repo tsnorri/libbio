@@ -61,9 +61,11 @@ namespace libbio::vcf {
 		
 	protected:
 		std::uint16_t	m_index{};
+		std::uint16_t	m_index_of_type{};
 		
 	public:
-		std::uint16_t get_index() const { return m_index; } // FIXME: make this work for other headers in addition to INFO and FORMAT.
+		std::uint16_t get_index() const { return m_index; }
+		std::uint16_t get_index_of_type() const { return m_index_of_type; }
 		
 	public:
 		virtual ~metadata_base() {}
@@ -134,13 +136,10 @@ namespace libbio::vcf {
 	protected:
 		LIBBIO_VCF_METADATA_STR_FIELD(source);
 		LIBBIO_VCF_METADATA_STR_FIELD(version);
-		std::uint16_t	m_record_index{}; // Index in the current record.
 		
 	public:
 		virtual metadata_type type() const override { return metadata_type::INFO; }
 		virtual void output_vcf(std::ostream &stream) const override;
-		std::uint16_t get_record_index() const { return m_record_index; }
-		void reset_record_index() { m_record_index = UINT16_MAX; }
 		
 	protected:
 		inline bool check_subfield_index(std::int32_t subfield_index) const;

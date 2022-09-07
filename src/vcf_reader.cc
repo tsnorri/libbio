@@ -247,7 +247,9 @@ namespace libbio::vcf {
 	
 	void reader::associate_metadata_with_field_descriptions()
 	{
-		bool did_add(false);
+		m_info_fields_in_headers.reserve(m_metadata.m_info.size());
+		m_current_record_info_fields.reserve(m_metadata.m_info.size());
+		
 		for (auto &[key, meta] : m_metadata.m_info)
 		{
 			auto &info_field(detail::metadata_setup_helper::find_or_add_field <info_field>(meta, key, m_info_fields, *m_delegate));

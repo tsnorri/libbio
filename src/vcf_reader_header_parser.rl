@@ -12,11 +12,29 @@
 %% write data;
 
 
-#define BEGIN_METADATA(CLASS)	(current_metadata_ptr = &current_metadata.emplace <CLASS>())
-#define END_METADATA(CLASS)		do { /* add_metadata() takes an rvalue reference. */ \
-									m_metadata.add_metadata(std::move(std::get <CLASS>(current_metadata))); \
-									current_metadata_ptr = nullptr; \
-								} while (false)
+#define BEGIN_METADATA(CLASS, IDX)	do { \
+										current_metadata_ptr = &current_metadata.emplace <CLASS>(); \
+										current_metadata_ptr->m_index			= counters[0]++; \
+										current_metadata_ptr->m_index_of_type	= counters[1 + IDX]++; \
+									} while (false)
+#define END_METADATA(CLASS)			do { /* add_metadata() takes an rvalue reference. */ \
+										m_metadata.add_metadata(std::move(std::get <CLASS>(current_metadata))); \
+										current_metadata_ptr = nullptr; \
+									} while (false)
+
+
+namespace {
+	
+	enum header_type {
+		INFO = 0,
+		FILTER,
+		FORMAT,
+		ALT,
+		ASSEMBLY,
+		CONTIG,
+		HEADER_COUNT
+	};
+}
 
 
 namespace libbio::vcf {
@@ -31,12 +49,12 @@ namespace libbio::vcf {
 		metadata_base			*current_metadata_ptr{};
 		
 		char const				*buffer_start(nullptr);
-		char const				*start(nullptr);			// Current string start.
-		char const				*line_start(nullptr);		// Current line start.
-		std::uint16_t			info_metadata_idx{};
-		std::uint16_t			format_metadata_idx{};
+		char const				*start(nullptr);				// Current string start.
+		char const				*line_start(nullptr);			// Current line start.
+		std::uint16_t			counters[1 + HEADER_COUNT]{};
+		
 		std::size_t				sample_name_idx(1);
-		std::int64_t			integer(0);					// Currently read from the input.
+		std::int64_t			integer(0);						// Currently read from the input.
 		bool					integer_is_negative(false);
 		int						cs(0);
 		
@@ -65,12 +83,12 @@ namespace libbio::vcf {
 				integer += fc - '0';
 			}
 			
-			action meta_record_info			{ BEGIN_METADATA(metadata_info); current_metadata_ptr->m_index = info_metadata_idx++; }
-			action meta_record_filter		{ BEGIN_METADATA(metadata_filter); }
-			action meta_record_format		{ BEGIN_METADATA(metadata_format); current_metadata_ptr->m_index = format_metadata_idx++; }
-			action meta_record_alt			{ BEGIN_METADATA(metadata_alt); }
-			action meta_record_assembly		{ BEGIN_METADATA(metadata_assembly); }
-			action meta_record_contig		{ BEGIN_METADATA(metadata_contig); }
+			action meta_record_info			{ BEGIN_METADATA(metadata_info,		INFO); }
+			action meta_record_filter		{ BEGIN_METADATA(metadata_filter,	FILTER); }
+			action meta_record_format		{ BEGIN_METADATA(metadata_format,	FORMAT); }
+			action meta_record_alt			{ BEGIN_METADATA(metadata_alt,		ALT); }
+			action meta_record_assembly		{ BEGIN_METADATA(metadata_assembly,	ASSEMBLY); }
+			action meta_record_contig		{ BEGIN_METADATA(metadata_contig,	CONTIG); }
 			
 			action meta_record_info_end		{ END_METADATA(metadata_info); }
 			action meta_record_filter_end	{ END_METADATA(metadata_filter); }
