@@ -55,14 +55,14 @@ namespace libbio::vcf {
 	class info_field_placeholder final : public detail::subfield_placeholder_base <info_field_base>
 	{
 		constexpr bool parse_and_assign(std::string_view const &sv, transient_variant &var, std::byte *mem) const override { /* No-op. */ return false; }
-		constexpr info_field_placeholder *clone() const override { return new info_field_placeholder(*this); }
+		info_field_placeholder *clone() const override { return new info_field_placeholder(*this); }
 	};
 	
 	
 	class genotype_field_placeholder final : public detail::subfield_placeholder_base <genotype_field_base>
 	{
 		constexpr bool parse_and_assign(std::string_view const &sv, transient_variant const &var, transient_variant_sample &sample, std::byte *mem) const override { /* No-op. */ return false; }
-		constexpr genotype_field_placeholder *clone() const override { return new genotype_field_placeholder(*this); }
+		genotype_field_placeholder *clone() const override { return new genotype_field_placeholder(*this); }
 	};
 }
 

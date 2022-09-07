@@ -33,7 +33,7 @@ namespace libbio::vcf {
 		value_access_base() = delete;
 		
 		// Construct value_type with placement new.
-		constexpr static void construct_ds(std::byte *mem, std::uint16_t const alt_count, metadata_base const &)
+		static void construct_ds(std::byte *mem, std::uint16_t const alt_count, metadata_base const &)
 		{
 			libbio_always_assert_eq(0, reinterpret_cast <std::uintptr_t>(mem) % alignof(value_type));
 			new (mem) value_type{};
