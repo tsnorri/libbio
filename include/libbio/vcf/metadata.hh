@@ -60,12 +60,12 @@ namespace libbio::vcf {
 		friend class reader;
 		
 	protected:
+		std::uint16_t	m_header_index{};
 		std::uint16_t	m_index{};
-		std::uint16_t	m_index_of_type{};
 		
 	public:
+		constexpr std::uint16_t get_header_index() const { return m_header_index; }
 		constexpr std::uint16_t get_index() const { return m_index; }
-		constexpr std::uint16_t get_index_of_type() const { return m_index_of_type; }
 		
 	public:
 		virtual ~metadata_base() {}

@@ -14,8 +14,8 @@
 
 #define BEGIN_METADATA(CLASS, IDX)	do { \
 										current_metadata_ptr = &current_metadata.emplace <CLASS>(); \
-										current_metadata_ptr->m_index			= counters[0]++; \
-										current_metadata_ptr->m_index_of_type	= counters[1 + IDX]++; \
+										current_metadata_ptr->m_header_index	= counters[0]++; \
+										current_metadata_ptr->m_index			= counters[1 + IDX]++; \
 									} while (false)
 #define END_METADATA(CLASS)			do { /* add_metadata() takes an rvalue reference. */ \
 										m_metadata.add_metadata(std::move(std::get <CLASS>(current_metadata))); \
