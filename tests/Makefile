@@ -1,4 +1,4 @@
-include ../local.mk
+-include ../local.mk
 include ../common.mk
 
 # macOS 10.11 does not have std::uncaught_exceptions. We could use a custom-installed libc++
