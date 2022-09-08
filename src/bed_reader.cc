@@ -22,7 +22,13 @@ namespace libbio {
 
 		lb::file_istream stream;
 		lb::open_file_for_reading(path, stream);
+		
+		read_regions(stream, delegate);
+	}
 	
+	
+	void bed_reader::read_regions(std::istream &stream, bed_reader_delegate &delegate)
+	{
 		m_lineno = 0;
 		while (std::getline(stream, m_buffer))
 		{

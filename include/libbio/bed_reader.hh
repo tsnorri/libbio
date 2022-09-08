@@ -39,6 +39,7 @@ namespace libbio {
 		
 	public:
 		void read_regions(char const *path, bed_reader_delegate &delegate);
+		void read_regions(std::istream &stream, bed_reader_delegate &delegate);
 	};
 	
 }
