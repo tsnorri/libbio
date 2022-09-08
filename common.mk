@@ -4,8 +4,7 @@ unexport SDKROOT
 SHELL			?= /bin/bash
 
 # Default values.
-# Boost uses some deprecated builtins (as of Clang 14).
-WARNING_FLAGS	?= -Wall -Werror -Wno-deprecated-declarations -Wno-deprecated-builtins -Wno-unused -Wno-misleading-indentation
+WARNING_FLAGS	?= -Wall -Werror -Wno-deprecated-declarations -Wno-unused -Wno-misleading-indentation
 OPT_FLAGS		?= -O2 -g
 
 CFLAGS			?=
@@ -32,11 +31,16 @@ RAGEL			?= ragel
 RM				?= rm
 
 BOOST_ROOT		?= /usr
-BOOST_INCLUDE	?= -I$(BOOST_ROOT)/include
+BOOST_INCLUDE	?= -isystem $(BOOST_ROOT)/include
+
+IQUOTE			=
+ifneq ($(strip $(VPATH)),)
+	IQUOTE += -iquote $(VPATH)
+endif
 
 CFLAGS			+= -std=c99   $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CFLAGS)
 CXXFLAGS		+= -std=c++2b $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CXXFLAGS)
-CPPFLAGS		+= -I../include -I../lib/GSL/include -I../lib/range-v3/include $(BOOST_INCLUDE) $(SYSTEM_CPPFLAGS)
+CPPFLAGS		+= -I../include -I../lib/GSL/include -I../lib/range-v3/include $(BOOST_INCLUDE) $(SYSTEM_CPPFLAGS) $(IQUOTE)
 LDFLAGS			+= $(SYSTEM_LDFLAGS)
 
 # Assume that swift-corelibs-libdispatch is a submodule of the containing project (for now).
