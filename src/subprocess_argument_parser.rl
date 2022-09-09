@@ -21,6 +21,9 @@ namespace libbio {
 	// double quoted arguments that may contain spaces and escaped double quotes ("").
 	std::vector <std::string> parse_command_arguments(char const * const args)
 	{
+		if (!args)
+			return {};
+
 		auto const *p(args);
 		auto const *pe(p + ::strlen(args));
 		auto const *eof(pe);
