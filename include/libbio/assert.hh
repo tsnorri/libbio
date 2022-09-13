@@ -31,6 +31,7 @@
 			::libbio::detail::assertion_failure(__FILE__, __LINE__, assert_lhs, assert_rhs, MESSAGE); \
 	} while (false)
 
+// FIXME: Make this work when immediately evaluated.
 #define libbio_assert_test_msg(TEST, ...)				do { \
 		if (!(TEST)) { \
 			std::stringstream stream; \
@@ -40,8 +41,9 @@
 
 #define libbio_assert_test_rel_msg(TEST, REL_EXPR, ...)	libbio_assert_test_msg((TEST), __VA_ARGS__, ": ", (REL_EXPR), '.')
 
-#define libbio_fail(MESSAGE)					do { \
-		::libbio::detail::assertion_failure(__FILE__, __LINE__, MESSAGE); \
+// FIXME: Make this work when immediately evaluated.
+#define libbio_fail(...) do { \
+		::libbio::detail::assertion_failure(__FILE__, __LINE__, __VA_ARGS__); \
 	} while (false)
 
 #define libbio_always_assert(X)					libbio_assert_test((X),										#X)
