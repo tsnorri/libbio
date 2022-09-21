@@ -136,6 +136,7 @@ namespace libbio::vcf {
 		copyable_atomic <std::size_t>	m_counter{0};
 		std::size_t						m_lineno{0};							// Current line number.
 		std::size_t						m_variant_index{0};						// Current variant number (0-based).
+		std::size_t						m_variant_offset{0};					// Current variant offset from the beginning of the file.
 		field							m_max_parsed_field{};
 		bool							m_have_assigned_variant_format{};
 		bool							m_has_samples{};
@@ -188,6 +189,7 @@ namespace libbio::vcf {
 		std::size_t last_header_lineno() const { return m_input->last_header_lineno(); }
 		std::size_t sample_no(std::string const &sample_name) const;
 		std::size_t sample_count() const { return m_sample_names_by_index.size(); }
+		std::size_t variant_offset() const { return m_variant_offset; }
 		sample_name_vector const &sample_names_by_index() const { return m_sample_names_by_index; }
 		sample_name_map const &sample_indices_by_name() const { return m_sample_indices_by_name; }
 		inline void set_parsed_fields(field max_field);

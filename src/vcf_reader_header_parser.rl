@@ -307,6 +307,7 @@ namespace libbio::vcf {
 			should_continue = true;
 			buffer_start = m_fsm.p;
 			%% write exec;
+			m_variant_offset += m_fsm.p - buffer_start;
 		} while (should_continue);
 		
 		// Post-process the metadata descriptions.
