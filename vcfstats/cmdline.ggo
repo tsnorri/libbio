@@ -5,6 +5,7 @@ package		"vcfstats"
 version		"0.1"
 purpose		"Calculate statistics from a VCF file."
 usage		"vcfstats --input=input.vcf ..."
+description	"NOTE: When calculating counts per chromosome copy, only haploid or diploid samples and variants with at most one alternative allele are handled."
 
 option		"input"					i	"Variant call file path"			string	typestr = "filename"								required
 option		"chr"					c	"Chromosome ID"						string														required
