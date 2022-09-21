@@ -95,25 +95,31 @@ namespace {
 	}
 	
 	
-	template <typename t_field>
-	class field_mixin
+	template <typename t_field, typename t_string>
+	class field_mixin_tpl
 	{
 		template <typename...>
 		friend struct variant_format;
 
 	protected:
-		std::string	m_name{};
-		t_field		*m_field_ptr{};
+		t_string	m_name{};
+		t_field		*m_field_ptr{};	// Not owned.
 
 	public:
-		field_mixin(char const *name):
+		field_mixin_tpl(char const *name):
 			m_name(name)
 		{
+			libbio_assert(name);
 		};
 
-		std::string const &name() const { return m_name; }
+		auto name() const { return m_name; }
 		t_field *field_() const { return m_field_ptr; }
 	};
+
+	
+	// OK b.c. field names are owned by the CLI argument parser.
+	template <typename t_field>
+	using field_mixin = field_mixin_tpl <t_field, char const *>;
 
 	typedef field_mixin <vcf::genotype_field_gt>	gt_field_t;
 	typedef field_mixin <vcf::genotype_field_base>	ps_field_generic_t;
