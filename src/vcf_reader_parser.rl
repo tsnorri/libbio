@@ -219,6 +219,7 @@ namespace libbio::vcf {
 					
 					m_current_variant.initialize_samples();
 					m_current_format->reader_did_update_format(*this);
+					m_delegate->vcf_reader_did_update_variant_format(*this);
 				}
 			}
 			

@@ -36,6 +36,7 @@ namespace libbio::vcf {
 	{
 		virtual ~reader_delegate() {}
 		virtual void vcf_reader_did_parse_metadata(reader &vcf_reader) = 0;
+		virtual void vcf_reader_did_update_variant_format(reader &vcf_reader) = 0;
 		virtual bool vcf_reader_should_replace_non_matching_subfield(std::string const &, info_field_base const &, metadata_info const &) = 0;
 		virtual bool vcf_reader_should_replace_non_matching_subfield(std::string const &, genotype_field_base const &, metadata_format const &) = 0;
 	};
@@ -43,6 +44,7 @@ namespace libbio::vcf {
 	struct reader_default_delegate : public reader_delegate
 	{
 		void vcf_reader_did_parse_metadata(reader &vcf_reader) override {}
+		void vcf_reader_did_update_variant_format(reader &vcf_reader) override {}
 		bool vcf_reader_should_replace_non_matching_subfield(std::string const &, info_field_base const &, metadata_info const &) override;
 		bool vcf_reader_should_replace_non_matching_subfield(std::string const &, genotype_field_base const &, metadata_format const &) override;
 	};
