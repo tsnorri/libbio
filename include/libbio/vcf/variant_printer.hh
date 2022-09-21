@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019-2022 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -43,14 +43,15 @@ namespace libbio::vcf {
 		virtual inline void output_samples(std::ostream &os, variant_type const &var) const;
 		
 		// Templates so that a view may be passed as info_fields or genotype_fields.
+		// Note that t_fields may not be const in this case, since e.g. filtering view’s empty() is non-const.
 		template <typename t_fields>
-		inline void output_info(std::ostream &os, variant_type const &var, t_fields const &info_fields) const;
+		inline void output_info(std::ostream &os, variant_type const &var, t_fields &&info_fields) const;
 		
 		template <typename t_fields>
-		inline void output_format(std::ostream &os, variant_type const &var, t_fields const &genotype_fields) const;
+		inline void output_format(std::ostream &os, variant_type const &var, t_fields &&genotype_fields) const;
 		
 		template <typename t_fields>
-		inline void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample, t_fields const &genotype_fields) const;
+		inline void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample, t_fields &&genotype_fields) const;
 		
 		// Convenience function.
 		void output_variant(std::ostream &os, variant_type const &var) const;
@@ -146,7 +147,7 @@ namespace libbio::vcf {
 	void variant_printer_base <t_variant>::output_info(
 		std::ostream &os,
 		variant_type const &var,
-		t_fields const &info_fields
+		t_fields &&info_fields
 	) const
 	{
 		if (info_fields.empty())
@@ -176,7 +177,7 @@ namespace libbio::vcf {
 
 	template <typename t_variant>
 	template <typename t_fields>
-	void variant_printer_base <t_variant>::output_format(std::ostream &os, variant_type const &var, t_fields const &fields) const
+	void variant_printer_base <t_variant>::output_format(std::ostream &os, variant_type const &var, t_fields &&fields) const
 	{
 		ranges::copy(
 			fields	|	ranges::views::remove_if([](auto const &ff) -> bool {
@@ -207,7 +208,7 @@ namespace libbio::vcf {
 		std::ostream &os,
 		variant_type const &var,
 		variant_sample_type const &sample,
-		t_fields const &fields
+		t_fields &&fields
 	) const
 	{
 		// One sample
