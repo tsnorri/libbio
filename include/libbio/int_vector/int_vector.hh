@@ -53,6 +53,8 @@ namespace libbio { namespace detail {
 			ELEMENT_BITS	= width_type::ELEMENT_BITS
 		};
 		
+		constexpr static inline bool is_atomic{false};
+		
 		// Primitives.
 		inline word_type load(std::size_t const idx) const;
 		inline void assign_or(std::size_t const idx, word_type val);
@@ -113,6 +115,8 @@ namespace libbio { namespace detail {
 			WORD_BITS		= width_type::WORD_BITS,
 			ELEMENT_BITS	= width_type::ELEMENT_BITS
 		};
+		
+		constexpr static inline bool is_atomic{true};
 		
 		// Primitives.
 		inline word_type load(std::size_t const idx, std::memory_order = std::memory_order_seq_cst) const;
@@ -206,6 +210,8 @@ namespace libbio {
 		
 	public:
 		int_vector_tpl() = default;
+		
+		int_vector_tpl(int_vector_tpl const &) requires(!trait_type::is_atomic) = default;
 		
 		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
 		explicit int_vector_tpl(std::size_t const size):
