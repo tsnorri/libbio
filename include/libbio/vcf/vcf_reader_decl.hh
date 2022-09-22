@@ -147,7 +147,8 @@ namespace libbio::vcf {
 		inline reader(input_base &vcf_input);
 		
 		void set_delegate(reader_delegate &delegate) { m_delegate = &delegate; }
-		void set_variant_validator(variant_validator &validator) { m_chrom_pos_validator = &validator; }
+		struct variant_validator &variant_validator() { return *m_chrom_pos_validator; }
+		void set_variant_validator(struct variant_validator &validator) { m_chrom_pos_validator = &validator; }
 		inline void set_input(input_base &input);
 		void set_variant_format(variant_format *fmt) { libbio_always_assert(fmt); m_current_format.reset(fmt); m_have_assigned_variant_format = true; }
 		void read_header();
@@ -192,6 +193,7 @@ namespace libbio::vcf {
 		std::size_t variant_offset() const { return m_variant_offset; }
 		sample_name_vector const &sample_names_by_index() const { return m_sample_names_by_index; }
 		sample_name_map const &sample_indices_by_name() const { return m_sample_indices_by_name; }
+		field parsed_fields() const { return m_max_parsed_field; }
 		inline void set_parsed_fields(field max_field);
 		std::size_t counter_value() const { return m_counter; } // Thread-safe.
 		inline std::string_view buffer_tail() const; // Valid in parse()’s callback.
