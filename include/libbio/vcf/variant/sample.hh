@@ -54,6 +54,9 @@ namespace libbio::vcf {
 		
 	protected:
 		inline void reset();
+		
+	public:
+		std::vector <bool> const &assigned_genotype_fields() const { return m_assigned_genotype_fields; }
 	};
 	
 	

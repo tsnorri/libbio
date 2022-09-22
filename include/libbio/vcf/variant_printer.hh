@@ -212,13 +212,19 @@ namespace libbio::vcf {
 	) const
 	{
 		// One sample
-		bool is_first(true);
+		auto const &assigned_fields(sample.assigned_genotype_fields());
+		std::size_t idx{};
 		for (auto const &field : fields)
 		{
-			if (!is_first)
+			if (idx)
 				os << ':';
-			field.output_vcf_value(os, sample);
-			is_first = false;
+			
+			if (assigned_fields[idx])
+				field.output_vcf_value(os, sample);
+			else
+				os << '.';
+			
+			++idx;
 		}
 	}
 	
