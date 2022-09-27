@@ -8,6 +8,7 @@
 
 #include <istream>
 #include <map>
+#include <type_traits>
 #include <vector>
 #include <libbio/copyable_atomic.hh>
 #include <libbio/utility.hh>
@@ -193,10 +194,12 @@ namespace libbio::vcf {
 		inline std::string_view buffer_tail() const; // Valid in parse()’s callback.
 		
 		template <typename t_key, typename t_dst>
-		inline void get_info_field_ptr(t_key const &key, t_dst &dst) const;
+		inline void get_info_field_ptr(t_key const &key, t_dst &dst) const
+		requires(std::is_pointer_v <t_dst>);
 		
 		template <typename t_key, typename t_dst>
-		inline void get_genotype_field_ptr(t_key const &key, t_dst &dst) const;
+		inline void get_genotype_field_ptr(t_key const &key, t_dst &dst) const
+		requires(std::is_pointer_v <t_dst>);
 		
 		inline info_field_end *get_end_field_ptr() const;
 		

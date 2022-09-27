@@ -37,18 +37,20 @@ namespace libbio::vcf {
 	
 	template <typename t_key, typename t_dst>
 	void reader::get_info_field_ptr(t_key const &key, t_dst &dst) const
+	requires(std::is_pointer_v <t_dst>)
 	{
 		auto const it(m_info_fields.find(key));
-		libbio_always_assert_neq(it, m_info_fields.end());
-		dst = dynamic_cast <std::remove_reference_t <decltype(dst)>>(it->second.get());
+		if (it != m_info_fields.end())
+			dst = dynamic_cast <std::remove_reference_t <decltype(dst)>>(it->second.get());
 	}
 	
 	template <typename t_key, typename t_dst>
 	void reader::get_genotype_field_ptr(t_key const &key, t_dst &dst) const
+	requires(std::is_pointer_v <t_dst>)
 	{
 		auto const it(m_genotype_fields.find(key));
-		libbio_always_assert_neq(it, m_genotype_fields.end());
-		dst = dynamic_cast <std::remove_reference_t <decltype(dst)>>(it->second.get());
+		if (it != m_genotype_fields.end())
+			dst = dynamic_cast <std::remove_reference_t <decltype(dst)>>(it->second.get());
 	}
 	
 	info_field_end *reader::get_end_field_ptr() const
