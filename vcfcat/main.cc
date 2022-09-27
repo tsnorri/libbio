@@ -3,6 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <boost/format.hpp>
 #include <libbio/assert.hh>
 #include <libbio/cxxcompat.hh>
 #include <libbio/file_handling.hh>
@@ -530,7 +531,7 @@ namespace {
 			return false;
 		}
 	}
-	
+
 	
 	void output_header(vcf::reader const &reader, std::ostream &stream, sample_name_vector const &sample_names, bool const exclude_samples)
 	{
@@ -584,6 +585,7 @@ namespace {
 		alt_number_map &alt_mapping,
 		bool const exclude_samples,
 		char const *expected_chr_id,
+		char const *missing_id_prefix,
 		std::int16_t const expected_zygosity
 	)
 	{
@@ -597,6 +599,9 @@ namespace {
 		
 		output_header(reader, stream, sample_names, exclude_samples);
 		printer.prepare(reader);
+
+		std::string var_id_buffer;
+		std::size_t missing_id_idx{};
 		
 		bool should_continue(false);
 		std::size_t lineno{};
@@ -608,8 +613,11 @@ namespace {
 				&sample_names,
 				exclude_samples,
 				&alt_mapping,
+				&var_id_buffer,
+				&missing_id_idx,
 				&lineno,
 				expected_chr_id,	// Pointer
+				missing_id_prefix,	// Pointer
 				expected_zygosity	// std::int16_t
 			](vcf::transient_variant &var){
 				++lineno;
@@ -619,6 +627,16 @@ namespace {
 					goto continue_parsing;
 				
 				printer.begin_variant(reader);
+
+				{
+					auto &var_id(var.id());
+					if (missing_id_prefix && (var_id.empty() || std::erase(var_id, ".")))
+					{
+						++missing_id_idx;
+						var_id_buffer = boost::str(boost::format("%1%%2%") % missing_id_prefix % missing_id_idx);
+						var_id.emplace_back(var_id_buffer);
+					}
+				}
 
 				if ((!sample_names.empty()) || exclude_samples)
 				{
@@ -664,6 +682,7 @@ namespace {
 			alt_mapping,
 			(args_info.exclude_samples_given ?: sample_names.empty()),
 			args_info.chromosome_arg,
+			args_info.replace_missing_id_arg,
 			args_info.zygosity_arg
 		);
 	}
