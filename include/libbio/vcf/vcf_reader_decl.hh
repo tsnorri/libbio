@@ -37,6 +37,7 @@ namespace libbio::vcf {
 	{
 		virtual ~reader_delegate() {}
 		virtual void vcf_reader_did_parse_metadata(reader &vcf_reader) = 0;
+		virtual void vcf_reader_did_update_variant_format(reader &vcf_reader) = 0;
 		virtual bool vcf_reader_should_replace_non_matching_subfield(std::string const &, info_field_base const &, metadata_info const &) = 0;
 		virtual bool vcf_reader_should_replace_non_matching_subfield(std::string const &, genotype_field_base const &, metadata_format const &) = 0;
 	};
@@ -44,6 +45,7 @@ namespace libbio::vcf {
 	struct reader_default_delegate : public reader_delegate
 	{
 		void vcf_reader_did_parse_metadata(reader &vcf_reader) override {}
+		void vcf_reader_did_update_variant_format(reader &vcf_reader) override {}
 		bool vcf_reader_should_replace_non_matching_subfield(std::string const &, info_field_base const &, metadata_info const &) override;
 		bool vcf_reader_should_replace_non_matching_subfield(std::string const &, genotype_field_base const &, metadata_format const &) override;
 	};
@@ -135,6 +137,7 @@ namespace libbio::vcf {
 		copyable_atomic <std::size_t>	m_counter{0};
 		std::size_t						m_lineno{0};							// Current line number.
 		std::size_t						m_variant_index{0};						// Current variant number (0-based).
+		std::size_t						m_variant_offset{0};					// Current variant offset from the beginning of the file.
 		field							m_max_parsed_field{};
 		bool							m_have_assigned_variant_format{};
 		bool							m_has_samples{};
@@ -145,7 +148,8 @@ namespace libbio::vcf {
 		inline reader(input_base &vcf_input);
 		
 		void set_delegate(reader_delegate &delegate) { m_delegate = &delegate; }
-		void set_variant_validator(variant_validator &validator) { m_chrom_pos_validator = &validator; }
+		struct variant_validator &variant_validator() { return *m_chrom_pos_validator; }
+		void set_variant_validator(struct variant_validator &validator) { m_chrom_pos_validator = &validator; }
 		inline void set_input(input_base &input);
 		void set_variant_format(variant_format *fmt) { libbio_always_assert(fmt); m_current_format.reset(fmt); m_have_assigned_variant_format = true; }
 		void read_header();
@@ -187,8 +191,10 @@ namespace libbio::vcf {
 		std::size_t last_header_lineno() const { return m_input->last_header_lineno(); }
 		std::size_t sample_no(std::string const &sample_name) const;
 		std::size_t sample_count() const { return m_sample_names_by_index.size(); }
+		std::size_t variant_offset() const { return m_variant_offset; }
 		sample_name_vector const &sample_names_by_index() const { return m_sample_names_by_index; }
 		sample_name_map const &sample_indices_by_name() const { return m_sample_indices_by_name; }
+		field parsed_fields() const { return m_max_parsed_field; }
 		inline void set_parsed_fields(field max_field);
 		std::size_t counter_value() const { return m_counter; } // Thread-safe.
 		inline std::string_view buffer_tail() const; // Valid in parse()’s callback.

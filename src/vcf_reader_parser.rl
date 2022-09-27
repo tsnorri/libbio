@@ -219,6 +219,7 @@ namespace libbio::vcf {
 					
 					m_current_variant.initialize_samples();
 					m_current_format->reader_did_update_format(*this);
+					m_delegate->vcf_reader_did_update_variant_format(*this);
 				}
 			}
 			
@@ -509,7 +510,8 @@ namespace libbio::vcf {
 					m_current_variant.reset();
 					m_current_variant.m_variant_index = m_variant_index++;
 					m_current_variant.m_lineno = m_lineno;
-					m_current_line_or_buffer_start = 1 + fpc;
+					m_variant_offset += fpc - m_current_line_or_buffer_start;
+					m_current_line_or_buffer_start = fpc;
 					
 					fgoto *next_state <fentry(main_nl), fentry(break_nl)>(field::CHROM, fentry(chrom_id_f), stop_after_newline, cb, should_continue);
 				}

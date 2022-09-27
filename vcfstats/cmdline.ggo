@@ -1,0 +1,22 @@
+# Copyright (c) 2022 Tuukka Norri
+# This code is licensed under MIT license (see LICENSE for details).
+
+package		"vcfstats"
+version		"0.1"
+purpose		"Calculate statistics from a VCF file."
+usage		"vcfstats --input=input.vcf ..."
+description	"NOTE: When calculating counts per chromosome copy, only haploid or diploid samples and variants with at most one alternative allele are handled."
+
+option		"input"					i	"Variant call file path"			string	typestr = "filename"								required
+option		"chr"					c	"Chromosome ID"						string														required
+option		"gt-id"					-	"Genotype field ID"					string	default = "GT"										optional
+option		"ps-id"					-	"Phase set field ID"				string	default = "PS"										optional
+
+defmode		"Variant distances"														modedesc = "Output variant co-ordinate distances"
+modeoption	"variant-distances"		D	"Output variant distances"					mode = "Variant distances"							required
+
+defmode		"Phase sets"															modedesc = "List the phase sets"
+modeoption	"phase-sets"			P	"Output phase set names"					mode = "Phase sets"									required
+
+defmode		"Counts per chromosome copy"											modedesc = "Variant counts per chromosome copy. Currently lack of phasing and phase sets are ignored, i.e. 0/1 is treated similarly to 0|1."
+modeoption	"counts-per-chr-copy"	-	"Output variant counts per chromosome copy"	mode = "Counts per chromosome copy"					required

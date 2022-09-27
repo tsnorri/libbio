@@ -3,6 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <boost/format.hpp>
 #include <libbio/assert.hh>
 #include <libbio/cxxcompat.hh>
 #include <libbio/file_handling.hh>
@@ -12,7 +13,11 @@
 #include <libbio/vcf/vcf_reader.hh>
 #include <map>
 #include <numeric>
+#include <numeric>
+#include <range/v3/iterator/insert_iterators.hpp>
+#include <range/v3/view/filter.hpp>
 #include <range/v3/view/take_while.hpp>
+#include <set>
 #include "cmdline.h"
 
 
@@ -20,8 +25,9 @@ namespace lb	= libbio;
 namespace rsv	= ranges::views;
 namespace vcf	= libbio::vcf;
 
-typedef std::vector <std::string>			sample_name_vector;
-typedef std::map <std::size_t, std::size_t>	alt_number_map;
+typedef std::vector <std::string>								sample_name_vector;
+typedef std::map <std::size_t, std::size_t>						alt_number_map;
+typedef std::set <std::string, lb::compare_strings_transparent>	field_id_set;
 
 
 namespace {
@@ -37,31 +43,50 @@ namespace {
 		
 		virtual void reader_did_update_format(vcf::reader &reader) override;
 	};
-	
-	
+
+
 	class variant_printer_base : public vcf::variant_printer_base <vcf::transient_variant>
 	{
 		typedef vcf::variant_printer_base <vcf::transient_variant>	base_class;
+
+	protected:
+		vcf::genotype_ptr_vector	m_format;
+		field_id_set const			*m_retained_info_fields{};
+		field_id_set const			*m_retained_genotype_fields{};
 		
 	public:
 		using base_class::output_info;
 		using base_class::output_format;
 		using base_class::output_sample;
 
+		variant_printer_base(field_id_set const *retained_info_fields, field_id_set const *retained_genotype_fields):
+			m_retained_info_fields(retained_info_fields),
+			m_retained_genotype_fields(retained_genotype_fields)
+		{
+		}
+
 		virtual ~variant_printer_base() {}
 		virtual void prepare(vcf::reader &reader) {}
+		virtual void vcf_reader_did_update_variant_format(vcf::reader &reader);
 		virtual void begin_variant(vcf::reader &reader) {}
+
+	protected:
+		void update_and_filter_variant_format(vcf::reader &reader);
+
+	public:
+		void output_info(std::ostream &os, variant_type const &var) const override;
+		void output_format(std::ostream &os, variant_type const &var) const override;
+		void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const override;
 	};
 	
 	
 	class order_preserving_variant_printer_base : public variant_printer_base
 	{
 	protected:
-		vcf::reader						*m_reader{};			// Non-owning.
 		vcf::info_field_ptr_vector		m_info_fields;			// Non-owning.
-		vcf::genotype_ptr_vector const	*m_genotype_fields{};	// Non-owning.
 
 	public:
+		using variant_printer_base::variant_printer_base;
 		using variant_printer_base::output_info;
 		using variant_printer_base::output_format;
 		using variant_printer_base::output_sample;
@@ -70,8 +95,7 @@ namespace {
 		void output_format(std::ostream &os, variant_type const &var) const override;
 		void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const override;
 
-		void prepare(vcf::reader &reader) override;
-		void begin_variant(vcf::reader &reader) override;
+		void vcf_reader_did_update_variant_format(vcf::reader &reader) override;
 	};
 	
 	
@@ -100,7 +124,14 @@ namespace {
 	public:
 		sample_filtering_variant_printer() = default;
 		
-		sample_filtering_variant_printer(sample_name_vector const &sample_names, alt_number_map const &alt_mapping, bool const exclude_samples):
+		sample_filtering_variant_printer(
+			field_id_set const *retained_info_fields,
+			field_id_set const *retained_genotype_fields,
+			sample_name_vector const &sample_names,
+			alt_number_map const &alt_mapping,
+			bool const exclude_samples
+		):
+			t_base(retained_info_fields, retained_genotype_fields),
 			m_sample_names(&sample_names),
 			m_alt_mapping(&alt_mapping),
 			m_exclude_samples(exclude_samples)
@@ -111,17 +142,31 @@ namespace {
 		void output_samples(std::ostream &os, variant_type const &var) const override;
 	};
 	
+
+	struct reader_delegate : public vcf::reader_default_delegate
+	{
+		variant_printer_base	*m_printer{};
+
+		reader_delegate(variant_printer_base &printer):
+			m_printer(&printer)
+		{
+		}
+
+		void vcf_reader_did_update_variant_format(vcf::reader &reader) override { m_printer->vcf_reader_did_update_variant_format(reader); }
+	};
+
 	
+	template <typename t_fields>
+	auto filtered_fields(t_fields &&fields, field_id_set const &by_ids)
+	{
+		return fields
+		| rsv::filter([&by_ids](auto const &field){ return by_ids.contains(field.get_metadata()->get_id()); });
+	}
+
+
 	void variant_format::reader_did_update_format(vcf::reader &reader)
 	{	
 		this->assign_field_ptr("GT", gt);
-	}
-	
-	
-	inline variant_format const &get_variant_format(vcf::variant const &var)
-	{
-		libbio_assert(var.reader()->has_assigned_variant_format());
-		return static_cast <variant_format const &>(var.get_format());
 	}
 	
 	
@@ -132,32 +177,110 @@ namespace {
 	}
 	
 	
-	void order_preserving_variant_printer_base::prepare(vcf::reader &reader)
+	inline variant_format const &get_variant_format(vcf::variant const &var)
 	{
-		m_reader = &reader;
+		libbio_assert(var.reader()->has_assigned_variant_format());
+		return static_cast <variant_format const &>(var.get_format());
 	}
-	
-	
-	void order_preserving_variant_printer_base::begin_variant(vcf::reader &reader)
+
+
+	void variant_printer_base::update_and_filter_variant_format(vcf::reader &reader)
 	{
-		m_genotype_fields = &reader.get_current_variant_format();
+		ranges::copy(
+			filtered_fields(
+				reader.get_current_variant_format()
+				| rsv::indirect,
+				*m_retained_genotype_fields
+			)
+			| rsv::transform([](auto &field) -> vcf::genotype_field_base * { return &field; }),
+			ranges::back_inserter(m_format)
+		);
 	}
-	
+
+
+	void variant_printer_base::vcf_reader_did_update_variant_format(vcf::reader &reader)
+	{
+		m_format.clear();
+		if (m_retained_genotype_fields)
+			update_and_filter_variant_format(reader);
+	}
+
+
+	void variant_printer_base::output_info(std::ostream &os, variant_type const &var) const
+	{
+		if (m_retained_info_fields)
+		{
+			auto rng(filtered_fields(var.reader()->current_record_info_fields() | rsv::indirect, *m_retained_info_fields));
+			if (rng.empty())
+				os << '.';
+			else
+				output_info(os, var, rng);
+		}
+		else
+		{
+			base_class::output_info(os, var);
+		}
+	}
+
+
+	void variant_printer_base::output_format(std::ostream &os, variant_type const &var) const
+	{
+		if (m_retained_genotype_fields)
+		{
+			if (m_format.empty())
+				os << '.';
+			else
+				output_format(os, var, m_format | rsv::indirect);
+		}
+		else
+		{
+			base_class::output_format(os, var);
+		}
+	}
+
+
+	void variant_printer_base::output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const
+	{
+		if (m_retained_genotype_fields)
+		{
+			if (m_format.empty())
+				os << '.';
+			else
+				output_sample(os, var, sample, m_format | rsv::indirect);
+		}
+		else
+		{
+			base_class::output_sample(os, var, sample);
+		}
+	}
+
+
+	void order_preserving_variant_printer_base::vcf_reader_did_update_variant_format(vcf::reader &reader)
+	{
+		m_format.clear();
+		if (m_retained_genotype_fields)
+			update_and_filter_variant_format(reader);
+		else
+			m_format = reader.get_current_variant_format();
+	}
+
 	
 	void order_preserving_variant_printer_base::output_info(std::ostream &os, variant_type const &var) const
 	{
-		output_info(
-			os,
-			var,
-			m_reader->current_record_info_fields()
-			| rsv::indirect
-		);
+		auto rng(filtered_fields(var.reader()->current_record_info_fields() | rsv::indirect, *m_retained_info_fields));
+		if (rng.empty())
+			os << '.';
+		else
+			output_info(os, var, rng);
 	}
 	
 	
 	void order_preserving_variant_printer_base::output_format(std::ostream &os, variant_type const &var) const
 	{
-		output_format(os, var, *m_genotype_fields | rsv::indirect);
+		if (m_format.empty())
+			os << '.';
+		else
+			output_format(os, var, m_format | rsv::indirect);
 	}
 
 
@@ -167,7 +290,10 @@ namespace {
 		variant_sample_type const &sample
 	) const
 	{
-		output_sample(os, var, sample, *m_genotype_fields | rsv::indirect);
+		if (m_format.empty())
+			os << '.';
+		else
+			output_sample(os, var, sample, m_format | rsv::indirect);
 	}
 	
 	
@@ -405,7 +531,7 @@ namespace {
 			return false;
 		}
 	}
-	
+
 	
 	void output_header(vcf::reader const &reader, std::ostream &stream, sample_name_vector const &sample_names, bool const exclude_samples)
 	{
@@ -459,6 +585,7 @@ namespace {
 		alt_number_map &alt_mapping,
 		bool const exclude_samples,
 		char const *expected_chr_id,
+		char const *missing_id_prefix,
 		std::int16_t const expected_zygosity
 	)
 	{
@@ -466,9 +593,15 @@ namespace {
 		if (!sample_names.empty())
 			check_sample_names(reader, sample_names);
 		*/
+
+		reader_delegate delegate(printer);
+		reader.set_delegate(delegate);
 		
 		output_header(reader, stream, sample_names, exclude_samples);
 		printer.prepare(reader);
+
+		std::string var_id_buffer;
+		std::size_t missing_id_idx{};
 		
 		bool should_continue(false);
 		std::size_t lineno{};
@@ -480,8 +613,11 @@ namespace {
 				&sample_names,
 				exclude_samples,
 				&alt_mapping,
+				&var_id_buffer,
+				&missing_id_idx,
 				&lineno,
 				expected_chr_id,	// Pointer
+				missing_id_prefix,	// Pointer
 				expected_zygosity	// std::int16_t
 			](vcf::transient_variant &var){
 				++lineno;
@@ -491,6 +627,16 @@ namespace {
 					goto continue_parsing;
 				
 				printer.begin_variant(reader);
+
+				{
+					auto &var_id(var.id());
+					if (missing_id_prefix && (var_id.empty() || std::erase(var_id, ".")))
+					{
+						++missing_id_idx;
+						var_id_buffer = boost::str(boost::format("%1%%2%") % missing_id_prefix % missing_id_idx);
+						var_id.emplace_back(var_id_buffer);
+					}
+				}
 
 				if ((!sample_names.empty()) || exclude_samples)
 				{
@@ -536,6 +682,7 @@ namespace {
 			alt_mapping,
 			(args_info.exclude_samples_given ?: sample_names.empty()),
 			args_info.chromosome_arg,
+			args_info.replace_missing_id_arg,
 			args_info.zygosity_arg
 		);
 	}
@@ -546,6 +693,8 @@ namespace {
 		vcf::reader &reader,
 		lb::file_ostream &output_stream,
 		sample_name_vector const &sample_names,
+		field_id_set const *retained_info_fields,
+		field_id_set const *retained_genotype_fields,
 		gengetopt_args_info const &args_info
 	)
 	{
@@ -553,12 +702,12 @@ namespace {
 		alt_number_map alt_mapping;
 		if (should_exclude_samples)
 		{
-			sample_filtering_variant_printer <t_variant_printer_base> printer(sample_names, alt_mapping, should_exclude_samples);
+			sample_filtering_variant_printer <t_variant_printer_base> printer(retained_info_fields, retained_genotype_fields, sample_names, alt_mapping, should_exclude_samples);
 			output_vcf(reader, printer, output_stream, sample_names, alt_mapping, args_info);
 		}
 		else
 		{
-			variant_printer <t_variant_printer_base> printer{};
+			variant_printer <t_variant_printer_base> printer(retained_info_fields, retained_genotype_fields);
 			output_vcf(reader, printer, output_stream, sample_names, alt_mapping, args_info);
 		}
 	}
@@ -615,11 +764,46 @@ int main(int argc, char **argv)
 	reader.set_input(vcf_input);
 	reader.read_header();
 	reader.set_parsed_fields(vcf::field::ALL);
+
+	// Info and genotype fields to be retained.
+	field_id_set retained_info_fields;
+	field_id_set retained_genotype_fields;
+	{
+		auto const &metadata(reader.metadata());
+		auto const &info_fields(metadata.info());
+		auto const &genotype_fields(metadata.format());
+
+		for (int i(0); i < args_info.info_field_given; ++i)
+		{
+			auto const *field_id(args_info.info_field_arg[i]);
+			if (!genotype_fields.contains(field_id))
+			{
+				std::cerr << "ERROR: The VCF file did not contain an INFO header for the genotype field id “" << field_id << "”." << std::endl;
+				std::exit(EXIT_FAILURE);
+			}
+
+			retained_info_fields.emplace(field_id);
+		}
+
+		for (int i(0); i < args_info.genotype_field_given; ++i)
+		{
+			auto const *field_id(args_info.genotype_field_arg[i]);
+			if (!genotype_fields.contains(field_id))
+			{
+				std::cerr << "ERROR: The VCF file did not contain a FORMAT header for the genotype field id “" << field_id << "”." << std::endl;
+				std::exit(EXIT_FAILURE);
+			}
+
+			retained_genotype_fields.emplace(field_id);
+		}
+	}
 	
+	auto const *retained_info_fields_(args_info.omit_info_given || !retained_genotype_fields.empty() ? &retained_genotype_fields : nullptr);
+	auto const *retained_genotype_fields_(retained_genotype_fields.empty() ? nullptr : &retained_genotype_fields);
 	if (args_info.preserve_field_order_flag)
-		output_vcf <order_preserving_variant_printer_base>(reader, output_stream, sample_names, args_info);
+		output_vcf <order_preserving_variant_printer_base>(reader, output_stream, sample_names, retained_info_fields_, retained_genotype_fields_, args_info);
 	else
-		output_vcf <variant_printer_base>(reader, output_stream, sample_names, args_info);
+		output_vcf <variant_printer_base>(reader, output_stream, sample_names, retained_info_fields_, retained_genotype_fields_, args_info);
 	
 	return EXIT_SUCCESS;
 }

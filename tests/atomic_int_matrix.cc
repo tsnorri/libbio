@@ -16,36 +16,26 @@ namespace {
 	
 	template <typename t_val>
 	constexpr std::uint16_t u16(t_val val) { return val; }
-	
-	
-	void create_atomic_int_matrix_8(lb::atomic_int_matrix <4, std::uint16_t> &dst)
+
+
+	template <std::uint8_t t_bits, typename t_word>
+	struct matrix_helper
 	{
-		std::size_t const rows(4);
-		std::size_t const columns(2);
-	
-		lb::atomic_int_matrix <4, std::uint16_t> temp(rows, columns);
-		std::uint8_t val{};
-		for (auto ref : temp)
-			ref.fetch_or((val++) & 0xf);
-	
-		using std::swap;
-		swap(temp, dst);
-	}
-	
-	
-	void create_atomic_int_matrix_7x3(lb::atomic_int_matrix <4, std::uint16_t> &dst)
-	{
-		std::size_t const rows(7);
-		std::size_t const columns(3);
-	
-		lb::atomic_int_matrix <4, std::uint16_t> temp(rows, columns);
-		std::uint8_t val{};
-		for (auto ref : temp)
-			ref.fetch_or((val++) & 0xf);
-	
-		using std::swap;
-		swap(temp, dst);
-	}
+		lb::atomic_int_matrix <t_bits, t_word>	matrix;
+
+		matrix_helper(std::size_t const rows, std::size_t const columns):
+			matrix(rows, columns)
+		{
+			std::uint8_t val{};
+			for (auto ref : matrix)
+				ref.fetch_or((val++) & 0xf);
+		}
+
+		static matrix_helper create_8() { return matrix_helper(4, 2); }
+		static matrix_helper create_7x3() { return matrix_helper(7, 3); }
+	};
+
+	typedef matrix_helper <4, std::uint16_t> matrix_helper_t;
 }
 
 
@@ -53,8 +43,8 @@ SCENARIO("A atomic_int_matrix may be created", "[atomic_int_matrix]")
 {
 	GIVEN("an atomic_int_matrix <4, std::uint16_t>")
 	{
-		lb::atomic_int_matrix <4, std::uint16_t> matrix;
-		create_atomic_int_matrix_8(matrix);
+		auto hh(matrix_helper_t::create_8());
+		auto &matrix(hh.matrix);
 		
 		WHEN("queried for size")
 		{
@@ -75,8 +65,8 @@ SCENARIO("Values may be stored into an atomic_int_matrix", "[atomic_int_matrix]"
 {
 	GIVEN("an atomic_int_matrix <4, std::uint16_t>")
 	{
-		lb::atomic_int_matrix <4, std::uint16_t> matrix;
-		create_atomic_int_matrix_8(matrix);
+		auto hh(matrix_helper_t::create_8());
+		auto &matrix(hh.matrix);
 		
 		REQUIRE(matrix.size() == 8);
 		REQUIRE(matrix.number_of_rows() == 4);
@@ -109,8 +99,8 @@ SCENARIO("Packed matrix slices return the correct values", "[atomic_int_matrix]"
 {
 	GIVEN("an atomic_int_matrix <4, std::uint16_t>")
 	{
-		lb::atomic_int_matrix <4, std::uint16_t> matrix;
-		create_atomic_int_matrix_8(matrix);
+		auto hh(matrix_helper_t::create_8());
+		auto &matrix(hh.matrix);
 		
 		REQUIRE(matrix.size() == 8);
 		REQUIRE(matrix.number_of_rows() == 4);
@@ -198,8 +188,8 @@ SCENARIO("Unaligned packed matrix slices return the correct values", "[atomic_in
 {
 	GIVEN("an atomic_int_matrix <4, std::uint16_t>")
 	{
-		lb::atomic_int_matrix <4, std::uint16_t> matrix;
-		create_atomic_int_matrix_7x3(matrix);
+		auto hh(matrix_helper_t::create_7x3());
+		auto &matrix(hh.matrix);
 		
 		REQUIRE(matrix.size() == 21);
 		REQUIRE(matrix.number_of_rows() == 7);
@@ -328,9 +318,9 @@ SCENARIO("Packed matrix columns may be transposed using matrices::transpose_colu
 {
 	GIVEN("two packed_matrices <4, std::uint16_t>")
 	{
+		auto hh(matrix_helper_t::create_7x3());
 		lb::atomic_int_matrix <4, std::uint16_t> dst(2, 8);
-		lb::atomic_int_matrix <4, std::uint16_t> src;
-		create_atomic_int_matrix_7x3(src);
+		auto &src(hh.matrix);
 		
 		auto const col_idx = GENERATE(gen::values <std::size_t>({0, 1, 2}));
 		auto const &src_col(src.column(col_idx));

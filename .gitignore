@@ -36,6 +36,9 @@ vcfmerge/vcfmerge
 vcfmergerecords/cmdline.c
 vcfmergerecords/cmdline.h
 vcfmergerecords/vcfmergerecords
+vcfstats/cmdline.c
+vcfstats/cmdline.h
+vcfstats/vcfstats
 
 
 # Prerequisites
