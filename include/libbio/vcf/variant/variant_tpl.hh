@@ -80,6 +80,7 @@ namespace libbio::vcf {
 		
 		string_type const &chrom_id() const								{ return m_chrom_id; }
 		string_type const &ref() const									{ return m_ref; }
+		std::vector <string_type> &id()									{ return m_id; }
 		std::vector <string_type> const &id() const						{ return m_id; }
 		std::vector <variant_alt_type> &alts()							{ return m_alts; }
 		std::vector <variant_alt_type> const &alts() const				{ return m_alts; }
