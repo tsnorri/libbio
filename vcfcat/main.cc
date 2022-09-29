@@ -15,6 +15,7 @@
 #include <numeric>
 #include <numeric>
 #include <range/v3/iterator/insert_iterators.hpp>
+#include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/take_while.hpp>
 #include <set>
@@ -26,7 +27,7 @@ namespace rsv	= ranges::views;
 namespace vcf	= libbio::vcf;
 
 typedef std::vector <std::string>								sample_name_vector;
-typedef std::map <std::size_t, std::size_t>						alt_number_map;
+typedef std::vector <std::size_t>								alt_number_vector;
 typedef std::set <std::string, lb::compare_strings_transparent>	field_id_set;
 
 
@@ -53,15 +54,21 @@ namespace {
 		vcf::genotype_ptr_vector	m_format;
 		field_id_set const			*m_retained_info_fields{};
 		field_id_set const			*m_retained_genotype_fields{};
+		alt_number_vector const		*m_alt_mapping{};
 		
 	public:
 		using base_class::output_info;
 		using base_class::output_format;
 		using base_class::output_sample;
 
-		variant_printer_base(field_id_set const *retained_info_fields, field_id_set const *retained_genotype_fields):
+		variant_printer_base(
+			field_id_set const *retained_info_fields,
+			field_id_set const *retained_genotype_fields,
+			alt_number_vector const &alt_mapping
+		):
 			m_retained_info_fields(retained_info_fields),
-			m_retained_genotype_fields(retained_genotype_fields)
+			m_retained_genotype_fields(retained_genotype_fields),
+			m_alt_mapping(&alt_mapping)
 		{
 		}
 
@@ -74,6 +81,7 @@ namespace {
 		void update_and_filter_variant_format(vcf::reader &reader);
 
 	public:
+		void output_alt(std::ostream &os, variant_type const &var) const override;
 		void output_info(std::ostream &os, variant_type const &var) const override;
 		void output_format(std::ostream &os, variant_type const &var) const override;
 		void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const override;
@@ -118,7 +126,6 @@ namespace {
 		
 	protected:
 		sample_name_vector const	*m_sample_names{};
-		alt_number_map const		*m_alt_mapping{};
 		bool const					m_exclude_samples{};
 		
 	public:
@@ -127,18 +134,16 @@ namespace {
 		sample_filtering_variant_printer(
 			field_id_set const *retained_info_fields,
 			field_id_set const *retained_genotype_fields,
+			alt_number_vector const &alt_mapping,
 			sample_name_vector const &sample_names,
-			alt_number_map const &alt_mapping,
 			bool const exclude_samples
 		):
-			t_base(retained_info_fields, retained_genotype_fields),
+			t_base(retained_info_fields, retained_genotype_fields, alt_mapping),
 			m_sample_names(&sample_names),
-			m_alt_mapping(&alt_mapping),
 			m_exclude_samples(exclude_samples)
 		{
 		}
 		
-		void output_alt(std::ostream &os, variant_type const &var) const override;
 		void output_samples(std::ostream &os, variant_type const &var) const override;
 	};
 	
@@ -206,6 +211,26 @@ namespace {
 	}
 
 
+	void variant_printer_base::output_alt(std::ostream &os, variant_type const &var) const
+	{
+		if (m_alt_mapping->empty())
+			base_class::output_alt(os, var);
+		else
+		{
+			auto const &alts(var.alts());
+			ranges::copy(
+				*m_alt_mapping
+				| rsv::enumerate
+				| rsv::filter([](auto const &tup){ return SIZE_MAX != std::get <1>(tup); })
+				| rsv::transform([&alts](auto const &tup) -> typename variant_type::string_type const & {
+					return alts[std::get <0>(tup)].alt; 
+				}),
+				ranges::make_ostream_joiner(os, ",")
+			);
+		}
+	}
+	
+	
 	void variant_printer_base::output_info(std::ostream &os, variant_type const &var) const
 	{
 		if (m_retained_info_fields)
@@ -297,24 +322,8 @@ namespace {
 	}
 	
 	
-	template <typename t_variant>
-	void sample_filtering_variant_printer <t_variant>::output_alt(std::ostream &os, variant_type const &var) const
-	{
-		auto const &alts(var.alts());
-		ranges::copy(
-			*m_alt_mapping
-			| ranges::view::transform([&var, &alts](auto const &kv) -> typename variant_type::string_type const & {
-				libbio_assert_lt(0, kv.first);
-				libbio_assert_lte_msg(kv.first, alts.size(), "lineno: ", var.lineno(), " kv.first: ", kv.first, " alts.size(): ", alts.size());
-				return alts[kv.first - 1].alt; 
-			}),
-			ranges::make_ostream_joiner(os, ",")
-		);
-	}
-	
-	
-	template <typename t_variant>
-	void sample_filtering_variant_printer <t_variant>::output_samples(std::ostream &os, variant_type const &var) const
+	template <typename t_base>
+	void sample_filtering_variant_printer <t_base>::output_samples(std::ostream &os, variant_type const &var) const
 	{
 		auto const &reader(var.reader());
 		auto const &parsed_sample_names(reader->sample_indices_by_name());
@@ -373,12 +382,30 @@ namespace {
 		if (!can_continue)
 			std::exit(EXIT_FAILURE);
 	}
-	
-	
-	bool modify_variant(vcf::transient_variant &var, alt_number_map &alt_mapping, sample_name_vector const &sample_names, bool const exclude_samples)
-	{
-		alt_mapping.clear();
 
+
+	bool update_alt_mapping(alt_number_vector &alt_mapping, std::size_t const expected_val)
+	{
+		// Number the new ALT values.
+		std::size_t idx{};
+		for (auto &val : alt_mapping)
+		{
+			if (expected_val == val)
+				val = idx++;
+			else
+				val = SIZE_MAX;
+		}
+
+		if (!idx)
+			return false;
+
+		return true;
+	}
+	
+	
+	bool modify_variant_for_sample_exclusion(vcf::transient_variant &var, alt_number_vector &alt_mapping, sample_name_vector const &sample_names, bool const exclude_samples)
+	{
+		// If no samples were specified, don’t modify the ALT values.
 		auto &samples(var.samples());
 		if (samples.empty())
 			return true;
@@ -386,18 +413,17 @@ namespace {
 		auto const *gt_field(get_variant_format(var).gt);
 		auto const &reader(*var.reader());
 		auto const &parsed_sample_names(reader.sample_indices_by_name());
-		
+
 		// Find the ALT values that are in use in the given samples.
 		{
 			auto const cb([&samples, &gt_field, &alt_mapping](std::size_t const idx1){
 				libbio_assert(idx1);
-				auto const idx(idx1 - 1);
-				auto &sample(samples[idx]);
+				auto const &sample(samples[idx1 - 1]);
 				for (auto const &gt : (*gt_field)(sample))
 				{
 					if (vcf::sample_genotype::NULL_ALLELE == gt.alt || 0 == gt.alt)
 						continue;
-					alt_mapping.emplace(gt.alt, 0);
+					alt_mapping[gt.alt] *= 2;
 				}
 			});
 			
@@ -426,17 +452,10 @@ namespace {
 					}
 				}
 			}
-			
-			if (alt_mapping.empty())
-				return false;
 		}
-		
-		// Number the new ALT values.
-		{
-			std::size_t idx{};
-			for (auto &kv : alt_mapping)
-				kv.second = ++idx;
-		}
+
+		if (!update_alt_mapping(alt_mapping, 2))
+			return false;
 		
 		// Change the GT values.
 		for (auto const &name : sample_names)
@@ -581,11 +600,12 @@ namespace {
 		vcf::reader &reader,
 		variant_printer_base &printer,
 		std::ostream &stream,
+		alt_number_vector &alt_mapping,
 		sample_name_vector const &sample_names,
-		alt_number_map &alt_mapping,
 		bool const exclude_samples,
 		char const *expected_chr_id,
 		char const *missing_id_prefix,
+		enum_variants const variant_types,
 		std::int16_t const expected_zygosity
 	)
 	{
@@ -618,6 +638,7 @@ namespace {
 				&lineno,
 				expected_chr_id,	// Pointer
 				missing_id_prefix,	// Pointer
+				variant_types,		// enum
 				expected_zygosity	// std::int16_t
 			](vcf::transient_variant &var){
 				++lineno;
@@ -625,6 +646,28 @@ namespace {
 				// FIXME: use vcf::reader’s filtering facility (and try to output correct line number counts anyway).
 				if (expected_chr_id && var.chrom_id() != expected_chr_id)
 					goto continue_parsing;
+
+				alt_mapping.clear();
+				if (variants_arg_SNPs == variant_types)
+				{
+					if (1 != var.ref().size())
+						goto continue_parsing;
+
+					alt_mapping.resize(var.alts().size(), 1);
+
+					// Count the SNPs and mark the other variants.
+					std::size_t snp_count{};
+					for (auto const &[idx, alt] : var.alts() | rsv::enumerate)
+					{
+						if (vcf::sv_type::NONE == alt.alt_sv_type && 1 == alt.alt.size())
+							++snp_count;
+						else
+							alt_mapping[idx] = 0;
+					}
+
+					if (0 == snp_count)
+						goto continue_parsing;
+				}
 				
 				printer.begin_variant(reader);
 
@@ -640,19 +683,27 @@ namespace {
 
 				if ((!sample_names.empty()) || exclude_samples)
 				{
+					if (alt_mapping.empty())
+					{
+						alt_mapping.resize(var.alts().size());
+						std::fill(alt_mapping.begin(), alt_mapping.end(), 1);
+					}
+
 					// FIXME: a variant may be excluded if there are no non-zero and non-missing GT values.
 					if (
-						modify_variant(var, alt_mapping, sample_names, exclude_samples) &&
+						modify_variant_for_sample_exclusion(var, alt_mapping, sample_names, exclude_samples) &&
 						(-1 == expected_zygosity || check_zygosity(reader, var, expected_zygosity, sample_names, exclude_samples))
 					)
 					{
 						vcf::output_vcf(printer, stream, var);
 					}
 				}
-				else
+				else if (-1 == expected_zygosity || check_zygosity(var, expected_zygosity))
 				{
-					if (-1 == expected_zygosity || check_zygosity(var, expected_zygosity))
-						vcf::output_vcf(printer, stream, var);
+					if (!alt_mapping.empty())
+						update_alt_mapping(alt_mapping, 1);
+					
+					vcf::output_vcf(printer, stream, var);
 				}
 				
 			continue_parsing:
@@ -669,8 +720,8 @@ namespace {
 		vcf::reader &reader,
 		variant_printer_base &variant_printer,
 		lb::file_ostream &output_stream,
+		alt_number_vector &alt_mapping,
 		sample_name_vector const &sample_names,
-		alt_number_map &alt_mapping,
 		gengetopt_args_info const &args_info
 	)
 	{
@@ -678,11 +729,12 @@ namespace {
 			reader,
 			variant_printer,
 			args_info.output_given ? output_stream : std::cout,
-			sample_names,
 			alt_mapping,
+			sample_names,
 			(args_info.exclude_samples_given ?: sample_names.empty()),
 			args_info.chromosome_arg,
 			args_info.replace_missing_id_arg,
+			args_info.variants_arg,
 			args_info.zygosity_arg
 		);
 	}
@@ -699,16 +751,16 @@ namespace {
 	)
 	{
 		bool const should_exclude_samples(args_info.exclude_samples_given ?: sample_names.empty());
-		alt_number_map alt_mapping;
+		alt_number_vector alt_mapping;
 		if (should_exclude_samples)
 		{
-			sample_filtering_variant_printer <t_variant_printer_base> printer(retained_info_fields, retained_genotype_fields, sample_names, alt_mapping, should_exclude_samples);
-			output_vcf(reader, printer, output_stream, sample_names, alt_mapping, args_info);
+			sample_filtering_variant_printer <t_variant_printer_base> printer(retained_info_fields, retained_genotype_fields, alt_mapping, sample_names, should_exclude_samples);
+			output_vcf(reader, printer, output_stream, alt_mapping, sample_names, args_info);
 		}
 		else
 		{
-			variant_printer <t_variant_printer_base> printer(retained_info_fields, retained_genotype_fields);
-			output_vcf(reader, printer, output_stream, sample_names, alt_mapping, args_info);
+			variant_printer <t_variant_printer_base> printer(retained_info_fields, retained_genotype_fields, alt_mapping);
+			output_vcf(reader, printer, output_stream, alt_mapping, sample_names, args_info);
 		}
 	}
 }
