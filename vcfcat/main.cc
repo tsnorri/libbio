@@ -423,7 +423,7 @@ namespace {
 				{
 					if (vcf::sample_genotype::NULL_ALLELE == gt.alt || 0 == gt.alt)
 						continue;
-					alt_mapping[gt.alt] *= 2;
+					alt_mapping[gt.alt - 1] *= 2; // All existing values are either 0 or 1; set to 2 iff. non-zero.
 				}
 			});
 			
@@ -470,7 +470,7 @@ namespace {
 			for (auto &gt : (*gt_field)(sample))
 			{
 				if (gt.alt && vcf::sample_genotype::NULL_ALLELE != gt.alt)
-					gt.alt = alt_mapping[gt.alt];
+					gt.alt = 1 + alt_mapping[gt.alt - 1];
 			}
 		}
 		
@@ -754,7 +754,13 @@ namespace {
 		alt_number_vector alt_mapping;
 		if (should_exclude_samples)
 		{
-			sample_filtering_variant_printer <t_variant_printer_base> printer(retained_info_fields, retained_genotype_fields, alt_mapping, sample_names, should_exclude_samples);
+			sample_filtering_variant_printer <t_variant_printer_base> printer(
+				retained_info_fields,
+				retained_genotype_fields,
+				alt_mapping,
+				sample_names,
+				should_exclude_samples
+			);
 			output_vcf(reader, printer, output_stream, alt_mapping, sample_names, args_info);
 		}
 		else
