@@ -483,7 +483,7 @@ namespace {
 		static_assert(0x7fff == vcf::sample_genotype::NULL_ALLELE); // Should be positive and small enough s.t. the sum can fit into std::uint64_t or similar.
 		auto const &gt(gt_field(sample));
 		auto const zygosity(std::accumulate(gt.begin(), gt.end(), std::uint64_t(0), [](auto const acc, vcf::sample_genotype const &sample_gt){
-			return acc + sample_gt.alt;
+			return acc + (sample_gt.alt ? 1 : 0);
 		}));
 		return zygosity == expected_zygosity;
 	}
