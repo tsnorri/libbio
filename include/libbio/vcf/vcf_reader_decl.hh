@@ -132,7 +132,7 @@ namespace libbio::vcf {
 		sample_name_map					m_sample_indices_by_name;
 		transient_variant				m_current_variant;						// FIXME: Consider moving to parser_state. On the other hand, most of the data members have to do with state.
 		reader_delegate					*m_delegate{&detail::g_vcf_reader_default_delegate};
-		variant_validator				*m_chrom_pos_validator{&detail::g_vcf_reader_default_variant_validator};
+		struct variant_validator		*m_chrom_pos_validator{&detail::g_vcf_reader_default_variant_validator};
 		char const						*m_current_line_or_buffer_start{};
 		copyable_atomic <std::size_t>	m_counter{0};
 		std::size_t						m_lineno{0};							// Current line number.
