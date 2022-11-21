@@ -83,6 +83,13 @@ namespace libbio {
 		
 		template <void(owner_type::*t_fn)() = detail::dispatch_caller_default_fn_v <owner_type>>
 		requires (nullptr != t_fn)
+		void group_notify(dispatch_group_t group, dispatch_queue_t queue)
+		{
+			dispatch_group_notify_f(group, queue, m_owner, detail::call_member_function <owner_type, t_fn>);
+		}
+		
+		template <void(owner_type::*t_fn)() = detail::dispatch_caller_default_fn_v <owner_type>>
+		requires (nullptr != t_fn)
 		void source_set_event_handler(dispatch_source_t source)
 		{
 			dispatch_set_context(source, m_owner);
