@@ -22,16 +22,25 @@ namespace libbio {
 	
 	struct fasta_reader_delegate
 	{
+		virtual ~fasta_reader_delegate() {}
 		virtual bool handle_comment_line(fasta_reader &reader, std::string_view const &sv) = 0;
 		virtual bool handle_identifier(fasta_reader &reader, std::string_view const &sv) = 0;
 		virtual bool handle_sequence_line(fasta_reader &reader, std::string_view const &sv) = 0;
 	};
 	
 	
+	// FIXME: Use stream input.
+	// FIXME: handle compressed input.
 	class fasta_reader
 	{
 	public:
 		typedef mmap_handle <char> handle_type;
+		
+		enum class parsing_status {
+			success,
+			failure,
+			cancelled
+		};
 		
 	protected:
 		struct fsm
@@ -52,8 +61,11 @@ namespace libbio {
 		void output_buffer_end() const;
 		
 	public:
-		bool parse(handle_type &handle, fasta_reader_delegate &delegate);
+		parsing_status parse(handle_type &handle, fasta_reader_delegate &delegate);
 	};
+	
+	
+	bool read_single_fasta_sequence(char const *fasta_path, std::vector <char> &seq, char const *seq_name = nullptr);
 }
 
 #endif

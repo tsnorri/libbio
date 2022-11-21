@@ -5,6 +5,8 @@
 
 #include <libbio/fasta_reader.hh>
 
+namespace lb = libbio;
+
 
 %% machine fasta_parser;
 %% write data;
@@ -18,11 +20,56 @@ namespace
 		SEQUENCE,
 		COMMENT
 	};
+	
+	
+	class single_sequence_reader_delegate final : public lb::fasta_reader_delegate
+	{
+	public:
+		typedef std::vector <char>	sequence_vector;
+		
+	protected:
+		sequence_vector	&m_sequence;
+		char const		*m_sequence_id{};
+		bool			m_is_copying{};
+		
+	public:
+		explicit single_sequence_reader_delegate(sequence_vector &sequence, char const *sequence_id):
+			m_sequence(sequence),
+			m_sequence_id(sequence_id)
+		{
+		}
+		
+		bool handle_comment_line(lb::fasta_reader &reader, std::string_view const &sv) override { return true; }
+		
+		bool handle_identifier(lb::fasta_reader &reader, std::string_view const &sv) override
+		{
+			// FIXME: Check if the identifier has multiple fields.
+			if (m_is_copying)
+				return false;
+			
+			if (nullptr == m_sequence_id || sv == m_sequence_id)
+				m_is_copying = true;
+
+			return true;
+		}
+		
+		bool handle_sequence_line(lb::fasta_reader &reader, std::string_view const &sv) override
+		{
+			if (!m_is_copying)
+				return true;
+			
+			std::copy(sv.begin(), sv.end(), std::back_inserter(m_sequence));
+			return true;
+		}
+		
+		bool did_find_matching_sequence() const { return m_is_copying; }
+	};
 }
 
 
 namespace libbio
 {
+	// FIXME: Handle errors through the delegate.
 	void fasta_reader::report_unexpected_character(int const current_state) const
 	{
 		std::cerr
@@ -54,9 +101,8 @@ namespace libbio
 	}
 	
 	
-	bool fasta_reader::parse(handle_type &handle, fasta_reader_delegate &delegate)
+	auto fasta_reader::parse(handle_type &handle, fasta_reader_delegate &delegate) -> parsing_status
 	{
-		bool retval(true);
 		int cs(0);
 		line_type current_line_type(line_type::NONE);
 		
@@ -95,7 +141,7 @@ namespace libbio
 				std::string_view const sv(1 + m_line_start, fpc - m_line_start - 1);
 				libbio_assert_neq(*sv.rbegin(), '\n');
 				if (!delegate.handle_comment_line(*this, sv))
-					return false;
+					return parsing_status::cancelled;
 			}
 			
 			action header {
@@ -103,7 +149,7 @@ namespace libbio
 				std::string_view const sv(1 + m_line_start, fpc - m_line_start - 1);
 				libbio_assert_neq(*sv.rbegin(), '\n');
 				if (!delegate.handle_identifier(*this, sv))
-					return false;
+					return parsing_status::cancelled;
 			}
 			
 			action sequence {
@@ -111,7 +157,7 @@ namespace libbio
 				std::string_view const sv(m_line_start, fpc - m_line_start);
 				libbio_assert_neq(*sv.rbegin(), '\n');
 				if (!delegate.handle_sequence_line(*this, sv))
-					return false;
+					return parsing_status::cancelled;
 			}
 			
 			action error {
@@ -123,22 +169,22 @@ namespace libbio
 				switch (current_line_type)
 				{
 					case line_type::NONE:
-						return true;
+						return parsing_status::success;
 					
 					case line_type::HEADER:
 						report_unexpected_eof(fcurs);
-						return false;
+						return parsing_status::failure;
 					
 					case line_type::SEQUENCE:
 					{
 						std::string_view const sv(m_line_start, fpc - m_line_start);
-						return delegate.handle_sequence_line(*this, sv);
+						return delegate.handle_sequence_line(*this, sv) ? parsing_status::success : parsing_status::cancelled;
 					}
 					
 					case line_type::COMMENT:
 					{
 						std::string_view const sv(1 + m_line_start, fpc - m_line_start - 1);
-						return delegate.handle_comment_line(*this, sv);
+						return delegate.handle_comment_line(*this, sv) ? parsing_status::success : parsing_status::cancelled;
 					}
 				}
 			}
@@ -161,6 +207,23 @@ namespace libbio
 			write exec;
 		}%%
 			
-		return retval;
+		return parsing_status::success;
+	}
+	
+	
+	bool read_single_fasta_sequence(char const *fasta_path, std::vector <char> &seq, char const *seq_name)
+	{
+		lb::mmap_handle <char> handle;
+		handle.open(fasta_path);
+		
+		seq.clear();
+		seq.reserve(handle.size());
+		
+		single_sequence_reader_delegate delegate(seq, seq_name);
+		
+		fasta_reader reader;
+		auto const res(reader.parse(handle, delegate));
+		
+		return fasta_reader::parsing_status::success == res || fasta_reader::parsing_status::cancelled == res;
 	}
 }
