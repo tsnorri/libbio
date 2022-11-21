@@ -4,7 +4,8 @@ unexport SDKROOT
 SHELL			?= /bin/bash
 
 # Default values.
-WARNING_FLAGS	?= -Wall -Werror -Wno-deprecated-declarations -Wno-unused -Wno-misleading-indentation
+WARNING_FLAGS_	?=
+WARNING_FLAGS	?= -Wall -Werror -Wno-deprecated-declarations -Wno-unused -Wno-misleading-indentation $(WARNING_FLAGS_)
 OPT_FLAGS		?= -O2 -g
 
 CFLAGS			?=
