@@ -3,7 +3,11 @@ include ../common.mk
 
 # macOS 10.11 does not have std::uncaught_exceptions. We could use a custom-installed libc++
 # but set a configuration option instead for now.
-CPPFLAGS += -DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS -I../lib/Catch2/single_include
+CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
+			-I../lib/Catch2/single_include \
+			-I../lib/rapidcheck/include \
+			-I../lib/rapidcheck/extras/catch/include \
+
 
 OBJECTS	=	algorithm.o \
 			array_list.o \
@@ -15,6 +19,7 @@ OBJECTS	=	algorithm.o \
 			dispatch_io_channel_buffered_writer.o \
 			fasta_reader.o \
 			file_handle_buffered_writer.o \
+			generic_parser.o \
 			int_vector.o \
 			is_lt.o \
 			is_lte.o \
@@ -37,7 +42,7 @@ all: tests
 
 
 tests: $(OBJECTS) $(GENERATED_TEST_FILES)
-	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) ../src/libbio.a $(BOOST_LIBS)
+	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) ../src/libbio.a ../lib/rapidcheck/build/librapidcheck.a $(BOOST_LIBS)
 
 
 clean:
