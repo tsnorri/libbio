@@ -215,8 +215,54 @@ namespace libbio::parsing::fields {
 			return parse_ <t_delimiter, t_field_position>(range, dst);
 		}
 	};
-
-
+	
+	
+	struct character
+	{
+		template <bool t_should_copy>
+		using value_type = char;
+		
+		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
+		constexpr inline bool parse(t_range &range, char &val) const
+		{
+			if constexpr (any(field_position::initial_ & t_field_position))
+			{
+				if (range.is_at_end())
+					return false;
+			}
+			else
+			{
+				if (range.is_at_end())
+					throw parse_error_tpl(errors::unexpected_eof());
+			}
+			
+			val = *range.it;
+			++range.it;
+			
+			if constexpr (any(field_position::final_ & t_field_position))
+			{
+				if (range.is_at_end())
+					return true;
+			}
+			else
+			{
+				if (range.is_at_end())
+					throw parse_error_tpl(errors::unexpected_eof());
+			}
+			
+			auto const cc(*range.it);
+			if (t_delimiter::matches(cc))
+			{
+				++range.it;
+				return true;
+			}
+				
+			// Characters left but t_delimiter not matched.
+			throw parse_error_tpl(errors::unexpected_character(cc));
+		}
+	};
+	
+	
 	template <typename t_integer, bool t_is_signed = std::is_signed_v <t_integer>>
 	struct integer
 	{
