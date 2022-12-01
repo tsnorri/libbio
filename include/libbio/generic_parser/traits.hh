@@ -13,7 +13,7 @@
 namespace libbio::parsing::traits {
 	
 	// Not sure if there are any other kinds of input than delimited that we can parse but we’ll see.
-	template <typename t_field_sep, typename t_line_sep>
+	template <typename t_field_sep, typename t_line_sep = t_field_sep>
 	struct delimited
 	{
 		template <std::size_t t_field_count>
