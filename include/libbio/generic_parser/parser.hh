@@ -91,16 +91,16 @@ namespace libbio::parsing {
 				return true;
 			else
 			{
-				typedef std::tuple_element_t <t_field_idx, field_tuple>			parser_type;
+				typedef std::tuple_element_t <t_field_idx, field_tuple>			field_type;
 				typedef typename trait_type::template delimiter <t_field_idx>	delimiter;
 				constexpr auto const field_position{trait_type::template field_position <t_field_idx>};
 				
-				parser_type parser;
+				field_type field;
 				
 				// Check if the value of the current field should be saved.
-				if constexpr (std::is_same_v <void, typename parser_type::template value_type <t_should_copy>>)
+				if constexpr (std::is_same_v <void, typename field_type::template value_type <t_should_copy>>)
 				{
-					auto const status(parser.template parse <delimiter, field_position>(range));
+					auto const status(field.template parse <delimiter, field_position>(range));
 					if (any(field_position & field_position::final_) && !status)
 						return false;
 					else
@@ -108,7 +108,7 @@ namespace libbio::parsing {
 				}
 				else
 				{
-					auto const status(parser.template parse <delimiter, field_position>(range, std::get <t_value_idx>(dst)));
+					auto const status(field.template parse <delimiter, field_position>(range, std::get <t_value_idx>(dst)));
 					if (any(field_position & field_position::final_) && !status)
 						return false;
 					else
