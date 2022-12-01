@@ -8,7 +8,7 @@
 
 namespace libbio::parsing {
 	
-	template <typename, bool, typename...> class parser;
+	template <typename, bool, typename...> class parser_tpl;
 }
 
 #endif

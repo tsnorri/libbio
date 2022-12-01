@@ -87,7 +87,6 @@ namespace {
 	{
 		typedef lbp::parser <
 			lbp::traits::delimited <lbp::delimiter <'\t'>, lbp::delimiter <'\n'>>,
-			true,
 			t_args...
 		> type;
 	};

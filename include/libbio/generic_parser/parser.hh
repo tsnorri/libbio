@@ -66,7 +66,7 @@ namespace libbio::parsing::detail {
 namespace libbio::parsing {
 	
 	template <typename t_traits, bool t_should_copy, typename... t_args>
-	class parser
+	class parser_tpl
 	{
 	public:
 		typedef std::tuple <t_args...>									field_tuple;
@@ -141,7 +141,7 @@ namespace libbio::parsing {
 			typedef detail::counting_iterator <t_sentinel>	counting_sentinel;
 			
 			template <typename... t_args_>
-			static inline bool parse(parser &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst, t_args_ && ... args)
+			static inline bool parse(parser_tpl &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst, t_args_ && ... args)
 			requires std::contiguous_iterator <t_iterator>
 			{
 				t_range range{it, sentinel, std::forward <t_args_>(args)...};
@@ -152,7 +152,7 @@ namespace libbio::parsing {
 			// we want to maintain the numeric character position. This is especially useful in case the iterator
 			// is single pass.
 			
-			static inline bool parse(parser &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst)
+			static inline bool parse(parser_tpl &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst)
 			requires (!std::contiguous_iterator <t_iterator>)
 			{
 				counting_iterator it_(it);
@@ -162,7 +162,7 @@ namespace libbio::parsing {
 			}
 			
 			template <typename t_callback>
-			static inline bool parse(parser &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst, t_callback &cb)
+			static inline bool parse(parser_tpl &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst, t_callback &cb)
 			requires (!std::contiguous_iterator <t_iterator>)
 			{
 				counting_iterator it_(it);
@@ -180,7 +180,7 @@ namespace libbio::parsing {
 		struct helper <t_range, detail::counting_iterator <t_iterator>, detail::counting_iterator <t_sentinel>>
 		{
 			template <typename... t_args_>
-			static inline bool parse(parser &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst, t_args_ && ... args)
+			static inline bool parse(parser_tpl &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst, t_args_ && ... args)
 			{
 				t_range range{it, sentinel, std::forward <t_args_>(args)...};
 				return parser.parse_(range, dst);
@@ -208,6 +208,13 @@ namespace libbio::parsing {
 			return helper <detail::updatable_range, iterator_type, sentinel_type>::parse(*this, it, sentinel, dst, cb);
 		}
 	};
+	
+	
+	template <typename t_traits, typename... t_args>
+	using parser = parser_tpl <t_traits, true, t_args...>;
+	
+	template <typename t_traits, typename... t_args>
+	using transient_parser = parser_tpl <t_traits, false, t_args...>;
 }
 
 #endif

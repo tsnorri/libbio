@@ -31,7 +31,7 @@ namespace libbio::parsing::detail {
 #if 0
 		template <typename> friend struct distance_;
 #endif
-		template <typename, bool, typename...> friend class parser;
+		template <typename, bool, typename...> friend class parser_tpl;
 		
 	public:
 		typedef boost::iterator_adaptor <counting_iterator <t_iterator>, t_iterator>	iterator_adaptor_;

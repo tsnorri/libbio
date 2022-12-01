@@ -63,7 +63,7 @@ namespace libbio::parsing {
 	class parse_error : public std::exception
 	{
 		template <typename, bool, typename...>
-		friend class parser;
+		friend class parser_tpl;
 		
 	protected:
 		std::size_t	m_position{};
