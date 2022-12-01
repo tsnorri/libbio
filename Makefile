@@ -7,7 +7,7 @@ include common.mk
 all:
 	$(MAKE) -C src all
 
-tests: all
+tests: all lib/rapidcheck/build/librapidcheck.a
 	cd lib/Catch2 && $(PYTHON) scripts/generateSingleHeader.py
 	$(MAKE) -C tests all
 
@@ -33,3 +33,15 @@ check-headers:
 	echo 'all: $$(SMOKE_TEST_OBJECTS)' >> check-headers/Makefile
 	echo "" >> check-headers/Makefile
 	$(MAKE) -C check-headers
+
+lib/rapidcheck/build/librapidcheck.a:
+	$(RM) -rf lib/rapidcheck/build && \
+	cd lib/rapidcheck && \
+	$(MKDIR) build && \
+	cd build && \
+	$(CMAKE) \
+		-DCMAKE_C_COMPILER="$(CC)" \
+		-DCMAKE_CXX_COMPILER="$(CXX)" \
+		-DBUILD_SHARED_LIBS=OFF \
+		.. && \
+	$(MAKE)
