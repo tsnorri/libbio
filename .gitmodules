@@ -7,3 +7,6 @@
 [submodule "lib/range-v3"]
 	path = lib/range-v3
 	url = https://github.com/ericniebler/range-v3.git
+[submodule "lib/rapidcheck"]
+	path = lib/rapidcheck
+	url = https://github.com/emil-e/rapidcheck.git
