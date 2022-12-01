@@ -13,10 +13,6 @@
 
 namespace libbio::parsing::detail {
 
-#if 0
-	// Fwd.
-	template <typename> struct distance_;
-#endif
 	template <bool> struct range_position;
 	
 	
@@ -25,12 +21,7 @@ namespace libbio::parsing::detail {
 	class counting_iterator : public boost::iterator_adaptor <counting_iterator <t_iterator>, t_iterator>
 	{
 		friend class boost::iterator_core_access;
-		
 		template <bool> friend struct range_position;
-		
-#if 0
-		template <typename> friend struct distance_;
-#endif
 		template <typename, bool, typename...> friend class parser_tpl;
 		
 	public:
@@ -70,36 +61,6 @@ namespace libbio::parsing::detail {
 			pos += n;
 		}
 	};
-	
-	
-#if 0
-	template <typename t_iterator>
-	struct distance_
-	{
-		std::size_t operator()(t_iterator const lhs, t_iterator const rhs) const
-		{
-			return std::distance(lhs, rhs);
-		}
-	};
-	
-	
-	template <typename t_iterator>
-	struct distance_ <counting_iterator <t_iterator>>
-	{
-		std::size_t operator()(counting_iterator <t_iterator> const, counting_iterator <t_iterator> const rhs) const
-		{
-			return rhs.pos;
-		}
-	};
-	
-	
-	template <typename t_iterator>
-	std::size_t distance(t_iterator const lhs, t_iterator const rhs)
-	{
-		distance_ <t_iterator> dd;
-		return dd(lhs, rhs);
-	}
-#endif
 	
 	
 	// Fwd.
