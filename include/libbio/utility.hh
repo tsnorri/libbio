@@ -15,5 +15,6 @@
 #include <libbio/utility/misc.hh>
 #include <libbio/utility/smallest_unsigned_lockfree.hh>
 #include <libbio/utility/string_hash.hh>
+#include <libbio/utility/tuple_slice.hh>
 
 #endif
