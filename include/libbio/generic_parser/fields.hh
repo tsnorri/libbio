@@ -222,8 +222,9 @@ namespace libbio::parsing::fields {
 		template <bool t_should_copy>
 		using value_type = char;
 		
-		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		constexpr inline bool parse(t_range &range, char &val) const
+		
+		template <field_position t_field_position = field_position::middle_, typename t_range>
+		constexpr inline bool parse_value(t_range &range, char &val) const
 		{
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
@@ -238,6 +239,15 @@ namespace libbio::parsing::fields {
 			
 			val = *range.it;
 			++range.it;
+			return true;
+		}
+		
+		
+		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
+		constexpr inline bool parse(t_range &range, char &val) const
+		{
+			if (!parse_value(range, val))
+				return false;
 			
 			if constexpr (any(field_position::final_ & t_field_position))
 			{
@@ -268,8 +278,88 @@ namespace libbio::parsing::fields {
 	{
 		template <bool t_should_copy>
 		using value_type = t_integer;
-	
-	
+		
+		
+		template <field_position t_field_position = field_position::middle_, typename t_range>
+		constexpr inline bool parse_value(t_range &range, t_integer &val) const
+		{
+			bool did_parse{};
+			bool is_negative{};
+			val = 0;
+			
+			if constexpr (any(field_position::initial_ & t_field_position))
+			{
+				if (range.is_at_end())
+					return false;
+			
+				if constexpr (t_is_signed)
+					goto continue_parsing_1;
+				else
+					goto continue_parsing_2;
+			}
+			
+			if (t_is_signed) // Can’t make this if constexpr b.c. we would like to jump to continue_parsing_1.
+			{
+				if (!range.is_at_end())
+				{
+				continue_parsing_1:
+					auto const cc(*range.it);
+					switch (cc)
+					{
+						case '-':
+							if constexpr (!std::is_signed_v <t_integer>)
+								throw parse_error_tpl(errors::unexpected_character('-'));
+				
+							is_negative = true;
+							++range.it;
+							break;
+				
+						case '+':
+							++range.it;
+							break;
+				
+						default:
+							goto continue_parsing_2;
+					}
+				}
+			}
+			
+			while (!range.is_at_end())
+			{
+			continue_parsing_2:
+				auto const cc(*range.it);
+				
+				if ('0' <= cc && cc <= '9')
+				{
+					did_parse = true;
+					val *= 10;
+					val += cc - '0';
+				}
+				else
+				{
+					if constexpr (t_is_signed)
+					{
+						if (is_negative)
+							val *= -1;
+					}
+					break;
+				}
+				
+				++range.it;
+			}
+			
+			if (!did_parse)
+			{
+				if (range.is_at_end())
+					throw parse_error_tpl(errors::unexpected_eof());
+				else
+					throw parse_error_tpl(errors::unexpected_character(*range.it));
+			}
+			
+			return true;
+		}
+		
+		
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
 		LIBBIO_CONSTEXPR_WITH_GOTO inline bool parse(t_range &range, t_integer &val) const
 		{
