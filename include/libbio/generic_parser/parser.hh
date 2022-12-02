@@ -65,6 +65,57 @@ namespace libbio::parsing::detail {
 
 namespace libbio::parsing {
 	
+	template <typename t_iterator, typename t_sentinel>
+	auto make_range(t_iterator &&it, t_sentinel &&sentinel)
+	requires std::contiguous_iterator <std::remove_cvref_t <t_iterator>>
+	{
+		return detail::range{
+			std::forward <t_iterator>(it),
+			std::forward <t_sentinel>(sentinel)
+		};
+	}
+	
+	template <typename t_iterator, typename t_sentinel, typename t_callback>
+	auto make_range(t_iterator &&it, t_sentinel &&sentinel, t_callback &&callback)
+	requires std::contiguous_iterator <std::remove_cvref_t <t_iterator>>
+	{
+		return detail::updatable_range{
+			std::forward <t_iterator>(it),
+			std::forward <t_sentinel>(sentinel),
+			std::forward <t_callback>(callback)
+		};
+	}
+	
+	// If t_iterator is contiguous, we can determine the character position in O(1) time, but otherwise
+	// we want to maintain the numeric character position. This is especially useful in case the iterator
+	// is single pass.
+	
+	template <typename t_iterator, typename t_sentinel>
+	auto make_range(t_iterator &&it, t_sentinel &&sentinel)
+	requires (!std::contiguous_iterator <std::remove_cvref_t <t_iterator>>)
+	{
+		return detail::range{
+			detail::counting_iterator(std::forward <t_iterator>(it)),
+			detail::counting_iterator(std::forward <t_sentinel>(sentinel))
+		};
+	}
+	
+	
+	template <typename t_iterator, typename t_sentinel, typename t_callback>
+	auto make_range(t_iterator &&it, t_sentinel &&sentinel, t_callback &&cb)
+	requires (!std::contiguous_iterator <std::remove_cvref_t <t_iterator>>)
+	{
+		// Also fix the callback.
+		return detail::updatable_range{
+			detail::counting_iterator(std::forward <t_iterator>(it)),
+			detail::counting_iterator(std::forward <t_sentinel>(sentinel)),
+			[cb_ = std::tuple <t_callback>(std::forward <t_callback>(cb))](auto &it, auto &sentinel){ // Handle rvalue references by wrapping in a tuple.
+				return std::get <0>(cb_)(it.base_reference(), sentinel.base_reference());
+			}
+		};
+	}
+	
+	
 	template <typename t_traits, bool t_should_copy, typename... t_args>
 	class parser_tpl
 	{
@@ -133,79 +184,38 @@ namespace libbio::parsing {
 		}
 		
 		
-		// Helper for conditionally wrapping the iterators.
-		template <template <typename...> typename t_range, typename t_iterator, typename t_sentinel>
-		struct helper
-		{
-			typedef detail::counting_iterator <t_iterator>	counting_iterator;
-			typedef detail::counting_iterator <t_sentinel>	counting_sentinel;
-			
-			template <typename... t_args_>
-			static inline bool parse(parser_tpl &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst, t_args_ && ... args)
-			requires std::contiguous_iterator <t_iterator>
-			{
-				t_range range{it, sentinel, std::forward <t_args_>(args)...};
-				return parser.parse_(range, dst);
-			}
-			
-			// If t_iterator is contiguous, we can determine the character position in O(1) time, but otherwise
-			// we want to maintain the numeric character position. This is especially useful in case the iterator
-			// is single pass.
-			
-			static inline bool parse(parser_tpl &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst)
-			requires (!std::contiguous_iterator <t_iterator>)
-			{
-				counting_iterator it_(it);
-				counting_sentinel sentinel_(sentinel);
-				t_range range{it_, sentinel_};
-				return parser.parse_(range, dst);
-			}
-			
-			template <typename t_callback>
-			static inline bool parse(parser_tpl &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst, t_callback &cb)
-			requires (!std::contiguous_iterator <t_iterator>)
-			{
-				counting_iterator it_(it);
-				counting_sentinel sentinel_(sentinel);
-				
-				// Also fix the callback.
-				auto cb_([&cb](auto &it, auto &sentinel){ return cb(it.base_reference(), sentinel.base_reference()); });
-				
-				t_range range{it_, sentinel_, cb_};
-				return parser.parse_(range, dst);
-			}
-		};
-		
-		template <template <typename...> typename t_range, typename t_iterator, typename t_sentinel>
-		struct helper <t_range, detail::counting_iterator <t_iterator>, detail::counting_iterator <t_sentinel>>
-		{
-			template <typename... t_args_>
-			static inline bool parse(parser_tpl &parser, t_iterator &it, t_sentinel const sentinel, record_type &dst, t_args_ && ... args)
-			{
-				t_range range{it, sentinel, std::forward <t_args_>(args)...};
-				return parser.parse_(range, dst);
-			}
-		};
-		
-		
 	public:
+		// User supplies the range.
+		// FIXME: require that the range is one of detail::range, detail::updatable_range.
+		template <typename t_range>
+		bool parse(t_range &range, record_type &dst)
+		{
+			return parse_(range, dst);
+		}
+		
+		
 		// Non-updatable range, e.g. std::istream_iterator, memory mapped file.
 		template <typename t_iterator, typename t_sentinel>
-		bool parse(t_iterator &&it, t_sentinel const sentinel, record_type &dst)
+		bool parse(t_iterator &&it, t_sentinel &&sentinel, record_type &dst)
 		{
-			typedef std::remove_cvref_t <t_iterator>	iterator_type;
-			typedef std::remove_cvref_t <t_sentinel>	sentinel_type;
-			return helper <detail::range, iterator_type, sentinel_type>::parse(*this, it, sentinel, dst);
+			auto range(make_range(
+				std::forward <t_iterator>(it),
+				std::forward <t_sentinel>(sentinel)
+			));
+			return parse_(range, dst);
 		}
 		
 		
 		// Updatable range, e.g. input read in blocks.
 		template <typename t_iterator, typename t_sentinel, typename t_update_cb>
-		bool parse(t_iterator &&it, t_sentinel const sentinel, record_type &dst, t_update_cb &&cb)
+		bool parse(t_iterator &&it, t_sentinel &&sentinel, record_type &dst, t_update_cb &&cb)
 		{
-			typedef std::remove_cvref_t <t_iterator>	iterator_type;
-			typedef std::remove_cvref_t <t_sentinel>	sentinel_type;
-			return helper <detail::updatable_range, iterator_type, sentinel_type>::parse(*this, it, sentinel, dst, cb);
+			auto range(make_range(
+				std::forward <t_iterator>(it),
+				std::forward <t_sentinel>(sentinel),
+				std::forward <t_update_cb>(cb)
+			));
+			return parse_(range, dst);
 		}
 	};
 	

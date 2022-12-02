@@ -147,13 +147,14 @@ namespace libbio::parsing::detail {
 		constexpr static inline bool is_contiguous{std::contiguous_iterator <iterator>};
 		constexpr static inline bool is_updatable{false};
 		
-		t_iterator &it;
+		t_iterator it;
 		t_sentinel const sentinel;
 		range_position <is_contiguous> pos;
 		
-		range(t_iterator &it_, t_sentinel const sentinel_):
-			it(it_),
-			sentinel(sentinel_),
+		template <typename t_iterator_, typename t_sentinel_>
+		range(t_iterator_ &&it_, t_sentinel_ &&sentinel_):
+			it(std::forward <t_iterator>(it_)),
+			sentinel(std::forward <t_sentinel_>(sentinel_)),
 			pos(it, sentinel)
 		{
 		}
@@ -162,6 +163,10 @@ namespace libbio::parsing::detail {
 		auto joining_iterator_pair() { return std::tie(it, sentinel); }
 		std::size_t position() const { return pos.distance(it, sentinel); }
 	};
+	
+	// Type deduction via constructor call.
+	template <typename t_iterator, typename t_sentinel>
+	range(t_iterator &&, t_sentinel &&) -> range <t_iterator, t_sentinel>;
 	
 	
 	template <typename t_iterator, typename t_sentinel, typename t_callback>
@@ -173,15 +178,16 @@ namespace libbio::parsing::detail {
 		constexpr static inline bool is_contiguous{std::contiguous_iterator <iterator>};
 		constexpr static inline bool is_updatable{true};
 		
-		t_iterator	&it;
-		t_sentinel	&sentinel;
-		t_callback	&update_callback;
+		t_iterator	it;
+		t_sentinel	sentinel;
+		t_callback	update_callback;
 		std::size_t	cumulative_length{};
 		
-		updatable_range(t_iterator &it_, t_sentinel &sentinel_, t_callback &update_callback_):
-			it(it_),
-			sentinel(sentinel_),
-			update_callback(update_callback_)
+		template <typename t_iterator_, typename t_sentinel_, typename t_callback_>
+		updatable_range(t_iterator_ &&it_, t_sentinel_ &&sentinel_, t_callback_ &&update_callback_):
+			it(std::forward <t_iterator>(it_)),
+			sentinel(std::forward <t_sentinel_>(sentinel_)),
+			update_callback(std::forward <t_callback_>(update_callback_))
 		{
 		}
 		
@@ -212,6 +218,10 @@ namespace libbio::parsing::detail {
 				return cumulative_length + it.pos;
 		}
 	};
+	
+	// Type deduction via constructor call.
+	template <typename t_iterator, typename t_sentinel, typename t_callback>
+	updatable_range(t_iterator &&, t_sentinel &&, t_callback &&) -> updatable_range <t_iterator, t_sentinel, t_callback>; // No std::remove_cvref_t.
 }
 
 #endif
