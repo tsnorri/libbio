@@ -6,6 +6,7 @@
 #ifndef LIBBIO_GENERIC_PARSER_CIGAR_FIELD_HH
 #define LIBBIO_GENERIC_PARSER_CIGAR_FIELD_HH
 
+#include <libbio/assert.hh>
 #include <libbio/generic_parser/errors.hh>
 #include <libbio/generic_parser/fields.hh>
 #include <seqan3/alphabet/cigar/cigar.hpp>
