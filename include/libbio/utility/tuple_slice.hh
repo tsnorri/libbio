@@ -46,8 +46,8 @@ namespace libbio {
 	}
 	
 	
-	template <typename t_tuple, std::size_t t_lhs, std::size_t t_rhs, bool t_should_add_references = false>
-	using tuple_slice_t = std::invoke_result_t <decltype(&tuple_slice <t_lhs, t_rhs, t_should_add_references>), t_tuple>;
+	template <typename t_tuple, std::size_t t_lhs, std::size_t t_rhs = std::tuple_size_v <t_tuple>, bool t_should_add_references = false>
+	using tuple_slice_t = std::invoke_result_t <decltype(&tuple_slice <t_lhs, t_rhs, t_should_add_references, t_lhs, t_tuple>), t_tuple>;
 }
 
 #endif
