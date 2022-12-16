@@ -18,7 +18,7 @@ namespace libbio::tuples {
 	struct unique
 	{
 		template <typename t_tuple_>
-		constexpr static auto helper()
+		consteval static auto helper()
 		{
 			if constexpr (0 == std::tuple_size_v <t_tuple_>)
 				return std::tuple <>{};
