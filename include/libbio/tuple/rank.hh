@@ -19,12 +19,12 @@ namespace libbio::tuples {
 		typedef slice_t <t_tuple, 0, t_rb>	slice_type;
 		typedef find <slice_type, t_item>	find_result_type;
 		
-		constexpr static inline std::size_t const value{std::tuple_size_v <typename find_result_type::matching_type>};
+		constexpr static inline auto const value{std::tuple_size_v <typename find_result_type::matching_type>};
 	};
 	
 	
 	template <typename t_tuple, std::size_t t_rb, typename t_item = std::tuple_element_t <t_rb, t_tuple>>
-	constexpr static inline std::size_t rank_v{rank <t_tuple, t_rb, t_item>::value};
+	constexpr static inline auto const rank_v{rank <t_tuple, t_rb, t_item>::value};
 }
 
 #endif

@@ -6,7 +6,7 @@
 #ifndef LIBBIO_TUPLE_UTILITY_HH
 #define LIBBIO_TUPLE_UTILITY_HH
 
-#include <type_traits>
+#include <type_traits> // std::bool_constnat, std::false_type, std::integral_constant, std::true_type
 
 
 namespace libbio::tuples {
@@ -15,10 +15,7 @@ namespace libbio::tuples {
 	struct negation
 	{
 		template <typename... t_args>
-		struct with
-		{
-			constexpr static inline bool value{!t_fn <t_args...>::value};
-		};
+		struct with : std::bool_constant <!t_fn <t_args...>::value> {};
 	};
 	
 	
@@ -26,37 +23,25 @@ namespace libbio::tuples {
 	struct same_as
 	{
 		template <typename t_other_type>
-		struct with
-		{
-			constexpr static inline bool const value{std::is_same_v <t_type, t_other_type>};
-		};
+		struct with : std::bool_constant <std::is_same_v <t_type, t_other_type>> {};
 	};
 	
 	
 	template <typename t_type>
-	struct alignment
-	{
-		constexpr static inline std::size_t const value{alignof(t_type)};
-	};
+	struct alignment : public std::integral_constant <std::size_t, alignof(t_type)> {};
 	
 	template <typename t_type>
-	constexpr static inline std::size_t const alignment_v{alignment <t_type>::value};
+	constexpr static inline auto const alignment_v{alignment <t_type>::value};
 	
 	
 	template <typename t_type>
-	struct is_tuple
-	{
-		constexpr static inline bool const value{false};
-	};
+	struct is_tuple : public std::false_type {};
 	
 	template <typename... t_args>
-	struct is_tuple <std::tuple <t_args...>>
-	{
-		constexpr static inline bool const value{true};
-	};
+	struct is_tuple <std::tuple <t_args...>> : public std::true_type {};
 	
 	template <typename t_type>
-	constexpr static inline bool const is_tuple_v{is_tuple <t_type>::value};
+	constexpr static inline auto const is_tuple_v{is_tuple <t_type>::value};
 }
 
 #endif

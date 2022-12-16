@@ -10,6 +10,7 @@
 #include <libbio/tuple/find.hh>
 #include <libbio/tuple/fold.hh>
 #include <libbio/tuple/map.hh>
+#include <type_traits> // std::bool_constant
 
 
 namespace libbio::tuples {
@@ -21,10 +22,7 @@ namespace libbio::tuples {
 		struct eq
 		{
 			template <typename t_tuple_>
-			struct with
-			{
-				constexpr static inline bool value{std::is_same_v <t_callback <t_type>, head_t <t_tuple_>>};
-			};
+			struct with : public std::bool_constant <std::is_same_v <t_callback <t_type>, head_t <t_tuple_>>> {};
 		};
 		
 		// Add to the second item of the pair.

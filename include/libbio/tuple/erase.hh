@@ -7,7 +7,7 @@
 #define LIBBIO_TUPLE_ERASE_HH
 
 #include <libbio/tuple/cat.hh>
-#include <type_traits>
+#include <type_traits> // std::bool_constant
 
 namespace libbio::tuples::detail {
 	
@@ -15,10 +15,7 @@ namespace libbio::tuples::detail {
 	struct is_same_as
 	{
 		template <typename t_other_type>
-		struct type
-		{
-			constexpr static inline bool const value{std::is_same_v <t_type, t_other_type>};
-		};
+		struct type : public std::bool_constant <std::is_same_v <t_type, t_other_type>> {};
 	};
 }
 

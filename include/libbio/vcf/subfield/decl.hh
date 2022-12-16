@@ -7,24 +7,19 @@
 #define LIBBIO_VCF_SUBFIELD_DECL_HH
 
 #include <libbio/types.hh>
+#include <type_traits> // std::integral_constant
 
 
 namespace libbio::vcf::detail {
 
 	template <metadata_value_type t_metadata_value_type>
-	struct field_default_count
-	{
-		constexpr static inline std::int32_t value{1};
-	};
+	struct field_default_count : public std::integral_constant <std::int32_t, 1> {};
 
 	template <>
-	struct field_default_count <metadata_value_type::FLAG>
-	{
-		constexpr static inline std::int32_t value{0};
-	};
+	struct field_default_count <metadata_value_type::FLAG> : public std::integral_constant <std::int32_t, 0> {};
 
 	template <metadata_value_type t_metadata_value_type>
-	constexpr inline std::int32_t field_default_count_v{field_default_count <t_metadata_value_type>::value};
+	constexpr inline auto const field_default_count_v{field_default_count <t_metadata_value_type>::value};
 }
 
 

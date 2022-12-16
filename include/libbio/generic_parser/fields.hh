@@ -19,7 +19,7 @@
 #include <libbio/tuple/utility.hh>
 #include <string>
 #include <string_view>
-#include <type_traits>							// std::is_signed_v
+#include <type_traits>							// std::bool_constant, std::is_signed_v
 
 
 // Clang 14 follows the standard in the sense that goto is not allowed in constexpr functions
@@ -144,10 +144,8 @@ namespace libbio::parsing::detail {
 		struct with {};
 		
 		template <typename t_other_tag, typename t_parser>
-		struct with <tagged_parser <t_other_tag, t_parser>>
-		{
-			constexpr static inline bool const value{std::is_same_v <t_tag_, t_other_tag>};
-		};
+		struct with <tagged_parser <t_other_tag, t_parser>> :
+			public std::bool_constant <std::is_same_v <t_tag_, t_other_tag>> {};
 	};
 }
 

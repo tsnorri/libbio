@@ -6,6 +6,8 @@
 #ifndef LIBBIO_GENERIC_PARSER_UTILITY_HH
 #define LIBBIO_GENERIC_PARSER_UTILITY_HH
 
+#include <type_traits> // std::false_type, std::true_type
+
 
 namespace libbio::parsing::detail {
 	
@@ -16,13 +18,13 @@ namespace libbio::parsing::detail {
 	}
 	
 	
-	template <typename t_type> struct is_character_type		{ constexpr static inline bool value{false}; };
-	template <> struct is_character_type <char>				{ constexpr static inline bool value{true}; };
-	template <> struct is_character_type <signed char>		{ constexpr static inline bool value{true}; };
-	template <> struct is_character_type <unsigned char>	{ constexpr static inline bool value{true}; };
+	template <typename t_type> struct is_character_type		: public std::false_type {};
+	template <> struct is_character_type <char>				: public std::true_type {};
+	template <> struct is_character_type <signed char>		: public std::true_type {};
+	template <> struct is_character_type <unsigned char>	: public std::true_type {};
 	
 	template <typename t_type>
-	constexpr static inline bool is_character_type_v{is_character_type <t_type>::value};
+	constexpr static inline auto const is_character_type_v{is_character_type <t_type>::value};
 }
 
 #endif

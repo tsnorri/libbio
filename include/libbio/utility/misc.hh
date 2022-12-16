@@ -47,11 +47,14 @@ namespace libbio {
 	
 	
 	template <std::size_t t_address, std::size_t t_alignment>
-	constexpr static inline std::size_t const next_aligned_address_v{
+	struct next_aligned_address : public std::integral_constant <std::size_t,
 		(0 == t_address % t_alignment)
 		? t_address
 		: (t_address + (t_alignment - t_address % t_alignment))
-	};
+	> {};
+	
+	template <std::size_t t_address, std::size_t t_alignment>
+	constexpr static inline auto const next_aligned_address_v{next_aligned_address <t_address, t_alignment>::value};
 	
 	
 	inline char *copy_format_cstr(boost::format const &fmt) { return strdup(boost::str(fmt).c_str()); }

@@ -148,7 +148,7 @@ namespace libbio::parsing::detail {
 		typedef std::array <t_type, count>	array_type;
 		
 		template <typename t_other_type>
-		constexpr static inline bool const eq_v{std::is_same_v <t_type, t_other_type>};
+		constexpr static inline auto const eq_v{std::is_same_v <t_type, t_other_type>};
 		
 		template <typename t_other_counter>
 		struct max

@@ -12,6 +12,7 @@
 #include <libbio/tuple/for.hh>
 #include <libbio/tuple/slice.hh>
 #include <libbio/utility/misc.hh>
+#include <type_traits> // std::bool_constant, std::false_type, std::true_type
 
 
 namespace libbio::tuples::detail {
@@ -98,10 +99,7 @@ namespace libbio::tuples {
 		using append_t = reusable_tuple <t_max_size, t_alignment, t_args..., t_type>;
 		
 		template <typename t_type>
-		struct can_fit
-		{
-			constexpr static bool value{false};
-		};
+		struct can_fit : std::false_type {};
 		
 		template <std::size_t t_max_size_, std::size_t t_alignment_, typename... t_args_>
 		struct can_fit <reusable_tuple <t_max_size_, t_alignment_, t_args_...>> : public std::bool_constant <
@@ -109,7 +107,7 @@ namespace libbio::tuples {
 		> {};
 		
 		template <typename t_type>
-		constexpr static bool can_fit_v{can_fit <t_type>::value};
+		constexpr static auto const can_fit_v{can_fit <t_type>::value};
 		
 	private:
 		template <

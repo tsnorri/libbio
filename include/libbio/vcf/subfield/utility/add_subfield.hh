@@ -8,30 +8,22 @@
 
 #include <functional>
 #include <libbio/vcf/subfield/base.hh>
+#include <type_traits> // std::false_type, std::true_type
 
 
 namespace libbio::vcf::detail {
 	
 	template <typename t_type>
-	struct is_std_function
-	{
-		constexpr static inline bool value{false};
-	};
+	struct is_std_function : public std::false_type {};
 	
 	template <typename t_type>
-	struct is_std_function <std::function <t_type>>
-	{
-		constexpr static inline bool value{true};
-	};
+	struct is_std_function <std::function <t_type>> : public std::true_type {};
 	
 	template <typename t_ret, typename ... t_args>
-	struct is_std_function <std::function <t_ret(t_args...)>>
-	{
-		constexpr static inline bool value{true};
-	};
+	struct is_std_function <std::function <t_ret(t_args...)>> : public std::true_type {};
 	
 	template <typename t_type>
-	constexpr inline bool is_std_function_v = is_std_function <t_type>::value;
+	constexpr inline auto const is_std_function_v{is_std_function <t_type>::value};
 	
 	
 	template <typename t_fn>
