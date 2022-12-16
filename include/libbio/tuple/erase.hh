@@ -32,7 +32,7 @@ namespace libbio::tuples {
 	struct erase_if
 	{
 		template <std::size_t t_i>
-		constexpr static auto helper()
+		consteval static auto helper()
 		{
 			if constexpr (t_i == std::tuple_size_v <t_tuple>)
 				return std::tuple <>{};
