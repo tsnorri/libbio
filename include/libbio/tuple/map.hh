@@ -11,25 +11,25 @@
 
 namespace libbio::tuples {
 	
-	template <typename, template <typename> typename>
+	template <typename, template <typename...> typename>
 	struct map {};
 	
-	template <typename... t_args, template <typename> typename t_fn>
+	template <typename... t_args, template <typename...> typename t_fn>
 	struct map <std::tuple <t_args...>, t_fn>
 	{
-		typedef std::tuple <typename t_fn <t_args>::type...> type;
+		typedef std::tuple <t_fn <t_args>...> type;
 	};
 	
 	
-	template <typename t_tuple, template <typename> typename t_fn>
+	template <typename t_tuple, template <typename...> typename t_fn>
 	using map_t = typename map <t_tuple, t_fn>::type;
 	
 	
-	template <typename, typename, template <typename, typename> typename>
+	template <typename, typename, template <typename...> typename>
 	struct cross_product {};
 	
 	// FIXME: add requires t_fn <...>::type.
-	template <typename... t_args_1, typename... t_args_2, template <typename, typename> typename t_fn>
+	template <typename... t_args_1, typename... t_args_2, template <typename...> typename t_fn>
 	struct cross_product <std::tuple <t_args_1...>, std::tuple <t_args_2...>, t_fn>
 	{
 		template <typename t_lhs>
@@ -49,7 +49,7 @@ namespace libbio::tuples {
 	};
 	
 	
-	template <typename t_tuple_1, typename t_tuple_2, template <typename, typename> typename t_fn>
+	template <typename t_tuple_1, typename t_tuple_2, template <typename...> typename t_fn>
 	using cross_product_t = typename cross_product <t_tuple_1, t_tuple_2, t_fn>::type;
 }
 
