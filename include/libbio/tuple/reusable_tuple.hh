@@ -91,8 +91,8 @@ namespace libbio::tuples {
 		constexpr static inline auto const offset_of_v{offset_of_last_v <slice_t <tuple_type, 0, 1 + t_idx>>};
 		
 	private:
-		alignas(t_alignment) std::byte	m_buffer[t_max_size]{};
 		void							(*m_clear_fn)(void *){};
+		alignas(t_alignment) std::byte	m_buffer[t_max_size]{};
 		
 	public:
 		template <typename t_type>
@@ -107,7 +107,7 @@ namespace libbio::tuples {
 		> {};
 		
 		template <typename t_type>
-		constexpr static auto const can_fit_v{can_fit <t_type>::value};
+		constexpr static bool const can_fit_v{can_fit <t_type>::value}; // For some reason Clang is not able to deduce the type if this is declared as auto instead of bool.
 		
 	private:
 		template <
@@ -135,7 +135,7 @@ namespace libbio::tuples {
 	public:
 		constexpr empty_type &clear()
 		{
-			libbio_assert_eq(m_clear_fn, detail::cast_and_clear_fn_v <reusable_tuple>);
+			libbio_assert_eq_msg(m_clear_fn, detail::cast_and_clear_fn_v <reusable_tuple>, "clear() callend for mismatching type.");
 			for_ <sizeof...(t_args)>([this]<typename t_idx>(){
 				constexpr auto const idx(t_idx::value);
 				typedef std::tuple_element_t <idx, tuple_type> current_type;
