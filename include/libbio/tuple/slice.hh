@@ -12,7 +12,7 @@
 namespace libbio::tuples {
 	
 	template <std::size_t t_lhs, std::size_t t_rhs, bool t_should_add_references = false, std::size_t t_i = t_lhs, typename t_tuple>
-	auto slice(t_tuple &&tuple)
+	constexpr auto slice(t_tuple &&tuple)
 	{
 		static_assert(
 			!(t_should_add_references && std::is_rvalue_reference_v <t_tuple>),
@@ -40,7 +40,7 @@ namespace libbio::tuples {
 	
 	
 	template <std::size_t t_lhs, bool t_should_add_references = false, typename t_tuple>
-	auto slice(t_tuple &&tuple)
+	constexpr auto slice(t_tuple &&tuple)
 	{
 		return slice <t_lhs, std::tuple_size_v <t_tuple>, t_should_add_references, t_lhs>(std::forward <t_tuple>(tuple));
 	}
@@ -48,6 +48,10 @@ namespace libbio::tuples {
 	
 	template <typename t_tuple, std::size_t t_lhs, std::size_t t_rhs = std::tuple_size_v <t_tuple>, bool t_should_add_references = false>
 	using slice_t = std::invoke_result_t <decltype(&slice <t_lhs, t_rhs, t_should_add_references, t_lhs, t_tuple>), t_tuple>;
+	
+	
+	template <typename t_tuple, bool t_should_add_references = false>
+	using tail_t = slice_t <t_tuple, 1, std::tuple_size_v <t_tuple>, t_should_add_references>;
 }
 
 #endif
