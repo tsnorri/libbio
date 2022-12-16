@@ -78,7 +78,7 @@ namespace libbio::parsing {
 	struct is_alternative : public std::false_type {};
 	
 	template <typename... t_args>
-	constexpr static inline bool const is_alternative_v{is_alternative <t_args...>::value};
+	constexpr static inline auto const is_alternative_v{is_alternative <t_args...>::value};
 	
 	
 	// Indicates multiple output options.

@@ -359,8 +359,8 @@ namespace libbio::parsing {
 		>																parsed_type;
 		typedef detail::buffer_type_t <parsed_type>						buffer_type;
 		
-		constexpr static inline bool const								parsed_type_is_alternative{is_alternative_v <parsed_type>};
-		constexpr static inline std::size_t const						field_count{std::tuple_size_v <field_tuple>};
+		constexpr static inline auto const								parsed_type_is_alternative{is_alternative_v <parsed_type>};
+		constexpr static inline auto const								field_count{std::tuple_size_v <field_tuple>};
 		
 		typedef typename t_traits::template trait <field_count>			trait_type;
 		
