@@ -14,13 +14,45 @@
 #include <libbio/cxxcompat.hh>
 #include <ostream>
 #include <string>
+#include <type_traits>	// std::integral_constant
 #include <utility>
 
 
 namespace libbio {
 	
+	template <size_t t_size>
+	using size_constant = std::integral_constant <std::size_t, t_size>;
+	
+	
 	template <typename t_type, std::size_t t_size>
 	LIBBIO_CONSTEVAL std::size_t array_size(t_type const (&array)[t_size]) { return t_size; }
+	
+	
+	template <typename... t_args>
+	constexpr bool any(t_args && ... args)
+	{
+		return (... || args);
+	}
+	
+	
+	template <typename... t_args>
+	constexpr bool all(t_args && ... args)
+	{
+		return (... && args);
+	}
+	
+	
+	template <typename t_type, bool t_condition>
+	using add_const_if_t = std::conditional_t <t_condition, std::add_const_t <t_type>, t_type>;
+	
+	
+	template <std::size_t t_address, std::size_t t_alignment>
+	constexpr static inline std::size_t const next_aligned_address_v{
+		(0 == t_address % t_alignment)
+		? t_address
+		: (t_address + (t_alignment - t_address % t_alignment))
+	};
+	
 	
 	inline char *copy_format_cstr(boost::format const &fmt) { return strdup(boost::str(fmt).c_str()); }
 	
