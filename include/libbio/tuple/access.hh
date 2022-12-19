@@ -23,19 +23,17 @@ namespace libbio::tuples {
 	using second_t = std::tuple_element_t <1, t_tuple>;
 	
 	
-	template <typename t_tuple, typename t_default, auto t_size = std::tuple_size_v <t_tuple>>
+	template <typename t_tuple, typename t_default, std::size_t t_size = std::tuple_size_v <t_tuple>>
 	struct head_
 	{
 		typedef head_t <t_tuple>	type;
 	};
-	
 	
 	template <typename t_tuple, typename t_default>
 	struct head_ <t_tuple, t_default, 0>
 	{
 		typedef t_default	type;
 	};
-	
 	
 	template <typename t_tuple, typename t_default>
 	using head_t_ = typename head_ <t_tuple, t_default>::type;
