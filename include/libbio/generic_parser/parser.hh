@@ -652,6 +652,19 @@ namespace libbio::parsing {
 			));
 			return parse_(range, dst, buffer, parse_cb);
 		}
+		
+		
+		template <typename... t_args_>
+		void parse_all(t_args_ && ... args)
+		requires parsed_type_is_alternative
+		{
+			bool status{};
+			do
+			{
+				status = parse(std::forward <t_args>(args)...);
+			}
+			while (status);
+		}
 	};
 	
 	
