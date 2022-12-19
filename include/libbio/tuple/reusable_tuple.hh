@@ -256,9 +256,13 @@ namespace libbio::tuples::detail {
 }
 
 
-// std::tuple_size is a customisation point in the standard library.
+// std::tuple_size and std::tuple_element are customisation points in the standard library.
 template <std::size_t t_max_size, std::size_t t_alignment, typename... t_args>
 struct std::tuple_size <libbio::tuples::reusable_tuple <t_max_size, t_alignment, t_args...>> :
 	public std::integral_constant <std::size_t, sizeof...(t_args)> {};
+
+template <std::size_t t_idx, std::size_t t_max_size, std::size_t t_alignment, typename... t_args>
+struct std::tuple_element <t_idx, libbio::tuples::reusable_tuple <t_max_size, t_alignment, t_args...>> :
+	public std::tuple_element <t_idx, typename libbio::tuples::reusable_tuple <t_max_size, t_alignment, t_args...>::tuple_type> {};
 
 #endif
