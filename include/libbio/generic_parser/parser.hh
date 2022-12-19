@@ -6,6 +6,7 @@
 #ifndef LIBBIO_GENERIC_PARSER_PARSER_HH
 #define LIBBIO_GENERIC_PARSER_PARSER_HH
 
+#include <libbio/generic_parser/fields.hh>
 #include <libbio/generic_parser/iterators.hh>
 #include <libbio/tuple.hh>
 #include <tuple>
@@ -27,19 +28,6 @@ namespace libbio::parsing::detail {
 	
 	template <typename t_lhs, typename t_rhs>
 	using tuple_cat_2_t = tuples::cat_t <t_lhs, t_rhs>;
-	
-	
-	template <typename t_type> struct tuple_to_alternative {};
-	
-	template <typename... t_args>
-	struct tuple_to_alternative <std::tuple <t_args...>>
-	{
-		// Add empty tuple.
-		typedef alternative <std::tuple <>, t_args...>	type;
-	};
-	
-	template <typename t_type>
-	using tuple_to_alternative_t = typename tuple_to_alternative <t_type>::type;
 	
 	
 	template <typename t_tuple, bool t_should_copy>
@@ -95,7 +83,7 @@ namespace libbio::parsing::detail {
 			if constexpr (t_i == index_count)
 			{
 				if constexpr (1 < std::tuple_size_v <t_acc>)
-					return detail::tuple_to_alternative_t <tuples::unique_t <t_acc>>{};
+					return to_alternative_t <tuples::unique_t <t_acc>>{};
 				else
 					return std::tuple_element_t <0, t_acc>{};
 			}
@@ -232,9 +220,8 @@ namespace libbio::parsing::detail {
 		
 		// We only consider non-trivially copyable types.
 		typedef std::tuple <t_tuples...>														tuple_type;
-		
-		static_assert(std::is_same_v <std::tuple <>, tuples::head_t <tuple_type>>, "The first type of the passed alternative should be std::tuple <>.");
-		typedef tuples::map_t <tuples::tail_t <tuple_type>, map_filter_t>						filtered_types_by_tuple;	// Filter by uses_buffer.
+		static_assert(!tuples::find <tuple_type, std::tuple <>>::found, "The alternative should not contain std::tuple <>.");
+		typedef tuples::map_t <tuple_type, map_filter_t>										filtered_types_by_tuple;	// Filter by uses_buffer.
 		typedef tuples::map_t <filtered_types_by_tuple, map_count_t>							counts_by_tuple;			// Tuple of tuples of counts.
 		typedef tuples::group_by_type_t <tuples::cat_with_t <counts_by_tuple>, counter_type_t>	counts_by_type;				// Group by the type.
 		typedef tuples::map_t <counts_by_type, map_max_t>										max_counts;					// Max. counts.
