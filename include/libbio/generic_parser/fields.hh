@@ -750,7 +750,7 @@ namespace libbio::parsing::fields {
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
-					return true;
+					return false;
 			}
 			else
 			{
