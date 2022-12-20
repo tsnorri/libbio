@@ -35,7 +35,7 @@ namespace libbio::parsing::fields::detail {
 
 namespace libbio::parsing::fields {
 	
-	struct cigar_field
+	struct cigar
 	{
 		typedef std::vector <seqan3::cigar>	cigar_vector;
 	
