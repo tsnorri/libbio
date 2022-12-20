@@ -132,6 +132,36 @@ namespace libbio::parsing {
 	
 	template <typename t_type>
 	using to_alternative_t = typename to_alternative <t_type>::type;
+	
+	
+	struct boolean_wrapper
+	{
+		bool value{};
+		
+		constexpr /* implicit */ operator bool() const noexcept { return value; }
+		
+		constexpr boolean_wrapper &operator=(char const cc)
+		{
+			// Handle parsing here to keep fields::character_like relatively simple.
+			switch (cc)
+			{
+				case 'T':
+				case 'Y':
+					value = true;
+					break;
+				
+				case 'F':
+				case 'N':
+					value = false;
+					break;
+				
+				default:
+					throw parse_error_tpl(errors::unexpected_character(cc));
+			}
+			
+			return *this;
+		}
+	};
 }
 
 
@@ -207,6 +237,44 @@ namespace libbio::parsing::fields {
 			return false;
 		}
 	};
+	
+	
+	template <typename t_delimiter, typename t_character_filter = filters::no_op, field_position t_field_position = field_position::middle_, typename t_range, typename t_dst>
+	LIBBIO_CONSTEXPR_WITH_GOTO inline bool parse_sequential(t_range &range, t_dst &dst)
+	{
+		dst.clear();
+	
+		if constexpr (any(field_position::initial_ & t_field_position))
+		{
+			if (range.is_at_end())
+				return false;
+			goto continue_parsing;
+		}
+
+		while (!range.is_at_end())
+		{
+		continue_parsing:
+			auto const cc(*range.it);
+			if (t_delimiter::matches(cc))
+			{
+				++range.it;
+				return true;
+			}
+			else if (!t_character_filter::check(cc))
+			{
+				throw parse_error_tpl(errors::unexpected_character(cc));
+			}
+	
+			dst.handle_character(cc);
+			++range.it;
+		}
+		
+		// t_delimiter not matched.
+		if constexpr (any(field_position::final_ & t_field_position))
+			return true;
+		else
+			throw parse_error_tpl(errors::unexpected_eof());
+	}
 
 
 	template <typename t_character_filter = filters::no_op>
@@ -220,41 +288,19 @@ namespace libbio::parsing::fields {
 		requires (!t_range::is_contiguous)
 		LIBBIO_CONSTEXPR_WITH_GOTO inline bool parse(t_range &range, std::string &dst) const
 		{
-			dst.clear();
-		
-			if constexpr (any(field_position::initial_ & t_field_position))
+			struct helper
 			{
-				if (range.is_at_end())
-					return false;
-				goto continue_parsing;
-			}
-	
-			while (!range.is_at_end())
-			{
-			continue_parsing:
-				auto const cc(*range.it);
-				if (t_delimiter::matches(cc))
-				{
-					++range.it;
-					return true;
-				}
-				else if (!t_character_filter::check(cc))
-				{
-					throw parse_error_tpl(errors::unexpected_character(cc));
-				}
-		
-				dst.push_back(cc);
-				++range.it;
-			}
+				std::string &dst;
+				
+				void clear() { dst.clear(); }
+				void handle_character(char const cc) { dst.push_back(cc); }
+			};
 			
-			// t_delimiter not matched.
-			if constexpr (any(field_position::final_ & t_field_position))
-				return true;
-			else
-				throw parse_error_tpl(errors::unexpected_eof());
+			helper hh{dst};
+			return parse_sequential <t_delimiter, t_character_filter, t_field_position>(range, hh);
 		}
-
-
+		
+		
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range, typename t_dst>
 		requires t_range::is_contiguous
 		LIBBIO_CONSTEXPR_WITH_GOTO inline bool parse_(t_range &range, t_dst &dst) const
@@ -316,14 +362,15 @@ namespace libbio::parsing::fields {
 	};
 	
 	
-	struct character
+	template <typename t_value_type>
+	struct character_like
 	{
 		template <bool t_should_copy>
-		using value_type = char;
+		using value_type = t_value_type;
 		
 		
 		template <field_position t_field_position = field_position::middle_, typename t_range>
-		constexpr inline bool parse_value(t_range &range, char &val) const
+		constexpr inline bool parse_value(t_range &range, t_value_type &val) const
 		{
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
@@ -343,7 +390,7 @@ namespace libbio::parsing::fields {
 		
 		
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		constexpr inline bool parse(t_range &range, char &val) const
+		constexpr inline bool parse(t_range &range, t_value_type &val) const
 		{
 			if (!parse_value(range, val))
 				return false;
@@ -370,6 +417,10 @@ namespace libbio::parsing::fields {
 			throw parse_error_tpl(errors::unexpected_character(cc));
 		}
 	};
+	
+	
+	typedef character_like <char>				character;
+	typedef character_like <boolean_wrapper>	boolean;
 	
 	
 	template <typename t_integer, bool t_is_signed = std::is_signed_v <t_integer>>
