@@ -649,8 +649,7 @@ namespace libbio::parsing {
 			do
 			{
 				status = parse(std::forward <t_args_>(args)...);
-			}
-			while (status);
+			} while (status);
 		}
 	};
 	
