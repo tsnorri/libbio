@@ -198,8 +198,8 @@ namespace libbio::parsing::detail {
 			>
 		>
 		using count_callback_t = tuples::prepend_t <
-			typename t_find_result::first_matching_type::add_one_type,
-			typename t_find_result::rest_type
+			typename t_find_result::first_match_type::add_one_type,
+			typename t_find_result::mismatches_type
 		>;
 		
 		template <typename t_tuple>
@@ -370,7 +370,7 @@ namespace libbio::parsing {
 		{
 			typedef tuples::find_if <t_buffer, detail::matches_array <t_value>::template with>	find_result_type;
 			static_assert(find_result_type::found);
-			typedef typename find_result_type::first_matching_type								buffer_array_type;
+			typedef typename find_result_type::first_match_type									buffer_array_type;
 			
 			auto &buffer_array(std::get <buffer_array_type>(buffer));	// Get the array for t_value.
 			auto &buffer_item(std::get <t_idx>(buffer_array));			// Get the element that corresponds to the current tuple element.

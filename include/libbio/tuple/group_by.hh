@@ -38,9 +38,9 @@ namespace libbio::tuples {
 			>
 		>
 		using fold_callback_t = append_t <
-			typename t_find_result::rest_type,
+			typename t_find_result::mismatches_type,
 			modify_t <
-				typename t_find_result::first_matching_type,
+				typename t_find_result::first_match_type,
 				t_type
 			>
 		>;
@@ -48,8 +48,8 @@ namespace libbio::tuples {
 		template <typename t_type>
 		using map_callback_t = second_t <t_type>;
 		
-		typedef foldl_t <fold_callback_t, empty, t_tuple>	keyed_type;
-		typedef map_t <keyed_type, map_callback_t>			type;
+		typedef foldl_t <fold_callback_t, empty, t_tuple>	keyed_type;	// Pairs (tuples) of keys as determined by t_callback and tuples of values from t_tuple.
+		typedef map_t <keyed_type, map_callback_t>			type;		// The second items of the pairs in keyed_type.
 	};
 	
 	

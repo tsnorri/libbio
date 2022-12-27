@@ -770,7 +770,7 @@ namespace libbio::parsing::fields {
 					tagged_parsers_type,
 					libbio::parsing::detail::matches_tag <t_tag>::template with
 				>																find_result_type;
-				typedef typename find_result_type::first_matching_type			tagged_parser_type;
+				typedef typename find_result_type::first_match_type				tagged_parser_type;
 				static_assert(!std::is_same_v <tuples::not_found, tagged_parser_type>, "Parser not found for the given tag");
 				typedef typename tagged_parser_type::parser_type				parser_type;
 			

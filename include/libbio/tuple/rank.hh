@@ -19,7 +19,7 @@ namespace libbio::tuples {
 		typedef slice_t <t_tuple, 0, t_rb>	slice_type;
 		typedef find <slice_type, t_item>	find_result_type;
 		
-		constexpr static inline auto const value{std::tuple_size_v <typename find_result_type::matching_type>};
+		constexpr static inline auto const value{std::tuple_size_v <typename find_result_type::matches_type>};
 	};
 	
 	
