@@ -7,11 +7,13 @@
 #define LIBBIO_TUPLE_MAP_HH
 
 #include <libbio/tuple/cat.hh>
+#include <libbio/tuple/utility.hh>	// libbio::is_tuple_v
 
 
 namespace libbio::tuples {
 	
-	template <typename, template <typename...> typename>
+	template <typename T, template <typename...> typename>
+	requires is_tuple_v <T>
 	struct map {};
 	
 	template <typename... t_args, template <typename...> typename t_fn>
@@ -22,10 +24,12 @@ namespace libbio::tuples {
 	
 	
 	template <typename t_tuple, template <typename...> typename t_fn>
+	requires is_tuple_v <t_tuple>
 	using map_t = typename map <t_tuple, t_fn>::type;
 	
 	
-	template <typename, typename, template <typename...> typename>
+	template <typename T, typename, template <typename...> typename>
+	requires is_tuple_v <T>
 	struct cross_product {};
 	
 	// FIXME: add requires t_fn <...>::type.
@@ -50,6 +54,7 @@ namespace libbio::tuples {
 	
 	
 	template <typename t_tuple_1, typename t_tuple_2, template <typename...> typename t_fn>
+	requires (is_tuple_v <t_tuple_1> && is_tuple_v <t_tuple_2>)
 	using cross_product_t = typename cross_product <t_tuple_1, t_tuple_2, t_fn>::type;
 }
 
