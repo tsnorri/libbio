@@ -6,8 +6,8 @@
 #ifndef LIBBIO_TUPLE_UNIQUE_HH
 #define LIBBIO_TUPLE_UNIQUE_HH
 
-#include <libbio/tuple/erase.hh>
-#include <libbio/tuple/slice.hh>
+#include <libbio/tuple/find.hh>
+#include <libbio/tuple/fold.hh>
 
 
 namespace libbio::tuples {
@@ -17,22 +17,14 @@ namespace libbio::tuples {
 	template <typename t_tuple>
 	struct unique
 	{
-		template <typename t_tuple_>
-		consteval static auto helper()
-		{
-			if constexpr (0 == std::tuple_size_v <t_tuple_>)
-				return std::tuple <>{};
-			else
-			{
-				typedef std::tuple_element_t <0, t_tuple_>								head_type;
-				typedef erase_t <slice_t <t_tuple_, 1>, head_type>						tail_type_;
-				typedef std::invoke_result_t <decltype(&unique::helper <tail_type_>)>	tail_type;
-				
-				return std::tuple_cat(std::tuple <head_type>{}, tail_type{});
-			}
-		}
+		template <typename t_acc, typename t_type>
+		using fold_fn = std::conditional_t <
+			find <t_acc, t_type>::found,
+			t_acc,
+			append_t <t_acc, t_type>
+		>;
 		
-		typedef std::invoke_result_t <decltype(&unique::helper <t_tuple>)> type;
+		typedef foldl_t <fold_fn, empty, t_tuple>	type;
 	};
 	
 	
