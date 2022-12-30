@@ -7,9 +7,19 @@
 #define LIBBIO_TUPLE_FOLD_HH
 
 #include <libbio/tuple/slice.hh>
+#include <libbio/tuple/utility.hh>	// libbio::is_tuple_v
 
 
 namespace libbio::tuples::detail {
+	
+	// By wrapping t_type we can use std::invoke_result_t on a helper function without accidentally
+	// evaluating the (possibly missing or not accessible) constructor of t_type.
+	template <typename t_type>
+	struct wrapper
+	{
+		typedef t_type	wrapped_type;
+	};
+	
 	
 	template <typename>
 	struct visit_parameters {};
@@ -32,11 +42,9 @@ namespace libbio::tuples {
 	// Left fold for tuples, i.e.
 	// Tuple f => (X -> b -> Y) -> a -> f b -> c
 	// s.t. X = a on the first iteration and Y = c on the last.
-	template <template <typename...> typename, typename, typename>
-	struct foldl
-	{
-		typedef struct cannot_fold_because_given_type_is_not_std_tuple {} type;
-	};
+	template <template <typename...> typename, typename, typename t_tuple>
+	requires is_tuple_v <t_tuple>
+	struct foldl {};
 	
 	
 	template <template <typename...> typename t_fn, typename t_acc, typename... t_args>
@@ -46,10 +54,7 @@ namespace libbio::tuples {
 		{
 			typedef std::tuple <t_args...> input_tuple_type;
 			if constexpr (0 == std::tuple_size_v <input_tuple_type>)
-			{
-				// FIXME: try std::declval?
-				return t_acc{};
-			}
+				return detail::wrapper <t_acc>{};
 			else
 			{
 				typedef std::tuple_element_t <0, input_tuple_type>	head_type;
@@ -59,7 +64,7 @@ namespace libbio::tuples {
 			}
 		}
 		
-		typedef std::invoke_result_t <decltype(&foldl::helper)> type;
+		typedef typename std::invoke_result_t <decltype(&foldl::helper)>::wrapped_type type;
 	};
 	
 	
