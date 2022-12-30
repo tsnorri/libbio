@@ -18,6 +18,7 @@ namespace libbio::tuples {
 	struct not_found {};
 	
 	template <typename t_tuple, template <typename> typename t_predicate, typename t_default = not_found>
+	requires is_tuple_v <t_tuple>
 	struct find_if
 	{
 		template <
@@ -32,7 +33,7 @@ namespace libbio::tuples {
 			using next_matching_t = accumulator <1 + t_idx, append_t <t_matches, t_type>, t_mismatches, append_t <t_matching_indices, size_constant <t_idx>>>;
 			
 			template <typename t_type>
-			using next_mismatching_t = accumulator <1 + t_idx, t_matches, append_t <t_mismatches, t_type>>;
+			using next_mismatching_t = accumulator <1 + t_idx, t_matches, append_t <t_mismatches, t_type>, t_matching_indices>;
 			
 			typedef t_matches			matches_type;
 			typedef t_mismatches		mismatches_type;
@@ -57,13 +58,24 @@ namespace libbio::tuples {
 	
 	
 	template <typename t_tuple, typename t_item, typename t_default = not_found>
+	requires is_tuple_v <t_tuple>
 	using find = find_if <t_tuple, same_as <t_item>::template with, t_default>;
 	
 	
-	template <typename t_tuple, typename t_item>
-	struct first_index_of : public size_constant <find <t_tuple, t_item>::first_matching_index> {};
+	template <
+		typename t_tuple,
+		typename t_item,
+		bool t_should_assert_found = true,
+		typename t_base = size_constant <find <t_tuple, t_item>::first_matching_index>
+	>
+	requires is_tuple_v <t_tuple>
+	struct first_index_of : public t_base
+	{
+		static_assert(!t_should_assert_found || t_base::value != SIZE_MAX);
+	};
 	
-	template <typename t_tuple, typename t_item>
+	template <typename t_tuple, typename t_item, bool t_should_assert_found = true>
+	requires is_tuple_v <t_tuple>
 	constexpr static inline auto const first_index_of_v{first_index_of <t_tuple, t_item>::value};
 }
 
