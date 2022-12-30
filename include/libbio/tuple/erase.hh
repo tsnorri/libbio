@@ -6,8 +6,9 @@
 #ifndef LIBBIO_TUPLE_ERASE_HH
 #define LIBBIO_TUPLE_ERASE_HH
 
-#include <libbio/tuple/cat.hh>
-#include <type_traits> // std::bool_constant
+#include <libbio/tuple/filter.hh>
+#include <libbio/tuple/utility.hh>	// libbio::tuples::negation
+#include <type_traits> 				// std::bool_constant
 
 namespace libbio::tuples::detail {
 	
@@ -25,29 +26,14 @@ namespace libbio::tuples {
 	
 	// Erases types that satisfy the given predicate from the given tuple.
 	// Variable templates cannot be passed as template parameters as of C++20, hence the use of class template.
-	template <typename t_tuple, template <typename> typename t_predicate>
+	template <typename t_tuple, template <typename...> typename t_predicate>
 	struct erase_if
 	{
-		template <std::size_t t_i>
-		consteval static auto helper()
-		{
-			if constexpr (t_i == std::tuple_size_v <t_tuple>)
-				return std::tuple <>{};
-			else
-			{
-				typedef std::tuple_element_t <t_i, t_tuple> element_type;
-				if constexpr (t_predicate <element_type>::value)
-					return helper <1 + t_i>();
-				else
-					return std::tuple_cat(std::tuple <element_type>{}, helper <1 + t_i>());
-			}
-		}
-		
-		typedef std::invoke_result_t <decltype(&erase_if::helper <0>)> type;
+		typedef filter_t <t_tuple, negation <t_predicate>::template with>	type;
 	};
 	
 	
-	template <typename t_tuple, template <typename> typename t_predicate>
+	template <typename t_tuple, template <typename...> typename t_predicate>
 	using erase_if_t = typename erase_if <t_tuple, t_predicate>::type;
 	
 	
