@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -8,7 +8,7 @@
 
 #if !(defined(LIBBIO_NO_DISPATCH) && LIBBIO_NO_DISPATCH)
 
-#include <dispatch/dispatch.h>
+#include <libbio/dispatch/dispatch_compat.hh>
 
 
 namespace libbio {

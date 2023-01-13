@@ -1,13 +1,13 @@
 /*
- * Copyright (c) 2016-2018 Tuukka Norri
+ * Copyright (c) 2016-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_DISPATCH_DISPATCH_CALLER_HH
 #define LIBBIO_DISPATCH_DISPATCH_CALLER_HH
 
-#include <dispatch/dispatch.h>
 #include <libbio/assert.hh>
+#include <libbio/dispatch/dispatch_compat.hh>
 
 
 namespace libbio { namespace detail {

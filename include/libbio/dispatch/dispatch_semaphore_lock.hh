@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_DISPATCH_DISPATCH_SEMAPHORE_LOCK_HH
 #define LIBBIO_DISPATCH_DISPATCH_SEMAPHORE_LOCK_HH
 
-#include <dispatch/dispatch.h>
+#include <libbio/dispatch/dispatch_compat.hh>
 #include <libbio/dispatch/dispatch_ptr.hh>
 
 
