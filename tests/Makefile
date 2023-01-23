@@ -8,6 +8,10 @@ CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
 			-I../lib/rapidcheck/include \
 			-I../lib/rapidcheck/extras/catch/include \
 
+CXXFLAGS +=	-ftemplate-backtrace-limit=0
+
+LIBBIO_PATH ?= ../src/libbio.a
+
 
 OBJECTS	=	algorithm.o \
 			array_list.o \
@@ -30,6 +34,7 @@ OBJECTS	=	algorithm.o \
 			radix_sort.o \
 			reverse_word.o \
 			rle_bit_vector.o \
+			sorted_set_union.o \
 			subprocess_argument_parser.o \
 			vcf_reader.o
 
@@ -42,7 +47,7 @@ all: tests
 
 
 tests: $(OBJECTS) $(GENERATED_TEST_FILES)
-	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) ../src/libbio.a ../lib/rapidcheck/build/librapidcheck.a $(BOOST_LIBS)
+	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/build/librapidcheck.a $(BOOST_LIBS)
 
 
 clean:
