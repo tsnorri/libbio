@@ -56,7 +56,7 @@ namespace libbio {
 		OVERWRITE	= 0x2
 	};
 	
-	constexpr inline writing_open_mode
+	[[nodiscard]] constexpr inline writing_open_mode
 	make_writing_open_mode(std::initializer_list <std::underlying_type_t <writing_open_mode>> const &list)
 	{
 		std::underlying_type_t <writing_open_mode> retval{};
@@ -68,17 +68,17 @@ namespace libbio {
 	
 	void handle_file_error(char const *fname);
 	
-	int open_file_for_reading(char const *fname);
-	int open_file_for_reading(std::string const &fname);
-	std::pair <int, bool> try_open_file_for_reading(char const *fname);
+	[[nodiscard]] int open_file_for_reading(char const *fname);
+	[[nodiscard]] int open_file_for_reading(std::string const &fname);
+	[[nodiscard]] std::pair <int, bool> try_open_file_for_reading(char const *fname);
 	
-	int open_file_for_writing(char const *fname, writing_open_mode const mode);
-	int open_file_for_writing(std::string const &fname, writing_open_mode const mode);
+	[[nodiscard]] int open_file_for_writing(char const *fname, writing_open_mode const mode);
+	[[nodiscard]] int open_file_for_writing(std::string const &fname, writing_open_mode const mode);
 	
-	int open_file_for_rw(char const *fname, writing_open_mode const mode);
-	int open_file_for_rw(std::string const &fname, writing_open_mode const mode);
-	int open_temporary_file_for_rw(std::string &path_template);
-	int open_temporary_file_for_rw(std::string &path_template, int suffixlen);
+	[[nodiscard]] int open_file_for_rw(char const *fname, writing_open_mode const mode);
+	[[nodiscard]] int open_file_for_rw(std::string const &fname, writing_open_mode const mode);
+	[[nodiscard]] int open_temporary_file_for_rw(std::string &path_template);
+	[[nodiscard]] int open_temporary_file_for_rw(std::string &path_template, int suffixlen);
 	void open_file_for_rw(char const *fname, file_iostream &stream, writing_open_mode const mode);
 	void open_file_for_rw(std::string const &fname, file_iostream &stream, writing_open_mode const mode);
 	
