@@ -17,6 +17,7 @@
 #include <sstream>
 #include <stdexcept>
 
+
 #define libbio_stringify(X) (#X)
 
 // Contracts not yet available in either Clang or GCC.
@@ -29,6 +30,14 @@
 		auto const &assert_rhs(RHS); \
 		if (!(TEST(assert_lhs, assert_rhs))) \
 			::libbio::detail::assertion_failure(__FILE__, __LINE__, assert_lhs, assert_rhs, MESSAGE); \
+	} while (false)
+
+// Requires formatted output.
+#define libbio_assert_test_bin_(LHS, RHS, TEST, MESSAGE)	do { \
+		auto const &assert_lhs(LHS); \
+		auto const &assert_rhs(RHS); \
+		if (!(TEST(assert_lhs, assert_rhs))) \
+			::libbio::detail::assertion_failure <true>(__FILE__, __LINE__, assert_lhs, assert_rhs, MESSAGE); \
 	} while (false)
 
 // FIXME: Make this work when immediately evaluated.
@@ -54,6 +63,14 @@
 #define libbio_always_assert_eq(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_equal,		libbio_stringify(X == #Y))
 #define libbio_always_assert_neq(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_equal,		libbio_stringify(X != #Y))
 
+// Variants that require X and Y to be printable using operator <<.
+#define libbio_always_assert_lt_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_lt,			libbio_stringify(X <  #Y))
+#define libbio_always_assert_lte_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_lte,			libbio_stringify(X <= #Y))
+#define libbio_always_assert_gt_(X, Y)			libbio_assert_test_bin_((X), (Y), !::libbio::is_lte,		libbio_stringify(X >  #Y))
+#define libbio_always_assert_gte_(X, Y)			libbio_assert_test_bin_((X), (Y), !::libbio::is_lt,			libbio_stringify(X >= #Y))
+#define libbio_always_assert_eq_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_equal,		libbio_stringify(X == #Y))
+#define libbio_always_assert_neq_(X, Y)			libbio_assert_test_bin_((X), (Y), !::libbio::is_equal,		libbio_stringify(X != #Y))
+
 #define libbio_always_assert_msg(X, ...)		libbio_assert_test_msg((X),																__VA_ARGS__)
 #define libbio_always_assert_lt_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lt((X), (Y)),		libbio_stringify(X < Y),	__VA_ARGS__)
 #define libbio_always_assert_lte_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lte((X), (Y)),		libbio_stringify(X <= Y),	__VA_ARGS__)
@@ -70,6 +87,14 @@
 #	define libbio_assert_gte(X, Y)
 #	define libbio_assert_eq(X, Y)
 #	define libbio_assert_neq(X, Y)
+
+#	define libbio_assert_(X)
+#	define libbio_assert_lt_(X, Y)
+#	define libbio_assert_lte_(X, Y)
+#	define libbio_assert_gt_(X, Y)
+#	define libbio_assert_gte_(X, Y)
+#	define libbio_assert_eq_(X, Y)
+#	define libbio_assert_neq_(X, Y)
 
 #	define libbio_do_and_assert_eq(X, Y)	do { (X); } while (false)
 
@@ -88,6 +113,15 @@
 #	define libbio_assert_gte(X, Y)			libbio_always_assert_gte((X), (Y))
 #	define libbio_assert_eq(X, Y)			libbio_always_assert_eq((X), (Y))
 #	define libbio_assert_neq(X, Y)			libbio_always_assert_neq((X), (Y))
+
+// Variants that require X and Y to be printable using operator <<.
+#	define libbio_assert_(X)				libbio_always_assert_((X))
+#	define libbio_assert_lt_(X, Y)			libbio_always_assert_lt_((X), (Y))
+#	define libbio_assert_lte_(X, Y)			libbio_always_assert_lte_((X), (Y))
+#	define libbio_assert_gt_(X, Y)			libbio_always_assert_gt_((X), (Y))
+#	define libbio_assert_gte_(X, Y)			libbio_always_assert_gte_((X), (Y))
+#	define libbio_assert_eq_(X, Y)			libbio_always_assert_eq_((X), (Y))
+#	define libbio_assert_neq_(X, Y)			libbio_always_assert_neq_((X), (Y))
 
 #	define libbio_do_and_assert_eq(X, Y)	libbio_always_assert_eq((X), (Y))
 		
@@ -186,8 +220,9 @@ namespace libbio { namespace detail {
 	}
 
 
-	template <typename t_lhs, typename t_rhs>
+	template <bool t_requires_formatted_output_fn, typename t_lhs, typename t_rhs>
 	[[noreturn]] void assertion_failure_(char const *file, long const line, t_lhs const &lhs, t_rhs const &rhs, char const *message)
+	requires (!t_requires_formatted_output_fn || (has_formatted_output_function_v <t_lhs> && has_formatted_output_function_v <t_rhs>))
 	{
 		// Clang++ 14 is not happy about the use of std::stringstream in a constexpr function even if in the false branch
 		// of if consteval, so we build the message here instead.
@@ -205,7 +240,7 @@ namespace libbio { namespace detail {
 	}
 
 
-	template <typename t_lhs, typename t_rhs>
+	template <bool t_requires_formatted_output_fn = false, typename t_lhs, typename t_rhs>
 	[[noreturn]] constexpr void assertion_failure(char const *file, long const line, t_lhs const &lhs, t_rhs const &rhs, char const *message)
 	{
 		if consteval
@@ -214,7 +249,7 @@ namespace libbio { namespace detail {
 		}
 		else
 		{
-			assertion_failure_(file, line, lhs, rhs, message);
+			assertion_failure_ <t_requires_formatted_output_fn>(file, line, lhs, rhs, message);
 		}
 	}
 }}
