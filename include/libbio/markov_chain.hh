@@ -3,8 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_MARKOV_CHAINS_HH
-#define LIBBIO_MARKOV_CHAINS_HH
+#ifndef LIBBIO_MARKOV_CHAIN_HH
+#define LIBBIO_MARKOV_CHAIN_HH
 
 #include <algorithm>				// std::sort, std::adjacent_find
 #include <array>
