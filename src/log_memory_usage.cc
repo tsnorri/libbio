@@ -164,22 +164,40 @@ namespace libbio {
 }
 
 
+namespace {
+
+	inline void *do_allocate(std::size_t const size)
+	{
+		auto * const allocation(static_cast <char *>(std::malloc(HEADER_SIZE + size)));
+		if (allocation)
+		{
+			log_allocation(allocation, size);
+			return allocation + HEADER_SIZE;
+		}
+		
+		throw std::bad_alloc{};
+	}
+
+
+	inline void do_deallocate(void *ptr)
+	{
+		auto *ptr_(static_cast <char *>(ptr));
+		if (ptr)
+			log_deallocation(ptr_ - HEADER_SIZE);
+		std::free(ptr_ - HEADER_SIZE);
+	}
+}
+
+
 void *operator new(std::size_t const size)
 {
-	auto * const allocation(static_cast <char *>(std::malloc(HEADER_SIZE + size)));
-	if (allocation)
-	{
-		log_allocation(allocation, size);
-		return allocation + HEADER_SIZE;
-	}
-	
-	throw std::bad_alloc{};
+	return do_allocate(size);
 }
 
 
 void *operator new(std::size_t const size, std::align_val_t const aln)
 {
-	auto *retval(::operator new(size));
+	auto *retval(do_allocate(size));
 	libbio_assert_eq(0, std::uintptr_t(retval) % std::to_underlying(aln));
 	return retval;
 }
@@ -187,15 +205,13 @@ void *operator new(std::size_t const size, std::align_val_t const aln)
 
 void operator delete(void *ptr) noexcept
 {
-	if (ptr)
-		log_deallocation(static_cast <char *>(ptr) - HEADER_SIZE);
-	std::free(ptr);
+	do_deallocate(ptr);
 }
 
 
 void operator delete(void *ptr, std::align_val_t) noexcept
 {
-	::operator delete(ptr);
+	do_deallocate(ptr);
 }
 
 #endif
