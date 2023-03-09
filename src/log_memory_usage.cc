@@ -26,23 +26,23 @@ namespace lb		= libbio;
 
 namespace {
 
-	constexpr static inline std::size_t const	HEADER_SIZE{16}; // Try to keep everything aligned to 16 bytes.
-	constinit static std::atomic_bool			s_should_continue{true};
-	constinit static lb::file_handle			s_logging_handle;
-	constinit static std::uint64_t				s_logging_interval{1000};
-	constinit static std::uint64_t				s_buffer_size{};
-	constinit static std::atomic_uint64_t		s_allocated_memory{};
-	static std::jthread							s_logging_thread{};
-
-
 	struct allocation_size
 	{
 		// tag currently unused.
 		std::uint64_t size : 48 {0}, tag : 16 {0};
 	};
 
-	static_assert(sizeof(allocation_size) <= HEADER_SIZE);
+	static_assert(sizeof(allocation_size) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__);
 	static_assert(std::is_trivially_destructible_v <allocation_size>);
+
+
+	constexpr static inline std::size_t const	HEADER_SIZE{__STDCPP_DEFAULT_NEW_ALIGNMENT__};
+	constinit static std::atomic_bool			s_should_continue{true};
+	constinit static lb::file_handle			s_logging_handle;
+	constinit static std::uint64_t				s_logging_interval{1000};
+	constinit static std::uint64_t				s_buffer_size{};
+	constinit static std::atomic_uint64_t		s_allocated_memory{};
+	static std::jthread							s_logging_thread{};
 
 
 	void clean_up()
@@ -167,38 +167,105 @@ namespace libbio {
 }
 
 
+namespace {
+
+	inline void *do_allocate(std::size_t const size)
+	{
+		auto * const allocation(static_cast <char *>(std::malloc(HEADER_SIZE + size)));
+		if (allocation)
+		{
+			log_allocation(allocation, size);
+			return allocation + HEADER_SIZE;
+		}
+		
+		throw std::bad_alloc{};
+	}
+
+
+	inline void *do_allocate_aligned(std::size_t const size, std::size_t const alignment_)
+	{
+		libbio_assert(alignment_ && 0 == (alignment_ & (alignment_ - 1)));
+		auto const alignment(std::max(alignment_, alignof(allocation_size)));
+		auto * const allocation(static_cast <char *>(std::aligned_alloc(alignment, size + alignment)));
+		if (allocation)
+		{
+			log_allocation(allocation - alignment, size);
+			return allocation + alignment;
+		}
+
+		throw std::bad_alloc{};
+	}
+
+
+	inline void do_deallocate(void *ptr_)
+	{
+		auto *ptr(static_cast <char *>(ptr_));
+		if (ptr)
+		{
+			log_deallocation(ptr - HEADER_SIZE);
+			std::free(ptr - HEADER_SIZE); // does handle nullptr.
+		}
+	}
+
+
+	inline void do_deallocate_aligned(void *ptr_, std::size_t const alignment_)
+	{
+		auto *ptr(static_cast <char *>(ptr_));
+		if (ptr)
+		{
+			auto const alignment(std::max(alignment_, alignof(allocation_size)));
+			log_deallocation(ptr - alignment);
+			std::free(ptr); // does handle nullptr.
+		}
+	}
+}
+
+
 void *operator new(std::size_t const size)
 {
-	auto * const allocation(static_cast <char *>(std::malloc(HEADER_SIZE + size)));
-	if (allocation)
-	{
-		log_allocation(allocation, size);
-		return allocation + HEADER_SIZE;
-	}
-	
-	throw std::bad_alloc{};
+	return do_allocate(size);
 }
 
 
 void *operator new(std::size_t const size, std::align_val_t const aln)
 {
-	auto *retval(::operator new(size));
-	libbio_assert_eq(0, std::uintptr_t(retval) % std::to_underlying(aln));
-	return retval;
+	return do_allocate_aligned(size, std::to_underlying(aln));
+}
+
+
+void *operator new[](std::size_t const size)
+{
+	return do_allocate(size);
+}
+
+
+void *operator new[](std::size_t const size, std::align_val_t const aln)
+{
+	return do_allocate_aligned(size, std::to_underlying(aln));
 }
 
 
 void operator delete(void *ptr) noexcept
 {
-	if (ptr)
-		log_deallocation(static_cast <char *>(ptr) - HEADER_SIZE);
-	std::free(ptr);
+	do_deallocate(ptr);
 }
 
 
-void operator delete(void *ptr, std::align_val_t) noexcept
+void operator delete(void *ptr, std::align_val_t const aln) noexcept
 {
-	::operator delete(ptr);
+	do_deallocate_aligned(ptr, std::to_underlying(aln));
+}
+
+
+void operator delete[](void *ptr) noexcept
+{
+	do_deallocate(ptr);
+}
+
+
+void operator delete[](void *ptr, std::align_val_t const aln) noexcept
+{
+	do_deallocate_aligned(ptr, std::to_underlying(aln));
 }
 
 #endif
