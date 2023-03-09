@@ -29,7 +29,7 @@ namespace {
 	constexpr static inline std::size_t const	HEADER_SIZE{16}; // Try to keep everything aligned to 16 bytes.
 	constinit static std::atomic_bool			s_should_continue{true};
 	constinit static lb::file_handle			s_logging_handle;
-	constinit static std::uint64_t				s_logging_interval{};
+	constinit static std::uint64_t				s_logging_interval{1000};
 	constinit static std::uint64_t				s_buffer_size{};
 	constinit static std::atomic_uint64_t		s_allocated_memory{};
 	static std::jthread							s_logging_thread{};
@@ -66,14 +66,14 @@ namespace {
 		buffer.reserve(s_buffer_size);
 		while (s_should_continue.load(std::memory_order_acquire))
 		{
-			auto const pp(chrono::system_clock::now().time_since_epoch());
-			value_type const ms_count(chrono::duration_cast <chrono::milliseconds>(pp).count());
+			auto const sampling_time(chrono::steady_clock::now().time_since_epoch());
+			value_type const sampling_time_ms(chrono::duration_cast <chrono::milliseconds>(sampling_time).count());
 			auto const allocated_memory(s_allocated_memory.load(std::memory_order_relaxed));
-
+			
 			// We use big endian byte order b.c. it is easier to read with e.g. xxd or Hex Fiend.
-			buffer.push_back(endian::native_to_big(ms_count));
+			buffer.push_back(endian::native_to_big(sampling_time_ms));
 			buffer.push_back(endian::native_to_big(allocated_memory));
-
+			
 			if (buffer.size() == s_buffer_size)
 			{
 				auto const res(::write(s_logging_handle.get(), buffer.data(), buffer.size() * sizeof(value_type)));
@@ -82,16 +82,19 @@ namespace {
 					std::cerr << "ERROR: Unable to write to allocation log: " << std::strerror(errno) << '\n';
 					std::abort();
 				}
-
+				
 				buffer.clear();
 			}
-
+			
+			auto const finish_time(chrono::steady_clock::now().time_since_epoch());
+			auto const diff_ms(chrono::duration_cast <chrono::milliseconds>(finish_time - sampling_time).count());
+			if (diff_ms < s_logging_interval)
 			{
 				using namespace std::chrono_literals;
-				std::this_thread::sleep_for(s_logging_interval * 1ms);
+				std::this_thread::sleep_for((s_logging_interval - diff_ms) * 1ms);
 			}
 		}
-
+		
 		::write(s_logging_handle.get(), buffer.data(), buffer.size() * sizeof(value_type));
 	}
 
