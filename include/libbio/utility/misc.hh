@@ -61,6 +61,15 @@ namespace libbio {
 	
 	std::ostream &log_time(std::ostream &stream);
 	std::string copy_time();
+
+	template <typename t_stream>
+	t_stream &&log_time(t_stream &&stream)
+	requires std::is_rvalue_reference_v <decltype(stream)>
+	// FIXME: add requires for checking base class?
+	{
+		log_time(stream);
+		return std::move(stream);
+	}
 	
 	// Calculate the printed length of a UTF-8 string by checking the first two bits of each byte.
 	std::size_t strlen_utf8(std::string const &str);
