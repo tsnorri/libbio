@@ -8,7 +8,7 @@
 
 #if !(defined(LIBBIO_NO_DISPATCH) && LIBBIO_NO_DISPATCH)
 
-#include <libbio/dispatch/dispatch_compat.hh>
+#include <libbio/dispatch/dispatch_compat.h>
 
 
 namespace libbio {

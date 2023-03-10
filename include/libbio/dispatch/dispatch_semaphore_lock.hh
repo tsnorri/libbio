@@ -6,7 +6,7 @@
 #ifndef LIBBIO_DISPATCH_DISPATCH_SEMAPHORE_LOCK_HH
 #define LIBBIO_DISPATCH_DISPATCH_SEMAPHORE_LOCK_HH
 
-#include <libbio/dispatch/dispatch_compat.hh>
+#include <libbio/dispatch/dispatch_compat.h>
 #include <libbio/dispatch/dispatch_ptr.hh>
 
 
