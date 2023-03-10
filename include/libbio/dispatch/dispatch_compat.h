@@ -3,8 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_DISPATCH_DISPATCH_COMPAT_HH
-#define LIBBIO_DISPATCH_DISPATCH_COMPAT_HH
+#ifndef LIBBIO_DISPATCH_DISPATCH_COMPAT_H
+#define LIBBIO_DISPATCH_DISPATCH_COMPAT_H
 
 // <dispatch/dispatch.h> uses Clang's __has_feature and __has_extension
 // without checking, so we need a workaround.
