@@ -6,6 +6,7 @@
 #include <cstring>
 #include <libbio/buffered_writer/file_handle_buffered_writer.hh>
 #include <stdexcept>
+#include <sys/errno.h>
 #include <unistd.h>
 
 
