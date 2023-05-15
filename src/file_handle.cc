@@ -43,18 +43,37 @@ namespace libbio {
 	
 	std::size_t file_handle::read(std::size_t const len, char * const dst)
 	{
-		auto const res(::read(m_fd, dst, len));
-		if (-1 == res)
-			throw std::runtime_error(std::strerror(errno));
-		return res;
+		while (true)
+		{
+			auto const res(::read(m_fd, dst, len));
+			if (-1 == res)
+			{
+				if (EINTR == errno)
+					continue;
+
+				throw std::runtime_error(std::strerror(errno));
+			}
+			
+			return res;
+		}
 	}
 	
 	
 	void file_handle::truncate(std::size_t const len)
 	{
-		auto const res(::ftruncate(m_fd, len));
-		if (-1  == res)
-			throw std::runtime_error(std::strerror(errno));
+		while (true)
+		{
+			auto const res(::ftruncate(m_fd, len));
+			if (-1  == res)
+			{
+				if (EINTR == errno)
+					continue;
+				
+				throw std::runtime_error(std::strerror(errno));
+			}
+			
+			return;
+		}
 	}
 	
 	
