@@ -163,26 +163,35 @@ namespace libbio {
 	
 	auto process_handle::close() -> close_return_t
 	{
-		int status{};
-		auto const res(::waitpid(m_pid, &status, WUNTRACED));
-		auto const pid(m_pid);
-		m_pid = -1;
-		
-		if (-1 == res)
+		while (true)
 		{
-			if (ECHILD == errno)
-				return {close_status::exit_called, 0, pid}; // FIXME: we’re being optimistic w.r.t. the exit status.
+			int status{};
+			auto const res(::waitpid(m_pid, &status, WUNTRACED));
+			auto const pid(m_pid);
+			m_pid = -1;
+			
+			if (-1 == res)
+			{
+				switch (errno)
+				{
+					case EINTR:
+						continue; // Continues the while loop.
+					
+					case ECHILD:
+						return {close_status::exit_called, 0, pid}; // FIXME: we’re being optimistic w.r.t. the exit status.
+				}
 				
-			throw std::runtime_error(::strerror(errno));
+				throw std::runtime_error(::strerror(errno));
+			}
+			
+			if (WIFEXITED(status))
+				return {close_status::exit_called, WEXITSTATUS(status), pid};
+			else if (WIFSIGNALED(status))
+				return {close_status::terminated_by_signal, WTERMSIG(status), pid};
+			else if (WIFSTOPPED(status))
+				return {close_status::stopped_by_signal, WSTOPSIG(status), pid};
+			
+			return {close_status::unknown, 0, pid};
 		}
-		
-		if (WIFEXITED(status))
-			return {close_status::exit_called, WEXITSTATUS(status), pid};
-		else if (WIFSIGNALED(status))
-			return {close_status::terminated_by_signal, WTERMSIG(status), pid};
-		else if (WIFSTOPPED(status))
-			return {close_status::stopped_by_signal, WSTOPSIG(status), pid};
-		
-		return {close_status::unknown, 0, pid};
 	}
 }
