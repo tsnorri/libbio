@@ -12,23 +12,20 @@
 
 
 namespace libbio { namespace detail {
-	
-	static const std::tuple <std::size_t, int, int>
-	s_values_for_handle_spec[]{
-		{0, STDIN_FILENO, O_RDONLY},
-		{1, STDOUT_FILENO, O_WRONLY},
-		{1, STDERR_FILENO, O_WRONLY}
+
+	struct subprocess_handle_trait
+	{
+		std::size_t	sp_fd_idx{};	// Index in the array passed to ::pipe()
+		int			fd{};
+		int			oflags{};		// Flags passed to ::open().
 	};
 	
-	
-	inline std::tuple <std::size_t, int, int> values_for_handle_spec(subprocess_handle_spec const handle_spec)
-	{
-		auto const idx1(to_underlying(handle_spec));
-		libbio_assert_lt(0, idx1);
-		auto const idx(idx1 - 1);
-		libbio_assert_lt(idx, sizeof(s_values_for_handle_spec) / sizeof(s_values_for_handle_spec[0]));
-		return s_values_for_handle_spec[idx];
-	}
+	static std::array const
+	s_handle_traits{
+		subprocess_handle_trait{0, STDIN_FILENO, O_RDONLY},
+		subprocess_handle_trait{1, STDOUT_FILENO, O_WRONLY},
+		subprocess_handle_trait{1, STDERR_FILENO, O_WRONLY}
+	};
 	
 	
 	std::tuple <pid_t, int, int, int>
@@ -43,17 +40,20 @@ namespace libbio { namespace detail {
 		
 		auto process_all_fds([&fds](auto &&cb){
 			for (std::size_t i(0); i < 3; ++i)
-				cb(static_cast <subprocess_handle_spec>(1 + i), fds[i]);
+			{
+				auto const &trait(s_handle_traits[i]);
+				cb(static_cast <subprocess_handle_spec>(0x1 << i), fds[i], trait);
+			}
 		});
 		
 		auto process_open_fds([&process_all_fds, handle_spec](auto &&cb){
-			process_all_fds([&cb, handle_spec](auto const curr_spec, auto &fd_pair){
+			process_all_fds([&cb, handle_spec](auto const curr_spec, auto &fd_pair, auto const &trait){
 				if (to_underlying(curr_spec & handle_spec))
-					cb(curr_spec, fd_pair);
+					cb(curr_spec, fd_pair, trait);
 			});
 		});
 		
-		process_open_fds([](auto const, auto &fd_pair){
+		process_open_fds([](auto const, auto &fd_pair, auto const &trait){
 			if (0 != ::pipe(fd_pair))
 				throw std::runtime_error(::strerror(errno));
 		});
@@ -64,7 +64,7 @@ namespace libbio { namespace detail {
 			case -1:
 			{
 				auto const * const err(::strerror(errno));
-				process_open_fds([](auto const, auto &fd_pair){
+				process_open_fds([](auto const, auto &fd_pair, auto const &trait){
 					::close(fd_pair[0]);
 					::close(fd_pair[1]);
 				});
@@ -77,23 +77,23 @@ namespace libbio { namespace detail {
 				// Try to make the child continue when debugging.
 				::signal(SIGTRAP, SIG_IGN);
 				
-				process_all_fds([handle_spec](auto const curr_spec, auto &fd_pair){
-					auto const [sp_fd_idx, fno, open_flags] = detail::values_for_handle_spec(curr_spec);
-					
+				process_all_fds([handle_spec](auto const curr_spec, auto &fd_pair, auto const &trait){
 					if (to_underlying(curr_spec & handle_spec))
 					{
-						if (-1 != ::dup2(fd_pair[sp_fd_idx], fno))			::_exit(69);	// EX_UNAVAILABLE in sysexits.h.
-						if (-1 != ::close(fd_pair[0]))						::_exit(69);
-						if (-1 != ::close(fd_pair[1]))						::_exit(69);
+						// Keep opened.
+						if (-1 == ::dup2(fd_pair[trait.sp_fd_idx], trait.fd))		::_exit(69);	// EX_UNAVAILABLE in sysexits.h.
+						if (-1 == ::close(fd_pair[0]))								::_exit(69);
+						if (-1 == ::close(fd_pair[1]))								::_exit(69);
 					}
 					else
 					{
-						if (-1 != ::close(fno))								::_exit(69);
-						if (-1 != ::openat(fno, "/dev/null", open_flags))	::_exit(69);
+						// Re-open with /dev/null.
+						if (-1 == ::close(trait.fd))								::_exit(69);
+						if (-1 == ::openat(trait.fd, "/dev/null", trait.oflags))	::_exit(69);
 					}
 				});
 				
-				::execvp(*args, args);
+				::execvp(*args, args); // Returns only on error (with the value -1).
 				
 				switch (errno)
 				{
@@ -125,11 +125,10 @@ namespace libbio { namespace detail {
 			{
 				bool should_throw{};
 				char const *err{};
-				process_open_fds([&should_throw, &err](auto const curr_spec, auto &fd_pair){
-					auto const [sp_fd_idx, fno, open_flags] = detail::values_for_handle_spec(curr_spec);
-					auto const parent_fd_idx(1 - sp_fd_idx);
+				process_open_fds([&should_throw, &err](auto const curr_spec, auto &fd_pair, auto const &trait){
+					auto const parent_fd_idx(1 - trait.sp_fd_idx);
 					
-					::close(fd_pair[sp_fd_idx]);
+					::close(fd_pair[trait.sp_fd_idx]);
 					if (-1 == ::fcntl(fd_pair[parent_fd_idx], F_SETFD, FD_CLOEXEC))
 					{
 						if (!should_throw)
@@ -143,9 +142,8 @@ namespace libbio { namespace detail {
 				if (should_throw)
 				{
 					// Clean up if there was an error.
-					process_open_fds([](auto const curr_spec, auto &fd_pair){
-						auto const [sp_fd_idx, fno, open_flags] = detail::values_for_handle_spec(curr_spec);
-						auto const parent_fd_idx(1 - sp_fd_idx);
+					process_open_fds([](auto const curr_spec, auto &fd_pair, auto const &trait){
+						auto const parent_fd_idx(1 - trait.sp_fd_idx);
 						::close(fd_pair[parent_fd_idx]);
 					});
 					
