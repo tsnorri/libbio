@@ -7,6 +7,7 @@
 #define LIBBIO_UTILITY_COMPARE_STRINGS_TRANSPARENT_HH
 
 #include <cstring>
+#include <functional>			// std::less, std::equal_to
 #include <libbio/cxxcompat.hh>
 #include <string>
 #include <type_traits>
