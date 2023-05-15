@@ -8,7 +8,7 @@
 
 #include <iostream>
 #include <libbio/assert.hh>
-#include <libbio/dispatch/dispatch_compat.hh>
+#include <libbio/dispatch/dispatch_compat.h>
 #include <stdexcept>
 
 

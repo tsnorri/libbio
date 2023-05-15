@@ -7,7 +7,7 @@
 #define LIBBIO_DISPATCH_DISPATCH_CALLER_HH
 
 #include <libbio/assert.hh>
-#include <libbio/dispatch/dispatch_compat.hh>
+#include <libbio/dispatch/dispatch_compat.h>
 
 
 namespace libbio { namespace detail {
@@ -54,7 +54,7 @@ namespace libbio {
 		dispatch_caller(owner_type &owner): m_owner(&owner) {}
 		
 		template <void(owner_type::*t_fn)() = detail::dispatch_caller_default_fn_v <owner_type>>
-		requires (nullptr != t_fn)
+		//requires (nullptr != t_fn)
 		void async(dispatch_queue_t queue)
 		{
 			dispatch_async_f(queue, m_owner, detail::call_member_function <owner_type, t_fn>);
@@ -75,14 +75,14 @@ namespace libbio {
 		}
 		
 		template <void(owner_type::*t_fn)() = detail::dispatch_caller_default_fn_v <owner_type>>
-		requires (nullptr != t_fn)
+		//requires (nullptr != t_fn)
 		void group_async(dispatch_group_t group, dispatch_queue_t queue)
 		{
 			dispatch_group_async_f(group, queue, m_owner, detail::call_member_function <owner_type, t_fn>);
 		}
 		
 		template <void(owner_type::*t_fn)() = detail::dispatch_caller_default_fn_v <owner_type>>
-		requires (nullptr != t_fn)
+		//requires (nullptr != t_fn)
 		void group_notify(dispatch_group_t group, dispatch_queue_t queue)
 		{
 			dispatch_group_notify_f(group, queue, m_owner, detail::call_member_function <owner_type, t_fn>);

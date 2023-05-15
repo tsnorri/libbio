@@ -8,7 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <libbio/dispatch/dispatch_compat.hh>
+#include <libbio/dispatch/dispatch_compat.h>
 #include <range/v3/range/primitives.hpp>
 #include <range/v3/view/chunk.hpp>
 #include <range/v3/view/enumerate.hpp>
