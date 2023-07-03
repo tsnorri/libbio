@@ -114,6 +114,10 @@ namespace libbio { namespace bits { namespace detail {
 
 namespace libbio { namespace bits {
 	
+#if defined(__clang__)
+#	pragma clang diagnostic push
+#	pragma clang diagnostic ignored "-Wredundant-consteval-if"
+#endif
 	template <typename t_integer>
 	constexpr std::uint8_t count_bits_set(t_integer const ii)
 	{
@@ -126,6 +130,9 @@ namespace libbio { namespace bits {
 			return detail::count_bits_set(ii);
 		}
 	}
+#if defined(__clang__)
+#	pragma clang diagnostic pop
+#endif
 	
 	
 	template <typename t_integer>
