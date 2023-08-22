@@ -26,9 +26,12 @@ namespace {
 			return true;
 		}
 		
-		virtual bool handle_identifier(lb::fasta_reader &reader, std::string_view const &sv) override
+		virtual bool handle_identifier(lb::fasta_reader &reader, std::string_view const &identifier, std::string_view const &extra) override
 		{
-			m_stream << '>' << sv << '\n';
+			m_stream << '>' << identifier;
+			if (!extra.empty())
+				m_stream << '\t' << extra; // For simplicity we should always test with one tab separating the identifier and the extra fields.
+			m_stream << '\n';
 			return true;
 		}
 		

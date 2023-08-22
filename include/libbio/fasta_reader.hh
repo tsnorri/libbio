@@ -24,7 +24,7 @@ namespace libbio {
 	{
 		virtual ~fasta_reader_delegate() {}
 		virtual bool handle_comment_line(fasta_reader &reader, std::string_view const &sv) = 0;
-		virtual bool handle_identifier(fasta_reader &reader, std::string_view const &sv) = 0;
+		virtual bool handle_identifier(fasta_reader &reader, std::string_view const &sv, std::string_view const &additional_info) = 0;
 		virtual bool handle_sequence_line(fasta_reader &reader, std::string_view const &sv) = 0;
 	};
 	

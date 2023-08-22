@@ -41,13 +41,13 @@ namespace
 		
 		bool handle_comment_line(lb::fasta_reader &reader, std::string_view const &sv) override { return true; }
 		
-		bool handle_identifier(lb::fasta_reader &reader, std::string_view const &sv) override
+		bool handle_identifier(lb::fasta_reader &reader, std::string_view const &identifier, std::string_view const &extra) override
 		{
 			// FIXME: Check if the identifier has multiple fields.
 			if (m_is_copying)
 				return false;
 			
-			if (nullptr == m_sequence_id || sv == m_sequence_id)
+			if (nullptr == m_sequence_id || identifier == m_sequence_id)
 				m_is_copying = true;
 
 			return true;
@@ -105,6 +105,8 @@ namespace libbio
 	{
 		int cs(0);
 		line_type current_line_type(line_type::NONE);
+		char const *header_identifier_end{nullptr};
+		char const *header_extra_start{nullptr};
 		
 		m_fsm.p = handle.data();
 		m_fsm.pe = m_fsm.p + handle.size();
@@ -112,7 +114,7 @@ namespace libbio
 		
 		m_line_start = m_fsm.p;
 		m_lineno = 0;
-		
+
 		%%{
 			variable p		m_fsm.p;
 			variable pe		m_fsm.pe;
@@ -128,6 +130,14 @@ namespace libbio
 				current_line_type = line_type::HEADER; // Set the line type for the EOF handler.
 				++m_lineno;
 				m_line_start = fpc;
+			}
+
+			action header_identifier {
+				header_identifier_end = fpc;
+			}
+
+			action header_extra {
+				header_extra_start = fpc;
 			}
 			
 			action sequence_start {
@@ -146,9 +156,21 @@ namespace libbio
 			
 			action header {
 				current_line_type = line_type::NONE;
-				std::string_view const sv(1 + m_line_start, fpc - m_line_start - 1);
-				libbio_assert_neq(*sv.rbegin(), '\n');
-				if (!delegate.handle_identifier(*this, sv))
+
+				std::string_view const identifier(1 + m_line_start, header_identifier_end);
+				libbio_assert_neq(*identifier.rbegin(), '\n');
+
+				std::string_view extra{};
+				if (header_extra_start)
+				{
+					extra = std::string_view(header_extra_start, fpc - 1);
+					libbio_assert_neq(*extra.rbegin(), '\n');
+				}
+
+				header_identifier_end = nullptr;
+				header_extra_start = nullptr;
+
+				if (!delegate.handle_identifier(*this, identifier, extra))
 					return parsing_status::cancelled;
 			}
 			
@@ -188,10 +210,15 @@ namespace libbio
 					}
 				}
 			}
+
+			header_field			= (any - space)+;
+			header_field_separator	= space - "\n";
 			
-			comment_line	= (";" [^\n]*)		>comment_start	"\n" >comment;
-			header_line		= (">" [^\n]*)		>header_start	"\n" >header;
-			sequence_line	= ([A-Za-z*\-]*)	>sequence_start	"\n" >sequence;
+			comment_line	= (";" [^\n]*)			>comment_start	"\n" >comment;
+			header_start	= (">" header_field) 	>header_start %header_identifier;
+			header_end		= (header_field_separator+ (header_field >header_extra))? (header_field_separator+ header_field)* "\n" >header;
+			header_line		= header_start header_end;
+			sequence_line	= ([A-Za-z*\-]*)											>sequence_start	"\n" >sequence;
 			
 			fasta_header	= comment_line* header_line;
 			fasta_sequence	= (comment_line* sequence_line)+ comment_line*;
