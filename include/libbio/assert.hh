@@ -40,12 +40,9 @@
 			::libbio::detail::assertion_failure <true>(__FILE__, __LINE__, assert_lhs, assert_rhs, MESSAGE); \
 	} while (false)
 
-// FIXME: Make this work when immediately evaluated.
 #define libbio_assert_test_msg(TEST, ...)				do { \
-		if (!(TEST)) { \
-			std::stringstream stream; \
-			::libbio::detail::assertion_failure(__FILE__, __LINE__, stream, __VA_ARGS__); \
-		} \
+		if (!(TEST)) \
+			::libbio::detail::assertion_failure(__FILE__, __LINE__, __VA_ARGS__); \
 	} while (false)
 
 #define libbio_assert_test_rel_msg(TEST, REL_EXPR, ...)	libbio_assert_test_msg((TEST), __VA_ARGS__, ": ", (REL_EXPR), '.')
@@ -203,7 +200,7 @@ namespace libbio { namespace detail {
 
 	// Concatenate the arguments and call assertion_failure.
 	template <typename t_arg>
-	[[noreturn]] void assertion_failure(char const *file, long const line, std::stringstream &stream, t_arg const &arg)
+	[[noreturn]] void assertion_failure__(char const *file, long const line, std::stringstream &stream, t_arg const &arg)
 	{
 		stream << arg;
 		auto const &string(stream.str()); // Keep the result of str() here to prevent a dangling pointer.
@@ -213,10 +210,35 @@ namespace libbio { namespace detail {
 
 	// Concatenate the arguments and call assertion_failure.
 	template <typename t_arg, typename ... t_rest>
-	[[noreturn]] void assertion_failure(char const *file, long const line, std::stringstream &stream, t_arg const &first, t_rest ... rest)
+	[[noreturn]] void assertion_failure__(char const *file, long const line, std::stringstream &stream, t_arg const &first, t_rest && ... rest)
 	{
 		stream << first;
-		assertion_failure(file, line, stream, rest...);
+		assertion_failure__(file, line, stream, rest...);
+	}
+	
+	
+	// Concatenate the arguments and call assertion_failure.
+	template <typename ... t_args>
+	[[noreturn]] void assertion_failure_(char const *file, long const line, t_args && ... args)
+	{
+		// For some reason if std::stringstream is instantiated in the non-consteval branch of if consteval in a constexpr function, Clang++14 rejects the code.
+		// FIXME: use std::format.
+		std::stringstream stream;
+		assertion_failure__(file, line, stream, std::forward <t_args>(args)...);
+	}
+	
+	
+	template <typename ... t_args>
+	[[noreturn]] constexpr void assertion_failure(char const *file, long const line, t_args && ... args)
+	{
+		if consteval
+		{
+			assertion_failure(file, line, "(Formatted output for consteval assertion fauilure not implemented.)");
+		}
+		else
+		{
+			assertion_failure_(file, line, std::forward <t_args>(args)...);
+		}
 	}
 
 
