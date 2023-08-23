@@ -276,7 +276,7 @@ SCENARIO("libbio::parser::conditional_field works with simple input")
 	GIVEN("a simple input file")
 	{
 		lb::file_istream stream;
-		lb::open_file_for_reading("test.tsv", stream);
+		lb::open_file_for_reading("test-files/simple.tsv", stream);
 		
 		WHEN("the file is parsed")
 		{
