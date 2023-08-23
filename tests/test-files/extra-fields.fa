@@ -1,0 +1,5 @@
+; Input with extra header fields.
+>test1	aa	bb	cc
+GATTACA
+>test2	dd	ee	ff
+GGTTCC
