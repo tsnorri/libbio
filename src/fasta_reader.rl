@@ -41,7 +41,7 @@ namespace
 		
 		bool handle_comment_line(lb::fasta_reader &reader, std::string_view const &sv) override { return true; }
 		
-		bool handle_identifier(lb::fasta_reader &reader, std::string_view const &identifier, std::string_view const &extra) override
+		bool handle_identifier(lb::fasta_reader &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra) override
 		{
 			// FIXME: Check if the identifier has multiple fields.
 			if (m_is_copying)
@@ -114,6 +114,7 @@ namespace libbio
 		
 		m_line_start = m_fsm.p;
 		m_lineno = 0;
+		m_extra_fields.clear();
 
 		%%{
 			variable p		m_fsm.p;
@@ -132,12 +133,17 @@ namespace libbio
 				m_line_start = fpc;
 			}
 
-			action header_identifier {
+			action header_identifier_end {
 				header_identifier_end = fpc;
 			}
 
 			action header_extra {
 				header_extra_start = fpc;
+			}
+			
+			action header_extra_end {
+				auto const &sv(m_extra_fields.emplace_back(header_extra_start, fpc));
+				libbio_assert_neq(*sv.rbegin(), '\n');
 			}
 			
 			action sequence_start {
@@ -160,17 +166,13 @@ namespace libbio
 				std::string_view const identifier(1 + m_line_start, header_identifier_end);
 				libbio_assert_neq(*identifier.rbegin(), '\n');
 
-				std::string_view extra{};
-				if (header_extra_start)
-				{
-					extra = std::string_view(header_extra_start, fpc - 1);
-					libbio_assert_neq(*extra.rbegin(), '\n');
-				}
-
 				header_identifier_end = nullptr;
 				header_extra_start = nullptr;
-
-				if (!delegate.handle_identifier(*this, identifier, extra))
+				
+				auto const res(delegate.handle_identifier(*this, identifier, m_extra_fields));
+				m_extra_fields.clear();
+				
+				if (!res)
 					return parsing_status::cancelled;
 			}
 			
@@ -214,11 +216,12 @@ namespace libbio
 			header_field			= (any - space)+;
 			header_field_separator	= space - "\n";
 			
-			comment_line	= (";" [^\n]*)			>comment_start	"\n" >comment;
-			header_start	= (">" header_field) 	>header_start %header_identifier;
-			header_end		= (header_field_separator+ (header_field >header_extra))? (header_field_separator+ header_field)* "\n" >header;
-			header_line		= header_start header_end;
-			sequence_line	= ([A-Za-z*\-]*)											>sequence_start	"\n" >sequence;
+			comment_line	= (";" [^\n]*) >comment_start "\n" >comment;
+			header_start	= (">" header_field) >header_start %header_identifier_end;
+			header_extra	= (header_field_separator+ (header_field >header_extra %header_extra_end))*;
+			header_end		= "\n" >header;
+			header_line		= header_start header_extra header_end;
+			sequence_line	= ([A-Za-z*\-]*) >sequence_start "\n" >sequence;
 			
 			fasta_header	= comment_line* header_line;
 			fasta_sequence	= (comment_line* sequence_line)+ comment_line*;

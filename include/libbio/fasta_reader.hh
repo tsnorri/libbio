@@ -24,7 +24,7 @@ namespace libbio {
 	{
 		virtual ~fasta_reader_delegate() {}
 		virtual bool handle_comment_line(fasta_reader &reader, std::string_view const &sv) = 0;
-		virtual bool handle_identifier(fasta_reader &reader, std::string_view const &sv, std::string_view const &additional_info) = 0;
+		virtual bool handle_identifier(fasta_reader &reader, std::string_view const &sv, std::vector <std::string_view> const &additional_info) = 0;
 		virtual bool handle_sequence_line(fasta_reader &reader, std::string_view const &sv) = 0;
 	};
 	
@@ -51,9 +51,10 @@ namespace libbio {
 		};
 		
 	protected:
-		char const	*m_line_start{};
-		fsm			m_fsm;
-		std::size_t	m_lineno{};
+		std::vector <std::string_view>	m_extra_fields;
+		char const						*m_line_start{};
+		fsm								m_fsm;
+		std::size_t						m_lineno{};
 	
 	protected:
 		void report_unexpected_character(int const current_state) const;

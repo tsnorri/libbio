@@ -25,7 +25,7 @@ namespace libbio { namespace sequence_reader { namespace detail {
 			return true;
 		}
 		
-		virtual bool handle_identifier(fasta_reader &reader, std::string_view const &identifier, std::string_view const &extra) override
+		virtual bool handle_identifier(fasta_reader &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra) override
 		{
 			// Append a new sequence.
 			m_sequences->emplace_back();
