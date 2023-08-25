@@ -198,6 +198,7 @@ namespace libbio {
 		inline void set_stride(std::size_t const stride);
 		constexpr std::size_t word_bits() const { return m_data.word_bits(); }
 		
+		vector_type &values() { return m_data; }
 		vector_type const &values() const { return m_data; }
 		
 		// The following are constexpr iff t_bits != 0.
