@@ -29,7 +29,7 @@ namespace libbio { namespace detail {
 	
 	
 	std::tuple <pid_t, int, int, int>
-	open_subprocess(char * const args[], subprocess_handle_spec const handle_spec) // nullptr-terminated list of arguments.
+	open_subprocess(char const * const args[], subprocess_handle_spec const handle_spec) // nullptr-terminated list of arguments.
 	{
 		// Note that if this function is invoked simultaneously from different threads,
 		// the subprocesses can leak file descriptors b.c. the ones resulting from the
@@ -93,7 +93,11 @@ namespace libbio { namespace detail {
 					}
 				});
 				
-				::execvp(*args, args); // Returns only on error (with the value -1).
+				// According to POSIX, “the argv[] and envp[] arrays of pointers and the strings to which those arrays point
+				// shall not be modified by a call to one of the exec functions, except as a consequence of replacing the
+				// process image.” (https://pubs.opengroup.org/onlinepubs/009604499/functions/exec.html)
+				// Hence the const_cast below should be safe.
+				::execvp(*args, const_cast <char * const *>(args)); // Returns only on error (with the value -1).
 				
 				switch (errno)
 				{

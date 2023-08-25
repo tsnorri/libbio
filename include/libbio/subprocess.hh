@@ -42,7 +42,7 @@ namespace libbio {
 namespace libbio { namespace detail {
 	
 	std::tuple <pid_t, int, int, int>
-	open_subprocess(char * const args[], subprocess_handle_spec const handle_spec); // nullptr-terminated list of arguments.
+	open_subprocess(char const * const args[], subprocess_handle_spec const handle_spec); // nullptr-terminated list of arguments.
 	
 	
 	consteval std::size_t handle_count(subprocess_handle_spec const t_spec)
@@ -109,6 +109,12 @@ namespace libbio { namespace detail {
 		
 		return make_handle_array(fds);
 	}
+	
+	
+	template <typename t_type>
+	constexpr inline decltype(auto) argument_data(t_type const &arg) { return std::data(arg); }
+	
+	constexpr inline auto argument_data(char const *arg) { return arg; }
 }}
 
 
@@ -179,6 +185,9 @@ namespace libbio {
 		{
 		}
 		
+		template <typename t_type>
+		static subprocess subprocess_with_arguments_(t_type const &args, subprocess_handle_spec const spec);
+		
 		template <subprocess_handle_spec t_spec>
 		constexpr static bool has_handle() { return libbio::has_handle <t_handle_spec, t_spec>(); }
 		
@@ -190,13 +199,14 @@ namespace libbio {
 		subprocess() = default;
 		
 		// The second argument is useful for having a set of subprocess instances of the same size.
-		explicit subprocess(char * const args[], subprocess_handle_spec const spec = t_handle_spec):
+		explicit subprocess(char const * const args[], subprocess_handle_spec const spec = t_handle_spec):
 			subprocess(detail::open_subprocess(args, spec))
 		{
 			libbio_assert_eq(0x0, to_underlying(spec) & ~to_underlying(t_handle_spec));
 		}
 		
-		static subprocess subprocess_with_arguments(std::vector <std::string> &args, subprocess_handle_spec const spec = t_handle_spec);
+		static subprocess subprocess_with_arguments(std::initializer_list <char const *> const &il, subprocess_handle_spec const spec = t_handle_spec) { return subprocess_with_arguments_(il, spec); }
+		static subprocess subprocess_with_arguments(std::vector <std::string> const &args, subprocess_handle_spec const spec = t_handle_spec) { return subprocess_with_arguments_(args, spec); }
 		static subprocess subprocess_with_arguments(char const * const args, subprocess_handle_spec const spec = t_handle_spec);
 		
 		inline close_return_t close();
@@ -225,18 +235,19 @@ namespace libbio {
 	template <subprocess_handle_spec t_handle_spec>
 	auto subprocess <t_handle_spec>::close() -> close_return_t
 	{
-		std::apply([](auto... handle) { ((handle.close()), ...); }, m_handles);
+		std::apply([](auto && ... handle) { ((handle.close()), ...); }, m_handles);
 		return m_process.close();
 	}
 	
 	
 	template <subprocess_handle_spec t_handle_spec>
-	subprocess <t_handle_spec> subprocess <t_handle_spec>::subprocess_with_arguments(std::vector <std::string> &args, subprocess_handle_spec const spec)
+	template <typename t_type>
+	subprocess <t_handle_spec> subprocess <t_handle_spec>::subprocess_with_arguments_(t_type const &args, subprocess_handle_spec const spec)
 	{
 		auto const argc(args.size());
-		char *argv[argc + 1];
+		char const *argv[argc + 1];
 		for (auto &&[i, arg] : ranges::views::enumerate(args))
-			argv[i] = arg.data();
+			argv[i] = detail::argument_data(arg);
 		argv[argc] = nullptr;
 		return subprocess <t_handle_spec>(argv, spec);
 	}
