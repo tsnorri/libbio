@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -14,7 +14,46 @@
 #include <range/v3/view/enumerate.hpp>
 #include <tuple>
 
+
+namespace libbio::detail {
+	void deallocate_subprocess_object_memory(void *ptr, std::size_t const size, std::size_t const alignment);
+}
+
+
 namespace libbio {
+	
+	struct shared_memory_allocation_error : public std::bad_alloc
+	{
+		int error{};
+		
+		shared_memory_allocation_error(int const error_):
+			error(error_)
+		{
+		}
+		
+		char const *what() const noexcept override { return strerror(error); }
+	};
+	
+	
+	template <typename t_type>
+	struct subprocess_object_deallocator
+	{
+		// All objects are placement-new-constructed.
+		void operator()(t_type *ptr) noexcept { ptr->~t_type(); detail::deallocate_subprocess_object_memory(ptr, sizeof(t_type), alignof(t_type)); }
+	};
+	
+	
+	template <typename t_type>
+	using subprocess_object_ptr = std::unique_ptr <t_type, subprocess_object_deallocator <t_type>>;
+	
+	
+	enum class execution_status_type : std::uint8_t
+	{
+		no_error,
+		file_descriptor_handling_failed,
+		exec_failed
+	};
+	
 	
 	enum class subprocess_handle_spec : std::uint8_t
 	{
@@ -41,7 +80,15 @@ namespace libbio {
 
 namespace libbio { namespace detail {
 	
-	std::tuple <pid_t, int, int, int>
+	struct subprocess_status
+	{
+		execution_status_type	execution_status{};
+		std::uint32_t			line{}; // For debugging.
+		int						error{};
+	};
+	
+	
+	std::tuple <pid_t, int, int, int, subprocess_object_ptr <subprocess_status>>
 	open_subprocess(char const * const args[], subprocess_handle_spec const handle_spec); // nullptr-terminated list of arguments.
 	
 	
@@ -94,7 +141,7 @@ namespace libbio { namespace detail {
 	
 	template <subprocess_handle_spec t_spec, std::size_t t_handle_count = handle_count(t_spec)>
 	std::array <libbio::file_handle, t_handle_count>
-	make_handle_array(std::tuple <pid_t, int, int, int> const &pid_fd_tuple)
+	make_handle_array(std::tuple <pid_t, int, int, int, subprocess_object_ptr <subprocess_status>> const &pid_fd_tuple)
 	{
 		typedef std::underlying_type_t <subprocess_handle_spec> underlying_t;
 		std::array <int, t_handle_count> fds;
@@ -133,7 +180,7 @@ namespace libbio {
 			stopped_by_signal
 		};
 		
-		typedef std::tuple <close_status, int, pid_t>	close_return_t;
+		typedef std::tuple <close_status, int, pid_t>	close_return_type;
 		
 	protected:
 		pid_t				m_pid{-1};
@@ -156,7 +203,7 @@ namespace libbio {
 		
 		inline process_handle &operator=(process_handle &&other) &;
 		pid_t pid() const { return m_pid; }
-		close_return_t close();
+		close_return_type close();
 		~process_handle() { if (-1 != m_pid) close(); }
 	};
 	
@@ -168,20 +215,25 @@ namespace libbio {
 	class subprocess
 	{
 	public:
-		typedef process_handle::close_return_t	close_return_t;
+		typedef process_handle::close_return_type	close_return_type;
 		typedef std::array <
 			file_handle,
 			detail::handle_count(t_handle_spec)
-		>										handle_array;
+		>											handle_array;
+		
+		typedef detail::subprocess_status			status_type;
+		typedef subprocess_object_ptr <status_type>	status_type_ptr;
 		
 	protected:
-		process_handle	m_process{};		// Data member destructors called in reverse order; important for closing the pipe first.
+		status_type_ptr	m_status{};
+		process_handle	m_process{};	// Data member destructors called in reverse order; important for closing the pipe first.
 		handle_array	m_handles;
 		
 	protected:
-		explicit subprocess(std::tuple <pid_t, int, int, int> const &pid_fd_tuple):
-			m_process(std::get <0>(pid_fd_tuple)),
-			m_handles(detail::make_handle_array <t_handle_spec>(pid_fd_tuple))
+		explicit subprocess(std::tuple <pid_t, int, int, int, status_type_ptr> &&tup):
+			m_status(std::move(std::get <4>(tup))),
+			m_process(std::get <0>(tup)),
+			m_handles(detail::make_handle_array <t_handle_spec>(tup))
 		{
 		}
 		
@@ -209,7 +261,8 @@ namespace libbio {
 		static subprocess subprocess_with_arguments(std::vector <std::string> const &args, subprocess_handle_spec const spec = t_handle_spec) { return subprocess_with_arguments_(args, spec); }
 		static subprocess subprocess_with_arguments(char const * const args, subprocess_handle_spec const spec = t_handle_spec);
 		
-		inline close_return_t close();
+		status_type const &status() const { return *m_status; }
+		inline close_return_type close();
 		
 		file_handle       &stdin_handle()        requires (has_handle <subprocess_handle_spec::STDIN>())  { return handle <subprocess_handle_spec::STDIN>(); }
 		file_handle const &stdin_handle()  const requires (has_handle <subprocess_handle_spec::STDIN>())  { return handle <subprocess_handle_spec::STDIN>(); }
@@ -233,7 +286,7 @@ namespace libbio {
 	
 	
 	template <subprocess_handle_spec t_handle_spec>
-	auto subprocess <t_handle_spec>::close() -> close_return_t
+	auto subprocess <t_handle_spec>::close() -> close_return_type
 	{
 		std::apply([](auto && ... handle) { ((handle.close()), ...); }, m_handles);
 		return m_process.close();
