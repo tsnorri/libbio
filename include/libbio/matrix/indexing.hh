@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2019 Tuukka Norri
+ * Copyright (c) 2018–2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -11,6 +11,12 @@
 
 namespace libbio { namespace detail {
 	
+	inline std::size_t matrix_index(std::size_t const y, std::size_t const x, std::size_t const stride)
+	{
+		return x * stride + y;
+	}
+	
+	
 	template <typename t_matrix>
 	inline std::size_t matrix_index(t_matrix const &matrix, std::size_t const y, std::size_t const x)
 	{
@@ -18,7 +24,7 @@ namespace libbio { namespace detail {
 		libbio_assert(y < matrix.m_stride);
 		libbio_assert(x < matrix.m_columns);
 		libbio_assert(x < matrix.m_data.size() / matrix.m_stride);
-		std::size_t const retval(x * matrix.m_stride + y);
+		auto const retval(matrix_index(y, x, matrix.m_stride));
 		libbio_assert(retval < matrix.m_data.size());
 		return retval;
 	}
