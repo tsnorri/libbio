@@ -17,6 +17,7 @@ clean:
 	$(RM) -rf check-headers
 
 clean-all: clean
+	$(RM) -rf lib/rapidcheck/build
 
 check-headers:
 	$(RM) -rf check-headers
