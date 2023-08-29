@@ -155,9 +155,6 @@ namespace libbio {
 		
 	protected:
 		vector_type											m_data;
-#ifndef LIBBIO_NDEBUG
-		std::size_t											m_columns{};
-#endif
 		std::size_t											m_stride{1};
 		
 	public:
@@ -166,9 +163,6 @@ namespace libbio {
 		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
 		int_matrix_tpl(std::size_t const rows, std::size_t const columns):
 			m_data(columns * rows),
-#ifndef LIBBIO_NDEBUG
-			m_columns(columns),
-#endif
 			m_stride(rows)
 		{
 			libbio_assert(m_stride);
@@ -177,9 +171,6 @@ namespace libbio {
 		// Enable even for 0 == t_bits in order to make writing constructors simpler in classes that make use of int_matrix.
 		int_matrix_tpl(std::size_t const rows, std::size_t const columns, std::uint8_t const bits):
 			m_data(columns * rows, bits),
-#ifndef LIBBIO_NDEBUG
-			m_columns(columns),
-#endif
 			m_stride(rows)
 		{
 			libbio_assert(m_stride);
@@ -195,7 +186,7 @@ namespace libbio {
 		std::size_t const number_of_columns() const { return m_data.size() / m_stride; }
 		std::size_t const number_of_rows() const { return m_stride; }
 		std::size_t const stride() const { return m_stride; }
-		inline void set_stride(std::size_t const stride);
+		inline void set_stride(std::size_t const stride) { m_stride = stride; }
 		constexpr std::size_t word_bits() const { return m_data.word_bits(); }
 		
 		vector_type &values() { return m_data; }
@@ -306,16 +297,6 @@ namespace libbio {
 	}
 
 
-	template <unsigned int t_bits, typename t_word, template <typename, unsigned int, typename> typename t_trait>
-	void int_matrix_tpl <t_bits, t_word, t_trait>::set_stride(std::size_t const stride)
-	{
-		m_stride = stride;
-#ifndef LIBBIO_NDEBUG
-		m_columns = number_of_columns();
-#endif
-	}
-	
-	
 	template <unsigned int t_bits, typename t_word, template <typename, unsigned int, typename> typename t_trait>
 	std::ostream &operator<<(std::ostream &os, int_matrix_tpl <t_bits, t_word, t_trait> const &matrix)
 	{
