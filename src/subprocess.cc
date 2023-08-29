@@ -89,7 +89,7 @@ namespace {
 			std::lock_guard lock{g_pool_mutex};
 			auto &pool_resource(get_pool_resource());
 			++g_pool_resource_use_count;
-			dst = pool_resource.allocate(sizeof(t_type), alignof(t_type));
+			dst = pool_resource.allocate(sizeof(t_type), alignof(t_type)); // FIXME: Not perfect b.c. in practice std::pmr::unsynchronized_pool_resource asks for a lot less than memory page size from the underlying resource.
 		}
 		
 		t_type *obj{};
