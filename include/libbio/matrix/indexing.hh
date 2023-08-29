@@ -21,11 +21,11 @@ namespace libbio { namespace detail {
 	inline std::size_t matrix_index(t_matrix const &matrix, std::size_t const y, std::size_t const x)
 	{
 		/* Column major order. */
-		libbio_assert(y < matrix.m_stride);
-		libbio_assert(x < matrix.m_columns);
-		libbio_assert(x < matrix.m_data.size() / matrix.m_stride);
+		libbio_assert_lt(y, matrix.m_stride);
+		libbio_assert_lt(x, matrix.m_columns);
+		libbio_assert_lt_msg(x, matrix.m_data.size() / matrix.m_stride, "x: ", x, " matrix.m_data.size(): ", matrix.m_data.size(), " matrix.m_stride: ", matrix.m_stride);
 		auto const retval(matrix_index(y, x, matrix.m_stride));
-		libbio_assert(retval < matrix.m_data.size());
+		libbio_assert_lt(retval, matrix.m_data.size());
 		return retval;
 	}
 }}
