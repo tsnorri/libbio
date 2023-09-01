@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018 Tuukka Norri
+ * Copyright (c) 2017-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -10,6 +10,7 @@
 #include <iostream>
 #include <libbio/assert.hh>
 #include <libbio/cxxcompat.hh>
+#include <libbio/file_handle.hh>
 #include <stdexcept>
 #include <string>
 #include <sys/mman.h>
@@ -31,6 +32,7 @@ namespace libbio {
 		std::string	m_path;
 		t_type		*m_content{};
 		std::size_t	m_mapped_size{};
+		bool		m_should_close{};
 		
 	public:
 		mmap_handle() = default;
@@ -46,7 +48,9 @@ namespace libbio {
 			other.m_mapped_size = 0;
 		}
 		
-		void open(int fd);
+		static mmap_handle mmap(file_handle const &handle);
+		
+		void open(int fd, bool should_close = true);
 		void open(std::string const &path);
 		void close();
 
@@ -76,6 +80,15 @@ namespace libbio {
 			stream << "…";
 		stream << '\'';
 		return stream;
+	}
+	
+	
+	template <typename t_type>
+	auto mmap_handle <t_type>::mmap(file_handle const &handle) -> mmap_handle <t_type>
+	{
+		mmap_handle <t_type> retval;
+		retval.open(handle.get(), false); // handle still owns the file descriptor.
+		return retval;
 	}
 	
 	
@@ -118,7 +131,7 @@ namespace libbio {
 	
 	
 	template <typename t_type>
-	void mmap_handle <t_type>::open(int fd)
+	void mmap_handle <t_type>::open(int fd, bool should_close)
 	{
 		struct stat sb{};
 		if (-1 == fstat(fd, &sb))
@@ -134,11 +147,12 @@ namespace libbio {
 		if (0 == sb.st_size)
 			return;
 		
-		m_content = static_cast <t_type *>(mmap(0, sb.st_size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0));
+		m_content = static_cast <t_type *>(::mmap(0, sb.st_size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0));
 		if (MAP_FAILED == m_content)
 			throw std::runtime_error(strerror(errno));
 		
 		m_mapped_size = sb.st_size / sizeof(t_type);
+		m_should_close = should_close;
 	}
 	
 	
