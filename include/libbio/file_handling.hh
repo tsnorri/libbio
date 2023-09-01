@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2017-2018 Tuukka Norri
+ * Copyright (c) 2017-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_FILE_HANDLING_HH
 #define LIBBIO_FILE_HANDLING_HH
 
+#include <cstdint>
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <initializer_list>

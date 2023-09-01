@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,6 +7,7 @@
 #define LIBBIO_UTILITY_FILL_BIT_PATTERN_HH
 
 #include <climits>
+#include <cstdint>
 #include <libbio/utility/misc.hh>
 
 

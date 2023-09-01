@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_SEQUENCE_READER_SEQUENCE_CONTAINER_HH
 #define LIBBIO_SEQUENCE_READER_SEQUENCE_CONTAINER_HH
 
+#include <cstdint>
 #include <libbio/mmap_handle.hh>
 #include <iostream>
 #include <vector>
