@@ -20,19 +20,19 @@ namespace libbio { namespace sequence_reader { namespace detail {
 		{
 		}
 		
-		virtual bool handle_comment_line(fasta_reader &reader, std::string_view const &sv) override
+		virtual bool handle_comment_line(fasta_reader_base &reader, std::string_view const &sv) override
 		{
 			return true;
 		}
 		
-		virtual bool handle_identifier(fasta_reader &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra) override
+		virtual bool handle_identifier(fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra) override
 		{
 			// Append a new sequence.
 			m_sequences->emplace_back();
 			return true;
 		}
 		
-		virtual bool handle_sequence_line(fasta_reader &reader, std::string_view const &sv) override
+		virtual bool handle_sequence_line(fasta_reader_base &reader, std::string_view const &sv) override
 		{
 			// Copy the current line to the end of the last sequence.
 			std::copy(sv.begin(), sv.end(), std::back_inserter(m_sequences->back()));
@@ -70,8 +70,7 @@ namespace libbio { namespace sequence_reader { namespace detail {
 		fasta_reader reader;
 		delegate cb(container->sequences());
 		
-		mmap_handle <char> fasta_handle;
-		fasta_handle.open(path);
+		file_handle fasta_handle(open_file_for_reading(path));
 		reader.parse(fasta_handle, cb);
 	}
 }}}
