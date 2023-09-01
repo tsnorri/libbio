@@ -77,10 +77,18 @@ namespace libbio {
 	}
 	
 	
-	void file_handle::stat(struct ::stat &sb)
+	void file_handle::stat(struct ::stat &sb) const
 	{
 		auto const res(::fstat(m_fd, &sb));
 		if (-1 == res)
 			throw std::runtime_error(std::strerror(errno));
+	}
+	
+	
+	std::size_t file_handle::io_op_blocksize() const
+	{
+		struct stat sb{};
+		stat(sb);
+		return sb.st_blksize;
 	}
 }

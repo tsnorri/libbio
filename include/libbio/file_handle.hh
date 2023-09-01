@@ -48,7 +48,8 @@ namespace libbio {
 		std::size_t seek(std::size_t const pos, int const whence = SEEK_SET); // throws
 		std::size_t read(std::size_t const len, char * const dst); // throws
 		void truncate(std::size_t const len); // throws
-		void stat(struct ::stat &sb);
+		void stat(struct ::stat &sb) const; // throws
+		std::size_t io_op_blocksize() const; // throws
 		
 		void close();
 	};
