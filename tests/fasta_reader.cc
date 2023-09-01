@@ -1,10 +1,12 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #include <catch2/catch.hpp>
 #include <libbio/fasta_reader.hh>
+#include <libbio/file_handling.hh>
+#include <libbio/mmap_handle.hh>
 #include <sstream>
 
 namespace gen	= Catch::Generators;
@@ -20,13 +22,13 @@ namespace {
 	public:
 		std::stringstream const &stream() { return m_stream; }
 		
-		virtual bool handle_comment_line(lb::fasta_reader &reader, std::string_view const &sv) override
+		virtual bool handle_comment_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
 		{
 			m_stream << ';' << sv << '\n';
 			return true;
 		}
 		
-		virtual bool handle_identifier(lb::fasta_reader &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
+		virtual bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
 		{
 			m_stream << '>' << identifier;
 			for (auto const &extra : extra_fields)
@@ -35,7 +37,7 @@ namespace {
 			return true;
 		}
 		
-		virtual bool handle_sequence_line(lb::fasta_reader &reader, std::string_view const &sv) override
+		virtual bool handle_sequence_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
 		{
 			m_stream << sv << '\n';
 			return true;
@@ -46,11 +48,9 @@ namespace {
 
 SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 {
-	GIVEN("A test file")
+	GIVEN("An empty file")
 	{
-		libbio::mmap_handle <char> handle;
-		handle.open("test-files/test.fa");
-		
+		lb::file_handle handle(lb::open_file_for_reading("test-files/empty.fa"));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;
@@ -59,7 +59,25 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 			
 			THEN("the parsed FASTA matches the expected")
 			{
-				auto const expected(handle.to_string_view());
+				auto const actual(cb.stream().str());
+				REQUIRE("" == actual);
+			}
+		}
+	}
+	
+	GIVEN("A test file")
+	{
+		lb::file_handle handle(lb::open_file_for_reading("test-files/test.fa"));
+		auto handle_(lb::mmap_handle <char>::mmap(handle));
+		WHEN("the file is parsed")
+		{
+			lb::fasta_reader reader;
+			delegate cb;
+			reader.parse(handle, cb);
+			
+			THEN("the parsed FASTA matches the expected")
+			{
+				auto const expected(handle_.to_string_view());
 				auto const actual(cb.stream().str());
 				REQUIRE(expected == actual);
 			}
@@ -68,9 +86,8 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 	
 	GIVEN("A test file without a terminating newline")
 	{
-		libbio::mmap_handle <char> handle;
-		handle.open("test-files/test-noeol.fa");
-		
+		lb::file_handle handle(lb::open_file_for_reading("test-files/test-noeol.fa"));
+		auto handle_(lb::mmap_handle <char>::mmap(handle));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;
@@ -79,7 +96,7 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 			
 			THEN("the parsed FASTA matches the expected")
 			{
-				auto const expected(handle.to_string_view());
+				auto const expected(handle_.to_string_view());
 				auto actual(cb.stream().str());
 				actual.pop_back();
 				REQUIRE(expected == actual);
@@ -89,9 +106,8 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 	
 	GIVEN("A test file with a comment in the end without a terminating newline")
 	{
-		libbio::mmap_handle <char> handle;
-		handle.open("test-files/test-noeol-2.fa");
-		
+		lb::file_handle handle(lb::open_file_for_reading("test-files/test-noeol-2.fa"));
+		auto handle_(lb::mmap_handle <char>::mmap(handle));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;
@@ -100,7 +116,7 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 			
 			THEN("the parsed FASTA matches the expected")
 			{
-				auto const expected(handle.to_string_view());
+				auto const expected(handle_.to_string_view());
 				auto actual(cb.stream().str());
 				actual.pop_back();
 				REQUIRE(expected == actual);
@@ -110,9 +126,8 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 	
 	GIVEN("A test file with a sequence without a header")
 	{
-		libbio::mmap_handle <char> handle;
-		handle.open("test-files/test-2.fa");
-		
+		lb::file_handle handle(lb::open_file_for_reading("test-files/test-2.fa"));
+		auto handle_(lb::mmap_handle <char>::mmap(handle));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;
@@ -121,7 +136,7 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 			
 			THEN("the parsed FASTA matches the expected")
 			{
-				auto const expected(handle.to_string_view());
+				auto const expected(handle_.to_string_view());
 				auto const actual(cb.stream().str());
 				REQUIRE(expected == actual);
 			}
@@ -130,9 +145,8 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 	
 	GIVEN("A test file with a sequence without a header and a terminating newline")
 	{
-		libbio::mmap_handle <char> handle;
-		handle.open("test-files/test-noeol-3.fa");
-		
+		lb::file_handle handle(lb::open_file_for_reading("test-files/test-noeol-3.fa"));
+		auto handle_(lb::mmap_handle <char>::mmap(handle));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;
@@ -141,7 +155,7 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 			
 			THEN("the parsed FASTA matches the expected")
 			{
-				auto const expected(handle.to_string_view());
+				auto const expected(handle_.to_string_view());
 				auto actual(cb.stream().str());
 				actual.pop_back();
 				REQUIRE(expected == actual);
@@ -151,9 +165,8 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 	
 	GIVEN("A test file with extra header fields")
 	{
-		libbio::mmap_handle <char> handle;
-		handle.open("test-files/extra-fields.fa");
-		
+		lb::file_handle handle(lb::open_file_for_reading("test-files/extra-fields.fa"));
+		auto handle_(lb::mmap_handle <char>::mmap(handle));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;
@@ -162,7 +175,7 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 			
 			THEN("the parsed FASTA matches the expected")
 			{
-				auto const expected(handle.to_string_view());
+				auto const expected(handle_.to_string_view());
 				auto actual(cb.stream().str());
 				actual.pop_back();
 				REQUIRE(expected == actual);
