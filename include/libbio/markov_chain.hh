@@ -34,13 +34,23 @@ namespace libbio::markov_chains::detail {
 	
 	template <typename... t_args>
 	struct aggregate : public t_args... {};
+	
+	
+	// Clang (as of version 16) does not have non-type template arguments of type double, so we have to work around.
+	struct wrapped_double
+	{
+		double value{};
+		
+		/* implicit */ constexpr wrapped_double(double const value_): value(value_) {}
+		/* implicit */ constexpr operator double() const { return value; }
+	};
 }
 
 
 // FIXME: rewrite this s.t. defining the type still produces (ultimately) a constinit or constexpr Markov chain but the chain may also be built at run time.
 namespace libbio::markov_chains {
 	
-	template <typename t_src, typename t_dst, double t_probability>
+	template <typename t_src, typename t_dst, detail::wrapped_double t_probability>
 	struct transition
 	{
 		typedef t_src					source_type;
@@ -116,14 +126,14 @@ namespace libbio::markov_chains::detail {
 	// We would like to calculate the cumulative sum of probabilities for each equivalence class.
 	// transitions_by_source_type has tuples that represent equivalence classes like
 	// {src, {{src, dst, probability}, …}}, so we need to process them.
-	template <typename t_transition, double t_cs>
+	template <typename t_transition, detail::wrapped_double t_cs>
 	using update_transition_probability_t = transition <
 		typename t_transition::source_type,
 		typename t_transition::destination_type,
 		t_transition::probability + t_cs
 	>;
 	
-	template <typename t_transitions_ = tuples::empty, double t_cs = 0.0>
+	template <typename t_transitions_ = tuples::empty, detail::wrapped_double t_cs = 0.0>
 	struct transition_probability_cs_acc
 	{
 		typedef t_transitions_ transitions;
@@ -179,7 +189,7 @@ namespace libbio::markov_chains::detail {
 		typedef std::pair <transition_key, node_type>		map_value_type;
 		
 		// Intermediate type for creating map_value_type.
-		template <std::size_t t_src, std::size_t t_dst, double t_probability>
+		template <std::size_t t_src, std::size_t t_dst, detail::wrapped_double t_probability>
 		struct transition_
 		{
 			constexpr map_value_type to_map_value() const { return {{t_probability, t_src}, t_dst}; }
