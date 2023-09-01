@@ -3,6 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#ifndef LIBBIO_NO_DISPATCH
+
 #include <catch2/catch.hpp>
 #include <libbio/buffered_writer/dispatch_io_channel_buffered_writer.hh>
 #include <libbio/file_handle.hh>
@@ -57,3 +59,5 @@ SCENARIO("dispatch_io_channel_buffered_writer can write to a file", "[file_handl
 		}
 	}
 }
+
+#endif
