@@ -1,9 +1,12 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019–2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <libbio/assert.hh>
 #include <libbio/fasta_reader.hh>
+#include <libbio/file_handle.hh>
+#include <libbio/file_handling.hh>
 
 namespace lb = libbio;
 
@@ -13,15 +16,6 @@ namespace lb = libbio;
 
 namespace
 {
-	enum class line_type
-	{
-		NONE,
-		HEADER,
-		SEQUENCE,
-		COMMENT
-	};
-	
-	
 	class single_sequence_reader_delegate final : public lb::fasta_reader_delegate
 	{
 	public:
@@ -39,9 +33,9 @@ namespace
 		{
 		}
 		
-		bool handle_comment_line(lb::fasta_reader &reader, std::string_view const &sv) override { return true; }
+		bool handle_comment_line(lb::fasta_reader_base &reader, std::string_view const &sv) override { return true; }
 		
-		bool handle_identifier(lb::fasta_reader &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra) override
+		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra) override
 		{
 			// FIXME: Check if the identifier has multiple fields.
 			if (m_is_copying)
@@ -53,7 +47,7 @@ namespace
 			return true;
 		}
 		
-		bool handle_sequence_line(lb::fasta_reader &reader, std::string_view const &sv) override
+		bool handle_sequence_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
 		{
 			if (!m_is_copying)
 				return true;
@@ -70,29 +64,31 @@ namespace
 namespace libbio
 {
 	// FIXME: Handle errors through the delegate.
-	void fasta_reader::report_unexpected_character(int const current_state) const
+	void fasta_reader::report_unexpected_character(char const *line_start, std::size_t const lineno, int const current_state) const
 	{
-		std::cerr
-		<< "Unexpected character '" << *m_fsm.p << "' at " << m_lineno << ':' << (m_fsm.p - m_line_start)
-		<< ", state " << current_state << '.' << std::endl;
-		output_buffer_end();
+		std::cerr << "Unexpected character 0x" << std::hex << +(*m_fsm.p) << std::dec << ' ';
+		if (std::isprint(*m_fsm.p))
+			std::cerr << "(‘" << (*m_fsm.p) << "’) ";
+		std::cerr << "at " << lineno << ':' << (m_fsm.p - line_start)
+			<< ", state " << current_state << '.' << std::endl;
+		output_buffer_end(line_start);
 		abort();
 	}
 	
 	
-	void fasta_reader::report_unexpected_eof(int const current_state) const
+	void fasta_reader::report_unexpected_eof(char const *line_start, std::size_t const lineno, int const current_state) const
 	{
 		std::cerr
-		<< "Unexpected EOF at " << m_lineno << ':' << (m_fsm.p - m_line_start)
-		<< ", state " << current_state << '.' << std::endl;
-		output_buffer_end();
+			<< "Unexpected EOF at " << lineno << ':' << (m_fsm.p - line_start)
+			<< ", state " << current_state << '.' << std::endl;
+		output_buffer_end(line_start);
 		abort();
 	}
 	
 	
-	void fasta_reader::output_buffer_end() const
+	void fasta_reader::output_buffer_end(char const *line_start) const
 	{
-		auto const start(m_fsm.p - m_line_start < 128 ? m_line_start : m_fsm.p - 128);
+		auto const start(m_fsm.p - line_start < 128 ? line_start : m_fsm.p - 128);
 		auto const len(m_fsm.p - start);
 		std::string_view buffer_end(start, len);
 		std::cerr
@@ -101,153 +97,163 @@ namespace libbio
 	}
 	
 	
-	auto fasta_reader::parse(handle_type &handle, fasta_reader_delegate &delegate) -> parsing_status
+	auto fasta_reader_base::parse(handle_type &handle, fasta_reader_delegate &delegate, std::size_t blocksize) -> parsing_status
 	{
+		if (0 == blocksize)
+			blocksize = 16384; // Best guess.
+		
 		int cs(0);
-		line_type current_line_type(line_type::NONE);
-		char const *header_identifier_end{nullptr};
-		char const *header_extra_start{nullptr};
 		
-		m_fsm.p = handle.data();
-		m_fsm.pe = m_fsm.p + handle.size();
-		m_fsm.eof = m_fsm.pe;
-		
-		m_line_start = m_fsm.p;
-		m_lineno = 0;
-		m_extra_fields.clear();
-
 		%%{
-			variable p		m_fsm.p;
-			variable pe		m_fsm.pe;
-			variable eof	m_fsm.eof;
+			action header {
+				++lineno;
+				line_start = fpc;
+				text_start = 1 + fpc;
+				m_extra_fields.clear();
+				seq_identifier_range.pos = 1;
+			}
 			
-			action comment_start {
-				current_line_type = line_type::COMMENT; // Set the line type for the EOF handler.
-				++m_lineno;
-				m_line_start = fpc;
-			}
-
-			action header_start {
-				current_line_type = line_type::HEADER; // Set the line type for the EOF handler.
-				++m_lineno;
-				m_line_start = fpc;
-			}
-
 			action header_identifier_end {
-				header_identifier_end = fpc;
+				seq_identifier_range.end = fpc - line_start;
 			}
-
+			
 			action header_extra {
-				header_extra_start = fpc;
+				text_start = fpc;
 			}
 			
 			action header_extra_end {
-				auto const &sv(m_extra_fields.emplace_back(header_extra_start, fpc));
-				libbio_assert_neq(*sv.rbegin(), '\n');
+				auto &extra(m_extra_fields.emplace_back(text_start - line_start, fpc - line_start));
 			}
 			
-			action sequence_start {
-				current_line_type = line_type::SEQUENCE; // Set the line type for the EOF handler.
-				++m_lineno;
-				m_line_start = fpc;
-			}
-			
-			action comment {
-				current_line_type = line_type::NONE;
-				std::string_view const sv(1 + m_line_start, fpc - m_line_start - 1);
-				libbio_assert_neq(*sv.rbegin(), '\n');
-				if (!delegate.handle_comment_line(*this, sv))
+			action header_end {
+				std::string_view const seq_identifier{line_start + seq_identifier_range.pos, line_start + seq_identifier_range.end};
+				
+				for (auto &extra : m_extra_fields)
+				{
+					auto const range(extra.rr);
+					new (&extra.sv) std::string_view{line_start + range.pos, line_start + range.end};
+				}
+				
+				auto const &extra_fields(reinterpret_cast <std::vector <std::string_view> const &>(m_extra_fields));
+				if (!delegate.handle_identifier(*this, seq_identifier, extra_fields))
 					return parsing_status::cancelled;
 			}
 			
-			action header {
-				current_line_type = line_type::NONE;
-
-				std::string_view const identifier(1 + m_line_start, header_identifier_end);
-				libbio_assert_neq(*identifier.rbegin(), '\n');
-
-				header_identifier_end = nullptr;
-				header_extra_start = nullptr;
-				
-				auto const res(delegate.handle_identifier(*this, identifier, m_extra_fields));
-				m_extra_fields.clear();
-				
-				if (!res)
+			action comment {
+				++lineno;
+				line_start = fpc;
+				text_start = 1 + fpc;
+			}
+			
+			action comment_end {
+				if (!delegate.handle_comment_line(*this, std::string_view{text_start, fpc}))
 					return parsing_status::cancelled;
 			}
 			
 			action sequence {
-				current_line_type = line_type::NONE;
-				std::string_view const sv(m_line_start, fpc - m_line_start);
-				libbio_assert_neq(*sv.rbegin(), '\n');
-				if (!delegate.handle_sequence_line(*this, sv))
+				++lineno;
+				line_start = fpc;
+				text_start = fpc;
+			}
+			
+			action sequence_line_end {
+				if (!delegate.handle_sequence_line(*this, std::string_view{text_start, fpc}))
 					return parsing_status::cancelled;
+				line_start = m_fsm.pe;
+			}
+			
+			action header_eof {
+				report_unexpected_eof(line_start, lineno, fcurs);
+				return parsing_status::failure;
+			}
+			
+			action main_eof {
+				return parsing_status::success;
 			}
 			
 			action error {
-				libbio_always_assert(m_fsm.p != m_fsm.pe);
-				report_unexpected_character(fcurs);
+				libbio_always_assert(fpc != m_fsm.pe);
+				report_unexpected_character(line_start, lineno, fcurs);
 			}
 			
-			action handle_eof {
-				switch (current_line_type)
-				{
-					case line_type::NONE:
-						return parsing_status::success;
-					
-					case line_type::HEADER:
-						report_unexpected_eof(fcurs);
-						return parsing_status::failure;
-					
-					case line_type::SEQUENCE:
-					{
-						std::string_view const sv(m_line_start, fpc - m_line_start);
-						return delegate.handle_sequence_line(*this, sv) ? parsing_status::success : parsing_status::cancelled;
-					}
-					
-					case line_type::COMMENT:
-					{
-						std::string_view const sv(1 + m_line_start, fpc - m_line_start - 1);
-						return delegate.handle_comment_line(*this, sv) ? parsing_status::success : parsing_status::cancelled;
-					}
-				}
-			}
-
+			variable p		m_fsm.p;
+			variable pe		m_fsm.pe;
+			variable eof	m_fsm.eof;
+			
 			header_field			= (any - space)+;
 			header_field_separator	= space - "\n";
+			header_identifier_field	= header_field %header_identifier_end;
+			header_extra_fields		= (header_field_separator+ (header_field >header_extra %header_extra_end))*;
+			header_line				= (">" header_identifier_field header_extra_fields "\n") >header @header_end <eof(header_eof);
 			
-			comment_line	= (";" [^\n]*) >comment_start "\n" >comment;
-			header_start	= (">" header_field) >header_start %header_identifier_end;
-			header_extra	= (header_field_separator+ (header_field >header_extra %header_extra_end))*;
-			header_end		= "\n" >header;
-			header_line		= header_start header_extra header_end;
-			sequence_line	= ([A-Za-z*\-]*) >sequence_start "\n" >sequence;
+			# Allow missing final newline.
 			
-			fasta_header	= comment_line* header_line;
-			fasta_sequence	= (comment_line* sequence_line)+ comment_line*;
+			sequence_line			= ([A-Za-z*\-]+ "\n") >sequence @sequence_line_end;
+			final_sequence_line		= sequence_line | ([A-Za-z*\-]+) >sequence %sequence_line_end;
 			
-			fasta_records	= (fasta_header fasta_sequence)+;
+			comment_line			= (";" [^\n]* "\n") >comment @comment_end;
+			final_comment_line		= comment_line | (";" [^\n]*) >comment %comment_end;
+			
+			fasta_header			= comment_line* header_line;
+			fasta_sequence			= (comment_line* sequence_line)+ comment_line*;
+			final_fasta_sequence	= (fasta_sequence? final_sequence_line) | (fasta_sequence final_comment_line);
+		
+			fasta_records			= (fasta_header fasta_sequence)* fasta_header final_fasta_sequence;
 			
 			main :=
-				(sequence_line | fasta_records)
-				$eof(handle_eof)
+				("" | final_sequence_line | fasta_records)
+				$eof(main_eof)
 				$err(error);
 			
 			write init;
-			write exec;
 		}%%
+		
+		m_extra_fields.clear();
+		m_buffer.clear();
+		m_fsm = fsm{};
+		
+		std::size_t lineno{};
+		char const *line_start{m_buffer.data()};
+		char const *text_start{line_start};
+		range seq_identifier_range; // Relative to the current line.
+		
+		while (true)
+		{
+			// Save the previous contents of the buffer if needed.
+			{
+				auto const write_pos(m_buffer.size());
+				auto const line_start_offset(line_start - m_buffer.data());
+				auto const text_start_offset(text_start - m_buffer.data());
+				m_buffer.resize(write_pos + blocksize);
+				line_start = m_buffer.data() + line_start_offset;
+				text_start = m_buffer.data() + text_start_offset;
+				
+				auto const count(handle.read(blocksize, m_buffer.data() + write_pos));
+				m_buffer.resize(write_pos + count);
+				
+				m_fsm.p = m_buffer.data() + write_pos;
+				m_fsm.pe = m_fsm.p + count;
+				
+				// std::vector <T>::data() not guaranteed to return nullptr even if empty() returns true.
+				if (0 == count)
+					m_fsm.eof = m_fsm.p;
+			}
 			
-		return parsing_status::success;
+			%% write exec;
+			
+			// Preserve the current line.
+			std::copy(line_start, m_fsm.pe, m_buffer.data());
+			m_buffer.resize(m_fsm.pe - line_start); // We rely on the fact that this does not change the location of the buffer in memory.
+			text_start -= line_start - m_buffer.data();
+			line_start = m_buffer.data();
+		}
 	}
 	
 	
 	bool read_single_fasta_sequence(char const *fasta_path, std::vector <char> &seq, char const *seq_name)
 	{
-		lb::mmap_handle <char> handle;
-		handle.open(fasta_path);
-		
+		file_handle handle{lb::open_file_for_reading(fasta_path)};
 		seq.clear();
-		seq.reserve(handle.size());
 		
 		single_sequence_reader_delegate delegate(seq, seq_name);
 		
