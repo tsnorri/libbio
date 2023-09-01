@@ -347,7 +347,7 @@ TEST_CASE(
 				input_line_types_mask |= std::to_underlying(line.type);
 			RC_TAG(input_line_types_mask);
 			
-			std::array const blocksizes{0, 128, 256, 512, 1024, 2048};
+			std::array const blocksizes{0, 16, 64, 128, 256, 512, 1024, 2048};
 			for (auto const blocksize : blocksizes)
 			{
 				// Write the generated input to a pipe (to get a pair of file descriptors) and parse.
@@ -379,7 +379,7 @@ TEST_CASE(
 				else
 					reader.parse(read_handle, delegate, blocksize);
 				
-				RC_ASSERT(input.lines == delegate.parsed_lines);
+				REQUIRE(input.lines == delegate.parsed_lines);
 			}
 			
 			return true;
