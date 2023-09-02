@@ -17,7 +17,7 @@ namespace {
 	
 	class delegate final : public lb::fasta_reader_delegate
 	{
-		std::stringstream m_stream;
+		std::stringstream	m_stream;
 		
 	public:
 		std::stringstream const &stream() { return m_stream; }
@@ -37,15 +37,16 @@ namespace {
 			return true;
 		}
 		
-		bool handle_sequence_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
+		bool handle_sequence_chunk(lb::fasta_reader_base &reader, std::string_view const &sv, bool has_newline) override
 		{
-			m_stream << sv << '\n';
+			m_stream << sv;
+			if (has_newline)
+				m_stream << '\n';
 			return true;
 		}
 		
 		bool handle_sequence_end(lb::fasta_reader_base &reader) override
 		{
-			// FIXME: test this.
 			return true;
 		}
 	};

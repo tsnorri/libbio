@@ -44,7 +44,7 @@ namespace
 			return true;
 		}
 		
-		bool handle_sequence_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
+		bool handle_sequence_chunk(lb::fasta_reader_base &reader, std::string_view const &sv, bool has_newline) override
 		{
 			if (!m_is_copying)
 				return true;
@@ -154,13 +154,15 @@ namespace libbio
 			
 			action sequence_line {
 				++lineno;
+				in_sequence = true;
 				line_start = fpc;
 				text_start = fpc;
 			}
 			
 			action sequence_line_end {
-				if (!delegate.handle_sequence_line(*this, std::string_view{text_start, fpc}))
+				if (!delegate.handle_sequence_chunk(*this, std::string_view{text_start, fpc}, true))
 					return parsing_status::cancelled;
+				in_sequence = false;
 			}
 			
 			action sequence_end {
@@ -216,6 +218,7 @@ namespace libbio
 		m_buffer.clear();
 		m_fsm = fsm{};
 		
+		bool in_sequence{};
 		std::size_t lineno{};
 		char const *line_start{m_buffer.data()};
 		char const *text_start{line_start};
@@ -245,11 +248,24 @@ namespace libbio
 			
 			%% write exec;
 			
-			// Preserve the current line.
-			std::copy(line_start, m_fsm.pe, m_buffer.data());
-			m_buffer.resize(m_fsm.pe - line_start); // We rely on the fact that this does not change the location of the buffer in memory.
-			text_start -= line_start - m_buffer.data();
-			line_start = m_buffer.data();
+			// If we’re currently handling a sequence, pass it to the delegate.
+			// Otherwise preserve the current line.
+			if (in_sequence)
+			{
+				if (text_start < m_fsm.p && !delegate.handle_sequence_chunk(*this, std::string_view{text_start, m_fsm.p}, false))
+					return parsing_status::cancelled;
+				
+				m_buffer.clear();
+				text_start = m_buffer.data();
+				line_start = m_buffer.data();
+			}
+			else
+			{
+				std::copy(line_start, m_fsm.pe, m_buffer.data());
+				m_buffer.resize(m_fsm.pe - line_start); // We rely on the fact that this does not change the location of the buffer in memory.
+				text_start -= line_start - m_buffer.data();
+				line_start = m_buffer.data();
+			}
 		}
 	}
 	

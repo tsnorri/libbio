@@ -30,7 +30,7 @@ namespace libbio { namespace sequence_reader { namespace detail {
 			return true;
 		}
 		
-		bool handle_sequence_line(fasta_reader_base &reader, std::string_view const &sv) override
+		bool handle_sequence_chunk(fasta_reader_base &reader, std::string_view const &sv, bool has_newline) override
 		{
 			// Copy the current line to the end of the last sequence.
 			std::copy(sv.begin(), sv.end(), std::back_inserter(m_sequences->back()));

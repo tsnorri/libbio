@@ -302,6 +302,7 @@ namespace {
 	struct fasta_reader_delegate final : public lb::fasta_reader_delegate
 	{
 		std::vector <fasta_line>	parsed_lines;
+		std::string					current_sequence_line;
 		
 		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
 		{
@@ -317,15 +318,19 @@ namespace {
 			return true;
 		}
 		
-		bool handle_sequence_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
+		bool handle_sequence_chunk(lb::fasta_reader_base &reader, std::string_view const &sv, bool has_newline) override
 		{
-			parsed_lines.emplace_back(fasta_line{sequence_line{std::string{sv}}});
+			current_sequence_line += sv;
+			if (has_newline)
+			{
+				parsed_lines.emplace_back(fasta_line{sequence_line{std::move(current_sequence_line)}});
+				current_sequence_line.clear();
+			}
 			return true;
 		}
 		
 		bool handle_sequence_end(lb::fasta_reader_base &reader) override
 		{
-			// FIXME: test this.
 			return true;
 		}
 		
@@ -385,7 +390,7 @@ TEST_CASE(
 				else
 					reader.parse(read_handle, delegate, blocksize);
 				
-				REQUIRE(input.lines == delegate.parsed_lines);
+				RC_ASSERT(input.lines == delegate.parsed_lines);
 			}
 			
 			return true;
