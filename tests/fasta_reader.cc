@@ -15,20 +15,20 @@ namespace lb	= libbio;
 
 namespace {
 	
-	class delegate : public lb::fasta_reader_delegate
+	class delegate final : public lb::fasta_reader_delegate
 	{
 		std::stringstream m_stream;
 		
 	public:
 		std::stringstream const &stream() { return m_stream; }
 		
-		virtual bool handle_comment_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
+		bool handle_comment_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
 		{
 			m_stream << ';' << sv << '\n';
 			return true;
 		}
 		
-		virtual bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
+		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
 		{
 			m_stream << '>' << identifier;
 			for (auto const &extra : extra_fields)
@@ -37,9 +37,15 @@ namespace {
 			return true;
 		}
 		
-		virtual bool handle_sequence_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
+		bool handle_sequence_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
 		{
 			m_stream << sv << '\n';
+			return true;
+		}
+		
+		bool handle_sequence_end(lb::fasta_reader_base &reader) override
+		{
+			// FIXME: test this.
 			return true;
 		}
 	};

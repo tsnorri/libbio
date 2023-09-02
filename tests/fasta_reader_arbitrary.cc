@@ -299,11 +299,11 @@ namespace rc {
 
 namespace {
 	
-	struct fasta_reader_delegate : public lb::fasta_reader_delegate
+	struct fasta_reader_delegate final : public lb::fasta_reader_delegate
 	{
 		std::vector <fasta_line>	parsed_lines;
 		
-		virtual bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
+		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
 		{
 			std::vector <std::string> extra_fields_;
 			extra_fields_.reserve(extra_fields.size());
@@ -317,13 +317,19 @@ namespace {
 			return true;
 		}
 		
-		virtual bool handle_sequence_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
+		bool handle_sequence_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
 		{
 			parsed_lines.emplace_back(fasta_line{sequence_line{std::string{sv}}});
 			return true;
 		}
 		
-		virtual bool handle_comment_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
+		bool handle_sequence_end(lb::fasta_reader_base &reader) override
+		{
+			// FIXME: test this.
+			return true;
+		}
+		
+		bool handle_comment_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
 		{
 			parsed_lines.emplace_back(fasta_line{comment_line{std::string{sv}}});
 			return true;
