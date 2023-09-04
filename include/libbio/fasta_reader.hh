@@ -78,7 +78,6 @@ namespace libbio {
 		std::vector <string_view_placeholder>	m_extra_fields;
 		std::vector <char>						m_buffer;
 		fsm										m_fsm;
-		std::size_t								m_lineno{};
 	
 	protected:
 		virtual void report_unexpected_character(char const *line_start, std::size_t const lineno, int const current_state) const = 0;
