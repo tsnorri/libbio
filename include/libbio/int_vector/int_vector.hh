@@ -82,14 +82,9 @@ namespace libbio { namespace detail {
 		void reserve(std::size_t new_size);
 		
 		// Additional helpers.
-		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 == ELEMENT_BITS, int> = 0>
-		void push_back(word_type val);
-		
-		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != ELEMENT_BITS, int> = 0>
-		void push_back(word_type mask, std::size_t count = 1);
-		
-		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != ELEMENT_BITS, int> = 0>
-		void reverse();
+		void push_back(word_type val) requires (0 == ELEMENT_BITS);
+		void push_back(word_type val, std::size_t count = 1) requires (0 != ELEMENT_BITS);
+		void reverse() requires (0 != ELEMENT_BITS);
 		
 		void clear();
 		
@@ -388,8 +383,8 @@ namespace libbio { namespace detail {
 	
 	
 	template <typename t_vector, unsigned int t_bits, typename t_word>
-	template <bool t_dummy, std::enable_if_t <t_dummy && 0 == int_vector_trait <t_vector, t_bits, t_word>::ELEMENT_BITS, int>>
 	void int_vector_trait <t_vector, t_bits, t_word>::push_back(word_type val)
+	requires (0 == ELEMENT_BITS)
 	{
 		auto &self(as_vector());
 		val &= self.element_mask();
@@ -402,8 +397,8 @@ namespace libbio { namespace detail {
 	
 	
 	template <typename t_vector, unsigned int t_bits, typename t_word>
-	template <bool t_dummy, std::enable_if_t <t_dummy && 0 != int_vector_trait <t_vector, t_bits, t_word>::ELEMENT_BITS, int>>
 	void int_vector_trait <t_vector, t_bits, t_word>::push_back(word_type val, std::size_t count)
+	requires (0 != ELEMENT_BITS)
 	{
 		if (0 == count)
 			return;
@@ -457,8 +452,8 @@ namespace libbio { namespace detail {
 	
 	
 	template <typename t_vector, unsigned int t_bits, typename t_word>
-	template <bool t_dummy, std::enable_if_t <t_dummy && 0 != int_vector_trait <t_vector, t_bits, t_word>::ELEMENT_BITS, int>>
 	void int_vector_trait <t_vector, t_bits, t_word>::reverse()
+	requires (0 != ELEMENT_BITS)
 	{
 		auto &self(as_vector());
 		if (0 == self.m_values.size())
