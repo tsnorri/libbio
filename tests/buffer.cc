@@ -148,14 +148,16 @@ TEMPLATE_PRODUCT_TEST_CASE(
 {
 	SECTION("copying")
 	{
+		typedef typename TestType::value_type value_type;
 		GIVEN("a buffer type")
 		{
 			constexpr auto const count(5);
+			static_assert(count <= std::numeric_limits <value_type>::max());
 			TestType src(count);
 			
 			auto *begin(src.get());
 			auto *end(begin + count);
-			std::iota(begin, end, typename TestType::value_type(1));
+			std::iota(begin, end, value_type(1));
 			
 			WHEN("a buffer is copied using operator=")
 			{
@@ -168,7 +170,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(dst.get() != nullptr);
 					REQUIRE(dst.size() == count);
 					
-					for (std::size_t i(0); i < count; ++i)
+					for (value_type i(0); i < count; ++i)
 					{
 						REQUIRE((*src)[i] == (i + 1));
 						REQUIRE((*dst)[i] == (i + 1));
@@ -186,7 +188,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(dst.get() != nullptr);
 					REQUIRE(dst.size() == count);
 					
-					for (std::size_t i(0); i < count; ++i)
+					for (value_type i(0); i < count; ++i)
 					{
 						REQUIRE((*src)[i] == (i + 1));
 						REQUIRE((*dst)[i] == (i + 1));
@@ -212,14 +214,16 @@ TEMPLATE_PRODUCT_TEST_CASE(
 {
 	SECTION("copying")
 	{
+		typedef typename TestType::value_type value_type;
 		GIVEN("a buffer type")
 		{
 			constexpr auto const count(5);
+			static_assert(count <= std::numeric_limits <value_type>::max());
 			TestType src(count);
 			
 			auto *begin(src.get());
 			auto *end(begin + count);
-			std::iota(begin, end, typename TestType::value_type(1));
+			std::iota(begin, end, value_type(1));
 			
 			WHEN("a buffer is copied using operator=")
 			{
@@ -232,7 +236,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(dst.get() != nullptr);
 					REQUIRE(dst.size() == count);
 					
-					for (std::size_t i(0); i < count; ++i)
+					for (value_type i(0); i < count; ++i)
 					{
 						REQUIRE((*src)[i] == (i + 1));
 						REQUIRE((*dst)[i] == 0);
@@ -250,7 +254,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(dst.get() != nullptr);
 					REQUIRE(dst.size() == count);
 					
-					for (std::size_t i(0); i < count; ++i)
+					for (value_type i(0); i < count; ++i)
 					{
 						REQUIRE((*src)[i] == (i + 1));
 						REQUIRE((*dst)[i] == 0);
@@ -278,14 +282,16 @@ TEMPLATE_PRODUCT_TEST_CASE(
 {
 	SECTION("moving")
 	{
+		typedef typename TestType::value_type value_type;
 		GIVEN("a buffer type")
 		{
 			constexpr auto const count(5);
+			static_assert(count <= std::numeric_limits <value_type>::max());
 			TestType src(count);
 			
 			auto *begin(src.get());
 			auto *end(begin + count);
-			std::iota(begin, end, typename TestType::value_type(1));
+			std::iota(begin, end, value_type(1));
 			auto const *expected_address(src.get());
 			
 			WHEN("a buffer is moved using operator=")
@@ -300,7 +306,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(dst.get() == expected_address);
 					REQUIRE(dst.size() == count);
 					
-					for (std::size_t i(0); i < count; ++i)
+					for (value_type i(0); i < count; ++i)
 						REQUIRE((*dst)[i] == (i + 1));
 				}
 			}
@@ -316,7 +322,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(dst.get() == expected_address);
 					REQUIRE(dst.size() == count);
 					
-					for (std::size_t i(0); i < count; ++i)
+					for (value_type i(0); i < count; ++i)
 						REQUIRE((*dst)[i] == (i + 1));
 				}
 			}
