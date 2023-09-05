@@ -199,7 +199,7 @@ TEMPLATE_TEST_CASE(
 			
 			parser_type parser;
 			std::istreambuf_iterator it(stream.rdbuf());
-			std::istreambuf_iterator <decltype(it)::value_type> const sentinel;
+			std::istreambuf_iterator <typename decltype(it)::value_type> const sentinel;
 			
 			std::vector <record_type> actual_results;
 			while (true)
