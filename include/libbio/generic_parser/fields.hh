@@ -35,9 +35,10 @@ namespace libbio::parsing {
 	
 	enum class field_position : std::uint8_t
 	{
-		initial_ = 0x1,
-		middle_ = 0x2,
-		final_ = 0x4
+		initial_	= 0x1,
+		middle_		= 0x2,
+		final_		= 0x4,
+		repeating_	= 0x8
 	};
 	
 	constexpr inline field_position operator|(field_position const lhs, field_position const rhs)

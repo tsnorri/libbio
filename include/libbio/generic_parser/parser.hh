@@ -381,11 +381,11 @@ namespace libbio::parsing {
 		
 		
 		template <std::size_t t_field_idx = 0, typename t_stack = std::tuple <>, typename t_range, typename t_dst, typename t_buffer, typename t_parse_cb>
-		static inline bool parse_alternatives(t_range &range, t_dst &dst, t_buffer &buffer, t_parse_cb &parse_cb)
+		static inline bool parse_alternatives(t_range &range, t_dst &dst, t_buffer &buffer, t_parse_cb &parse_cb, bool const did_repeat = false)
 		{
 			if constexpr (t_field_idx == field_count)
 			{
-				// Check if the stack is empty.
+				// Check if the parser stack (contains stack_items) is empty.
 				if constexpr (0 == std::tuple_size_v <t_stack>)
 				{
 					// Nothing more to parse.
@@ -434,36 +434,65 @@ namespace libbio::parsing {
 					typedef tuples::prepend_t <stack_item <parser_tpl, 1 + t_field_idx>, t_stack>	stack_type;
 					return field.template parse <delimiter, field_position, stack_type>(range, dst, buffer, parse_cb);
 				}
-				else if constexpr (std::is_same_v <void, value_type>)
-				{
-					// Parse.
-					auto const res(field.template parse <delimiter, field_position>(range));
-					if (any(field_position & field_position::initial_) && !res)
-						return false;
-					else
-						return parse_alternatives <1 + t_field_idx, t_stack>(range, dst, buffer, parse_cb);
-				}
 				else
 				{
-					auto &dst_(dst.template append <value_type>());
-					auto &value(dst_.back());
-					
-					// Swap the buffers if needed.
-					if constexpr (detail::uses_buffer_v <value_type>)
+					auto do_continue([&](parse_result const &res){
+						if (any(field_position & field_position::repeating_) && res)
+						{
+							if (0 == res.matched_delimiter_index) // We assume that the first delimiter indicates repeating the current field.
+								return parse_alternatives <t_field_idx, t_stack>(range, dst, buffer, parse_cb);
+							else
+								return parse_alternatives <1 + t_field_idx, t_stack>(range, dst, buffer, parse_cb);
+						}
+						else if (any(field_position & field_position::initial_) && !res)
+						{
+							return false;
+						}
+						else
+						{
+							return parse_alternatives <1 + t_field_idx, t_stack>(range, dst, buffer, parse_cb);
+						}
+					});
+
+					if constexpr (std::is_same_v <void, value_type>)
 					{
-						// Calculate the rank using t_dst.
-						typedef std::remove_cvref_t <decltype(dst_)> new_dst_type;
-						typedef typename new_dst_type::tuple_type dst_tuple_type;
-						constexpr auto const rank{tuples::rank_v <dst_tuple_type, std::tuple_size_v <dst_tuple_type> - 1>};
-						swap_buffers <rank>(value, buffer);
+						// Parse but do not save.
+						auto const res(field.template parse <delimiter, field_position>(range));
+						return do_continue(res);
 					}
-					
-					auto const res(field.template parse <delimiter, field_position>(range, value));
-					
-					if (any(field_position & field_position::initial_) && !res)
-						return false;
 					else
-						return parse_alternatives <1 + t_field_idx, t_stack>(range, dst_, buffer, parse_cb);
+					{
+						// Parse and save.
+						auto do_continue_([&](auto &value){
+							auto const res(field.template parse <delimiter, field_position>(range, value));
+							return do_continue(res);
+						});
+
+						if (any(field_position & field_position::repeating_) && did_repeat)
+						{
+							// Use the existing value.
+							auto &value(dst.back());
+							return do_continue_(value);
+						}
+						else
+						{
+							// Instantiate a new value.
+							auto &dst_(dst.template append <value_type>()); // Returns dst cast to a new type.
+							auto &value(dst_.back());
+							
+							// Swap the buffers if needed.
+							if constexpr (detail::uses_buffer_v <value_type>)
+							{
+								// Calculate the rank using t_dst.
+								typedef std::remove_cvref_t <decltype(dst_)> new_dst_type;
+								typedef typename new_dst_type::tuple_type dst_tuple_type;
+								constexpr auto const rank{tuples::rank_v <dst_tuple_type, std::tuple_size_v <dst_tuple_type> - 1>};
+								swap_buffers <rank>(value, buffer);
+							}
+
+							return do_continue_(value);
+						}
+					}
 				}
 			}
 		}
@@ -488,28 +517,39 @@ namespace libbio::parsing {
 			{
 				typedef std::tuple_element_t <t_field_idx, field_tuple>			field_type;
 				typedef typename trait_type::template delimiter <t_field_idx>	delimiter;
+				template <std::size_t t_idx> using index_type = std::integral_constant <std::size_t, t_idx>;
+
 				constexpr auto const field_position{trait_type::template field_position <t_field_idx>};
-				
 				field_type field;
 				
+				auto do_continue([&]<typename t_next_value_idx>(parse_result const &res, t_next_value_idx const &){
+					if (any(field_position & field_position::repeating_) && res)
+					{
+						if (0 == res.matched_delimiter_index) // We assume that the first delimiter indicates repeating the current field.
+							return parse__ <t_field_idx, t_next_value_idx>(range, dst);
+						else
+							return parse__ <1 + t_field_idx, t_next_value_idx>(range, dst);
+					}
+					else if (any(field_position & field_position::final_) && !res) // FIXME: incorrect?
+					{
+						return false;
+					}
+					else
+					{
+						return parse__ <1 + t_field_idx, t_next_value_idx>(range, dst);
+					}
+				});
+
 				// Check if the value of the current field should be saved.
 				if constexpr (std::is_same_v <void, typename field_type::template value_type <t_should_copy>>)
 				{
-					// Skip instead.
 					auto const res(field.template parse <delimiter, field_position>(range));
-					if (any(field_position & field_position::final_) && !res) // FIXME: incorrect?
-						return false;
-					else
-						return parse__ <1 + t_field_idx, t_value_idx>(range, dst);
+					return do_continue(res, index_type <t_value_idx>{}); // Skip instead.
 				}
 				else
 				{
-					// Save.
 					auto const res(field.template parse <delimiter, field_position>(range, std::get <t_value_idx>(dst)));
-					if (any(field_position & field_position::final_) && !res) // FIXME: incorrect?
-						return false;
-					else
-						return parse__ <1 + t_field_idx, 1 + t_value_idx>(range, dst);
+					return do_continue(res, index_type <1 + t_value_idx>{}); // Save.
 				}
 			}
 		}
