@@ -3,8 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_GENERIC_PARSER_CIGAR_FIELD_HH
-#define LIBBIO_GENERIC_PARSER_CIGAR_FIELD_HH
+#ifndef LIBBIO_GENERIC_PARSER_CIGAR_FIELD_SEQAN_HH
+#define LIBBIO_GENERIC_PARSER_CIGAR_FIELD_SEQAN_HH
 
 #include <libbio/assert.hh>
 #include <libbio/generic_parser/errors.hh>
