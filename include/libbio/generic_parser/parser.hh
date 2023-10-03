@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -437,8 +437,8 @@ namespace libbio::parsing {
 				else if constexpr (std::is_same_v <void, value_type>)
 				{
 					// Parse.
-					auto const status(field.template parse <delimiter, field_position>(range));
-					if (any(field_position & field_position::initial_) && !status)
+					auto const res(field.template parse <delimiter, field_position>(range));
+					if (any(field_position & field_position::initial_) && !res)
 						return false;
 					else
 						return parse_alternatives <1 + t_field_idx, t_stack>(range, dst, buffer, parse_cb);
@@ -458,9 +458,9 @@ namespace libbio::parsing {
 						swap_buffers <rank>(value, buffer);
 					}
 					
-					auto const status(field.template parse <delimiter, field_position>(range, value));
+					auto const res(field.template parse <delimiter, field_position>(range, value));
 					
-					if (any(field_position & field_position::initial_) && !status)
+					if (any(field_position & field_position::initial_) && !res)
 						return false;
 					else
 						return parse_alternatives <1 + t_field_idx, t_stack>(range, dst_, buffer, parse_cb);
@@ -495,16 +495,18 @@ namespace libbio::parsing {
 				// Check if the value of the current field should be saved.
 				if constexpr (std::is_same_v <void, typename field_type::template value_type <t_should_copy>>)
 				{
-					auto const status(field.template parse <delimiter, field_position>(range));
-					if (any(field_position & field_position::final_) && !status) // FIXME: incorrect?
+					// Skip instead.
+					auto const res(field.template parse <delimiter, field_position>(range));
+					if (any(field_position & field_position::final_) && !res) // FIXME: incorrect?
 						return false;
 					else
 						return parse__ <1 + t_field_idx, t_value_idx>(range, dst);
 				}
 				else
 				{
-					auto const status(field.template parse <delimiter, field_position>(range, std::get <t_value_idx>(dst)));
-					if (any(field_position & field_position::final_) && !status) // FIXME: incorrect?
+					// Save.
+					auto const res(field.template parse <delimiter, field_position>(range, std::get <t_value_idx>(dst)));
+					if (any(field_position & field_position::final_) && !res) // FIXME: incorrect?
 						return false;
 					else
 						return parse__ <1 + t_field_idx, 1 + t_value_idx>(range, dst);

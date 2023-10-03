@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -162,6 +162,28 @@ namespace libbio::parsing {
 			return *this;
 		}
 	};
+
+
+	struct parsing_result
+	{
+		delimiter_index_type	matched_delimiter_index{INVALID_DELIMITER_INDEX};
+		bool					did_succeed{};
+
+		parsing_result() = default;
+
+		parsing_result(bool const did_succeed_, delimiter_index_type const matched_delimiter_index_):
+			matched_delimiter_index(matched_delimiter_index_),
+			did_succeed(did_succeed_)
+		{
+		}
+
+		explicit parsing_result(delimiter_index_type const matched_delimiter_index_):
+			parsing_result(true, matched_delimiter_index_)
+		{
+		}
+
+		operator bool() const { return did_succeed; }
+	};
 }
 
 
@@ -207,12 +229,12 @@ namespace libbio::parsing::fields {
 
 
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		LIBBIO_CONSTEXPR_WITH_GOTO inline bool parse(t_range &range) const
+		LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse(t_range &range) const
 		{
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
-					return false;
+					return {};
 				
 				goto continue_parsing;
 			}
@@ -220,11 +242,12 @@ namespace libbio::parsing::fields {
 			while (!range.is_at_end())
 			{
 			continue_parsing:
-				if (t_delimiter::matches(*range.it))
+				if (auto const idx{t_delimiter::matching_index(*range.it)}; t_delimiter::size() != idx)
 				{
 					++range.it;
-					return true;
+					return {idx};
 				}
+				
 				++range.it;
 			}
 		
@@ -234,20 +257,20 @@ namespace libbio::parsing::fields {
 				throw parse_error_tpl(errors::unexpected_eof());
 			}
 		
-			return false;
+			return {};
 		}
 	};
 	
 	
 	template <typename t_delimiter, typename t_character_filter = filters::no_op, field_position t_field_position = field_position::middle_, typename t_range, typename t_dst>
-	LIBBIO_CONSTEXPR_WITH_GOTO inline bool parse_sequential(t_range &range, t_dst &dst)
+	LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse_sequential(t_range &range, t_dst &dst)
 	{
 		dst.clear();
 	
 		if constexpr (any(field_position::initial_ & t_field_position))
 		{
 			if (range.is_at_end())
-				return false;
+				return {};
 			goto continue_parsing;
 		}
 
@@ -255,10 +278,10 @@ namespace libbio::parsing::fields {
 		{
 		continue_parsing:
 			auto const cc(*range.it);
-			if (t_delimiter::matches(cc))
+			if (auto const idx{t_delimiter::matching_index(cc)}; t_delimiter::size() != idx)
 			{
 				++range.it;
-				return true;
+				return {idx};
 			}
 			else if (!t_character_filter::check(cc))
 			{
@@ -271,7 +294,7 @@ namespace libbio::parsing::fields {
 		
 		// t_delimiter not matched.
 		if constexpr (any(field_position::final_ & t_field_position))
-			return true;
+			return {INVALID_DELIMITER_INDEX};
 		else
 			throw parse_error_tpl(errors::unexpected_eof());
 	}
@@ -286,7 +309,7 @@ namespace libbio::parsing::fields {
 
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
 		requires (!t_range::is_contiguous)
-		LIBBIO_CONSTEXPR_WITH_GOTO inline bool parse(t_range &range, std::string &dst) const
+		LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse(t_range &range, std::string &dst) const
 		{
 			struct helper
 			{
@@ -303,14 +326,14 @@ namespace libbio::parsing::fields {
 		
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range, typename t_dst>
 		requires t_range::is_contiguous
-		LIBBIO_CONSTEXPR_WITH_GOTO inline bool parse_(t_range &range, t_dst &dst) const
+		LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse_(t_range &range, t_dst &dst) const
 		{
 			auto begin(range.it); // Copy.
 	
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
-					return false;
+					return {};
 				goto continue_parsing;
 			}
 	
@@ -318,11 +341,11 @@ namespace libbio::parsing::fields {
 			{
 			continue_parsing:
 				auto const cc(*range.it);
-				if (t_delimiter::matches(cc))
+				if (auto const idx{t_delimiter::matching_index(cc)}; t_delimiter::size() != idx)
 				{
 					dst = std::string_view(begin, range.it);
 					++range.it;
-					return true;
+					return {idx};
 				}
 				else if (!t_character_filter::check(cc))
 				{
@@ -336,7 +359,7 @@ namespace libbio::parsing::fields {
 			if constexpr (any(field_position::final_ & t_field_position))
 			{
 				dst = std::string_view(begin, range.it);
-				return true;
+				return {INVALID_DELIMITER_INDEX};
 			}
 			else
 			{
@@ -347,7 +370,7 @@ namespace libbio::parsing::fields {
 
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
 		requires t_range::is_contiguous
-		constexpr inline bool parse(t_range &range, std::string_view &dst) const
+		constexpr inline parsing_result parse(t_range &range, std::string_view &dst) const
 		{
 			return parse_ <t_delimiter, t_field_position>(range, dst);
 		}
@@ -355,7 +378,7 @@ namespace libbio::parsing::fields {
 
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
 		requires t_range::is_contiguous
-		constexpr inline bool parse(t_range &range, std::string &dst) const
+		constexpr inline parsing_result parse(t_range &range, std::string &dst) const
 		{
 			return parse_ <t_delimiter, t_field_position>(range, dst);
 		}
@@ -375,7 +398,7 @@ namespace libbio::parsing::fields {
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
-					return false;
+					return true;
 			}
 			else
 			{
@@ -390,15 +413,15 @@ namespace libbio::parsing::fields {
 		
 		
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		constexpr inline bool parse(t_range &range, t_value_type &val) const
+		constexpr inline parsing_result parse(t_range &range, t_value_type &val) const
 		{
 			if (!parse_value(range, val))
-				return false;
+				return {};
 			
 			if constexpr (any(field_position::final_ & t_field_position))
 			{
 				if (range.is_at_end())
-					return true;
+					return {INVALID_DELIMITER_INDEX};
 			}
 			else
 			{
@@ -407,10 +430,10 @@ namespace libbio::parsing::fields {
 			}
 			
 			auto const cc(*range.it);
-			if (t_delimiter::matches(cc))
+			if (auto const idx{t_delimiter::matching_index(cc)}; t_delimiter::size() != idx)
 			{
 				++range.it;
-				return true;
+				return {idx};
 			}
 				
 			// Characters left but t_delimiter not matched.
@@ -511,7 +534,7 @@ namespace libbio::parsing::fields {
 		
 		
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		LIBBIO_CONSTEXPR_WITH_GOTO inline bool parse(t_range &range, t_integer &val) const
+		LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse(t_range &range, t_integer &val) const
 		{
 			bool is_negative{};
 			val = 0;
@@ -519,7 +542,7 @@ namespace libbio::parsing::fields {
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
-					return false;
+					return {};
 			
 				if constexpr (t_is_signed)
 					goto continue_parsing_1;
@@ -559,7 +582,7 @@ namespace libbio::parsing::fields {
 			{
 			continue_parsing_2:
 				auto const cc(*range.it);
-				if (t_delimiter::matches(cc))
+				if (auto const idx{t_delimiter::matching_index(cc)}; t_delimiter::size() != idx)
 				{
 					if constexpr (t_is_signed)
 					{
@@ -568,7 +591,7 @@ namespace libbio::parsing::fields {
 					}
 					
 					++range.it;
-					return true;
+					return {idx};
 				}
 				
 				val *= 10;
@@ -581,7 +604,7 @@ namespace libbio::parsing::fields {
 			if constexpr (any(field_position::final_ & t_field_position))
 				throw parse_error_tpl(errors::unexpected_eof());
 			
-			return false;
+			return {};
 		}
 	};
 	
@@ -594,12 +617,12 @@ namespace libbio::parsing::fields {
 		
 		
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		constexpr inline bool parse(t_range &range, t_floating_point &val) const
+		constexpr inline parsing_result parse(t_range &range, t_floating_point &val) const
 		{
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
-					return false;
+					return {};
 			}
 			
 			namespace x3 = boost::spirit::x3;
@@ -609,11 +632,11 @@ namespace libbio::parsing::fields {
 				if constexpr (any(field_position::final_ & t_field_position))
 				{
 					if (range.is_at_end())
-						return true;
-					else if (t_delimiter::matches(*range.it))
+						return {INVALID_DELIMITER_INDEX};
+					else if (auto const idx{t_delimiter::matching_index(*range.it)}; t_delimiter::size() != idx)
 					{
 						++range.it;
-						return true;
+						return {idx};
 					}
 					else
 					{
@@ -624,12 +647,14 @@ namespace libbio::parsing::fields {
 				{
 					if (range.is_at_end())
 						throw parse_error_tpl(errors::unexpected_eof());
-					else if (!t_delimiter::matches(*range.it))
+
+					delimiter_index_type const idx{t_delimiter::matching_index(*range.it)};
+					if (t_delimiter::size() == idx)
 						throw parse_error_tpl(errors::unexpected_character(*range.it));
 				
 					// *it matches t_delimiter.
 					++range.it;
-					return true;
+					return {idx};
 				}
 			}
 			else // Unable to parse.
@@ -637,7 +662,7 @@ namespace libbio::parsing::fields {
 				if constexpr (any(field_position::final_ & t_field_position))
 				{
 					if (range.is_at_end())
-						return false;
+						return {};
 					else
 						throw parse_error_tpl(errors::unexpected_character(*range.it));
 				}
@@ -775,6 +800,7 @@ namespace libbio::parsing::fields {
 				typedef typename tagged_parser_type::parser_type				parser_type;
 			
 				auto &dst(m_dst.template append <std::remove_cvref_t <t_tag>>(std::forward <t_tag>(tag)));
+#warning check.
 				return parser_type::template parse_alternatives <0, t_stack>(m_range, dst, m_buffer, m_parse_cb);
 			}
 		};
@@ -796,12 +822,12 @@ namespace libbio::parsing::fields {
 			typename t_buffer,
 			typename t_parse_cb
 		>
-		constexpr inline bool parse(t_range &range, t_dst &dst, t_buffer &buffer, t_parse_cb &parse_cb) const
+		constexpr inline parsing_result parse(t_range &range, t_dst &dst, t_buffer &buffer, t_parse_cb &parse_cb) const
 		{
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
-					return false;
+					return {};
 			}
 			else
 			{

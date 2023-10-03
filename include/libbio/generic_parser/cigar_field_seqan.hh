@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -100,14 +100,14 @@ namespace libbio::parsing::fields {
 	
 	
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		constexpr inline bool parse(t_range &range, cigar_vector &dst) const
+		constexpr inline parsing_result parse(t_range &range, cigar_vector &dst) const
 		{
 			dst.clear();
 			
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
-					return false;
+					return {};
 				goto continue_parsing;
 			}
 			
@@ -117,17 +117,17 @@ namespace libbio::parsing::fields {
 				dst.emplace_back(parse_one(range));
 				
 				auto const cc(*range.it);
-				if (t_delimiter::matches(cc))
+				if (auto const idx{t_delimiter::matching_index(cc)}; t_delimiter::size() != idx)
 				{
 					++range.it;
-					return true;
+					return {idx};
 				}
 			}
 			
 			if constexpr (t_field_position == field_position::final_)
 			{
 				if (range.is_at_end())
-					return true;
+					return {idx};
 			}
 			else
 			{
@@ -136,7 +136,7 @@ namespace libbio::parsing::fields {
 			}
 			
 			libbio_fail("Should not be reached");
-			return false;
+			return {};
 		}
 	};
 }
