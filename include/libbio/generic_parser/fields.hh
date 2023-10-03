@@ -177,7 +177,7 @@ namespace libbio::parsing {
 		{
 		}
 
-		explicit parsing_result(delimiter_index_type const matched_delimiter_index_):
+		/* implicit */ parsing_result(delimiter_index_type const matched_delimiter_index_):
 			parsing_result(true, matched_delimiter_index_)
 		{
 		}
@@ -800,7 +800,6 @@ namespace libbio::parsing::fields {
 				typedef typename tagged_parser_type::parser_type				parser_type;
 			
 				auto &dst(m_dst.template append <std::remove_cvref_t <t_tag>>(std::forward <t_tag>(tag)));
-#warning check.
 				return parser_type::template parse_alternatives <0, t_stack>(m_range, dst, m_buffer, m_parse_cb);
 			}
 		};
