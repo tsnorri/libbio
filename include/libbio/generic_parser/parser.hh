@@ -440,36 +440,39 @@ namespace libbio::parsing {
 				}
 				else
 				{
-					auto do_continue([&](parsing_result const &res){
-						if (is_repeating_v <field_type> && res)
+					auto do_continue([&](auto &dst, parsing_result const &res){
+						if constexpr (is_repeating_v <field_type>)
 						{
-							if (0 == res.matched_delimiter_index) // We assume that the first delimiter indicates repeating the current field.
-								return parse_alternatives <t_field_idx, t_stack>(range, dst, buffer, parse_cb);
-							else
-								return parse_alternatives <1 + t_field_idx, t_stack>(range, dst, buffer, parse_cb);
+							if (res)
+							{
+								if (0 == res.matched_delimiter_index) // We assume that the first delimiter indicates repeating the current field.
+									return parse_alternatives <t_field_idx, t_stack>(range, dst, buffer, parse_cb);
+								else
+									return parse_alternatives <1 + t_field_idx, t_stack>(range, dst, buffer, parse_cb);
+							}
 						}
-						else if (any(field_position & field_position::initial_) && !res)
+						
+						if constexpr (any(field_position & field_position::initial_))
 						{
-							return false;
+							if (!res)
+								return false;
 						}
-						else
-						{
-							return parse_alternatives <1 + t_field_idx, t_stack>(range, dst, buffer, parse_cb);
-						}
+						
+						return parse_alternatives <1 + t_field_idx, t_stack>(range, dst, buffer, parse_cb);
 					});
 					
 					if constexpr (std::is_same_v <void, value_type>)
 					{
 						// Parse but do not save.
 						auto const res(field.template parse <delimiter, field_position>(range));
-						return do_continue(res);
+						return do_continue(dst, res);
 					}
 					else
 					{
 						// Parse and save.
-						auto do_continue_([&](auto &value){
+						auto do_continue_([&](auto &dst, auto &value){
 							auto const res(field.template parse <delimiter, field_position>(range, value));
-							return do_continue(res);
+							return do_continue(dst, res);
 						});
 						
 						// Check if we are currently parsing a repeating field.
@@ -479,7 +482,7 @@ namespace libbio::parsing {
 							{
 								// Use the existing value.
 								auto &value(dst.back());
-								return do_continue_(value);
+								return do_continue_(dst, value);
 							}
 						}
 						
@@ -497,7 +500,7 @@ namespace libbio::parsing {
 							swap_buffers <rank>(value, buffer);
 						}
 						
-						return do_continue_(value);
+						return do_continue_(dst_, value);
 					}
 				}
 			}
