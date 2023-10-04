@@ -233,7 +233,7 @@ namespace libbio { namespace detail {
 	{
 		if consteval
 		{
-			assertion_failure(file, line, "(Formatted output for consteval assertion fauilure not implemented.)");
+			assertion_failure(file, line, "(Formatted output for consteval assertion failure not implemented.)");
 		}
 		else
 		{
