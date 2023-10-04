@@ -75,6 +75,7 @@ namespace libbio::tuples {
 	
 	
 	// Reusable in the sense that the memory is not deallocated. Appended types are constructed in place without moving.
+	// FIXME: std::launder likely needs to be applied.
 	template <std::size_t t_max_size, std::size_t t_alignment, typename... t_args>
 	class reusable_tuple
 	{
@@ -136,7 +137,7 @@ namespace libbio::tuples {
 		constexpr empty_type &clear()
 		{
 			libbio_assert_eq_msg(m_clear_fn, detail::cast_and_clear_fn_v <reusable_tuple>, "clear() callend for mismatching type.");
-			for_ <sizeof...(t_args)>([this]<typename t_idx>(){
+			for_ <tuple_size>([this]<typename t_idx>(){
 				constexpr auto const idx(t_idx::value);
 				typedef std::tuple_element_t <idx, tuple_type> current_type;
 				if constexpr (!std::is_trivially_destructible_v <current_type>)
@@ -179,16 +180,14 @@ namespace libbio::tuples {
 		
 		constexpr auto const &back() const
 		{
-			constexpr auto const size{sizeof...(t_args)};
-			static_assert(0 < size);
-			return get <size - 1>();
+			static_assert(0 < tuple_size);
+			return get <tuple_size - 1>();
 		}
 		
 		constexpr auto &back()
 		{
-			constexpr auto const size{sizeof...(t_args)};
-			static_assert(0 < size);
-			return get <size - 1>();
+			static_assert(0 < tuple_size);
+			return get <tuple_size - 1>();
 		}
 		
 		template <typename... t_args_>
@@ -198,7 +197,7 @@ namespace libbio::tuples {
 			{
 				return [this, &tuple]<std::size_t... t_idxs>(std::index_sequence <t_idxs...>) constexpr {
 					return ((get <t_idxs>() == detail::get_const_reference <t_idxs>(tuple)) && ...);
-				}(std::make_index_sequence <sizeof...(t_args)>{});
+				}(std::make_index_sequence <tuple_size>{});
 			}
 			else
 			{
