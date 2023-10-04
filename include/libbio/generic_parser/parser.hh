@@ -357,6 +357,10 @@ namespace libbio::parsing {
 		>																record_type;
 		
 	protected:
+		template <std::size_t t_idx>
+		using index_type = std::integral_constant <std::size_t, t_idx>;
+
+
 		template <typename t_parser, std::size_t t_field_idx>
 		struct stack_item
 		{
@@ -436,8 +440,8 @@ namespace libbio::parsing {
 				}
 				else
 				{
-					auto do_continue([&](parse_result const &res){
-						if (any(field_position & field_position::repeating_) && res)
+					auto do_continue([&](parsing_result const &res){
+						if (is_repeating_v <field_type> && res)
 						{
 							if (0 == res.matched_delimiter_index) // We assume that the first delimiter indicates repeating the current field.
 								return parse_alternatives <t_field_idx, t_stack>(range, dst, buffer, parse_cb);
@@ -453,7 +457,7 @@ namespace libbio::parsing {
 							return parse_alternatives <1 + t_field_idx, t_stack>(range, dst, buffer, parse_cb);
 						}
 					});
-
+					
 					if constexpr (std::is_same_v <void, value_type>)
 					{
 						// Parse but do not save.
@@ -467,31 +471,33 @@ namespace libbio::parsing {
 							auto const res(field.template parse <delimiter, field_position>(range, value));
 							return do_continue(res);
 						});
-
-						if (any(field_position & field_position::repeating_) && did_repeat)
+						
+						// Check if we are currently parsing a repeating field.
+						if constexpr (is_repeating_v <field_type>)
 						{
-							// Use the existing value.
-							auto &value(dst.back());
-							return do_continue_(value);
-						}
-						else
-						{
-							// Instantiate a new value.
-							auto &dst_(dst.template append <value_type>()); // Returns dst cast to a new type.
-							auto &value(dst_.back());
-							
-							// Swap the buffers if needed.
-							if constexpr (detail::uses_buffer_v <value_type>)
+							if (did_repeat)
 							{
-								// Calculate the rank using t_dst.
-								typedef std::remove_cvref_t <decltype(dst_)> new_dst_type;
-								typedef typename new_dst_type::tuple_type dst_tuple_type;
-								constexpr auto const rank{tuples::rank_v <dst_tuple_type, std::tuple_size_v <dst_tuple_type> - 1>};
-								swap_buffers <rank>(value, buffer);
+								// Use the existing value.
+								auto &value(dst.back());
+								return do_continue_(value);
 							}
-
-							return do_continue_(value);
 						}
+						
+						// Instantiate a new value.
+						auto &dst_(dst.template append <value_type>()); // Returns dst cast to a new type.
+						auto &value(dst_.back());
+						
+						// Swap the buffers if needed.
+						if constexpr (detail::uses_buffer_v <value_type>)
+						{
+							// Calculate the rank using t_dst.
+							typedef std::remove_cvref_t <decltype(dst_)> new_dst_type;
+							typedef typename new_dst_type::tuple_type dst_tuple_type;
+							constexpr auto const rank{tuples::rank_v <dst_tuple_type, std::tuple_size_v <dst_tuple_type> - 1>};
+							swap_buffers <rank>(value, buffer);
+						}
+						
+						return do_continue_(value);
 					}
 				}
 			}
@@ -517,18 +523,20 @@ namespace libbio::parsing {
 			{
 				typedef std::tuple_element_t <t_field_idx, field_tuple>			field_type;
 				typedef typename trait_type::template delimiter <t_field_idx>	delimiter;
-				template <std::size_t t_idx> using index_type = std::integral_constant <std::size_t, t_idx>;
 
 				constexpr auto const field_position{trait_type::template field_position <t_field_idx>};
 				field_type field;
 				
-				auto do_continue([&]<typename t_next_value_idx>(parse_result const &res, t_next_value_idx const &){
-					if (any(field_position & field_position::repeating_) && res)
+				constexpr bool const should_skip_field{std::is_same_v <void, typename field_type::template value_type <t_should_copy>>};
+				constexpr auto const next_value_idx{(should_skip_field ? 0 : 1) + t_value_idx};
+				
+				auto do_continue([&](parsing_result const &res) mutable {
+					if (is_repeating_v <field_type> && res)
 					{
 						if (0 == res.matched_delimiter_index) // We assume that the first delimiter indicates repeating the current field.
-							return parse__ <t_field_idx, t_next_value_idx>(range, dst);
+							return parse__ <t_field_idx, t_value_idx>(range, dst);
 						else
-							return parse__ <1 + t_field_idx, t_next_value_idx>(range, dst);
+							return parse__ <1 + t_field_idx, next_value_idx>(range, dst);
 					}
 					else if (any(field_position & field_position::final_) && !res) // FIXME: incorrect?
 					{
@@ -536,20 +544,20 @@ namespace libbio::parsing {
 					}
 					else
 					{
-						return parse__ <1 + t_field_idx, t_next_value_idx>(range, dst);
+						return parse__ <1 + t_field_idx, next_value_idx>(range, dst);
 					}
 				});
 
 				// Check if the value of the current field should be saved.
-				if constexpr (std::is_same_v <void, typename field_type::template value_type <t_should_copy>>)
+				if constexpr (should_skip_field)
 				{
 					auto const res(field.template parse <delimiter, field_position>(range));
-					return do_continue(res, index_type <t_value_idx>{}); // Skip instead.
+					return do_continue(res); // Skip instead.
 				}
 				else
 				{
 					auto const res(field.template parse <delimiter, field_position>(range, std::get <t_value_idx>(dst)));
-					return do_continue(res, index_type <1 + t_value_idx>{}); // Save.
+					return do_continue(res); // Save.
 				}
 			}
 		}

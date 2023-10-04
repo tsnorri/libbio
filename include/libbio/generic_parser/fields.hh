@@ -37,8 +37,7 @@ namespace libbio::parsing {
 	{
 		initial_	= 0x1,
 		middle_		= 0x2,
-		final_		= 0x4,
-		repeating_	= 0x8
+		final_		= 0x4
 	};
 	
 	constexpr inline field_position operator|(field_position const lhs, field_position const rhs)
@@ -73,6 +72,16 @@ namespace libbio::parsing {
 	{
 		return std::is_same_v <t_lhs, t_rhs>;
 	}
+	
+	
+	template <typename t_type, bool = false>
+	struct is_repeating : public std::false_type {};
+	
+	template <typename t_type>
+	struct is_repeating <t_type, bool(t_type::is_repeating::value)> : public std::bool_constant <t_type::is_repeating::value> {};
+	
+	template <typename t_type>
+	constexpr static inline bool is_repeating_v = is_repeating <t_type>::value;
 	
 	
 	template <typename t_type>
