@@ -534,21 +534,24 @@ namespace libbio::parsing {
 				constexpr auto const next_value_idx{(should_skip_field ? 0 : 1) + t_value_idx};
 				
 				auto do_continue([&](parsing_result const &res) mutable {
-					if (is_repeating_v <field_type> && res)
+					if constexpr (is_repeating_v <field_type>)
 					{
-						if (0 == res.matched_delimiter_index) // We assume that the first delimiter indicates repeating the current field.
-							return parse__ <t_field_idx, t_value_idx>(range, dst);
-						else
-							return parse__ <1 + t_field_idx, next_value_idx>(range, dst);
+						if (res)
+						{
+							if (0 == res.matched_delimiter_index) // We assume that the first delimiter indicates repeating the current field.
+								return parse__ <t_field_idx, t_value_idx>(range, dst);
+							else
+								return parse__ <1 + t_field_idx, next_value_idx>(range, dst);
+						}
 					}
-					else if (any(field_position & field_position::final_) && !res) // FIXME: incorrect?
+					
+					if constexpr (any(field_position & field_position::final_))
 					{
-						return false;
+						if (!res)
+							return false;
 					}
-					else
-					{
-						return parse__ <1 + t_field_idx, next_value_idx>(range, dst);
-					}
+					
+					return parse__ <1 + t_field_idx, next_value_idx>(range, dst);
 				});
 
 				// Check if the value of the current field should be saved.
