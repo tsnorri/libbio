@@ -19,6 +19,9 @@ namespace libbio::parsing::traits {
 		template <std::size_t t_field_count>
 		struct trait
 		{
+			typedef t_field_sep	field_separator_type;
+			typedef t_line_sep	line_separator_type;
+			
 			template <std::size_t t_i>
 			constexpr static inline enum field_position const field_position_()
 			{
@@ -43,8 +46,29 @@ namespace libbio::parsing::traits {
 			template <std::size_t t_i>
 			constexpr static inline enum field_position const field_position{field_position_ <t_i>()};
 			
-			template <std::size_t t_i>
-			using delimiter = std::conditional_t <t_i == t_field_count - 1, t_line_sep, t_field_sep>;
+			
+			template <typename t_field, typename t_next_field, std::size_t t_i>
+			struct delimiter_
+			{
+				static_assert(!is_optional_repeating_v <t_field> || std::is_void_v <t_next_field>, "Optional repeating field can only appear as the final one");
+				
+				template <bool t_next_field_is_optional_repeating>
+				struct helper
+				{
+					typedef std::conditional_t <t_i == t_field_count - 1, line_separator_type, field_separator_type> type;
+				};
+				
+				template <>
+				struct helper <true>
+				{
+					typedef join_delimiters_t <field_separator_type, line_separator_type> type;
+				};
+				
+				typedef helper <is_optional_repeating_v <t_next_field>>::type type;
+			};
+			
+			template <typename t_field, typename t_next_field, std::size_t t_i>
+			using delimiter = delimiter_ <t_field, t_next_field, t_i>::type;
 		};
 	};
 }
