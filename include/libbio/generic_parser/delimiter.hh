@@ -67,6 +67,21 @@ namespace libbio::parsing {
 		(((other == t_delimiters) || (++retval, false)) || ...);
 		return retval;
 	}
+	
+	
+	template <typename, typename>
+	struct join_delimiters
+	{
+	};
+	
+	template <delimiter_type... t_delimiters_1, delimiter_type... t_delimiters_2>
+	struct join_delimiters <delimiter <t_delimiters_1...>, delimiter <t_delimiters_2...>>
+	{
+		typedef delimiter <t_delimiters_1..., t_delimiters_2...> type;
+	};
+	
+	template <typename t_lhs, typename t_rhs>
+	using join_delimiters_t = join_delimiters <t_lhs, t_rhs>::type;
 }
 
 #endif
