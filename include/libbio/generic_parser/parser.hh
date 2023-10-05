@@ -425,9 +425,10 @@ namespace libbio::parsing {
 			else
 			{
 				constexpr auto const field_position{trait_type::template field_position <t_field_idx>};
-				typedef std::tuple_element_t <t_field_idx, field_tuple>				field_type;
-				typedef typename trait_type::template delimiter <t_field_idx>		delimiter;
-				typedef typename field_type::template value_type <t_should_copy>	value_type;
+				typedef std::tuple_element_t <t_field_idx, field_tuple>										field_type;
+				typedef tuples::conditional_element_t <1 + t_field_idx, field_tuple>						next_field_type;
+				typedef typename trait_type::template delimiter <field_type, next_field_type, t_field_idx>	delimiter;
+				typedef typename field_type::template value_type <t_should_copy>							value_type;
 				
 				field_type field;
 				
@@ -524,9 +525,10 @@ namespace libbio::parsing {
 				return true;
 			else
 			{
-				typedef std::tuple_element_t <t_field_idx, field_tuple>			field_type;
-				typedef typename trait_type::template delimiter <t_field_idx>	delimiter;
-
+				typedef std::tuple_element_t <t_field_idx, field_tuple>										field_type;
+				typedef tuples::conditional_element_t <1 + t_field_idx, field_tuple>						next_field_type;
+				typedef typename trait_type::template delimiter <field_type, next_field_type, t_field_idx>	delimiter;
+				
 				constexpr auto const field_position{trait_type::template field_position <t_field_idx>};
 				field_type field;
 				
@@ -553,7 +555,7 @@ namespace libbio::parsing {
 					
 					return parse__ <1 + t_field_idx, next_value_idx>(range, dst);
 				});
-
+				
 				// Check if the value of the current field should be saved.
 				if constexpr (should_skip_field)
 				{
