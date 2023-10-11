@@ -28,9 +28,10 @@ namespace libbio::tuples {
 	template <typename t_tuple, std::size_t t_i = 0, typename t_fn>
 	constexpr static inline void for_each(t_fn &&fn)
 	{
-		if constexpr (t_i != std::tuple_size_v <t_tuple>)
+		typedef std::remove_cvref_t <t_tuple> tuple_type;
+		if constexpr (t_i != std::tuple_size_v <tuple_type>)
 		{
-			fn.template operator() <size_constant <t_i>, std::tuple_element_t <t_i, t_tuple>>;
+			fn.template operator() <size_constant <t_i>, std::tuple_element_t <t_i, tuple_type>>();
 			for_each <t_tuple, 1 + t_i>(fn);
 		}
 	}
@@ -38,7 +39,8 @@ namespace libbio::tuples {
 	template <std::size_t t_i = 0, typename t_tuple, typename t_fn>
 	constexpr static inline void for_each(t_tuple &&tuple, t_fn &&fn)
 	{
-		if constexpr (t_i != std::tuple_size_v <t_tuple>)
+		typedef std::remove_cvref_t <t_tuple> tuple_type;
+		if constexpr (t_i != std::tuple_size_v <tuple_type>)
 		{
 			fn.template operator() <size_constant <t_i>>(std::get <t_i>(tuple));
 			for_each <1 + t_i>(tuple, fn);
