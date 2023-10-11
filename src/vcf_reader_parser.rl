@@ -129,7 +129,7 @@ namespace libbio::vcf {
 				if (boost::spirit::qi::parse(qual_sv.begin(), qual_sv.end(), boost::spirit::qi::float_, qual))
 					m_current_variant.set_qual(qual);
 				else
-					throw parse_error("Unable to parse the given value as floating point", qual_sv);;
+					throw parse_error("Unable to parse the given value as floating point", qual_sv);
 			}
 			
 			action end_info_key {
