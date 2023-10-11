@@ -655,6 +655,14 @@ namespace libbio::parsing {
 		
 		
 		// Updatable range, e.g. input read in blocks.
+		template <typename t_iterator, typename t_sentinel>
+		bool parse(updatable_range_base <t_iterator, t_sentinel> &range, record_type &dst)
+		requires (!parsed_type_is_alternative)
+		{
+			return parse_(range, dst);
+		}
+		
+		
 		template <typename t_iterator, typename t_sentinel, typename t_update_cb>
 		bool parse(t_iterator &&it, t_sentinel &&sentinel, record_type &dst, t_update_cb &&cb)
 		requires (!parsed_type_is_alternative)
@@ -665,6 +673,29 @@ namespace libbio::parsing {
 				std::forward <t_update_cb>(cb)
 			));
 			return parse_(range, dst);
+		}
+		
+		
+		template <
+			typename t_iterator,
+			typename t_sentinel,
+			std::size_t t_max_size,
+			std::size_t t_alignment,
+			typename... t_args_,
+			typename t_parse_cb
+		>
+		bool parse(
+			updatable_range_base <t_iterator, t_sentinel> &range,
+			tuples::reusable_tuple <t_max_size, t_alignment, t_args_...> &dst,
+			buffer_type &buffer,
+			t_parse_cb &&parse_cb
+		)
+		requires (
+			parsed_type_is_alternative &&
+			tuples::reusable_tuple <t_max_size, t_alignment, t_args_...>::template can_fit_v <record_type>
+		)
+		{
+			return parse_(range, dst, buffer, parse_cb);
 		}
 		
 		
