@@ -219,6 +219,20 @@ namespace libbio::parsing::detail {
 		struct with <tagged_parser <t_other_tag, t_parser>> :
 			public std::bool_constant <std::is_same_v <t_tag_, t_other_tag>> {};
 	};
+	
+	
+	template <typename t_type, typename t_value_type, t_value_type t_default, bool t_is_void = std::is_void_v <t_type>>
+	struct value_if_not_void
+	{
+		constexpr static inline t_value_type const value{t_default};
+	};
+	
+	template <typename t_type, typename t_value_type, t_value_type t_default>
+	struct value_if_not_void <t_type, t_value_type, t_default, false>
+	{
+		constexpr static inline t_value_type const value{t_type::value};
+	};
+	
 }
 
 
@@ -283,6 +297,7 @@ namespace libbio::parsing::fields {
 	
 	
 	template <typename t_delimiter, typename t_character_filter = filters::no_op, field_position t_field_position = field_position::middle_, typename t_range, typename t_dst>
+	requires (!t_range::is_contiguous)
 	LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse_sequential(t_range &range, t_dst &dst)
 	{
 		dst.clear();
@@ -318,89 +333,101 @@ namespace libbio::parsing::fields {
 		else
 			throw parse_error_tpl(errors::unexpected_eof());
 	}
+	
+	
+	template <typename t_delimiter, typename t_character_filter = filters::no_op, field_position t_field_position = field_position::middle_, typename t_assigned, typename t_range, typename t_dst>
+	requires t_range::is_contiguous
+	LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse_sequential(t_range &range, t_dst &dst)
+	{
+		auto begin(range.it); // Copy.
+
+		if constexpr (any(field_position::initial_ & t_field_position))
+		{
+			if (range.is_at_end())
+				return {};
+			goto continue_parsing;
+		}
+
+		while (!range.is_at_end())
+		{
+		continue_parsing:
+			auto const cc(*range.it);
+			if (auto const idx{t_delimiter::matching_index(cc)}; t_delimiter::size() != idx)
+			{
+				dst = t_assigned(begin, range.it);
+				++range.it;
+				return {idx};
+			}
+			else if (!t_character_filter::check(cc))
+			{
+				throw parse_error_tpl(errors::unexpected_character(cc));
+			}
+		
+			++range.it;
+		}
+		
+		// t_delimiter not matched.
+		if constexpr (any(field_position::final_ & t_field_position))
+		{
+			dst = t_assigned(begin, range.it);
+			return {INVALID_DELIMITER_INDEX};
+		}
+		else
+		{
+			throw parse_error_tpl(errors::unexpected_eof());
+		}
+	}
 
 
-	template <typename t_character_filter = filters::no_op>
+	template <typename t_character_filter = filters::no_op, typename t_should_always_copy = void>
 	struct text
 	{
 		template <bool t_should_copy>
-		using value_type = typename detail::text_value_type_tpl <t_should_copy>::type;
+		using value_type = typename detail::text_value_type_tpl <
+			parsing::detail::value_if_not_void <t_should_always_copy, bool, t_should_copy>::value
+		>::type;
 
 
-		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		requires (!t_range::is_contiguous)
-		LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse(t_range &range, std::string &dst) const
+		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range, typename t_dst>
+		constexpr inline parsing_result parse(t_range &range, t_dst &dst) const
 		{
 			struct helper
 			{
-				std::string &dst;
+				t_dst &dst;
 				
 				void clear() { dst.clear(); }
 				void handle_character(char const cc) { dst.push_back(cc); }
 			};
 			
 			helper hh{dst};
-			return parse_sequential <t_delimiter, t_character_filter, t_field_position>(range, hh);
+			return parse_sequential <t_delimiter, t_character_filter, t_field_position, std::string_view>(range, hh);
 		}
-		
+	};
+	
+	
+	template <bool t_should_always_copy, typename t_character_filter = filters::no_op>
+	using text_ = text <t_character_filter, std::bool_constant <t_should_always_copy>>;
+	
+	
+	template <typename t_char, typename t_value = std::vector <t_char>, typename t_character_filter = filters::no_op>
+	struct character_sequence
+	{
+		template <bool t_should_copy>
+		using value_type = t_value;
 		
 		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range, typename t_dst>
-		requires t_range::is_contiguous
-		LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse_(t_range &range, t_dst &dst) const
+		constexpr inline parsing_result parse(t_range &range, t_dst &dst) const
 		{
-			auto begin(range.it); // Copy.
-	
-			if constexpr (any(field_position::initial_ & t_field_position))
+			struct helper
 			{
-				if (range.is_at_end())
-					return {};
-				goto continue_parsing;
-			}
-	
-			while (!range.is_at_end())
-			{
-			continue_parsing:
-				auto const cc(*range.it);
-				if (auto const idx{t_delimiter::matching_index(cc)}; t_delimiter::size() != idx)
-				{
-					dst = std::string_view(begin, range.it);
-					++range.it;
-					return {idx};
-				}
-				else if (!t_character_filter::check(cc))
-				{
-					throw parse_error_tpl(errors::unexpected_character(cc));
-				}
+				t_dst &dst;
+				
+				void clear() { dst.clear(); }
+				void handle_character(char const cc) { dst.emplace_back(cc); }
+			};
 			
-				++range.it;
-			}
-			
-			// t_delimiter not matched.
-			if constexpr (any(field_position::final_ & t_field_position))
-			{
-				dst = std::string_view(begin, range.it);
-				return {INVALID_DELIMITER_INDEX};
-			}
-			else
-			{
-				throw parse_error_tpl(errors::unexpected_eof());
-			}
-		}
-
-
-		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		requires t_range::is_contiguous
-		constexpr inline parsing_result parse(t_range &range, std::string_view &dst) const
-		{
-			return parse_ <t_delimiter, t_field_position>(range, dst);
-		}
-
-
-		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		requires t_range::is_contiguous
-		constexpr inline parsing_result parse(t_range &range, std::string &dst) const
-		{
-			return parse_ <t_delimiter, t_field_position>(range, dst);
+			helper hh{dst};
+			return parse_sequential <t_delimiter, t_character_filter, t_field_position, value_type>(range, hh); // FIXME: replace value_type with some parameter?
 		}
 	};
 	
