@@ -13,6 +13,9 @@ OBJECTS		=	bed_reader.o \
 				file_handling.o \
 				progress_bar.o \
 				progress_indicator.o \
+				sam_reader.o \
+				sam_reader_header_parser.o \
+				sam_reader_input_range.o \
 				sequence_container.o \
 				sequence_reader.o \
 				subprocess.o \
