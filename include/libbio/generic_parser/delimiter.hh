@@ -6,7 +6,9 @@
 #ifndef LIBBIO_GENERIC_PARSER_DELIMITER_HH
 #define LIBBIO_GENERIC_PARSER_DELIMITER_HH
 
-#include <limits> // std::numeric_limits
+#include <cstdint>
+#include <limits>		// std::numeric_limits
+#include <type_traits>	// std::is_same_v
 
 
 namespace libbio::parsing {
@@ -43,6 +45,21 @@ namespace libbio::parsing::detail {
 	
 	template <delimiter_type... t_delimiters>
 	using first_delimiter_type_t = typename first_delimiter_type <t_delimiters...>::type;
+	
+	
+	template <delimiter_type, delimiter_index_type, delimiter_type... t_rest> struct index_of {};
+	
+	template <delimiter_type t_delimiter, delimiter_index_type t_i>
+	struct index_of <t_delimiter, t_i>
+	{
+		constexpr static inline delimiter_index_type const value{INVALID_DELIMITER_INDEX};
+	};
+	
+	template <delimiter_type t_delimiter, delimiter_index_type t_i, delimiter_type t_first, delimiter_type... t_rest>
+	struct index_of <t_delimiter, t_i, t_first, t_rest...>
+	{
+		constexpr static inline delimiter_index_type const value{t_delimiter == t_first ? t_i : index_of <t_delimiter, t_i + 1, t_rest...>::value};
+	};
 }
 
 
@@ -52,6 +69,9 @@ namespace libbio::parsing {
 	struct delimiter
 	{
 		typedef detail::first_delimiter_type_t <t_delimiters...>	type;
+		
+		template <delimiter_type t_delimiter>
+		constexpr static inline auto const index_of_v{detail::index_of <t_delimiter, 0, t_delimiters...>::value};
 		
 		constexpr static inline std::size_t size() { return sizeof...(t_delimiters); }
 		constexpr static inline bool matches(type const other) { return ((other == t_delimiters) || ...); }
