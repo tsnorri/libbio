@@ -83,6 +83,12 @@ namespace libbio::vcf {
 				integer += fc - '0';
 			}
 			
+			action finish_integer {
+				if (integer_is_negative)
+					integer *= -1;
+				integer_is_negative = false;
+			}
+			
 			action meta_record_info			{ BEGIN_METADATA(metadata_info,		INFO); }
 			action meta_record_filter		{ BEGIN_METADATA(metadata_filter,	FILTER); }
 			action meta_record_format		{ BEGIN_METADATA(metadata_format,	FORMAT); }
@@ -113,7 +119,7 @@ namespace libbio::vcf {
 			
 			action end_line					{ line_start = fpc; ++m_lineno; }
 			
-			integer							= ("+" | ("-" >{ integer_is_negative = true; }))? ([0-9]+) >(start_integer) $(update_integer);
+			integer							= ("+" | ("-" >{ integer_is_negative = true; }))? ([0-9]+) >(start_integer) $(update_integer) %(finish_integer);
 			
 			header_sub_nl					= "\n" >{ ++m_lineno; line_start = fpc; fgoto header_sub; };
 			
