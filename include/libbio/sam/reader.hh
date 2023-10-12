@@ -21,17 +21,17 @@ namespace libbio::sam {
 		typedef parsing::traits::delimited <parsing::delimiter <'\t'>, parsing::delimiter <'\n'>> parser_trait_type;
 		typedef parsing::parser <
 			parser_trait_type,
-			parsing::fields::text <>,						// QNAME
+			parsing::fields::text <>,						// QNAME, may be *
 			parsing::fields::integer <std::uint16_t>,		// FLAG
-			parsing::fields::text <>,						// RNAME
+			parsing::fields::text <>,						// RNAME, may be *
 			parsing::fields::integer <std::uint32_t>,		// POS
 			parsing::fields::integer <std::uint8_t>,		// MAPQ
-			fields::cigar_field,							// CIGAR
-			parsing::fields::text <>,						// RNEXT
+			fields::cigar_field,							// CIGAR, may be *
+			parsing::fields::text <>,						// RNEXT, may be * or =
 			parsing::fields::integer <std::uint32_t>,		// PNEXT
 			parsing::fields::integer <std::int32_t>,		// TLEN
-			parsing::fields::character_sequence <char>,		// SEQ
-			parsing::fields::character_sequence <char>,		// QUAL
+			parsing::fields::character_sequence <char>,		// SEQ, may be *
+			parsing::fields::character_sequence <char>,		// QUAL, may be *
 			fields::optional_field							// Optional fields
 		> parser_type;
 		
