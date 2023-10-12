@@ -6,6 +6,7 @@
 #ifndef LIBBIO_SAM_OPTIONAL_FIELD_HH
 #define LIBBIO_SAM_OPTIONAL_FIELD_HH
 
+#include <array>
 #include <libbio/assert.hh>
 #include <libbio/generic_parser.hh>
 #include <libbio/tuple.hh>
@@ -36,6 +37,18 @@ namespace libbio::sam::detail {
 		
 		template <typename ... t_args>
 		inline t_type &emplace_back(t_args && ... args);
+	};
+	
+	
+	// For using the visitor pattern with the optional fields and their values
+	// we build an array of function pointers of the different overloads of the visitor.
+	template <typename, typename> struct callback_table_builder {};
+	
+	template <typename t_callback, typename... t_args>
+	struct callback_table_builder <t_callback, std::tuple <t_args...>>
+	{
+		// The first template paramter contains the type code (one of A, i, f, Z, H, B) and the second is the value type (e.g. char, std::vector <std::int16_t>).
+		constexpr static std::array const fns{(&t_callback::template operator() <t_args>)...};
 	};
 	
 	
@@ -130,6 +143,25 @@ namespace libbio::sam {
 			array_vector <float>
 		> value_tuple_type;
 		
+		template <char t_type_code>
+		using array_type_code_helper_t = std::integral_constant <char, t_type_code>;
+		
+	public:
+		constexpr static std::array type_codes{'A', 'i', 'f', 'Z', 'H', 'B', 'B', 'B', 'B', 'B', 'B', 'B'};
+		static_assert(std::tuple_size_v <value_tuple_type> == type_codes.size());
+		
+		template <typename t_type> struct array_type_code {};
+		template <> struct array_type_code <std::int8_t>	: public array_type_code_helper_t <'c'> {};
+		template <> struct array_type_code <std::uint8_t>	: public array_type_code_helper_t <'C'> {};
+		template <> struct array_type_code <std::int16_t>	: public array_type_code_helper_t <'s'> {};
+		template <> struct array_type_code <std::uint16_t>	: public array_type_code_helper_t <'S'> {};
+		template <> struct array_type_code <std::int32_t>	: public array_type_code_helper_t <'i'> {};
+		template <> struct array_type_code <std::uint32_t>	: public array_type_code_helper_t <'I'> {};
+		template <> struct array_type_code <float>			: public array_type_code_helper_t <'f'> {};
+		
+		template <typename t_type>
+		constexpr static inline auto const array_type_code_v{array_type_code <t_type>::value};
+		
 	private:
 		tag_rank_vector		m_tag_ranks;	// Rank of the tag among its value type.
 		value_tuple_type	m_values;
@@ -153,6 +185,9 @@ namespace libbio::sam {
 		void clear() { m_tag_ranks.clear(); tuples::for_each(m_values, []<typename t_idx>(auto &element){ element.clear(); }); }
 		template <typename t_type> t_type *get(tag_id_type const tag) { return do_get <t_type>(*this, tag); }
 		template <typename t_type> t_type const *get(tag_id_type const tag) const { return do_get <t_type const>(*this, tag); }
+		
+		template <typename t_visitor>
+		void visit(tag_rank const &tr, t_visitor &&visitor) const;
 	};
 	
 	
@@ -196,6 +231,25 @@ namespace libbio::sam {
 		if (it->tag_id != tag) return nullptr;
 		if (it->type_index != idx) return nullptr;
 		return &std::get <tuple_element_type>(of.m_values)[it->rank];
+	}
+	
+	
+	template <typename t_visitor>
+	void optional_field::visit(tag_rank const &tr, t_visitor &&visitor) const
+	{
+		auto visitor_caller([this, &visitor]<typename t_idx_type> {
+			constexpr auto const idx{t_idx_type::value};
+			// Pass the type code as a template parameter to the visitor.
+			visitor <type_codes[idx]>(std::get <idx>(m_values));
+		});
+		
+		typedef detail::callback_table_builder <
+			decltype(visitor_caller),
+			tuples::index_constant_sequence_for <value_tuple_type>
+		> callback_table_type;
+		
+		constexpr auto const &fns(callback_table_type::fns);
+		*(fns[tr.type_index])();
 	}
 }
 
