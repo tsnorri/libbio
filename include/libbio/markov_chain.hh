@@ -14,6 +14,7 @@
 #include <libbio/tuple/filter.hh>
 #include <libbio/tuple/for.hh>
 #include <libbio/tuple/unique.hh>
+#include <libbio/utility.hh>		// libbio::aggregate
 #include <limits>					// std::numeric_limits
 #include <memory>					// std::unique_ptr
 #include <type_traits>				// std::is_same, std::bool_constant, std::is_base_of_v
@@ -30,10 +31,6 @@ namespace libbio::markov_chains::detail {
 	{
 		constexpr static std::array const fns{(&t_callback::template operator() <t_args>)...};
 	};
-	
-	
-	template <typename... t_args>
-	struct aggregate : public t_args... {};
 	
 	
 	// Clang (as of version 16) does not have non-type template arguments of type double, so we have to work around.
@@ -256,7 +253,7 @@ namespace libbio::markov_chains {
 	struct chain : public t_traits...
 	{
 	private:
-		typedef detail::aggregate <t_traits...>				traits_type;
+		typedef aggregate <t_traits...>						traits_type;
 		
 	public:
 		typedef t_initial_state								initial_state_type;

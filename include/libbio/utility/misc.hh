@@ -29,6 +29,10 @@ namespace libbio {
 	
 	
 	template <typename... t_args>
+	struct aggregate : public t_args... { using t_args::operator()...; };
+	
+	
+	template <typename... t_args>
 	constexpr bool any(t_args && ... args)
 	{
 		return (... || args);
