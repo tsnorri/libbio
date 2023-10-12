@@ -35,6 +35,8 @@ namespace libbio::sam {
 		sequence_mismatch	= 8
 	};
 	
+	constexpr static std::array const cigar_operation_identifiers{'M', 'I', 'D', 'N', 'S', 'H', 'P', '=', 'X'};
+	
 	constexpr inline cigar_operation make_cigar_operation(char const op, void(*cigar_error_handler)(char) = &detail::cigar_error_handler)
 	{
 		switch (op)
@@ -65,6 +67,8 @@ namespace libbio::sam {
 	
 	constexpr inline cigar_operation operator ""_cigar_operation(char const op) { return make_cigar_operation(op); }
 	
+	inline std::ostream &operator<<(std::ostream &os, cigar_operation const op) { os << cigar_operation_identifiers[to_underlying(op)]; return os; }
+	
 	
 	class cigar_run
 	{
@@ -86,6 +90,9 @@ namespace libbio::sam {
 		count_type count() const { return 0xfff'ffff & value; }
 		cigar_operation operation() const { return static_cast <cigar_operation>(value >> 28U); }
 	};
+	
+	
+	inline std::ostream &operator<<(std::ostream &os, cigar_run const &run) { os << run.count() << run.operation(); return os; }
 }
 
 #endif
