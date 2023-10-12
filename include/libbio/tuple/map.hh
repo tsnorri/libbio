@@ -66,8 +66,8 @@ namespace libbio::tuples {
 	using cross_product_t = typename cross_product <t_tuple_1, t_tuple_2, t_fn>::type;
 	
 	
-	template <typename t_type>
-	using index_constant_sequence_for = map_t <std::index_sequence_for <t_type>, std::type_identity_t>;
+	template <typename t_tuple>
+	using index_constant_sequence_for_tuple = map_t <forward_t <t_tuple, std::index_sequence_for>, std::type_identity_t>;
 }
 
 #endif
