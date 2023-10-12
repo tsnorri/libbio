@@ -29,7 +29,7 @@ namespace {
 }
 
 
-namespace libbio { namespace sam {
+namespace libbio::sam {
 	
 	char const *to_chars(sort_order_type const so)
 	{
@@ -188,11 +188,11 @@ namespace libbio { namespace sam {
 			[&os]<char t_type_code>(auto const &vec) requires ('H' == t_type_code) {
 				os << std::hex;
 				for (auto const val : vec)
-					os << +val;
+					os << int(val);
 				os << std::dec;
 			},
 			[&os]<char t_type_code, typename t_type>(t_type const &vec) requires ('B' == t_type_code) {
-				typedef typename t_type::element_type element_type;
+				typedef typename t_type::value_type element_type;
 				os << optional_field::array_type_code_v <element_type>;
 				for (auto const val : vec)
 					os << ',' << val;
@@ -208,7 +208,7 @@ namespace libbio { namespace sam {
 				os << '\t';
 			
 			os << char(tr.tag_id >> 8) << char(tr.tag_id & 0xff) << ':' << optional_field::type_codes[tr.type_index] << ':';
-			
+			of.visit(tr, visitor);
 		}
 		
 		return os;
@@ -267,4 +267,4 @@ namespace libbio { namespace sam {
 		swap(std::get <QUAL>(dst), src.qual);
 		swap(std::get <OPTIONAL>(dst), src.optional_fields);
 	}
-}}
+}

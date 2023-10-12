@@ -242,19 +242,20 @@ namespace libbio::sam {
 	template <typename t_visitor>
 	void optional_field::visit(tag_rank const &tr, t_visitor &&visitor) const
 	{
-		auto visitor_caller([this, &visitor]<typename t_idx_type> {
+		auto visitor_caller([this, rank = tr.rank, &visitor]<typename t_idx_type> {
 			constexpr auto const idx{t_idx_type::value};
+			constexpr auto const type_code{type_codes[idx]};
 			// Pass the type code as a template parameter to the visitor.
-			visitor <type_codes[idx]>(std::get <idx>(m_values));
+			visitor.template operator()<type_code>(std::get <idx>(m_values)[rank]);
 		});
 		
 		typedef detail::callback_table_builder <
 			decltype(visitor_caller),
-			tuples::index_constant_sequence_for <value_tuple_type>
+			tuples::index_constant_sequence_for_tuple <value_tuple_type>
 		> callback_table_type;
 		
 		constexpr auto const &fns(callback_table_type::fns);
-		*(fns[tr.type_index])();
+		(visitor_caller.*fns[tr.type_index])();
 	}
 }
 
