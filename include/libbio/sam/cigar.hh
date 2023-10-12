@@ -89,6 +89,7 @@ namespace libbio::sam {
 		
 		count_type count() const { return 0xfff'ffff & value; }
 		cigar_operation operation() const { return static_cast <cigar_operation>(value >> 28U); }
+		bool operator==(cigar_run const other) const { return value == other.value; }
 	};
 	
 	
