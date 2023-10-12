@@ -31,6 +31,190 @@ namespace {
 
 namespace libbio { namespace sam {
 	
+	char const *to_chars(sort_order_type const so)
+	{
+		switch (so)
+		{
+			case sort_order_type::unknown:
+				return "unknown";
+			case sort_order_type::unsorted:
+				return "unsorted";
+			case sort_order_type::queryname:
+				return "queryname";
+			case sort_order_type::coordinate:
+				return "coordinate";
+		}
+	}
+	
+	
+	char const *to_chars(grouping_type const go)
+	{
+		switch (go)
+		{
+			case grouping_type::none:
+				return "none";
+			case grouping_type::query:
+				return "query";
+			case grouping_type::reference:
+				return "reference";
+		}
+	}
+	
+	
+	std::ostream &operator<<(std::ostream &os, reference_sequence_entry const &rs)
+	{
+		os << "@SQ\tSN:" << rs.name << "\tLN:" << rs.length;
+		switch (rs.molecule_topology)
+		{
+			case molecule_topology_type::unknown:
+				break;
+			case molecule_topology_type::linear:
+				os << "\tTP:linear";
+				break;
+			case molecule_topology_type::circular:
+				os << "\tTP:circular";
+				break;
+		}
+		return os;
+	}
+	
+	
+	std::ostream &operator<<(std::ostream &os, read_group_entry const &rg)
+	{
+		os << "@RG\tID:" << rg.id;
+		if (!rg.description.empty())
+			os << "\tDS:" << rg.description;
+		return os;
+	}
+	
+	
+	std::ostream &operator<<(std::ostream &os, program_entry const &pg)
+	{
+		os << "@PG\tID:" << pg.id;
+		if (!pg.name.empty()) os << "\tPN:" << pg.name;
+		if (!pg.command_line.empty()) os << "\tCL:" << pg.command_line;
+		if (!pg.prev_id.empty()) os << "\tPP:" << pg.prev_id;
+		if (!pg.description.empty()) os << "\tDS:" << pg.description;
+		if (!pg.version.empty()) os << "\tVN:" << pg.version;
+		return os;
+	}
+	
+	
+	std::ostream &operator<<(std::ostream &os, header const &hh)
+	{
+		os	<< "@HD"
+			<< "\tVN:" << hh.version_major << '.' << hh.version_minor
+			<< "\tSO:" << hh.sort_order
+			<< "\tGO:" << hh.grouping << '\n';
+		
+		for (auto const &ref_seq : hh.reference_sequences)
+			os << ref_seq << '\n';
+		
+		for (auto const &read_group : hh.read_groups)
+			os << read_group << '\n';
+		
+		for (auto const &program : hh.programs)
+			os << program << '\n';
+		
+		for (auto const &comment : hh.comments)
+			os << "@CO\t" << comment << '\n';
+		
+		return os;
+	}
+	
+	
+	void output_record(std::ostream &os, header const &header_, record const &rec)
+	{
+		// QNAME
+		if (rec.qname.empty())
+			os << '*';
+		else
+			os	<< rec.qname;
+		os << '\t';
+		
+		// FLAG
+		os << rec.flag << '\t';
+		
+		// RNAME
+		if (INVALID_REFERENCE_ID == rec.rname_id)
+			os << '*';
+		else
+			os << header_.reference_sequences[rec.rname_id].name;
+		os << '\t';
+		
+		// POS, MAPQ
+		os	<< rec.pos << '\t'
+			<< rec.mapq << '\t';
+		
+		// CIGAR
+		if (rec.cigar.empty())
+			os << '*';
+		else
+			std::copy(rec.cigar.begin(), rec.cigar.end(), std::ostream_iterator <cigar_run>(os));
+		
+		// RNEXT
+		if (INVALID_REFERENCE_ID == rec.rnext_id)
+			os << '*';
+		else if (rec.rname_id == rec.rnext_id)
+			os << '=';
+		else
+			os << header_.reference_sequences[rec.rnext_id].name;
+		
+		// PNEXT, TLEN
+		os	<< rec.pnext << '\t'
+			<< rec.tlen << '\t';
+		
+		// SEQ
+		if (rec.seq.empty())
+			os << '*';
+		else
+			std::copy(rec.seq.begin(), rec.seq.end(), std::ostream_iterator <char>(os));
+		
+		// QUAL
+		if (rec.qual.empty())
+			os << '*';
+		else
+			std::copy(rec.qual.begin(), rec.qual.end(), std::ostream_iterator <char>(os));
+		
+		// Optional fields
+		os << rec.optional_fields;
+	}
+	
+	
+	std::ostream &operator<<(std::ostream &os, optional_field const &of)
+	{
+		auto visitor(aggregate{
+			[&os]<char t_type_code>(auto const &val) requires (!('H' == t_type_code || 'B' == t_type_code)) { os << val; }, // Not array.
+			[&os]<char t_type_code>(auto const &vec) requires ('H' == t_type_code) {
+				os << std::hex;
+				for (auto const val : vec)
+					os << +val;
+				os << std::dec;
+			},
+			[&os]<char t_type_code, typename t_type>(t_type const &vec) requires ('B' == t_type_code) {
+				typedef typename t_type::element_type element_type;
+				os << optional_field::array_type_code_v <element_type>;
+				for (auto const val : vec)
+					os << ',' << val;
+			}
+		});
+		
+		bool is_first{true};
+		for (auto const &tr : of.m_tag_ranks)
+		{
+			if (is_first)
+				is_first = false;
+			else
+				os << '\t';
+			
+			os << char(tr.tag_id >> 8) << char(tr.tag_id & 0xff) << ':' << optional_field::type_codes[tr.type_index] << ':';
+			
+		}
+		
+		return os;
+	}
+	
+	
 	void reader::sort_reference_sequence_identifiers(header &header_) const
 	{
 		header_.reference_sequence_identifiers.clear();

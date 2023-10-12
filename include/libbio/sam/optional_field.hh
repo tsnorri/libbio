@@ -83,6 +83,8 @@ namespace libbio::sam {
 	
 	class optional_field
 	{
+		friend std::ostream &operator<<(std::ostream &, optional_field const &);
+		
 	public:
 		template <typename t_type>
 		using value_vector = std::vector <t_type>;
@@ -189,6 +191,9 @@ namespace libbio::sam {
 		template <typename t_visitor>
 		void visit(tag_rank const &tr, t_visitor &&visitor) const;
 	};
+	
+	
+	std::ostream &operator<<(std::ostream &os, optional_field const &of);
 	
 	
 	template <typename t_type, typename t_value>

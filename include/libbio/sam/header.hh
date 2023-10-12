@@ -100,6 +100,19 @@ namespace libbio::sam {
 	};
 	
 	
+	char const *to_chars(sort_order_type const);
+	char const *to_chars(grouping_type const);
+	
+	std::ostream &operator<<(std::ostream &os, sort_order_type const so) { os << to_chars(so); return os; }
+	std::ostream &operator<<(std::ostream &os, grouping_type const go) { os << to_chars(go); return os; }
+	std::ostream &operator<<(std::ostream &os, reference_sequence_entry const &ref_seq);
+	std::ostream &operator<<(std::ostream &os, read_group_entry const &ref_seq);
+	std::ostream &operator<<(std::ostream &os, program_entry const &ref_seq);
+	std::ostream &operator<<(std::ostream &os, header const &);
+	
+	void output_record(std::ostream &os, header const &header_, record const &record);
+	
+	
 	void header::clear()
 	{
 		reference_sequences.clear();
