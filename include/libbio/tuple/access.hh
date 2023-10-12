@@ -66,6 +66,19 @@ namespace libbio::tuples {
 	
 	template <std::size_t t_idx, typename t_tuple, typename t_missing = void>
 	using conditional_element_t = conditional_element <t_idx, t_tuple, t_missing>::type;
+	
+	
+	template <typename, template <typename...> typename>
+	struct forward {};
+	
+	template <typename... t_args, template <typename...> typename t_target>
+	struct forward <std::tuple <t_args...>, t_target>
+	{
+		typedef t_target <t_args...> type;
+	};
+	
+	template <typename t_type, template <typename...> typename t_target>
+	using forward_t = forward <t_type, t_target>::type;
 }
 
 #endif
