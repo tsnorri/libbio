@@ -239,8 +239,15 @@ namespace libbio { namespace sam {
 		swap(std::get <QUAL>(src), dst.qual);
 		swap(std::get <OPTIONAL>(src), dst.optional_fields);
 		
+		if ("*" == dst.qname) dst.qname.clear();
+		if ("*" == std::string_view(dst.seq.begin(), dst.seq.end())) dst.seq.clear();
+		if ("*" == std::string_view(dst.qual.begin(), dst.qual.end())) dst.qual.clear();
+		
 		dst.rname_id = header_.find_reference(std::get <RNAME>(src));
-		dst.rnext_id = header_.find_reference(std::get <RNEXT>(src));
+		if ("=" == std::get <RNEXT>(src))
+			dst.rnext_id = dst.rname_id;
+		else
+			dst.rnext_id = header_.find_reference(std::get <RNEXT>(src));
 		
 		dst.pos = std::get <POS>(src);
 		dst.pnext = std::get <PNEXT>(src);
