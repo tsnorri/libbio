@@ -44,6 +44,9 @@ namespace libbio::sam {
 		position_type			length{};
 		molecule_topology_type	molecule_topology{molecule_topology_type::linear};
 		// FIXME: continue.
+		
+		auto as_tuple() const { return std::tie(name, length, molecule_topology); }
+		bool operator==(reference_sequence_entry const &other) const { return as_tuple() == other.as_tuple(); }
 	};
 	
 	
