@@ -188,8 +188,8 @@ namespace libbio::sam {
 		template <typename t_type> t_type *get(tag_id_type const tag) { return do_get <t_type>(*this, tag); }
 		template <typename t_type> t_type const *get(tag_id_type const tag) const { return do_get <t_type const>(*this, tag); }
 		
-		template <typename t_visitor>
-		void visit(tag_rank const &tr, t_visitor &&visitor) const;
+		template <typename t_return, typename t_visitor>
+		t_return visit(tag_rank const &tr, t_visitor &&visitor) const;
 		
 		bool operator==(optional_field const &other) const;
 	};
@@ -241,14 +241,18 @@ namespace libbio::sam {
 	}
 	
 	
-	template <typename t_visitor>
-	void optional_field::visit(tag_rank const &tr, t_visitor &&visitor) const
+	template <typename t_return, typename t_visitor>
+	t_return optional_field::visit(tag_rank const &tr, t_visitor &&visitor) const
 	{
-		auto visitor_caller([this, rank = tr.rank, &visitor]<typename t_idx_type> {
+		auto visitor_caller([this, rank = tr.rank, &visitor]<typename t_idx_type> -> t_return {
 			constexpr auto const idx{t_idx_type::value};
 			constexpr auto const type_code{type_codes[idx]};
 			// Pass the type code as a template parameter to the visitor.
-			visitor.template operator()<idx, type_code>(std::get <idx>(m_values)[rank]);
+			auto &val(std::get <idx>(m_values)[rank]);
+			if (std::is_void_v <t_return>)
+				visitor.template operator()<idx, type_code>(val);
+			else
+				return visitor.template operator()<idx, type_code>(val);
 		});
 		
 		typedef detail::callback_table_builder <
@@ -257,7 +261,10 @@ namespace libbio::sam {
 		> callback_table_type;
 		
 		constexpr auto const &fns(callback_table_type::fns);
-		(visitor_caller.*fns[tr.type_index])();
+		if (std::is_void_v <t_return>)
+			(visitor_caller.*fns[tr.type_index])();
+		else
+			return (visitor_caller.*fns[tr.type_index])();
 	}
 }
 

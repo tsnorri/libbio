@@ -209,7 +209,7 @@ namespace libbio::sam {
 				os << '\t';
 			
 			os << char(tr.tag_id >> 8) << char(tr.tag_id & 0xff) << ':' << optional_field::type_codes[tr.type_index] << ':';
-			of.visit(tr, visitor);
+			of.visit <void>(tr, visitor);
 		}
 		
 		return os;
@@ -299,14 +299,12 @@ namespace libbio::sam {
 			if (lhsr.tag_id != rhsr.tag_id) return false;
 			if (lhsr.type_index != rhsr.type_index) return false;
 			
-			bool status{true};
-			auto do_cmp([this, &rhsr, &status]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &lhs_val){
+			auto do_cmp([this, &rhsr]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &lhs_val){
 				auto const &rhs_val(std::get <t_idx>(m_values)[rhsr.rank]);
-				status = lhs_val == rhs_val;
+				return lhs_val == rhs_val;
 			});
 			
-			visit(lhsr, do_cmp);
-			if (!status)
+			if (!visit <bool>(lhsr, do_cmp))
 				return false;
 		}
 		
