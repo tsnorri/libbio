@@ -21,6 +21,8 @@ namespace libbio::sam {
 	
 	constexpr static inline reference_id_type const INVALID_REFERENCE_ID{std::numeric_limits <reference_id_type>::max()};
 	
+	struct header; // Fwd.
+	
 	
 	struct record
 	{
@@ -41,6 +43,10 @@ namespace libbio::sam {
 		std::uint16_t			flag{};
 		mapping_quality_type	mapq{};
 	};
+	
+	
+	// Compares records.
+	bool is_equal(header const &lhsh, header const &rhsh, record const &lhsr, record const &rhsr);
 }
 
 #endif

@@ -6,6 +6,7 @@
 #include <algorithm>				// std::sort
 #include <libbio/sam/reader.hh>
 #include <range/v3/view/enumerate.hpp>
+#include <range/v3/view/zip.hpp>
 
 namespace rsv	= ranges::views;
 
@@ -184,14 +185,14 @@ namespace libbio::sam {
 	std::ostream &operator<<(std::ostream &os, optional_field const &of)
 	{
 		auto visitor(aggregate{
-			[&os]<char t_type_code>(auto const &val) requires (!('H' == t_type_code || 'B' == t_type_code)) { os << val; }, // Not array.
-			[&os]<char t_type_code>(auto const &vec) requires ('H' == t_type_code) {
+			[&os]<std::size_t t_idx, char t_type_code>(auto const &val) requires (!('H' == t_type_code || 'B' == t_type_code)) { os << val; }, // Not array.
+			[&os]<std::size_t t_idx, char t_type_code>(auto const &vec) requires ('H' == t_type_code) {
 				os << std::hex;
 				for (auto const val : vec)
 					os << int(val);
 				os << std::dec;
 			},
-			[&os]<char t_type_code, typename t_type>(t_type const &vec) requires ('B' == t_type_code) {
+			[&os]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &vec) requires ('B' == t_type_code) {
 				typedef typename t_type::value_type element_type;
 				os << optional_field::array_type_code_v <element_type>;
 				for (auto const val : vec)
@@ -266,5 +267,49 @@ namespace libbio::sam {
 		swap(std::get <SEQ>(dst), src.seq);
 		swap(std::get <QUAL>(dst), src.qual);
 		swap(std::get <OPTIONAL>(dst), src.optional_fields);
+	}
+	
+	
+	bool is_equal(header const &lhsh, header const &rhsh, record const &lhsr, record const &rhsr)
+	{
+		auto const directly_comparable_to_tuple([](record const &rec){
+			return std::tie(rec.qname, rec.cigar, rec.seq, rec.qual, rec.pos, rec.pnext, rec.tlen, rec.flag, rec.mapq);
+		});
+		
+		if (directly_comparable_to_tuple(lhsr) != directly_comparable_to_tuple(rhsr))
+			return false;
+		
+		if (lhsh.reference_sequences[lhsr.rname_id] != rhsh.reference_sequences[rhsr.rname_id])
+			return false;
+		
+		if (lhsh.reference_sequences[lhsr.rnext_id] != rhsh.reference_sequences[rhsr.rnext_id])
+			return false;
+		
+		return lhsr.optional_fields == rhsr.optional_fields;
+	}
+	
+	
+	bool optional_field::operator==(optional_field const &other) const
+	{
+		if (m_tag_ranks.size() != other.m_tag_ranks.size())
+			return false;
+		
+		for (auto const &[lhsr, rhsr] : rsv::zip(m_tag_ranks, other.m_tag_ranks))
+		{
+			if (lhsr.tag_id != rhsr.tag_id) return false;
+			if (lhsr.type_index != rhsr.type_index) return false;
+			
+			bool status{true};
+			auto do_cmp([this, &rhsr, &status]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &lhs_val){
+				auto const &rhs_val(std::get <t_idx>(m_values)[rhsr.rank]);
+				status = lhs_val == rhs_val;
+			});
+			
+			visit(lhsr, do_cmp);
+			if (!status)
+				return false;
+		}
+		
+		return true;
 	}
 }

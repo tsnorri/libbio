@@ -190,6 +190,8 @@ namespace libbio::sam {
 		
 		template <typename t_visitor>
 		void visit(tag_rank const &tr, t_visitor &&visitor) const;
+		
+		bool operator==(optional_field const &other) const;
 	};
 	
 	
@@ -246,7 +248,7 @@ namespace libbio::sam {
 			constexpr auto const idx{t_idx_type::value};
 			constexpr auto const type_code{type_codes[idx]};
 			// Pass the type code as a template parameter to the visitor.
-			visitor.template operator()<type_code>(std::get <idx>(m_values)[rank]);
+			visitor.template operator()<idx, type_code>(std::get <idx>(m_values)[rank]);
 		});
 		
 		typedef detail::callback_table_builder <
