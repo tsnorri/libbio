@@ -59,6 +59,8 @@ namespace rc {
 							{
 								retval.values.emplace_back(*gen::arbitrary <t_type>()); // Needs a converting constructor.
 							}
+							
+							return true;
 						});
 						return retval;
 					}),
