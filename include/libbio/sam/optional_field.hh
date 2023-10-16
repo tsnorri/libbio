@@ -9,6 +9,7 @@
 #include <array>
 #include <libbio/assert.hh>
 #include <libbio/generic_parser.hh>
+#include <libbio/sam/input_range.hh>
 #include <libbio/tuple.hh>
 #include <range/v3/view/take_exactly.hpp>
 
@@ -29,8 +30,9 @@ namespace libbio::sam::detail {
 	struct vector_container
 	{
 		std::vector <t_type>	values;
-		std::size_t				size{};
+		std::size_t				size_{};
 		
+		std::size_t size() const { return size_; }
 		void clear();
 		t_type &operator[](std::size_t const idx) { return values[idx]; }
 		t_type const &operator[](std::size_t const idx) const { return values[idx]; }
@@ -57,11 +59,11 @@ namespace libbio::sam::detail {
 	{
 		if constexpr (t_should_clear_elements)
 		{
-			for (auto &val : values | ranges::views::take_exactly(size))
+			for (auto &val : values | ranges::views::take_exactly(size_))
 				val.clear();
 		}
 		
-		size = 0;
+		size_ = 0;
 	}
 	
 	
@@ -69,12 +71,12 @@ namespace libbio::sam::detail {
 	template <typename ... t_args>
 	auto vector_container <t_type, t_should_clear_elements>::emplace_back(t_args && ... args) -> t_type &
 	{
-		if (size < values.size())
-			values[size] = std::forward <t_args...>(args...);
+		if (size_ < values.size())
+			values[size_] = t_type(std::forward <t_args>(args)...);
 		else
-			values.emplace_back(std::forward <t_args...>(args...));
+			values.emplace_back(std::forward <t_args>(args)...);
 		
-		return values[size++];
+		return values[size_++];
 	}
 }
 
@@ -83,13 +85,13 @@ namespace libbio::sam {
 	
 	class optional_field
 	{
+		friend void read_optional_fields(input_range_base &range, optional_field &dst);
 		friend std::ostream &operator<<(std::ostream &, optional_field const &);
 		
 	public:
 		template <typename t_type>
 		using value_vector = std::vector <t_type>;
 		
-	private:
 		template <typename t_type>
 		using array_vector = detail::vector_container <value_vector <t_type>>;
 		
@@ -105,7 +107,6 @@ namespace libbio::sam {
 			container_of_t <t_type>
 		>;
 		
-	private:
 		typedef std::uint16_t							tag_id_type;
 		typedef std::uint16_t							tag_count_type;	// We assume that there will not be more than 65536 tags.
 		struct tag_rank
@@ -130,6 +131,8 @@ namespace libbio::sam {
 		// We use std::tuple b.c. std::get can be used to get the element of a given type.
 		static_assert(!std::is_same_v <std::byte, std::int8_t>); // Just to make sure.
 		static_assert(!std::is_same_v <std::byte, std::uint8_t>);
+		
+	public:
 		typedef std::tuple <
 			container_of_t <char>,
 			container_of_t <std::int32_t>,	// Type from BAM, see SAM 1.0, footnote 16.
@@ -145,12 +148,15 @@ namespace libbio::sam {
 			array_vector <float>
 		> value_tuple_type;
 		
+	private:
 		template <char t_type_code>
 		using array_type_code_helper_t = std::integral_constant <char, t_type_code>;
 		
 	public:
 		constexpr static std::array type_codes{'A', 'i', 'f', 'Z', 'H', 'B', 'B', 'B', 'B', 'B', 'B', 'B'};
+		constexpr static std::array array_type_codes{'\0', '\0', '\0', '\0', '\0', 'c', 'C', 's', 'S', 'i', 'I', 'f'};
 		static_assert(std::tuple_size_v <value_tuple_type> == type_codes.size());
+		static_assert(array_type_codes.size() == type_codes.size());
 		
 		template <typename t_type> struct array_type_code {};
 		template <> struct array_type_code <std::int8_t>	: public array_type_code_helper_t <'c'> {};
@@ -184,6 +190,14 @@ namespace libbio::sam {
 		static inline t_type *do_get(t_optional_field &&of, tag_id_type const tag);
 		
 	public:
+		optional_field() = default;
+		
+		optional_field(tag_rank_vector &&tag_ranks, value_tuple_type &&values):	// For unit tests.
+			m_tag_ranks(std::move(tag_ranks)),
+			m_values(std::move(values))
+		{
+		}
+		
 		void clear() { m_tag_ranks.clear(); tuples::for_each(m_values, []<typename t_idx>(auto &element){ element.clear(); }); }
 		template <typename t_type> t_type *get(tag_id_type const tag) { return do_get <t_type>(*this, tag); }
 		template <typename t_type> t_type const *get(tag_id_type const tag) const { return do_get <t_type const>(*this, tag); }
