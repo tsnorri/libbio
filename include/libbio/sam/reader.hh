@@ -45,7 +45,7 @@ namespace libbio::sam {
 		
 		template <typename t_range, typename t_cb>
 		void read_records(header const &, t_range &&, t_cb &&) const
-		requires std::derived_from <t_range, input_range_base>;
+		requires std::derived_from <std::remove_cvref_t <t_range>, input_range_base>;
 		
 		template <typename t_cb>
 		inline void read_records(header const &header_, file_handle &fh, t_cb &&cb) const;
@@ -54,7 +54,7 @@ namespace libbio::sam {
 	
 	template <typename t_range, typename t_cb>
 	void reader::read_records(header const &header_, t_range &&range, t_cb &&cb) const
-	requires std::derived_from <t_range, input_range_base>
+	requires std::derived_from <std::remove_cvref_t <t_range>, input_range_base>
 	{
 		parser_type parser;
 		parser_type::record_type rec;
