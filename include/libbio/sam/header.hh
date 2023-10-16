@@ -49,6 +49,8 @@ namespace libbio::sam {
 		bool operator==(reference_sequence_entry const &other) const { return as_tuple() == other.as_tuple(); }
 	};
 	
+	typedef std::vector <reference_sequence_entry> reference_sequence_entry_vector;
+	
 	
 	struct read_group_entry
 	{
@@ -56,6 +58,8 @@ namespace libbio::sam {
 		std::string	description;
 		// FIXME: continue.
 	};
+	
+	typedef std::vector <read_group_entry> read_group_entry_vector;
 	
 	
 	struct program_entry
@@ -67,6 +71,8 @@ namespace libbio::sam {
 		std::string	description;
 		std::string	version;
 	};
+	
+	typedef std::vector <program_entry> program_entry_vector;
 	
 	
 	struct header
@@ -85,9 +91,9 @@ namespace libbio::sam {
 			bool operator()(std::string_view const &lhs, reference_sequence_identifier_type const &rhs) const { return lhs < *rhs.first; }
 		};
 		
-		std::vector <reference_sequence_entry>	reference_sequences;
-		std::vector <read_group_entry>			read_groups;
-		std::vector <program_entry>				programs;
+		reference_sequence_entry_vector			reference_sequences;
+		read_group_entry_vector					read_groups;
+		program_entry_vector					programs;
 		std::vector <std::string>				comments;
 		reference_sequence_identifier_vector	reference_sequence_identifiers;
 		
@@ -106,8 +112,8 @@ namespace libbio::sam {
 	char const *to_chars(sort_order_type const);
 	char const *to_chars(grouping_type const);
 	
-	std::ostream &operator<<(std::ostream &os, sort_order_type const so) { os << to_chars(so); return os; }
-	std::ostream &operator<<(std::ostream &os, grouping_type const go) { os << to_chars(go); return os; }
+	inline std::ostream &operator<<(std::ostream &os, sort_order_type const so) { os << to_chars(so); return os; }
+	inline std::ostream &operator<<(std::ostream &os, grouping_type const go) { os << to_chars(go); return os; }
 	std::ostream &operator<<(std::ostream &os, reference_sequence_entry const &ref_seq);
 	std::ostream &operator<<(std::ostream &os, read_group_entry const &ref_seq);
 	std::ostream &operator<<(std::ostream &os, program_entry const &ref_seq);
