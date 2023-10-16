@@ -16,6 +16,7 @@ OBJECTS		=	bed_reader.o \
 				sam_reader.o \
 				sam_reader_header_parser.o \
 				sam_reader_input_range.o \
+				sam_reader_optional_field_parser.o \
 				sequence_container.o \
 				sequence_reader.o \
 				subprocess.o \
