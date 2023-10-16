@@ -24,6 +24,13 @@
 
 namespace libbio::markov_chains::detail {
 	
+	constexpr inline bool compare_fp(double const lhs, double const rhs, double const epsilon)
+	{
+		// C++23’s constexpr std::fabs might not be available.
+		return -epsilon < (lhs - rhs) && (lhs - rhs) < epsilon;
+	}
+	
+	
 	template <typename, typename> struct callback_table_builder {};
 	
 	template <typename t_callback, typename... t_args>
@@ -63,8 +70,55 @@ namespace libbio::markov_chains {
 	};
 	
 	
+	template <typename... t_lists>
+	using join_transition_lists = tuples::forward_t <tuples::cat_t <typename t_lists::transitions_type...>, transition_list>;
+	
+	
+	template <typename t_initial_state, detail::wrapped_double t_total_probability, typename... t_others>
+	struct transitions_to_any
+	{
+		typedef std::tuple <t_others...>	non_initial_states_type;
+		constexpr static inline auto const other_count{sizeof...(t_others)};
+		
+		template <typename t_state>
+		using from_initial_t = transition <t_initial_state, t_state, t_total_probability / other_count>;
+		
+		typedef tuples::map_t <non_initial_states_type, from_initial_t>	transitions_type;
+	};
+	
+	
+	template <typename t_target_state, detail::wrapped_double t_probability, typename... t_states>
+	struct transitions_from_any
+	{
+		template <typename t_state>
+		using from_t = transition <t_state, t_target_state, t_probability>;
+		
+		typedef tuples::map_t <std::tuple <t_states...>, from_t>	transitions_type;
+	};
+	
+	
+	template <detail::wrapped_double t_total_probability, typename... t_transitions>
+	struct transitions_between_any
+	{
+		typedef std::tuple <t_transitions...>	given_transitions_type;
+		constexpr static inline auto const transition_count_1{sizeof...(t_transitions) - 1};
+		
+		template <typename t_src, typename t_dst>
+		using transition_t = transition <t_src, t_dst, t_total_probability / transition_count_1>;
+		
+		// Determine the cross product, then remove pairs of the same type.
+		typedef tuples::map_t <
+			tuples::filter_t <
+				tuples::cross_product_t <given_transitions_type, given_transitions_type, std::tuple>,
+				tuples::negation <tuples::forward_to <std::is_same>::template parameters_of_t>::with
+			>,
+			tuples::forward_to <transition_t>::template parameters_of_t
+		>										transitions_type;
+	};
+	
+	
 	template <typename t_initial_state, typename... t_others>
-	struct transition_to_any_other
+	struct transition_list_with_to_any_other
 	{
 		typedef std::tuple <t_others...>		non_initial_states_type;
 		constexpr static inline auto const other_count{sizeof...(t_others)};
@@ -80,8 +134,8 @@ namespace libbio::markov_chains {
 		
 		// Determine the cross product, then remove pairs of the same type.
 		// Finally make the transitions.
-		typedef tuples::map <
-			tuples::filter <
+		typedef tuples::map_t <
+			tuples::filter_t <
 				tuples::cross_product_t <non_initial_states_type, non_initial_states_type, std::tuple>,
 				tuples::negation <std::is_same>::with
 			>,
@@ -151,8 +205,7 @@ namespace libbio::markov_chains::detail {
 	template <typename t_transitions>
 	struct transition_probability_cs_check
 	{
-		// FIXME: compare with some epsilon since we calculate a sum of floating point values?
-		static_assert(1.0 == tuples::last_t <t_transitions>::probability);
+		static_assert(detail::compare_fp(1.0, tuples::last_t <t_transitions>::probability, 0.000001)); // FIXME: better epsilon?
 		typedef t_transitions transitions_type;
 	};
 	
@@ -309,7 +362,9 @@ namespace libbio::markov_chains {
 			node_type current_node{initial_state};
 			
 			libbio_assert_lt(current_node, fns.size());
-			(visitor.*(fns[current_node]))();
+			if (!(visitor.*(fns[current_node]))())
+				return;
+			
 			for (auto const &prob : probabilities)
 			{
 				transition_key const key{prob, current_node};
@@ -324,7 +379,8 @@ namespace libbio::markov_chains {
 				libbio_assert_neq(transitions.cend(), it);
 				current_node = it->second;
 				libbio_assert_lt(current_node, fns.size());
-				(visitor.*(fns[current_node]))();
+				if (!(visitor.*(fns[current_node]))())
+					return;
 			}
 		}
 		
@@ -340,6 +396,7 @@ namespace libbio::markov_chains {
 					retval.values.emplace_back(std::make_unique <t_type>());
 				else
 					retval.values.emplace_back(t_type{}); // Needs a converting constructor.
+				return true;
 			});
 			return retval;
 		}
