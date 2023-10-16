@@ -19,21 +19,6 @@ namespace libbio::tuples::detail {
 	{
 		typedef t_type	wrapped_type;
 	};
-	
-	
-	template <typename>
-	struct visit_parameters {};
-	
-	
-	template <typename... t_args>
-	struct visit_parameters <std::tuple <t_args...>>
-	{
-		template <typename t_fn>
-		consteval static decltype(auto) call(t_fn &&fn)
-		{
-			return fn.template operator() <t_args...>();
-		}
-	};
 }
 
 
@@ -70,14 +55,6 @@ namespace libbio::tuples {
 	
 	template <template <typename...> typename t_fn, typename t_acc, typename t_tuple>
 	using foldl_t = typename foldl <t_fn, t_acc, t_tuple>::type;
-	
-	
-	// Access the parameters for use with e.g. a fold expression.
-	template <typename t_tuple, typename t_fn>
-	consteval inline decltype(auto) visit_parameters(t_fn &&fn)
-	{
-		return detail::visit_parameters <t_tuple>::call(fn);
-	}
 }
 
 #endif

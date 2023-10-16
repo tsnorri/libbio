@@ -9,6 +9,29 @@
 #include <tuple>
 
 
+namespace libbio::tuples::detail {
+	template <typename>
+	struct visit_parameters {};
+	
+	
+	template <typename... t_args>
+	struct visit_parameters <std::tuple <t_args...>>
+	{
+		template <typename t_fn>
+		consteval static decltype(auto) all(t_fn &&fn)
+		{
+			return fn.template operator() <t_args...>();
+		}
+		
+		template <typename t_fn>
+		constexpr static void each(t_fn &&fn)
+		{
+			(fn.template operator() <t_args>(), ...);
+		}
+	};
+}
+
+
 namespace libbio::tuples {
 	
 	// Nicer accessors and constants.
@@ -79,6 +102,21 @@ namespace libbio::tuples {
 	
 	template <typename t_type, template <typename...> typename t_target>
 	using forward_t = forward <t_type, t_target>::type;
+	
+	
+	// Access the parameters for use with e.g. a fold expression.
+	template <typename t_tuple, typename t_fn>
+	consteval inline decltype(auto) visit_all_parameters(t_fn &&fn)
+	{
+		return detail::visit_parameters <t_tuple>::all(fn);
+	}
+	
+	
+	template <typename t_tuple, typename t_fn>
+	constexpr inline void visit_parameters(t_fn &&fn)
+	{
+		detail::visit_parameters <t_tuple>::each(fn);
+	}
 }
 
 #endif
