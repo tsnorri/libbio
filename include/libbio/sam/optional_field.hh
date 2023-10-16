@@ -175,8 +175,14 @@ namespace libbio::sam {
 		value_tuple_type	m_values;
 		
 	private:
+		template <typename t_type>
+		inline t_type &prepare_for_adding(tag_id_type const tag_id);
+		
 		template <typename t_type, typename t_value>
 		inline void add_value(tag_id_type const tag_id, t_value &&val);
+		
+		inline void start_string(tag_id_type const tag_id);
+		inline std::string &current_string_value() { return std::get <container_of_t <std::string>>(m_values).values.back(); }
 		
 		template <typename t_type>
 		inline void start_array(tag_id_type const tag_id);
@@ -212,24 +218,35 @@ namespace libbio::sam {
 	std::ostream &operator<<(std::ostream &os, optional_field const &of);
 	
 	
+	template <typename t_type>
+	auto optional_field::prepare_for_adding(tag_id_type const tag_id) -> t_type &
+	{
+		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, t_type>};
+		auto &dst(std::get <t_type>(m_values));
+		m_tag_ranks.emplace_back(tag_id, idx, dst.size());
+		return dst;
+	}
+	
+	
 	template <typename t_type, typename t_value>
 	void optional_field::add_value(tag_id_type const tag_id, t_value &&val)
 	{
-		typedef container_of_t <t_type> container_type;
-		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, container_type>};
-		auto &dst(std::get <container_type>(m_values));
-		m_tag_ranks.emplace_back(tag_id, idx, dst.size());
+		auto &dst(prepare_for_adding <container_of_t <t_type>>(tag_id));
 		dst.emplace_back(std::forward <t_value>(val));
+	}
+	
+	
+	void optional_field::start_string(tag_id_type const tag_id)
+	{
+		auto &dst(prepare_for_adding <container_of_t <std::string>>(tag_id));
+		dst.emplace_back();
 	}
 	
 	
 	template <typename t_type>
 	void optional_field::start_array(tag_id_type const tag_id)
 	{
-		typedef array_vector <t_type> container_type;
-		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, container_type>};
-		auto &dst(std::get <container_type>(m_values));
-		m_tag_ranks.emplace_back(tag_id, idx, dst.size());
+		auto &dst(prepare_for_adding <array_vector <t_type>>(tag_id));
 		dst.emplace_back();
 	}
 	

@@ -8,9 +8,6 @@
 #include <libbio/sam/reader.hh>
 
 
-#define CURRENT_STRING	(std::string_view{start, fsm.it + 1})
-
-
 %% machine sam_optional_field_parser;
 %% write data;
 
@@ -20,7 +17,6 @@ namespace libbio::sam {
 	void read_optional_fields(input_range_base &fsm, optional_field &dst)
 	{
 		optional_field::tag_id_type	tag_id{};
-		char const					*start{};
 		std::int64_t				integer{};
 		bool						integer_is_negative{};
 		std::string					fp_buffer{};
@@ -80,9 +76,11 @@ namespace libbio::sam {
 				dst.add_value <float>(tag_id, fp);
 			}
 			
-			action start_string { start = fpc; }
-			action finish_string {
-				dst.add_value <std::string>(tag_id, CURRENT_STRING);
+			action start_string {
+				dst.start_string(tag_id);
+			}
+			action update_string {
+				dst.current_string_value().push_back(fc);
 			}
 			
 			action start_byte { byte = std::byte{}; }
@@ -101,7 +99,7 @@ namespace libbio::sam {
 			float_				= (sign? [0-9]* [.]? [0-9]+ ([eE] sign? [0-9]+)?) >(start_float) $(update_float);
 			integer				= integer_ %(finish_integer);
 			float				= float_ %(finish_float);
-			string				= [ !-~]* >(start_string) %(finish_string);
+			string				= [ !-~]* >(start_string) @(update_string);
 			byte				= ([0-9] %(byte_n) | [A-F] %(byte_a));
 			byte_array			= ((byte %(byte_1) byte) >(start_byte) %(update_byte_array))* >(start_byte_array);
 			# The way I read the specification, the parser is not needed to round fp values to integers if the array is declared to contain integers. Hence I should use fp syntex only for the fp array.
