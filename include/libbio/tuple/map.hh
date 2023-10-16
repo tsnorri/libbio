@@ -13,7 +13,7 @@
 namespace libbio::tuples {
 	
 	template <typename T, template <typename...> typename>
-	requires (is_tuple_v <T>  || is_index_sequence_v <T>)
+	requires (is_tuple_v <T> || is_index_sequence_v <T>)
 	struct map {};
 	
 	template <typename... t_args, template <typename...> typename t_fn>
