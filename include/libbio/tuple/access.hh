@@ -104,6 +104,23 @@ namespace libbio::tuples {
 	using forward_t = forward <t_type, t_target>::type;
 	
 	
+	template <template <typename...> typename t_tpl>
+	struct forward_to
+	{
+		template <typename t_type>
+		struct parameters_of {};
+		
+		template <typename... t_args>
+		struct parameters_of <std::tuple <t_args...>>
+		{
+			typedef t_tpl <t_args...> type;
+		};
+		
+		template <typename t_type>
+		using parameters_of_t = parameters_of <t_type>::type;
+	};
+	
+	
 	// Access the parameters for use with e.g. a fold expression.
 	template <typename t_tuple, typename t_fn>
 	consteval inline decltype(auto) visit_all_parameters(t_fn &&fn)
