@@ -48,6 +48,43 @@ namespace libbio::markov_chains::detail {
 		/* implicit */ constexpr wrapped_double(double const value_): value(value_) {}
 		/* implicit */ constexpr operator double() const { return value; }
 	};
+	
+	
+	// Using tuples::cross_product_t was quite slow, so here is a faster implementation of filtering for transitions_between_any.
+	template <std::size_t t_idx>
+	struct index {};
+	
+	template <std::size_t... t_idxs>
+	struct index_sequence {};
+	
+	template <typename> struct make_index_sequence_from_std {};
+	
+	template <std::size_t... t_idxs>
+	struct make_index_sequence_from_std <std::index_sequence <t_idxs...>>
+	{
+		typedef index_sequence <t_idxs...> type;
+	};
+	
+	template <typename t_type>
+	using make_index_sequence_from_std_t = make_index_sequence_from_std <t_type>::type;
+	
+	template <std::size_t... t_lhs, std::size_t... t_rhs>
+	constexpr index_sequence <t_lhs..., t_rhs...> operator+(index_sequence <t_lhs...>, index_sequence <t_rhs...>) { return {}; }
+	
+	template <std::size_t t_idx, typename t_filter>
+	constexpr auto filter_one(index <t_idx>, t_filter predicate)
+	{
+		if constexpr (predicate(t_idx))
+			return index_sequence <t_idx>{};
+		else
+			return index_sequence{};
+	}
+	
+	template <std::size_t... t_idxs, typename t_filter>
+	constexpr auto filter(index_sequence <t_idxs...>, t_filter predicate)
+	{
+		return (filter_one(index <t_idxs>{}, predicate) + ...);
+	}
 }
 
 
@@ -101,25 +138,43 @@ namespace libbio::markov_chains {
 	struct transitions_between_any
 	{
 		typedef std::tuple <t_transitions...>	given_transitions_type;
-		constexpr static inline auto const transition_count_1{sizeof...(t_transitions) - 1};
+		constexpr static inline auto const transition_count{sizeof...(t_transitions)};
+		constexpr static inline auto const transition_count_1{transition_count - 1};
 		
 		template <typename t_src, typename t_dst>
 		using transition_t = transition <t_src, t_dst, t_total_probability / transition_count_1>;
 		
-		// Determine the cross product, then remove pairs of the same type.
-		typedef tuples::map_t <
-			tuples::filter_t <
-				tuples::cross_product_t <given_transitions_type, given_transitions_type, std::tuple>,
-				tuples::negation <tuples::forward_to <std::is_same>::template parameters_of_t>::with
-			>,
-			tuples::forward_to <transition_t>::template parameters_of_t
-		>										transitions_type;
+		template <std::size_t t_idx>
+		struct transition_at_index
+		{
+			typedef std::tuple_element_t <t_idx / transition_count, given_transitions_type> lhs_type;
+			typedef std::tuple_element_t <t_idx % transition_count, given_transitions_type> rhs_type;
+			typedef transition_t <lhs_type, rhs_type> type;
+		};
+		
+		template <typename t_type> struct tuple_type {};
+		
+		template <std::size_t... t_idxs>
+		struct tuple_type <detail::index_sequence <t_idxs...>>
+		{
+			typedef std::tuple <typename transition_at_index <t_idxs>::type...> type;
+		};
+		
+		// Determine the cross product, then remove pairs of the same type as indicated by the index.
+		constexpr static auto const indices{detail::filter(
+			detail::make_index_sequence_from_std_t <std::make_index_sequence <transition_count * transition_count>>{},
+			[](std::size_t const idx) constexpr {
+				return idx / transition_count != idx % transition_count;
+			}
+		)};
+		typedef tuple_type <std::remove_cvref_t <decltype(indices)>>::type transitions_type;
 	};
 	
 	
 	template <typename t_initial_state, typename... t_others>
 	struct transition_list_with_to_any_other
 	{
+		// FIXME: Use the same approach as in transitions_between_any.
 		typedef std::tuple <t_others...>		non_initial_states_type;
 		constexpr static inline auto const other_count{sizeof...(t_others)};
 		constexpr static inline auto const other_count_1{other_count - 1};
