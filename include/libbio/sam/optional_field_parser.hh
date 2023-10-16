@@ -11,7 +11,7 @@
 
 
 namespace libbio::sam {
-	void read_optional_fields(optional_field &dst, input_range_base &range);
+	void read_optional_fields(input_range_base &range, optional_field &dst);
 }
 
 
@@ -34,7 +34,7 @@ namespace libbio::sam::fields {
 					return {};
 			}
 			
-			read_optional_fields(dst, range);
+			read_optional_fields(range, dst);
 			
 			// If read_optional_fields_() does not throw, the final newline has been matched.
 			constexpr auto const retval{t_delimiter::template index_of_v <parsing::delimiter_type('\n')>};

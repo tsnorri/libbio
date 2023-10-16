@@ -3,12 +3,12 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <libbio/sam/optional_field.hh>
+#include <libbio/sam/optional_field_parser.hh>
 #include <libbio/sam/parse_error.hh>
 #include <libbio/sam/reader.hh>
 
 
-#define CURRENT_STRING	(std::string_view{start, fsm.p + 1})
+#define CURRENT_STRING	(std::string_view{start, fsm.it + 1})
 
 
 %% machine sam_optional_field_parser;
@@ -17,7 +17,7 @@
 
 namespace libbio::sam {
 	
-	void reader::read_optional_fields(optional_field &dst, range_base &fsm) const
+	void read_optional_fields(input_range_base &fsm, optional_field &dst)
 	{
 		optional_field::tag_id_type	tag_id{};
 		char const					*start{};
@@ -51,7 +51,7 @@ namespace libbio::sam {
 			}
 			
 			action handle_character {
-				dst.add_value <char>(fc);
+				dst.add_value <char>(tag_id, fc);
 			}
 			
 			action integer_is_negative { integer_is_negative = true; }
@@ -66,11 +66,11 @@ namespace libbio::sam {
 				integer_is_negative = false;
 			}
 			action finish_integer {
-				dst.add_value <std::int32_t>(integer);
+				dst.add_value <std::int32_t>(tag_id, integer);
 			}
 			
 			action start_float { fp_buffer.clear(); }
-			action update_float { fp_buffer.emplace_back(fc); }
+			action update_float { fp_buffer.push_back(fc); }
 			action finish_float_ {
 				fp = 0;
 				if (!boost::spirit::qi::parse(fp_buffer.begin(), fp_buffer.end(), boost::spirit::qi::float_, fp))
@@ -82,12 +82,12 @@ namespace libbio::sam {
 			
 			action start_string { start = fpc; }
 			action finish_string {
-				dst.add_value(tag_id, CURRENT_STRING);
+				dst.add_value <std::string>(tag_id, CURRENT_STRING);
 			}
 			
-			action start_byte { byte = 0; }
-			action byte_n { byte |= fpc - '0'; }
-			action byte_a { byte |= fpc - 'A'; }
+			action start_byte { byte = std::byte{}; }
+			action byte_n { byte |= std::byte(fc - '0'); }
+			action byte_a { byte |= std::byte(fc - 'A'); }
 			action byte_1 { byte <<= 4; }
 			action start_byte_array {
 				dst.start_array <std::byte>(tag_id);
