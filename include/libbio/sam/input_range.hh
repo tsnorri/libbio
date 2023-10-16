@@ -13,7 +13,25 @@
 
 namespace libbio::sam {
 	
-	typedef parsing::updatable_range_base <char const *> input_range_base;
+	struct input_range_base : public parsing::updatable_range_base <char const *>
+	{
+		using parsing::updatable_range_base <char const *>::updatable_range_base;
+		virtual void prepare() = 0;
+	};
+	
+	
+	struct character_range final : public input_range_base
+	{
+		using input_range_base::input_range_base;
+		
+		character_range(std::string_view const sv):
+			input_range_base(sv.data(), sv.data() + sv.size())
+		{
+		}
+		
+		void prepare() override {}
+		bool update() override { it = nullptr; sentinel = nullptr; return false; }
+	};
 	
 	
 	struct file_handle_input_range final : public input_range_base
@@ -28,7 +46,7 @@ namespace libbio::sam {
 			buffer.resize(fh.io_op_blocksize(), 0);
 		}
 		
-		void prepare() { update(); }
+		void prepare() override { update(); }
 		bool update() override;
 	};
 }
