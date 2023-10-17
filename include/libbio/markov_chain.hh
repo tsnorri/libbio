@@ -241,18 +241,19 @@ namespace libbio::markov_chains::detail {
 	template <typename t_initial_state, typename t_transitions>
 	struct transition_map_builder
 	{
-		constexpr static auto const transition_count{std::tuple_size_v <t_transitions>};
+	private:
+		template <std::size_t t_idx> struct index {};
+		template <node_type t_idx> struct node_index {};
 		
 		typedef tuples::map_t <t_transitions, transition_src_t>	src_nodes_type;
 		typedef tuples::map_t <t_transitions, transition_dst_t>	dst_nodes_type;
 		typedef tuples::cat_t <src_nodes_type, dst_nodes_type>	transition_nodes_type;
-		typedef std::pair <transition_key, node_type>			value_type;
 		
-		template <std::size_t t_idx> struct index {};
-		template <node_type t_idx> struct node_index {};
+	public:
+		constexpr static auto const transition_count{std::tuple_size_v <t_transitions>};
+		typedef std::pair <transition_key, node_type> value_type;
 		
-		consteval static auto const make_node_indices()
-		{
+		constexpr static auto const node_indices{[] consteval {
 			constexpr auto const size(std::tuple_size_v <transition_nodes_type>);
 			std::array <node_type, size> retval;
 			auto const cb([size, &retval]<std::size_t t_transition_idx, node_type t_node>(auto &&cb, index <t_transition_idx>, node_index <t_node>) constexpr {
@@ -268,12 +269,9 @@ namespace libbio::markov_chains::detail {
 			
 			cb(cb, index <0>{}, node_index <0>{});
 			return retval;
-		}
+		}()};
 		
-		constexpr static auto const node_indices{make_node_indices()};
-		
-		consteval static auto const make_unique_node_indices()
-		{
+		constexpr static auto const unique_node_indices{[] consteval {
 			constexpr auto const res([]() consteval {
 				std::array sorted{node_indices};
 				std::sort(sorted.begin(), sorted.end());
@@ -283,14 +281,12 @@ namespace libbio::markov_chains::detail {
 			std::array <node_type, res.second> retval;
 			std::copy_n(res.first.begin(), res.second, retval.begin());
 			return retval;
-		}
+		}()};
 		
-		constexpr static auto const unique_node_indices{make_unique_node_indices()};
 		constexpr static auto const node_limit{std::max_element(node_indices.begin(), node_indices.end())};
 		constexpr static auto const initial_state{node_indices[tuples::first_index_of_v <transition_nodes_type, t_initial_state>]};
 		
-		consteval static auto node_tuple_helper()
-		{
+		typedef std::invoke_result_t <decltype([] consteval {
 			auto const cb([]<std::size_t t_idx>(auto &&cb, index <t_idx>) constexpr {
 				if constexpr (t_idx < unique_node_indices.size())
 				{
@@ -310,9 +306,7 @@ namespace libbio::markov_chains::detail {
 				}
 			});
 			return cb(cb, index <0>{});
-		}
-		
-		typedef std::invoke_result_t <decltype(&node_tuple_helper)> nodes_type;
+		})> nodes_type;
 		
 		consteval static auto make_transition_map()
 		{
@@ -331,7 +325,7 @@ namespace libbio::markov_chains::detail {
 						retval[i].first.probability_threshold += retval[i - 1].first.probability_threshold;
 					else
 					{
-						// FIXME: Add assertion like this. (Currently Clang++17 reports that the function does not produce a constant expression.)
+						// FIXME: Add an assertion like this. (Currently Clang++17 reports that the function does not produce a constant expression.)
 						//libbio_assert(compare_fp(1.0, retval[i - 1].first.probability_threshold, 0.000001)); // FIXME: better epsilon?
 					}
 				}
