@@ -228,55 +228,6 @@ namespace libbio::markov_chains::detail {
 	template <typename t_base, typename t_tuple>
 	constexpr inline bool const transition_states_have_base_v = transition_states_have_base <t_base, t_tuple>::value;
 	
-	
-	// We would like to calculate the cumulative sum of probabilities for each equivalence class.
-	// transitions_by_source_type has tuples that represent equivalence classes like
-	// {src, {{src, dst, probability}, …}}, so we need to process them.
-	template <typename t_transition, detail::wrapped_double t_cs>
-	using update_transition_probability_t = transition <
-		typename t_transition::source_type,
-		typename t_transition::destination_type,
-		t_transition::probability + t_cs
-	>;
-	
-	template <typename t_transitions_ = tuples::empty, detail::wrapped_double t_cs = 0.0>
-	struct transition_probability_cs_acc
-	{
-		typedef t_transitions_ transitions;
-		constexpr static inline double const cs{t_cs};
-	};
-	
-	template <
-		typename t_acc,
-		typename t_transition,
-		typename t_updated_transition = update_transition_probability_t <t_transition, t_acc::cs>
-	>
-	using transition_probability_cs_fold_fn = transition_probability_cs_acc <
-		tuples::append_t <typename t_acc::transitions, t_updated_transition>,	// Append to the transition list.
-		t_updated_transition::probability										// Store the new probability.
-	>;
-	
-	// Check that the sum of transition probabilities is 1.0.
-	template <typename t_transitions>
-	struct transition_probability_cs_check
-	{
-		static_assert(detail::compare_fp(1.0, tuples::last_t <t_transitions>::probability, 0.000001)); // FIXME: better epsilon?
-		typedef t_transitions transitions_type;
-	};
-	
-	// Map each equivalence class of transitions s.t. the probabilities are changed to their cumulative sum.
-	// The equivalence class representatives are discarded.
-	template <
-		typename t_eq_class,
-		typename t_transitions = typename tuples::foldl_t <
-			transition_probability_cs_fold_fn,
-			transition_probability_cs_acc <>,
-			tuples::second_t <t_eq_class>
-		>::transitions,
-		typename t_check = transition_probability_cs_check <t_transitions>
-	>
-	using transition_probability_cs_map_fn = typename t_check::transitions_type;
-	
 	struct transition_key
 	{
 		double		probability_threshold{};
@@ -287,64 +238,105 @@ namespace libbio::markov_chains::detail {
 		constexpr bool operator==(transition_key const &other) const { return as_tuple() == other.as_tuple(); }
 	};
 	
-	template <typename t_nodes, typename t_transitions>
+	template <typename t_initial_state, typename t_transitions>
 	struct transition_map_builder
 	{
-		typedef t_nodes										nodes_type;
-		typedef std::pair <transition_key, node_type>		map_value_type;
+		constexpr static auto const transition_count{std::tuple_size_v <t_transitions>};
 		
-		// Intermediate type for creating map_value_type.
-		template <std::size_t t_src, std::size_t t_dst, detail::wrapped_double t_probability>
-		struct transition_
+		typedef tuples::map_t <t_transitions, transition_src_t>	src_nodes_type;
+		typedef tuples::map_t <t_transitions, transition_dst_t>	dst_nodes_type;
+		typedef tuples::cat_t <src_nodes_type, dst_nodes_type>	transition_nodes_type;
+		typedef std::pair <transition_key, node_type>			value_type;
+		
+		template <std::size_t t_idx> struct index {};
+		template <node_type t_idx> struct node_index {};
+		
+		consteval static auto const make_node_indices()
 		{
-			constexpr map_value_type to_map_value() const { return {{t_probability, t_src}, t_dst}; }
-			constexpr /* implicit */ operator map_value_type() const { return to_map_value(); }
-		};
-	
-		// FIXME: this is really inefficient. Come up with another solution, e.g. store the indices in sorted vectors.
-		template <typename t_transition>
-		using to_transition__t = transition_ <
-			tuples::first_index_of_v <nodes_type, typename t_transition::source_type>,
-			tuples::first_index_of_v <nodes_type, typename t_transition::destination_type>,
-			t_transition::probability
-		>;
-	
-		constexpr static auto make_transition_map()
-		{
-			// Group the transitions by the source node.
-			typedef typename tuples::group_by_type <
-				t_transitions,
-				transition_src_t
-			>::keyed_type										transitions_by_source_type;
-		
-			// Build the transition table.
-			typedef tuples::cat_with_t <
-				tuples::map_t <
-					transitions_by_source_type,
-					detail::transition_probability_cs_map_fn
-				>
-			>													transitions_with_probability_cs_type;
-		
-			typedef tuples::map_t <
-				transitions_with_probability_cs_type,
-				to_transition__t
-			>													intermediate_transitions_type;
-		
-			constexpr intermediate_transitions_type intermediates{};
-			auto retval(libbio::map_to_array(
-				std::make_index_sequence <std::tuple_size_v <t_transitions>>{},
-				[&intermediates](auto const idx) {
-					return std::get <idx()>(intermediates).to_map_value();
+			constexpr auto const size(std::tuple_size_v <transition_nodes_type>);
+			std::array <node_type, size> retval;
+			auto const cb([size, &retval]<std::size_t t_transition_idx, node_type t_node>(auto &&cb, index <t_transition_idx>, node_index <t_node>) constexpr {
+				if constexpr (t_transition_idx < size)
+				{
+					typedef std::tuple_element_t <t_transition_idx, transition_nodes_type> node_type;
+					constexpr auto const first_idx{tuples::first_index_of_v <transition_nodes_type, node_type>};
+					retval[t_transition_idx] = first_idx;
+					constexpr bool const should_increment{first_idx == t_transition_idx};
+					cb(cb, index <1 + t_transition_idx>{}, node_index <should_increment + t_node>{});
 				}
-			));
+			});
+			
+			cb(cb, index <0>{}, node_index <0>{});
+			return retval;
+		}
 		
-			std::sort(retval.begin(), retval.end());
+		constexpr static auto const node_indices{make_node_indices()};
 		
-			// Make sure that the keys are distinct.
-			libbio_assert_eq(retval.cend(), std::adjacent_find(retval.cbegin(), retval.cend(), [](auto const &lhs, auto const &rhs){
-				return lhs.first == rhs.first;
-			}));
+		consteval static auto const make_unique_node_indices()
+		{
+			constexpr auto const res([]() consteval {
+				std::array sorted{node_indices};
+				std::sort(sorted.begin(), sorted.end());
+				auto const last(std::unique(sorted.begin(), sorted.end()));
+				return std::make_pair(sorted, std::distance(sorted.begin(), last));
+			}());
+			std::array <node_type, res.second> retval;
+			std::copy_n(res.first.begin(), res.second, retval.begin());
+			return retval;
+		}
 		
+		constexpr static auto const unique_node_indices{make_unique_node_indices()};
+		constexpr static auto const node_limit{std::max_element(node_indices.begin(), node_indices.end())};
+		constexpr static auto const initial_state{node_indices[tuples::first_index_of_v <transition_nodes_type, t_initial_state>]};
+		
+		consteval static auto node_tuple_helper()
+		{
+			auto const cb([]<std::size_t t_idx>(auto &&cb, index <t_idx>) constexpr {
+				if constexpr (t_idx < unique_node_indices.size())
+				{
+					auto const node_idx{std::get <t_idx>(unique_node_indices)};
+					return std::tuple_cat(
+						std::declval <
+							std::tuple <
+								std::tuple_element_t <node_idx, transition_nodes_type>
+							>
+						>(),
+						cb(cb, index <1 + t_idx>{})
+					);
+				}
+				else
+				{
+					return std::tuple <>{};
+				}
+			});
+			return cb(cb, index <0>{});
+		}
+		
+		typedef std::invoke_result_t <decltype(&node_tuple_helper)> nodes_type;
+		
+		consteval static auto make_transition_map()
+		{
+			auto const transition_count{std::tuple_size_v <t_transitions>};
+			std::array <value_type, transition_count> retval;
+			
+			for (std::size_t i{}; i < transition_count; ++i)
+			{
+				auto const src_node{node_indices[i]};
+				auto const dst_node{node_indices[i + transition_count]};
+				retval[i] = value_type{transition_key{0.0, src_node}, dst_node};
+				
+				if (i)
+				{
+					if (retval[i - 1].first.node == src_node)
+						retval[i].first.probability_threshold += retval[i - 1].first.probability_threshold;
+					else
+					{
+						// FIXME: Add assertion like this. (Currently Clang++17 reports that the function does not produce a constant expression.)
+						//libbio_assert(compare_fp(1.0, retval[i - 1].first.probability_threshold, 0.000001)); // FIXME: better epsilon?
+					}
+				}
+			}
+			
 			return retval;
 		}
 	};
@@ -361,41 +353,30 @@ namespace libbio::markov_chains {
 	struct chain : public t_traits...
 	{
 	private:
-		typedef aggregate <t_traits...>						traits_type;
+		typedef aggregate <t_traits...>								traits_type;
 		
 	public:
-		typedef t_initial_state								initial_state_type;
-		typedef typename t_transitions::transitions_type	transitions_type;
-		typedef detail::node_type							node_type;
+		typedef t_initial_state										initial_state_type;
+		typedef typename t_transitions::transitions_type			transitions_type;
+		typedef detail::node_type									node_type;
 		
 		constexpr static auto const NODE_MAX{std::numeric_limits <node_type>::max()}; // Max. value of node_type.
 		
-		// Number the nodes.
-		// This can be done easily by determining the unique types over the concatenation of the lists
-		// of source and destination node types.
-		typedef tuples::unique_t <
-			tuples::cat_t <
-				std::tuple <t_initial_state>,
-				tuples::map_t <transitions_type, detail::transition_src_t>,
-				tuples::map_t <transitions_type, detail::transition_dst_t>
-			>
-		>													nodes_type;
+		typedef detail::transition_map_builder <
+			t_initial_state,
+			transitions_type
+		>															transition_map_builder_type;
+		typedef typename transition_map_builder_type::value_type	transition_map_value_type;
+		typedef typename transition_map_builder_type::nodes_type	nodes_type;
 		
-		constexpr static std::size_t const					node_limit{std::tuple_size_v <nodes_type>}; // The number of nodes in this chain.
 		constexpr static bool const							uses_runtime_polymorphism{std::is_base_of_v <uses_runtime_polymorphism_trait, traits_type>};
 		static_assert(!uses_runtime_polymorphism || std::is_base_of_v <t_base, t_initial_state>);
 		static_assert(!uses_runtime_polymorphism || detail::transition_states_have_base_v <t_base, transitions_type>);
 		
-		typedef detail::transition_map_builder <
-			nodes_type,
-			transitions_type
-		>													transition_map_builder_type;
-		typedef transition_map_builder_type::map_value_type	transition_map_value_type;
-		
 	private:
 		// The actual chain.
-		constexpr static auto const			initial_state{tuples::first_index_of_v <nodes_type, t_initial_state>};
-		constexpr static auto const			transitions{transition_map_builder_type::make_transition_map()};
+		constexpr static auto const	initial_state{transition_map_builder_type::initial_state};
+		constexpr static auto const	transitions{transition_map_builder_type::make_transition_map()};
 		
 	public:
 		typedef std::vector <
@@ -404,9 +385,9 @@ namespace libbio::markov_chains {
 				std::unique_ptr <t_base>,
 				t_base
 			>
-		>									values_type;
+		>															values_type;
 		
-		values_type							values{};
+		values_type													values{};
 		
 		template <typename t_probabilities, typename t_visitor>
 		static void visit_node_types(t_probabilities &&probabilities, t_visitor &&visitor)
