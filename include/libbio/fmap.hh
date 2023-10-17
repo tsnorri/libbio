@@ -6,6 +6,7 @@
 #ifndef LIBBIO_FMAP_HH
 #define LIBBIO_FMAP_HH
 
+#include <libbio/tuple/utility.hh> // tuples::is_tuple_v
 #include <tuple>
 #include <utility>
 
@@ -13,7 +14,7 @@
 namespace libbio::detail {
 	
 	template <std::size_t... t_indices, typename... t_args, typename t_fn>
-	constexpr auto fmap(std::index_sequence <t_indices...> const &&, std::tuple <t_args...> &&args, t_fn &&fn)
+	constexpr auto fmap_tuple(std::index_sequence <t_indices...> const &&, std::tuple <t_args...> &&args, t_fn &&fn)
 	{
 		return std::make_tuple(
 			fn(
@@ -31,9 +32,10 @@ namespace libbio {
 	// Functional mapping for tuples, i.e. Functor f => f a -> (a -> b) -> f b
 	// where f is std::tuple.
 	template <typename t_type, typename t_fn>
+	requires tuples::is_tuple_v <t_type>
 	constexpr auto fmap(t_type &&value, t_fn &&fn)
 	{
-		return detail::fmap(
+		return detail::fmap_tuple(
 			std::make_index_sequence <std::tuple_size_v <t_type>>{},
 			std::forward <t_type>(value),
 			fn
