@@ -253,7 +253,9 @@ namespace libbio::markov_chains::detail {
 		constexpr static auto const transition_count{std::tuple_size_v <t_transitions>};
 		typedef std::pair <transition_key, node_type> value_type;
 		
-		constexpr static auto const node_indices{[] consteval {
+		// Transition indices s.t. the index is the lowest with the associated state, i.e. equivalence classes.
+		// (Not necessarily consecutive.)
+		constexpr static auto const transition_node_indices{[] consteval {
 			constexpr auto const size(std::tuple_size_v <transition_nodes_type>);
 			std::array <node_type, size> retval;
 			auto const cb([size, &retval]<std::size_t t_transition_idx, node_type t_node>(auto &&cb, index <t_transition_idx>, node_index <t_node>) constexpr {
@@ -271,9 +273,10 @@ namespace libbio::markov_chains::detail {
 			return retval;
 		}()};
 		
-		constexpr static auto const unique_node_indices{[] consteval {
+		// Distinct equivalence classes.
+		constexpr static auto const unique_transition_node_indices{[] consteval {
 			constexpr auto const res([]() consteval {
-				std::array sorted{node_indices};
+				std::array sorted{transition_node_indices};
 				std::sort(sorted.begin(), sorted.end());
 				auto const last(std::unique(sorted.begin(), sorted.end()));
 				return std::make_pair(sorted, std::distance(sorted.begin(), last));
@@ -283,14 +286,12 @@ namespace libbio::markov_chains::detail {
 			return retval;
 		}()};
 		
-		constexpr static auto const node_limit{std::max_element(node_indices.begin(), node_indices.end())};
-		constexpr static auto const initial_state{node_indices[tuples::first_index_of_v <transition_nodes_type, t_initial_state>]};
-		
+		// A tuple with each distinct state, can be used to assign consecutive numbers.
 		typedef std::invoke_result_t <decltype([] consteval {
 			auto const cb([]<std::size_t t_idx>(auto &&cb, index <t_idx>) constexpr {
-				if constexpr (t_idx < unique_node_indices.size())
+				if constexpr (t_idx < unique_transition_node_indices.size())
 				{
-					auto const node_idx{std::get <t_idx>(unique_node_indices)};
+					auto const node_idx{std::get <t_idx>(unique_transition_node_indices)};
 					return std::tuple_cat(
 						std::declval <
 							std::tuple <
@@ -310,14 +311,26 @@ namespace libbio::markov_chains::detail {
 		
 		consteval static auto make_transition_map()
 		{
-			auto const transition_count{std::tuple_size_v <t_transitions>};
-			std::array <value_type, transition_count> retval;
+			constexpr auto const node_indices_by_transition_idx(map_to_array(
+				std::make_index_sequence <transition_node_indices.size()>{},
+				[]<std::size_t t_idx>(std::integral_constant <std::size_t, t_idx> const) constexpr {
+					return tuples::first_index_of_v <nodes_type, std::tuple_element_t <t_idx, transition_nodes_type>>;
+				}
+			));
+			constexpr auto const transition_probabilities(map_to_array(
+				std::make_index_sequence <transition_count>{},
+				[]<std::size_t t_idx>(std::integral_constant <std::size_t, t_idx> const) constexpr {
+					return std::tuple_element_t <t_idx, t_transitions>::probability;
+				}
+			));
 			
+			std::array <value_type, transition_count> retval;
 			for (std::size_t i{}; i < transition_count; ++i)
 			{
-				auto const src_node{node_indices[i]};
-				auto const dst_node{node_indices[i + transition_count]};
-				retval[i] = value_type{transition_key{0.0, src_node}, dst_node};
+				auto const src_node{node_indices_by_transition_idx[i]};
+				auto const dst_node{node_indices_by_transition_idx[i + transition_count]};
+				auto const probability{transition_probabilities[i]};
+				retval[i] = value_type{transition_key{probability, src_node}, dst_node};
 				
 				if (i)
 				{
@@ -333,6 +346,9 @@ namespace libbio::markov_chains::detail {
 			
 			return retval;
 		}
+		
+		constexpr static auto const node_limit{std::tuple_size_v <nodes_type>};
+		constexpr static auto const initial_state{tuples::first_index_of_v <nodes_type, t_initial_state>};
 	};
 }
 
