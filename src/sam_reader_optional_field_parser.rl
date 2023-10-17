@@ -99,7 +99,7 @@ namespace libbio::sam {
 			float_				= (sign? [0-9]* [.]? [0-9]+ ([eE] sign? [0-9]+)?) >(start_float) $(update_float);
 			integer				= integer_ %(finish_integer);
 			float				= float_ %(finish_float);
-			string				= [ !-~]* >(start_string) @(update_string);
+			string				= [ !-~]* >(start_string) $(update_string);
 			byte				= ([0-9] %(byte_n) | [A-F] %(byte_a));
 			byte_array			= ((byte %(byte_1) byte) >(start_byte) %(update_byte_array))* >(start_byte_array);
 			# The way I read the specification, the parser is not needed to round fp values to integers if the array is declared to contain integers. Hence I should use fp syntex only for the fp array.
