@@ -60,23 +60,42 @@ namespace libbio::tuples {
 	template <typename t_tuple, typename t_item, typename t_default = not_found>
 	requires is_tuple_v <t_tuple>
 	using find = find_if <t_tuple, same_as <t_item>::template with, t_default>;
+}
+
+
+namespace libbio::tuples::detail {
+	template <typename t_tuple, typename t_item>
+	struct first_index_of : public std::integral_constant <std::size_t, 0> {};
 	
+	template <template <typename...> typename t_tuple, typename ... t_args, typename t_item>
+	requires is_tuple_v <t_tuple <t_item, t_args...>>
+	struct first_index_of <t_tuple <t_item, t_args...>, t_item> : public std::integral_constant <std::size_t, 0> {};
+	
+	template <template <typename...> typename t_tuple, typename t_first, typename ... t_args, typename t_item>
+	requires is_tuple_v <t_tuple <t_first, t_args...>>
+	struct first_index_of <t_tuple <t_first, t_args...>, t_item>
+	{
+		constexpr static inline std::size_t const value{1 + first_index_of <t_tuple <t_args...>, t_item>::value};
+	};
+}
+
+
+namespace libbio::tuples{
 	
 	template <
 		typename t_tuple,
 		typename t_item,
 		bool t_should_assert_found = true,
-		typename t_base = size_constant <find <t_tuple, t_item>::first_matching_index>
+		typename t_impl = detail::first_index_of <t_tuple, t_item>
 	>
 	requires is_tuple_v <t_tuple>
-	struct first_index_of : public t_base
+	struct first_index_of : std::integral_constant <std::size_t, (std::tuple_size_v <t_tuple> == t_impl::value ? SIZE_MAX : t_impl::value)>
 	{
-		static_assert(!t_should_assert_found || t_base::value != SIZE_MAX);
+		static_assert(!(t_should_assert_found && std::tuple_size_v <t_tuple> == t_impl::value));
 	};
 	
 	template <typename t_tuple, typename t_item, bool t_should_assert_found = true>
-	requires is_tuple_v <t_tuple>
-	constexpr static inline auto const first_index_of_v{first_index_of <t_tuple, t_item>::value};
+	constexpr static inline auto const first_index_of_v{first_index_of <t_tuple, t_item, t_should_assert_found>::value};
 }
 
 #endif
