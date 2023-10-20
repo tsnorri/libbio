@@ -3,11 +3,17 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <algorithm>				// std::sort
+#include <algorithm>					// std::sort
+#include <boost/io/ios_state.hpp>		// boost::io::ios_all_saver
+#include <format>
 #include <libbio/sam/reader.hh>
+#include <ostream>
 #include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/zip.hpp>
 
+namespace io	= boost::io;
+namespace lb	= libbio;
+namespace sam	= libbio::sam;
 namespace rsv	= ranges::views;
 
 
@@ -27,6 +33,42 @@ namespace {
 		QUAL,
 		OPTIONAL
 	};
+
+	
+	inline bool check_reference_ids(
+		sam::reference_id_type const lhs,
+		sam::reference_id_type const rhs,
+		sam::reference_sequence_entry_vector const &lhsr,
+		sam::reference_sequence_entry_vector const &rhsr
+	)
+	{
+		if (sam::INVALID_REFERENCE_ID == lhs || sam::INVALID_REFERENCE_ID == rhs)
+			return lhs == rhs;
+		
+		libbio_assert_lt(lhs, lhsr.size());
+		libbio_assert_lt(rhs, rhsr.size());
+		return lhsr[lhs] == rhsr[rhs];
+	}
+
+	template <typename t_type>
+	inline bool cmp(t_type const lhs, t_type const rhs, double const)
+	requires (!std::is_floating_point_v <t_type>)
+	{
+		return lhs == rhs;
+	}
+
+	template <typename t_type>
+	inline bool cmp(t_type const lhs, t_type const rhs, double const multiplier)
+	requires std::is_floating_point_v <t_type>
+	{
+		// Idea from https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+		// FIXME: take more special cases into account?
+		auto const diff(std::fabs(lhs - rhs));
+		auto const lhsa(std::fabs(lhs));
+		auto const rhsa(std::fabs(rhs));
+		auto const max(std::max(lhsa, rhsa));
+		return diff <= max * multiplier * std::numeric_limits <t_type>::epsilon();
+	}
 }
 
 
@@ -145,13 +187,14 @@ namespace libbio::sam {
 		
 		// POS, MAPQ
 		os	<< rec.pos << '\t'
-			<< rec.mapq << '\t';
+			<< +rec.mapq << '\t';
 		
 		// CIGAR
 		if (rec.cigar.empty())
 			os << '*';
 		else
 			std::copy(rec.cigar.begin(), rec.cigar.end(), std::ostream_iterator <cigar_run>(os));
+		os << '\t';
 		
 		// RNEXT
 		if (INVALID_REFERENCE_ID == rec.rnext_id)
@@ -160,6 +203,7 @@ namespace libbio::sam {
 			os << '=';
 		else
 			os << header_.reference_sequences[rec.rnext_id].name;
+		os << '\t';
 		
 		// PNEXT, TLEN
 		os	<< rec.pnext << '\t'
@@ -170,6 +214,7 @@ namespace libbio::sam {
 			os << '*';
 		else
 			std::copy(rec.seq.begin(), rec.seq.end(), std::ostream_iterator <char>(os));
+		os << '\t';
 		
 		// QUAL
 		if (rec.qual.empty())
@@ -178,25 +223,27 @@ namespace libbio::sam {
 			std::copy(rec.qual.begin(), rec.qual.end(), std::ostream_iterator <char>(os));
 		
 		// Optional fields
-		os << rec.optional_fields;
+		if (!rec.optional_fields.empty())
+			os << '\t' << rec.optional_fields;
 	}
 	
 	
 	std::ostream &operator<<(std::ostream &os, optional_field const &of)
 	{
+		io::ios_all_saver guard(os);
+		os << std::setprecision(std::numeric_limits <optional_field::floating_point_type>::digits10 + 1);
+		
 		auto visitor(aggregate{
 			[&os]<std::size_t t_idx, char t_type_code>(auto const &val) requires (!('H' == t_type_code || 'B' == t_type_code)) { os << val; }, // Not array.
 			[&os]<std::size_t t_idx, char t_type_code>(auto const &vec) requires ('H' == t_type_code) {
-				os << std::hex;
 				for (auto const val : vec)
-					os << int(val);
-				os << std::dec;
+					os << std::format("{:02X}", static_cast <unsigned char>(val));
 			},
 			[&os]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &vec) requires ('B' == t_type_code) {
 				typedef typename t_type::value_type element_type;
 				os << optional_field::array_type_code_v <element_type>;
 				for (auto const val : vec)
-					os << ',' << val;
+					os << ',' << +val;
 			}
 		});
 		
@@ -268,6 +315,24 @@ namespace libbio::sam {
 		swap(std::get <QUAL>(dst), src.qual);
 		swap(std::get <OPTIONAL>(dst), src.optional_fields);
 	}
+
+
+	// Debugging helper.
+	template <std::size_t t_idx = 0, typename t_tuple>
+	std::size_t compare_tuples(t_tuple const &lhs, t_tuple const &rhs)
+	{
+		if constexpr (std::tuple_size_v <t_tuple> == t_idx)
+			return SIZE_MAX;
+		else
+		{
+			auto const &lhs_(std::get <t_idx>(lhs));
+			auto const &rhs_(std::get <t_idx>(rhs));
+			if (lhs_ != rhs_)
+				return t_idx;
+			return compare_tuples <1 + t_idx>(lhs, rhs);
+		}
+	}
+	
 	
 	
 	bool is_equal(header const &lhsh, header const &rhsh, record const &lhsr, record const &rhsr)
@@ -276,13 +341,13 @@ namespace libbio::sam {
 			return std::tie(rec.qname, rec.cigar, rec.seq, rec.qual, rec.pos, rec.pnext, rec.tlen, rec.flag, rec.mapq);
 		});
 		
-		if (directly_comparable_to_tuple(lhsr) != directly_comparable_to_tuple(rhsr))
+		if (SIZE_MAX != compare_tuples(directly_comparable_to_tuple(lhsr), directly_comparable_to_tuple(rhsr)))
 			return false;
 		
-		if (lhsh.reference_sequences[lhsr.rname_id] != rhsh.reference_sequences[rhsr.rname_id])
+		if (!check_reference_ids(lhsr.rname_id, rhsr.rname_id, lhsh.reference_sequences, rhsh.reference_sequences))
 			return false;
 		
-		if (lhsh.reference_sequences[lhsr.rnext_id] != rhsh.reference_sequences[rhsr.rnext_id])
+		if (!check_reference_ids(lhsr.rnext_id, rhsr.rnext_id, lhsh.reference_sequences, rhsh.reference_sequences))
 			return false;
 		
 		return lhsr.optional_fields == rhsr.optional_fields;
@@ -299,9 +364,26 @@ namespace libbio::sam {
 			if (lhsr.tag_id != rhsr.tag_id) return false;
 			if (lhsr.type_index != rhsr.type_index) return false;
 			
-			auto do_cmp([this, &rhsr]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &lhs_val){
-				auto const &rhs_val(std::get <t_idx>(m_values)[rhsr.rank]);
-				return lhs_val == rhs_val;
+			auto do_cmp([this, &other, &rhsr]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &lhs_val){
+				auto const &rhs_val(std::get <t_idx>(other.m_values)[rhsr.rank]);
+				constexpr double const epsilon_multiplier{10.0}; // FIXME: better value?
+				return aggregate {
+					[]<typename t_type_>(
+						std::vector <t_type_> const &lhs_val,
+						std::vector <t_type_> const &rhs_val
+					){
+						if (lhs_val.size() != rhs_val.size()) return false;
+						for (auto const [lhs, rhs] : rsv::zip(lhs_val, rhs_val))
+						{
+							if (!cmp(lhs, rhs, epsilon_multiplier))
+								return false;
+						}
+						return true;
+					},
+					[](auto const lhs, auto const rhs){
+						return cmp(lhs, rhs, epsilon_multiplier);
+					}
+				}(lhs_val, rhs_val);
 			});
 			
 			if (!visit <bool>(lhsr, do_cmp))
