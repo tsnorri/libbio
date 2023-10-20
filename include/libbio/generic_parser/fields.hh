@@ -52,21 +52,31 @@ namespace libbio::parsing {
 	}
 	
 	
-	template <typename t_type, bool = false>
+	template <typename t_type, typename = void>
 	struct is_optional_repeating : public std::false_type {};
 	
 	template <typename t_type>
-	struct is_optional_repeating <t_type, bool(t_type::is_optional_repeating::value)> : public std::bool_constant <t_type::is_optional_repeating::value> {};
+	struct is_optional_repeating <t_type, decltype(void(t_type::is_optional_repeating))> : public std::bool_constant <t_type::is_optional_repeating> {};
 	
 	template <typename t_type>
 	constexpr static inline bool is_optional_repeating_v = is_optional_repeating <t_type>::value;
 	
+
+	template <typename t_type, typename = void>
+	struct is_optional : public std::bool_constant <is_optional_repeating_v <t_type>> {};
+
+	template <typename t_type>
+	struct is_optional <t_type, decltype(void(t_type::is_optional))> : public std::bool_constant <t_type::is_optional> {};
+
+	template <typename t_type>
+	constexpr static inline bool is_optional_v = is_optional <t_type>::value;
+
 	
-	template <typename t_type, bool t_is_repeating = is_optional_repeating_v <t_type>>
-	struct is_repeating : public std::bool_constant <t_is_repeating> {};
+	template <typename t_type, typename = void>
+	struct is_repeating : public std::bool_constant <is_optional_repeating_v <t_type>> {};
 	
 	template <typename t_type>
-	struct is_repeating <t_type, bool(t_type::is_repeating::value)> : public std::bool_constant <t_type::is_repeating::value> {};
+	struct is_repeating <t_type, decltype(void(t_type::is_repeating))> : public std::bool_constant <t_type::is_repeating> {};
 	
 	template <typename t_type>
 	constexpr static inline bool is_repeating_v = is_repeating <t_type>::value;
