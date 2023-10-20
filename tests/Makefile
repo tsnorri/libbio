@@ -25,6 +25,7 @@ OBJECTS	=	algorithm.o \
 			fasta_reader_arbitrary.o \
 			file_handle_buffered_writer.o \
 			generic_parser.o \
+			generic_parser_traits.o \
 			int_vector.o \
 			is_lt.o \
 			is_lte.o \
@@ -40,6 +41,9 @@ OBJECTS	=	algorithm.o \
 			subprocess_argument_parser.o \
 			vcf_reader.o
 
+RC_OBJECTS	=	sam_reader_arbitrary.rc.o \
+				rapidcheck_test_driver_main.o
+
 GENERATED_TEST_FILES = 	test-files/test-data-types.vcf.gz \
 						test-files/test-simple.vcf.gz
 
@@ -47,17 +51,22 @@ CATCH2_HEADERS	= $(shell find ../lib/Catch2/include)
 
 all: tests
 
+rapidcheck: rc_tests
 
 tests: $(OBJECTS) $(GENERATED_TEST_FILES)
 	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/build/librapidcheck.a $(BOOST_LIBS)
 
+rc_tests: $(RC_OBJECTS)
+	$(CXX) -o $@ $(RC_OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/build/librapidcheck.a $(BOOST_LIBS)
 
 clean:
-	$(RM) $(OBJECTS) $(GENERATED_TEST_FILES) tests
-
+	$(RM) $(OBJECTS) $(RC_OBJECTS) $(GENERATED_TEST_FILES) tests rc_tests
 
 ../lib/Catch2/single_include/catch2/catch.hpp: $(CATCH2_HEADERS)
 	cd ../lib/Catch2 && $(PYTHON) scripts/generateSingleHeader.py
+
+%.rc.o: %.cc
+	$(CXX) -DBUILD_RAPIDCHECK_TEST_DRIVER -c $(CXXFLAGS) $(CPPFLAGS) -o $@ $<
 
 %.vcf.gz: %.vcf
 	$(GZIP) -k $<
