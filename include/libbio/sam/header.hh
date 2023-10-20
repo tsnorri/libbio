@@ -42,7 +42,7 @@ namespace libbio::sam {
 	{
 		std::string				name;
 		position_type			length{};
-		molecule_topology_type	molecule_topology{molecule_topology_type::linear};
+		molecule_topology_type	molecule_topology{molecule_topology_type::unknown}; // linear by default but we would like to preserve unset values.
 		// FIXME: continue.
 		
 		auto as_tuple() const { return std::tie(name, length, molecule_topology); }
