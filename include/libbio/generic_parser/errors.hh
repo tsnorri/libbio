@@ -6,7 +6,9 @@
 #ifndef LIBBIO_GENERIC_PARSER_ERRORS_HH
 #define LIBBIO_GENERIC_PARSER_ERRORS_HH
 
+#include <any>
 #include <exception>
+#include <libbio/generic_parser/field_position.hh>
 #include <libbio/generic_parser/fwd.hh>
 #include <libbio/generic_parser/utility.hh>
 #include <ostream>
@@ -71,7 +73,10 @@ namespace libbio::parsing {
 		friend class parser_tpl;
 		
 	protected:
-		std::size_t			m_position{};
+		std::any			m_expected_delimiter{};
+		std::size_t			m_field_index{SIZE_MAX};
+		std::size_t			m_position{SIZE_MAX};
+		enum field_position	m_field_position{field_position::none_};
 
 	public:
 		virtual ~parse_error() {}
