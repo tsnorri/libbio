@@ -74,6 +74,7 @@ namespace libbio::parsing {
 		constexpr static inline auto const index_of_v{detail::index_of <t_delimiter, 0, t_delimiters...>::value};
 		
 		constexpr static inline std::size_t size() { return sizeof...(t_delimiters); }
+		constexpr static inline std::size_t last_index() { return size() - 1; }
 		constexpr static inline bool matches(type const other) { return ((other == t_delimiters) || ...); }
 		static inline delimiter_index_type matching_index(type const other);
 	};
