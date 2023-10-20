@@ -26,7 +26,6 @@ namespace libbio::sam {
 	{
 		std::int64_t	integer{};				// Currently read from the input.
 		bool			integer_is_negative{};
-		bool			should_continue{true};
 		
 		char const		*eof{};
 		int				cs{};
@@ -106,8 +105,8 @@ namespace libbio::sam {
 				header_.read_groups.emplace_back();
 			}
 			
-			rg_field	=	"ID:"		@(rg, 2) identifier ${ LAST_READ_GROUP.id.push_back(fc); }
-							"DS:"		@(rg, 2) identifier ${ LAST_READ_GROUP.description.push_back(fc); }
+			rg_field	=	"ID:"		@(rg, 2) identifier ${ LAST_READ_GROUP.id.push_back(fc); } |
+							"DS:"		@(rg, 2) identifier ${ LAST_READ_GROUP.description.push_back(fc); } |
 							any_field	@(rg, 1) identifier;
 				
 			rg_entry	= "@RG" %(add_read_group) ("\t" rg_field)+;
@@ -117,7 +116,7 @@ namespace libbio::sam {
 				header_.programs.emplace_back();
 			}
 			
-			pg_field	=	"ID:"		@(pg, 2) identifier ${ LAST_PROG.id.push_back(fc); }				|
+			pg_field	=	"ID:"		@(pg, 2) identifier ${ LAST_PROG.id.push_back(fc); }			|
 							"PN:"		@(pg, 2) identifier ${ LAST_PROG.name.push_back(fc); }			|
 							"CL:"		@(pg, 2) identifier ${ LAST_PROG.command_line.push_back(fc); }	|
 							"PP:"		@(pg, 2) identifier ${ LAST_PROG.prev_id.push_back(fc); }		|
@@ -132,16 +131,21 @@ namespace libbio::sam {
 			
 			# Main
 			action unexpected_eof {
-				throw parse_error("Unexpected EOF");
+				throw parsing::parse_error_tpl(parsing::errors::unexpected_eof{});
 			}
 			
 			action error {
-				throw parse_error("Unexpected character");
+				throw parsing::parse_error_tpl(parsing::errors::unexpected_character(fc));
 			}
 			
-			line = (hd_entry | sq_entry | rg_entry | pg_entry | comment_entry) $eof(unexpected_eof) "\n";
-			non_header = [^@] >{ fhold; should_continue = false; };
-			main := ((line*) $err(error)) non_header? %{ sort_reference_sequence_identifiers(header_); return; };
+			action finish_parsing {
+				sort_reference_sequence_identifiers(header_);
+				return;
+			}
+			
+			line = ((hd_entry | sq_entry | rg_entry | pg_entry | comment_entry) "\n") <>eof(unexpected_eof);
+			non_header = [^@\n];
+			main := (line*) $err(error) %eof(finish_parsing) (non_header $(finish_parsing))?;
 			
 			write init;
 		}%%
