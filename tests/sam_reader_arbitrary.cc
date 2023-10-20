@@ -3,18 +3,16 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <catch2/catch.hpp>
 #include <libbio/markov_chain.hh>
 #include <libbio/sam/reader.hh>
 #include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/generate.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/zip.hpp>
-#include <rapidcheck.h>
-#include <rapidcheck/catch.h>			// rc::prop
 #include <sstream>
 #include <string>
 #include <vector>
+#include "rapidcheck_test_driver.hh"
 
 namespace lb		= libbio;
 namespace mcs		= libbio::markov_chains;
@@ -171,7 +169,24 @@ namespace {
 			records(std::move(records_))
 		{
 		}
+		
+		record_set(record_set const &other, record_vector const &records_):
+			header(other.header),
+			records(records_)
+		{
+		}
 	};
+	
+	std::ostream &operator<<(std::ostream &os, record_set const &rs)
+	{
+		os << rs.header;
+		for (auto const &rec : rs.records)
+		{
+			output_record(os, rs.header, rec);
+			os << '\n';
+		}
+		return os;
+	}
 }
 
 namespace rc {
@@ -194,13 +209,18 @@ namespace rc {
 		static Gen <identifier> arbitrary()
 		{
 			return gen::construct <identifier>(
-				gen::container <std::string>(
-					gen::map(gen::inRange('!', char('~' - 1)), [](char const cc) -> char {
-						// Skip ‘@’.
-						if ('@' <= cc)
-							return cc + 1;
-						return cc;
-					})
+				gen::nonEmpty(
+					gen::container <std::string>(
+						gen::map(gen::inRange('!', char('~' - 2)), [](char const cc) -> char {
+							// Skip ‘*’ and ‘@’.
+							switch (cc)
+							{
+								case '@': return '|';
+								case '*': return '}';
+								default: return cc;
+							}
+						})
+					)
 				)
 			);
 		}
@@ -220,6 +240,24 @@ namespace {
 		return rc::gen::weightedOneOf <sam::reference_id_type>({
 			{1, rc::gen::just(sam::INVALID_REFERENCE_ID)},
 			{8, rc::gen::inRange(sam::reference_id_type(0), ref_count)}
+		});
+	}
+
+
+	auto make_quality(std::size_t const seq_len)
+	{
+		return rc::gen::weightedOneOf <std::vector <char>>({
+			{1, rc::gen::just(std::vector <char>{})}, // QUAL unavailable, i.e. “*”
+			{8, rc::gen::map(
+				rc::gen::container <std::vector <char>>(seq_len, rc::gen::inRange('!', '~')),
+				[](auto &&vec){
+					// The SAM format has a deficiency in the edge case where the sequence length is one
+					// and the quality score is 9, which is encoded as “*”.
+					if (1 == vec.size() && '*' == vec.front())
+						vec.front() = ')';
+					return std::move(vec);
+				}
+			)}
 		});
 	}
 }
@@ -265,12 +303,12 @@ namespace rc {
 		{
 			return gen::apply(
 				[](auto &&entry, char first_identifier_character){
-					if (!entry.name.empty())
-						entry.name[0] = first_identifier_character;
+					libbio_assert(!entry.name.empty());
+					entry.name[0] = first_identifier_character;
 					return std::move(entry);
 				},
 				gen::construct <sam::reference_sequence_entry>(
-					gen::container <std::string>(gen::elementOf(reference_id_characters)),
+					gen::nonEmpty(gen::container <std::string>(gen::elementOf(reference_id_characters))),
 					gen::arbitrary <sam::position_type>(),
 					gen::arbitrary <sam::molecule_topology_type>()
 				),
@@ -317,7 +355,12 @@ namespace rc {
 		{
 			// Currently we only test parsing and ignore the values of sort order and grouping.
 			return gen::construct <sam::header>(
-				gen::arbitrary <sam::reference_sequence_entry_vector>(),
+				gen::uniqueBy <sam::reference_sequence_entry_vector>(
+					gen::arbitrary <sam::reference_sequence_entry>(),
+					[](sam::reference_sequence_entry const &entry){
+						return entry.name;
+					}
+				),
 				gen::arbitrary <sam::read_group_entry_vector>(),
 				gen::arbitrary <sam::program_entry_vector>(),
 				gen::container <std::vector <std::string>>(
@@ -341,7 +384,7 @@ namespace rc {
 			return gen::mapcat(gen::arbitrary <sam::header>(), [](auto &&header){
 				return gen::construct <header_container>(
 					gen::just(std::move(header)),
-					gen::unique <std::vector <std::string>>(header.programs.size(), make_identifier())
+					gen::unique <std::vector <std::string>>(header.programs.size(), make_identifier()) // Program identifiers
 				);
 			});
 		}
@@ -360,14 +403,18 @@ namespace rc {
 					std::uint16_t retval{};
 					
 					if (v1 < ac) retval = v1 + 'A';
-					else retval = v1 + 'a';
+					else retval = v1 + 'a' - ac;
+					libbio_assert(('A' <= retval && retval <= 'Z') || ('a' <= retval && retval <= 'z'));
 					
 					retval <<= 8;
 					
-					if (v2 < ac) retval |= v2 + 'A';
-					else if (v2 < 2 * ac) retval |= v2 + 'a';
-					else retval |= v2 + '0';
-					
+					if (v2 < nc) retval |= v2 + '0';
+					else if (v2 < nc + ac) retval |= v2 + 'A' - nc;
+					else retval |= v2 + 'a' - ac - nc;
+					libbio_assert([c1 = retval & 0xff](){
+						return(('A' <= c1 && c1 <= 'Z') || ('a' <= c1 && c1 <= 'z') || ('0' <= c1 && c1 <= '9'));
+					}());
+
 					return {retval};
 				},
 				gen::inRange(0, 2 * ac),
@@ -408,15 +455,16 @@ namespace rc {
 				return gen::apply(
 					[value_count](auto &&value_tuple, auto const &tag_ids) -> sam::optional_field {
 						// Make sure that we have only valid characters.
-						auto const transform([](char const cc){ return cc % (127 - ' ') + ' '; });
+						auto const transform_1([](unsigned char const cc){ return cc % (127 - '!') + '!'; });
+						auto const transform_2([](unsigned char const cc){ return cc % (127 - ' ') + ' '; });
 				
 						for (auto &cc : std::get <sam::optional_field::container_of_t <char>>(value_tuple))
-							cc = transform(cc);
+							cc = transform_1(cc);
 				
 						for (auto &str : std::get <sam::optional_field::container_of_t <std::string>>(value_tuple).values)
 						{
 							for (auto &cc : str)
-								cc = transform(cc);
+								cc = transform_2(cc);
 						}
 						
 						// Ranks.
@@ -461,7 +509,7 @@ namespace rc {
 					gen::set(
 						&sam::record::qname,
 						gen::weightedOneOf <std::string>({
-							{1, gen::just(std::string("*"))},
+							{1, gen::just(std::string{})}, // Replaced with *
 							{8, make_identifier()}
 						})
 					),
@@ -470,6 +518,9 @@ namespace rc {
 						gen::exec([seq_len](){
 							auto remaining(seq_len);
 							std::vector <sam::cigar_run> retval;
+							if (!remaining)
+								return retval;
+							
 							cigar_chain_type::visit_node_types(
 								rsv::generate([] -> double { return double(*gen::inRange <std::uint32_t>(0, UINT32_MAX)) / UINT32_MAX; }), // gen::inRange <double> does not seem to work.
 								[&retval, &remaining]<typename t_type> -> bool {
@@ -497,7 +548,7 @@ namespace rc {
 						})
 					),
 					gen::set(&sam::record::seq, gen::just(std::move(seq))),
-					gen::set(&sam::record::qual, gen::container <std::vector <char>>(seq_len, gen::inRange('!', '~'))),
+					gen::set(&sam::record::qual, make_quality(seq_len)),
 					gen::set(&sam::record::optional_fields, gen::arbitrary <sam::optional_field>()),
 					gen::set(&sam::record::pos, gen::arbitrary <sam::position_type>()),
 					gen::set(&sam::record::pnext, gen::arbitrary <sam::position_type>()),
@@ -541,19 +592,18 @@ TEST_CASE(
 	"[sam_reader]"
 )
 {
-	rc::prop(
+	std::size_t iteration{};
+	return lb::rc_check(
 		"sam::reader works with arbitrary input",
-		[](record_set const &input){
+		[&iteration](record_set const &input){
+			RC_TAG(input.header.reference_sequences.size());
 			
-			std::stringstream stream;
+			++iteration;
+			RC_LOG() << "Iteration: " << iteration << '\n';
 			
 			// Output the header and the records.
-			stream << input.header;
-			for (auto const &rec : input.records)
-			{
-				output_record(stream, input.header, rec);
-				stream << '\n';
-			}
+			std::stringstream stream;
+			stream << input;
 			
 			// Parse.
 			{
@@ -567,10 +617,42 @@ TEST_CASE(
 					parsed_records.emplace_back(rec);
 				});
 				
+				RC_LOG() << "Expected:\n" << input << '\n';
+				RC_LOG() << "Actual:\n" << record_set(input, parsed_records) << '\n';
+
 				// TODO: Compare the headers?
 				RC_ASSERT(input.records.size() == parsed_records.size());
-				for (auto const &[input_rec, parsed_rec] : rsv::zip(input.records, parsed_records))
-					RC_ASSERT(sam::is_equal(input.header, parsed_header, input_rec, parsed_rec));
+				std::vector <std::size_t> non_matching;
+				for (auto const &[idx, tup] : rsv::zip(input.records, parsed_records) | rsv::enumerate)
+				{
+					auto const &[input_rec, parsed_rec] = tup;
+					if (!sam::is_equal(input.header, parsed_header, input_rec, parsed_rec))
+						non_matching.emplace_back(idx);
+				}
+				
+				if (!non_matching.empty())
+				{
+					RC_LOG() << "Non-matching record indices: ";
+					bool is_first{true};
+					for (auto const idx : non_matching)
+					{
+						if (!is_first)
+							RC_LOG() << ", ";
+						RC_LOG() << idx;
+					}
+					RC_LOG() << '\n';
+					
+					for (auto const idx : non_matching)
+					{
+						RC_LOG() << '(' << idx << ") expected v. actual (QNAMEs: “" << input.records[idx].qname << "”, “" << parsed_records[idx].qname << "”):\n";
+						sam::output_record(RC_LOG(), input.header, input.records[idx]);
+						RC_LOG() << '\n';
+						sam::output_record(RC_LOG(), input.header, parsed_records[idx]);
+						RC_LOG() << '\n';
+					}
+					
+					RC_FAIL("Got non-matching records.");
+				}
 			}
 			
 			return true;
