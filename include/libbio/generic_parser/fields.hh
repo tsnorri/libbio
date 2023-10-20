@@ -9,6 +9,7 @@
 #include <boost/spirit/home/x3.hpp>
 #include <libbio/generic_parser/delimiter.hh>
 #include <libbio/generic_parser/errors.hh>
+#include <libbio/generic_parser/field_position.hh>
 #include <libbio/generic_parser/filters.hh>
 #include <libbio/generic_parser/iterators.hh>
 #include <libbio/tuple/cat.hh>
@@ -32,29 +33,6 @@
 
 
 namespace libbio::parsing {
-	
-	enum class field_position : std::uint8_t
-	{
-		initial_	= 0x1,
-		middle_		= 0x2,
-		final_		= 0x4
-	};
-	
-	constexpr inline field_position operator|(field_position const lhs, field_position const rhs)
-	{
-		return static_cast <field_position>(std::to_underlying(lhs) | std::to_underlying(rhs));
-	}
-	
-	constexpr inline field_position operator&(field_position const lhs, field_position const rhs)
-	{
-		return static_cast <field_position>(std::to_underlying(lhs) | std::to_underlying(rhs));
-	}
-	
-	constexpr inline bool any(field_position const fp)
-	{
-		return std::to_underlying(fp) ? true : false;
-	}
-	
 	
 	template <typename t_tag, typename t_parser>
 	struct tagged_parser
