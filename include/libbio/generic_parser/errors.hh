@@ -14,7 +14,10 @@
 
 namespace libbio::parsing::errors {
 	
-	struct unexpected_eof {};
+	struct unexpected_eof
+	{
+		char const *what() const noexcept { return "Unexpected EOF"; }
+	};
 	
 	
 	template <typename t_value>
@@ -26,6 +29,8 @@ namespace libbio::parsing::errors {
 			value(value_)
 		{
 		}
+		
+		char const *what() const noexcept { return "Unexpected character"; }
 	};
 	
 	
@@ -66,8 +71,8 @@ namespace libbio::parsing {
 		friend class parser_tpl;
 		
 	protected:
-		std::size_t	m_position{};
-		
+		std::size_t			m_position{};
+
 	public:
 		virtual ~parse_error() {}
 		std::size_t position() const { return m_position; }
@@ -87,10 +92,8 @@ namespace libbio::parsing {
 		{
 		}
 		
-		virtual void output_error(std::ostream &os) const
-		{
-			os << m_error;
-		}
+		char const *what() const noexcept override { return m_error.what(); }
+		void output_error(std::ostream &os) const override { os << m_error; }
 	};
 	
 	
