@@ -26,7 +26,7 @@ namespace libbio::sam::fields {
 		
 		
 		template <typename t_range>
-		constexpr inline cigar_run parse_one(t_range &range) const
+		constexpr cigar_run parse_one(t_range &range) const
 		{
 			cigar_count_type count{};
 			parsing::fields::integer <cigar_count_type> integer_field;
@@ -43,22 +43,59 @@ namespace libbio::sam::fields {
 		}
 		
 		
-		// FIXME: Combine with the CIGAR parser for SeqAn 3; the following function is (almost?) identical with the one written earlier.
-		template <typename t_delimiter, parsing::field_position t_field_position = parsing::field_position::middle_, typename t_range>
-		constexpr inline parsing::parsing_result parse(t_range &range, cigar_vector &dst) const
+		constexpr void clear_value(cigar_vector &dst) const
 		{
 			dst.clear();
-			
+		}
+		
+		
+		template <typename t_delimiter, parsing::field_position t_field_position, typename t_range>
+		constexpr parsing::parsing_result parse(t_range &range, cigar_vector &dst) const
+		{
 			if constexpr (any(parsing::field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
 					return {};
-				goto continue_parsing;
+				goto continue_parsing_1;
 			}
 			
+			// Check for missing value.
+			if (!range.is_at_end())
+			{
+			continue_parsing_1:
+				auto const cc(*range.it);
+				if ('*' == cc)
+				{
+					++range.it;
+					
+					if constexpr (t_field_position == parsing::field_position::final_)
+					{
+						if (range.is_at_end())
+							return {parsing::INVALID_DELIMITER_INDEX};
+					}
+					else
+					{
+						if (range.is_at_end())
+							throw parsing::parse_error_tpl(parsing::errors::unexpected_eof());
+					}
+					
+					auto const cc_(*range.it);
+					if (auto const idx{t_delimiter::matching_index(cc_)}; t_delimiter::size() != idx)
+					{
+						++range.it;
+						return {idx};
+					}
+
+					throw parsing::parse_error_tpl(parsing::errors::unexpected_character(cc_));
+				}
+				
+				goto continue_parsing_2;
+			}
+			
+			// Process the CIGAR.
 			while (!range.is_at_end())
 			{
-			continue_parsing:
+			continue_parsing_2:
 				dst.emplace_back(parse_one(range));
 				
 				auto const cc(*range.it);
