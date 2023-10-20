@@ -36,6 +36,8 @@ namespace libbio::sam::detail {
 		void clear();
 		t_type &operator[](std::size_t const idx) { return values[idx]; }
 		t_type const &operator[](std::size_t const idx) const { return values[idx]; }
+		t_type &back() { libbio_assert_lt(0, size_); return values[size_ - 1]; }
+		t_type const &back() const { libbio_assert_lt(0, size_); return values[size_ - 1]; }
 		
 		template <typename ... t_args>
 		inline t_type &emplace_back(t_args && ... args);
@@ -89,6 +91,8 @@ namespace libbio::sam {
 		friend std::ostream &operator<<(std::ostream &, optional_field const &);
 		
 	public:
+		typedef double floating_point_type;
+		
 		template <typename t_type>
 		using value_vector = std::vector <t_type>;
 		
@@ -135,8 +139,8 @@ namespace libbio::sam {
 	public:
 		typedef std::tuple <
 			container_of_t <char>,
-			container_of_t <std::int32_t>,	// Type from BAM, see SAM 1.0, footnote 16.
-			container_of_t <float>,
+			container_of_t <std::int32_t>,			// Type from BAM, see SAM 1.0, footnote 16.
+			container_of_t <floating_point_type>,
 			container_of_t <std::string>,
 			array_vector <std::byte>,
 			array_vector <std::int8_t>,
@@ -145,7 +149,7 @@ namespace libbio::sam {
 			array_vector <std::uint16_t>,
 			array_vector <std::int32_t>,
 			array_vector <std::uint32_t>,
-			array_vector <float>
+			array_vector <floating_point_type>
 		> value_tuple_type;
 		
 	private:
@@ -159,13 +163,13 @@ namespace libbio::sam {
 		static_assert(array_type_codes.size() == type_codes.size());
 		
 		template <typename t_type> struct array_type_code {};
-		template <> struct array_type_code <std::int8_t>	: public array_type_code_helper_t <'c'> {};
-		template <> struct array_type_code <std::uint8_t>	: public array_type_code_helper_t <'C'> {};
-		template <> struct array_type_code <std::int16_t>	: public array_type_code_helper_t <'s'> {};
-		template <> struct array_type_code <std::uint16_t>	: public array_type_code_helper_t <'S'> {};
-		template <> struct array_type_code <std::int32_t>	: public array_type_code_helper_t <'i'> {};
-		template <> struct array_type_code <std::uint32_t>	: public array_type_code_helper_t <'I'> {};
-		template <> struct array_type_code <float>			: public array_type_code_helper_t <'f'> {};
+		template <> struct array_type_code <std::int8_t>			: public array_type_code_helper_t <'c'> {};
+		template <> struct array_type_code <std::uint8_t>			: public array_type_code_helper_t <'C'> {};
+		template <> struct array_type_code <std::int16_t>			: public array_type_code_helper_t <'s'> {};
+		template <> struct array_type_code <std::uint16_t>			: public array_type_code_helper_t <'S'> {};
+		template <> struct array_type_code <std::int32_t>			: public array_type_code_helper_t <'i'> {};
+		template <> struct array_type_code <std::uint32_t>			: public array_type_code_helper_t <'I'> {};
+		template <> struct array_type_code <floating_point_type>	: public array_type_code_helper_t <'f'> {};
 		
 		template <typename t_type>
 		constexpr static inline auto const array_type_code_v{array_type_code <t_type>::value};
@@ -182,7 +186,7 @@ namespace libbio::sam {
 		inline void add_value(tag_id_type const tag_id, t_value &&val);
 		
 		inline void start_string(tag_id_type const tag_id);
-		inline std::string &current_string_value() { return std::get <container_of_t <std::string>>(m_values).values.back(); }
+		inline std::string &current_string_value() { return std::get <container_of_t <std::string>>(m_values).back(); }
 		
 		template <typename t_type>
 		inline void start_array(tag_id_type const tag_id);
@@ -202,8 +206,10 @@ namespace libbio::sam {
 			m_tag_ranks(std::move(tag_ranks)),
 			m_values(std::move(values))
 		{
+			update_tag_order();
 		}
 		
+		bool empty() const { return m_tag_ranks.empty(); }
 		void clear() { m_tag_ranks.clear(); tuples::for_each(m_values, []<typename t_idx>(auto &element){ element.clear(); }); }
 		template <typename t_type> t_type *get(tag_id_type const tag) { return do_get <t_type>(*this, tag); }
 		template <typename t_type> t_type const *get(tag_id_type const tag) const { return do_get <t_type const>(*this, tag); }
@@ -254,7 +260,7 @@ namespace libbio::sam {
 	template <typename t_type, typename t_value>
 	void optional_field::add_array_value(t_value const val)
 	{
-		std::get <array_vector <t_type>>(m_values).values.back().emplace_back(val);
+		std::get <array_vector <t_type>>(m_values).back().emplace_back(val);
 	}
 	
 	

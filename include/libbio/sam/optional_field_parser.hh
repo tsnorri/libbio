@@ -19,12 +19,15 @@ namespace libbio::sam::fields {
 	
 	struct optional_field
 	{
+		constexpr static bool const is_optional{true};
+		
 		template <bool t_should_copy>
 		using value_type = sam::optional_field;
 		
+		constexpr void clear_value(sam::optional_field &dst) const { dst.clear(); }
 		
-		template <typename t_delimiter, parsing::field_position t_field_position = parsing::field_position::middle_, typename t_range>
-		constexpr inline parsing::parsing_result parse(t_range &range, sam::optional_field &dst) const
+		template <typename t_delimiter, parsing::field_position t_field_position, typename t_range>
+		constexpr parsing::parsing_result parse(t_range &range, sam::optional_field &dst) const
 		{
 			dst.clear();
 			
@@ -42,6 +45,8 @@ namespace libbio::sam::fields {
 			return retval;
 		}
 	};
+
+	static_assert(parsing::is_optional_v <optional_field>);
 }
 
 #endif
