@@ -50,8 +50,8 @@ namespace libbio::parsing {
 	{
 		return std::is_same_v <t_lhs, t_rhs>;
 	}
-	
-	
+
+
 	template <typename t_type, typename = void>
 	struct is_optional_repeating : public std::false_type {};
 	
@@ -250,8 +250,8 @@ namespace libbio::parsing::fields {
 		using value_type = void;
 
 
-		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse(t_range &range) const
+		template <typename t_delimiter, field_position t_field_position, typename t_range>
+		LIBBIO_CONSTEXPR_WITH_GOTO parsing_result parse(t_range &range) const
 		{
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
@@ -273,21 +273,19 @@ namespace libbio::parsing::fields {
 				++range.it;
 			}
 		
+			// t_delimiter not matched.
 			if constexpr (any(field_position::final_ & t_field_position))
-			{
-				// t_delimiter not matched.
+				return {INVALID_DELIMITER_INDEX};
+			else
 				throw parse_error_tpl(errors::unexpected_eof());
-			}
-		
-			return {};
 		}
 	};
 	
 	
 	template <
 		typename t_delimiter,
-		typename t_character_filter = filters::no_op,
-		field_position t_field_position = field_position::middle_,
+		typename t_character_filter,
+		field_position t_field_position,
 		typename /* ignored */,
 		typename t_range,
 		typename t_dst
@@ -295,8 +293,6 @@ namespace libbio::parsing::fields {
 	requires (!std::remove_cvref_t <t_range>::is_contiguous)
 	LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse_sequential(t_range &&range, t_dst &&dst)
 	{
-		dst.clear();
-	
 		if constexpr (any(field_position::initial_ & t_field_position))
 		{
 			if (range.is_at_end())
@@ -332,8 +328,8 @@ namespace libbio::parsing::fields {
 	
 	template <
 		typename t_delimiter,
-		typename t_character_filter = filters::no_op,
-		field_position t_field_position = field_position::middle_,
+		typename t_character_filter,
+		field_position t_field_position,
 		typename t_assigned,
 		typename t_range,
 		typename t_dst
@@ -388,16 +384,18 @@ namespace libbio::parsing::fields {
 		using value_type = typename detail::text_value_type_tpl <
 			parsing::detail::value_if_not_void <t_should_always_copy, bool, t_should_copy>::value
 		>::type;
+		
+		
+		template <typename t_dst>
+		constexpr void clear_value(t_dst &dst) const { dst.clear(); }
 
 
-		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range, typename t_dst>
-		constexpr inline parsing_result parse(t_range &range, t_dst &dst) const
+		template <typename t_delimiter, field_position t_field_position, typename t_range, typename t_dst>
+		constexpr parsing_result parse(t_range &range, t_dst &dst) const
 		{
 			struct helper
 			{
 				t_dst &dst;
-				
-				void clear() { dst.clear(); }
 				void handle_character(char const cc) { dst.push_back(cc); }
 			};
 			
@@ -417,14 +415,15 @@ namespace libbio::parsing::fields {
 		template <bool t_should_copy>
 		using value_type = t_value;
 		
-		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range, typename t_dst>
-		constexpr inline parsing_result parse(t_range &range, t_dst &dst) const
+		template <typename t_dst>
+		constexpr void clear_value(t_dst &dst) const { dst.clear(); }
+		
+		template <typename t_delimiter, field_position t_field_position, typename t_range, typename t_dst>
+		constexpr parsing_result parse(t_range &range, t_dst &dst) const
 		{
 			struct helper
 			{
 				t_dst &dst;
-				
-				void clear() { dst.clear(); }
 				void handle_character(char const cc) { dst.emplace_back(cc); }
 			};
 			
@@ -440,14 +439,15 @@ namespace libbio::parsing::fields {
 		template <bool t_should_copy>
 		using value_type = t_value_type;
 		
+		constexpr void clear_value(t_value_type &dst) const { dst = t_value_type{}; }
 		
-		template <field_position t_field_position = field_position::middle_, typename t_range>
-		constexpr inline bool parse_value(t_range &range, t_value_type &val) const
+		template <field_position t_field_position, typename t_range>
+		constexpr bool parse_value(t_range &range, t_value_type &val) const
 		{
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
-					return true;
+					return false;
 			}
 			else
 			{
@@ -460,11 +460,10 @@ namespace libbio::parsing::fields {
 			return true;
 		}
 		
-		
-		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		constexpr inline parsing_result parse(t_range &range, t_value_type &val) const
+		template <typename t_delimiter, field_position t_field_position, typename t_range>
+		constexpr parsing_result parse(t_range &range, t_value_type &val) const
 		{
-			if (!parse_value(range, val))
+			if (!parse_value <t_field_position>(range, val))
 				return {};
 			
 			if constexpr (any(field_position::final_ & t_field_position))
@@ -501,13 +500,13 @@ namespace libbio::parsing::fields {
 		template <bool t_should_copy>
 		using value_type = t_integer;
 		
+		constexpr void clear_value(t_integer &dst) const { dst = t_integer{}; }
 		
-		template <field_position t_field_position = field_position::middle_, typename t_range>
-		LIBBIO_CONSTEXPR_WITH_GOTO inline bool parse_value(t_range &range, t_integer &val) const
+		template <field_position t_field_position, typename t_range>
+		LIBBIO_CONSTEXPR_WITH_GOTO bool parse_value(t_range &range, t_integer &val) const
 		{
 			bool did_parse{};
 			bool is_negative{};
-			val = 0;
 			
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
@@ -581,12 +580,10 @@ namespace libbio::parsing::fields {
 			return true;
 		}
 		
-		
-		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		LIBBIO_CONSTEXPR_WITH_GOTO inline parsing_result parse(t_range &range, t_integer &val) const
+		template <typename t_delimiter, field_position t_field_position, typename t_range>
+		LIBBIO_CONSTEXPR_WITH_GOTO parsing_result parse(t_range &range, t_integer &val) const
 		{
 			bool is_negative{};
-			val = 0;
 		
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
@@ -651,9 +648,9 @@ namespace libbio::parsing::fields {
 			}
 			
 			if constexpr (any(field_position::final_ & t_field_position))
+				return {};
+			else
 				throw parse_error_tpl(errors::unexpected_eof());
-			
-			return {};
 		}
 	};
 	
@@ -664,9 +661,10 @@ namespace libbio::parsing::fields {
 		template <bool t_should_copy>
 		using value_type = t_floating_point;
 		
+		constexpr void clear_value(t_floating_point &dst) const { dst = t_floating_point{}; }
 		
-		template <typename t_delimiter, field_position t_field_position = field_position::middle_, typename t_range>
-		constexpr inline parsing_result parse(t_range &range, t_floating_point &val) const
+		template <typename t_delimiter, field_position t_field_position, typename t_range>
+		constexpr parsing_result parse(t_range &range, t_floating_point &val) const
 		{
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
@@ -711,7 +709,7 @@ namespace libbio::parsing::fields {
 				if constexpr (any(field_position::final_ & t_field_position))
 				{
 					if (range.is_at_end())
-						return {};
+						return {INVALID_DELIMITER_INDEX};
 					else
 						throw parse_error_tpl(errors::unexpected_character(*range.it));
 				}
@@ -824,7 +822,7 @@ namespace libbio::parsing::fields {
 		public:
 			constexpr t_range &range() { return m_range; }
 			
-			constexpr inline void read_delimiter()
+			constexpr void read_delimiter()
 			{
 				++m_range.it;
 				if (m_range.is_at_end())
@@ -837,7 +835,7 @@ namespace libbio::parsing::fields {
 			}
 			
 			template <typename t_tag>
-			constexpr inline bool continue_parsing(t_tag &&tag)
+			constexpr bool continue_parsing(t_tag &&tag)
 			{
 				// Find a parser that matches t_tag.
 				typedef tuples::find_if <
@@ -863,14 +861,14 @@ namespace libbio::parsing::fields {
 	
 		template <
 			typename t_delimiter,
-			field_position t_field_position = field_position::middle_,
+			field_position t_field_position,
 			typename t_stack,
 			typename t_range,
 			typename t_dst,
 			typename t_buffer,
 			typename t_parse_cb
 		>
-		constexpr inline parsing_result parse(t_range &range, t_dst &dst, t_buffer &buffer, t_parse_cb &parse_cb) const
+		constexpr parsing_result parse(t_range &range, t_dst &dst, t_buffer &buffer, t_parse_cb &parse_cb) const
 		{
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{

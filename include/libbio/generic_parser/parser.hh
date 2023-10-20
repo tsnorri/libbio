@@ -369,8 +369,29 @@ namespace libbio::parsing {
 		};
 		
 		
+		template <std::size_t t_field_idx, typename t_delimiter, field_position t_field_position, typename... t_args_>
+		struct field_helper
+		{
+			template <typename t_field, typename... t_fn_args>
+			static parsing_result parse(t_field &&field, t_fn_args && ... args)
+			{
+				try
+				{
+					return field.template parse <t_delimiter, t_field_position, t_args_...>(std::forward <t_fn_args>(args)...);
+				}
+				catch (parse_error &error)
+				{
+					error.m_field_index = t_field_idx;
+					error.m_field_position = t_field_position;
+					error.m_expected_delimiter = t_delimiter{};
+					throw;
+				}
+			}
+		};
+		
+		
 		template <std::size_t t_idx, typename t_value, typename t_buffer>
-		static inline void swap_buffers(t_value &value, t_buffer &buffer)
+		static void swap_buffers(t_value &value, t_buffer &buffer)
 		{
 			typedef tuples::find_if <t_buffer, detail::matches_array <t_value>::template with>	find_result_type;
 			static_assert(find_result_type::found);
@@ -384,8 +405,9 @@ namespace libbio::parsing {
 		}
 		
 		
+		// Static b.c. it is easier to call from conditional_field’s callback_target.
 		template <std::size_t t_field_idx = 0, typename t_stack = std::tuple <>, typename t_range, typename t_dst, typename t_buffer, typename t_parse_cb>
-		static inline bool parse_alternatives(t_range &range, t_dst &dst, t_buffer &buffer, t_parse_cb &parse_cb, bool const did_repeat = false)
+		static bool parse_alternatives(t_range &range, t_dst &dst, t_buffer &buffer, t_parse_cb &parse_cb, bool const did_repeat = false)
 		{
 			if constexpr (t_field_idx == field_count)
 			{
@@ -424,15 +446,16 @@ namespace libbio::parsing {
 			}
 			else
 			{
-				constexpr auto const field_position{trait_type::template field_position <t_field_idx>};
 				typedef std::tuple_element_t <t_field_idx, field_tuple>										field_type;
 				typedef tuples::conditional_element_t <1 + t_field_idx, field_tuple>						next_field_type;
 				typedef typename trait_type::template delimiter <field_type, next_field_type, t_field_idx>	delimiter;
 				typedef typename field_type::template value_type <t_should_copy>							value_type;
-				
+				constexpr auto const field_position{trait_type::template field_position <t_field_idx, next_field_type>};
+
 				field_type field;
 				
 				// Check if the value of the current field (1) is a variant, or (2) void, i.e. not saved.
+				// FIXME: come up with a way to set the field index to the parse_error in the alternative parser.
 				if constexpr (is_alternative_v <value_type>)
 				{
 					// Push the current parser type s.t. parsing may be continued after the current field.
@@ -442,6 +465,8 @@ namespace libbio::parsing {
 				else
 				{
 					auto do_continue([&](auto &dst, parsing_result const &res){
+						// FIXME: Handle optional fields. (The approach in the non-alternative parser does not work b.c. a field before the alternative part may be marked final.)
+						
 						if constexpr (is_repeating_v <field_type>)
 						{
 							if (res)
@@ -472,6 +497,7 @@ namespace libbio::parsing {
 					{
 						// Parse and save.
 						auto do_continue_([&](auto &dst, auto &value){
+							field.clear_value(value);
 							auto const res(field.template parse <delimiter, field_position>(range, value));
 							return do_continue(dst, res);
 						});
@@ -508,18 +534,8 @@ namespace libbio::parsing {
 		}
 		
 		
-		template <typename t_range, typename t_dst, typename t_parse_cb>
-		inline bool parse__(t_range &range, t_dst &dst, buffer_type &buffer, t_parse_cb &parse_cb)
-		requires parsed_type_is_alternative
-		{
-			// Recurse to build the tuple for the current record.
-			return parse_alternatives(range, dst, buffer, parse_cb);
-		}
-		
-		
 		template <std::size_t t_field_idx = 0, std::size_t t_value_idx = 0, typename t_range>
-		inline bool parse__(t_range &range, record_type &dst)
-		requires (!parsed_type_is_alternative)
+		bool parse___(t_range &range, record_type &dst)
 		{
 			if constexpr (t_field_idx == field_count)
 				return true;
@@ -529,50 +545,98 @@ namespace libbio::parsing {
 				typedef tuples::conditional_element_t <1 + t_field_idx, field_tuple>						next_field_type;
 				typedef typename trait_type::template delimiter <field_type, next_field_type, t_field_idx>	delimiter;
 				
-				constexpr auto const field_position{trait_type::template field_position <t_field_idx>};
+				constexpr auto const field_position{trait_type::template field_position <t_field_idx, next_field_type>};
 				field_type field;
 				
 				constexpr bool const should_skip_field{std::is_same_v <void, typename field_type::template value_type <t_should_copy>>};
 				constexpr auto const next_value_idx{(should_skip_field ? 0 : 1) + t_value_idx};
 				
 				auto do_continue([&](parsing_result const &res) mutable {
+					// FIXME: This may not handle all possible combinations of repeating and optional fields. (Esp. multiple optional with different separators.)
+					if constexpr (any(field_position & field_position::final_))
+					{
+						if (res && delimiter::last_index() == res.matched_delimiter_index)
+							return true;
+					}
+					
 					if constexpr (is_repeating_v <field_type>)
 					{
 						if (res)
 						{
 							if (0 == res.matched_delimiter_index) // We assume that the first delimiter indicates repeating the current field.
-								return parse__ <t_field_idx, t_value_idx>(range, dst);
+								return parse___ <t_field_idx, t_value_idx>(range, dst);
 							else
-								return parse__ <1 + t_field_idx, next_value_idx>(range, dst);
+								return parse___ <1 + t_field_idx, next_value_idx>(range, dst);
 						}
 					}
 					
-					if constexpr (any(field_position & field_position::final_))
+					if constexpr (any(field_position & field_position::initial_))
 					{
 						if (!res)
 							return false;
 					}
 					
-					return parse__ <1 + t_field_idx, next_value_idx>(range, dst);
+					libbio_assert_msg(res, "Expected field ", t_field_idx, " to have completed parsing");
+					return parse___ <1 + t_field_idx, next_value_idx>(range, dst);
 				});
 				
 				// Check if the value of the current field should be saved.
 				if constexpr (should_skip_field)
 				{
-					auto const res(field.template parse <delimiter, field_position>(range));
+					auto const res(field_helper <t_field_idx, delimiter, field_position>::parse(field, range));
 					return do_continue(res); // Skip instead.
 				}
 				else
 				{
-					auto const res(field.template parse <delimiter, field_position>(range, std::get <t_value_idx>(dst)));
+					auto const res(field_helper <t_field_idx, delimiter, field_position>::parse(field, range, std::get <t_value_idx>(dst)));
 					return do_continue(res); // Save.
 				}
 			}
 		}
 		
 		
+		template <std::size_t t_field_idx = 0, std::size_t t_value_idx = 0>
+		void clear_values(record_type &dst)
+		{
+			if constexpr (t_field_idx == field_count)
+				return;
+			else
+			{
+				typedef std::tuple_element_t <t_field_idx, field_tuple>	field_type;
+				field_type field;
+				
+				constexpr bool const should_skip_field{std::is_same_v <void, typename field_type::template value_type <t_should_copy>>};
+				if constexpr (should_skip_field)
+					clear_values <1 + t_field_idx, t_value_idx>(dst);
+				else
+				{
+					field.clear_value(std::get <t_value_idx>(dst));
+					clear_values <1 + t_field_idx, 1 + t_value_idx>(dst);
+				}
+			}
+		}
+		
+		
+		template <typename t_range, typename t_dst, typename t_parse_cb>
+		bool parse__(t_range &range, t_dst &dst, buffer_type &buffer, t_parse_cb &parse_cb)
+		requires parsed_type_is_alternative
+		{
+			// Recurse to build the tuple for the current record.
+			return parse_alternatives(range, dst, buffer, parse_cb);
+		}
+		
+		
+		template <typename t_range, typename t_dst>
+		bool parse__(t_range &range, t_dst &dst)
+		requires (!parsed_type_is_alternative)
+		{
+			clear_values(dst);
+			return parse___(range, dst);
+		}
+		
+		
 		template <typename t_range, typename... t_args_>
-		inline bool parse_(t_range &range, t_args_ && ... args)
+		bool parse_(t_range &range, t_args_ && ... args)
 		{
 			try
 			{
