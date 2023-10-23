@@ -6,6 +6,7 @@
 #include <catch2/catch.hpp>
 #include <libbio/buffered_writer/file_handle_buffered_writer.hh>
 #include <libbio/file_handling.hh>
+#include <libbio/utility.hh>										// libbio::is_equal()
 
 namespace gen	= Catch::Generators;
 namespace lb	= libbio;
@@ -42,7 +43,7 @@ SCENARIO("file_handle_buffered_writer can write to a file", "[file_handling]")
 					std::string buffer(seq.size(), 0);
 					auto const res(read(read_handle.get(), buffer.data(), buffer.size()));
 					
-					REQUIRE(seq.size() == res);
+					REQUIRE(lb::is_equal(seq.size(), res));
 					REQUIRE(buffer == seq);
 				}
 			}

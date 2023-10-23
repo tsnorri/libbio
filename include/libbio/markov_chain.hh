@@ -85,6 +85,18 @@ namespace libbio::markov_chains::detail {
 	{
 		return (filter_one(index <t_idxs>{}, predicate) + ...);
 	}
+	
+	
+#ifdef __clang__
+	template <typename t_type>
+	decltype(auto) declval() { return std::declval <t_type>(); }
+#else
+	// std::declval may not be used in evaluated context but we would like to determine
+	// a type of a tuple by using the return type of a function template. To alleviate,
+	// we just declare a function that works like std::declval but do not provide a definition.
+	template <typename t_type>
+	std::add_rvalue_reference_t <t_type> declval();
+#endif
 }
 
 
@@ -293,7 +305,7 @@ namespace libbio::markov_chains::detail {
 				{
 					auto const node_idx{std::get <t_idx>(unique_transition_node_indices)};
 					return std::tuple_cat(
-						std::declval <
+						detail::declval <
 							std::tuple <
 								std::tuple_element_t <node_idx, transition_nodes_type>
 							>

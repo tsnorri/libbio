@@ -16,6 +16,8 @@
 
 namespace libbio::sam::detail {
 	
+	typedef double floating_point_type;
+	
 	template <typename t_type>
 	struct is_vector : public std::false_type {};
 	
@@ -42,6 +44,17 @@ namespace libbio::sam::detail {
 		template <typename ... t_args>
 		inline t_type &emplace_back(t_args && ... args);
 	};
+	
+	
+	template <typename t_type>
+	using value_vector = std::vector <t_type>;
+	
+	template <typename t_type>
+	using array_vector = vector_container <value_vector <t_type>>;
+	
+	template <typename t_type> struct container_of	{ typedef value_vector <t_type> type; };
+	template <> struct container_of <std::string>	{ typedef vector_container <std::string> type; };
+	template <typename t_type> using container_of_t = container_of <t_type>::type;
 	
 	
 	// For using the visitor pattern with the optional fields and their values
@@ -80,6 +93,19 @@ namespace libbio::sam::detail {
 		
 		return values[size_++];
 	}
+	
+	
+	template <char t_type_code>
+	using array_type_code_helper_t = std::integral_constant <char, t_type_code>;
+	
+	template <typename t_type> struct array_type_code {};
+	template <> struct array_type_code <std::int8_t>			: public array_type_code_helper_t <'c'> {};
+	template <> struct array_type_code <std::uint8_t>			: public array_type_code_helper_t <'C'> {};
+	template <> struct array_type_code <std::int16_t>			: public array_type_code_helper_t <'s'> {};
+	template <> struct array_type_code <std::uint16_t>			: public array_type_code_helper_t <'S'> {};
+	template <> struct array_type_code <std::int32_t>			: public array_type_code_helper_t <'i'> {};
+	template <> struct array_type_code <std::uint32_t>			: public array_type_code_helper_t <'I'> {};
+	template <> struct array_type_code <floating_point_type>	: public array_type_code_helper_t <'f'> {};
 }
 
 
@@ -91,18 +117,12 @@ namespace libbio::sam {
 		friend std::ostream &operator<<(std::ostream &, optional_field const &);
 		
 	public:
-		typedef double floating_point_type;
-		
-		template <typename t_type>
-		using value_vector = std::vector <t_type>;
-		
-		template <typename t_type>
-		using array_vector = detail::vector_container <value_vector <t_type>>;
+		typedef detail::floating_point_type	floating_point_type;
 		
 		// Type mapping.
-		template <typename t_type> struct container_of	{ typedef value_vector <t_type> type; };
-		template <> struct container_of <std::string>	{ typedef detail::vector_container <std::string> type; };
-		template <typename t_type> using container_of_t = container_of <t_type>::type;
+		template <typename t_type> using value_vector = detail::value_vector <t_type>;
+		template <typename t_type> using array_vector = detail::array_vector <t_type>;
+		template <typename t_type> using container_of_t = detail::container_of_t <t_type>;
 		
 		template <typename t_type>
 		using value_container_t = std::conditional_t <
@@ -152,27 +172,13 @@ namespace libbio::sam {
 			array_vector <floating_point_type>
 		> value_tuple_type;
 		
-	private:
-		template <char t_type_code>
-		using array_type_code_helper_t = std::integral_constant <char, t_type_code>;
-		
-	public:
 		constexpr static std::array type_codes{'A', 'i', 'f', 'Z', 'H', 'B', 'B', 'B', 'B', 'B', 'B', 'B'};
 		constexpr static std::array array_type_codes{'\0', '\0', '\0', '\0', '\0', 'c', 'C', 's', 'S', 'i', 'I', 'f'};
 		static_assert(std::tuple_size_v <value_tuple_type> == type_codes.size());
 		static_assert(array_type_codes.size() == type_codes.size());
 		
-		template <typename t_type> struct array_type_code {};
-		template <> struct array_type_code <std::int8_t>			: public array_type_code_helper_t <'c'> {};
-		template <> struct array_type_code <std::uint8_t>			: public array_type_code_helper_t <'C'> {};
-		template <> struct array_type_code <std::int16_t>			: public array_type_code_helper_t <'s'> {};
-		template <> struct array_type_code <std::uint16_t>			: public array_type_code_helper_t <'S'> {};
-		template <> struct array_type_code <std::int32_t>			: public array_type_code_helper_t <'i'> {};
-		template <> struct array_type_code <std::uint32_t>			: public array_type_code_helper_t <'I'> {};
-		template <> struct array_type_code <floating_point_type>	: public array_type_code_helper_t <'f'> {};
-		
 		template <typename t_type>
-		constexpr static inline auto const array_type_code_v{array_type_code <t_type>::value};
+		constexpr static inline auto const array_type_code_v{detail::array_type_code <t_type>::value};
 		
 	private:
 		tag_rank_vector		m_tag_ranks;	// Rank of the tag among its value type.
@@ -210,7 +216,7 @@ namespace libbio::sam {
 		}
 		
 		bool empty() const { return m_tag_ranks.empty(); }
-		void clear() { m_tag_ranks.clear(); tuples::for_each(m_values, []<typename t_idx>(auto &element){ element.clear(); }); }
+		constexpr void clear() { m_tag_ranks.clear(); tuples::for_each(m_values, []<typename t_idx>(auto &element){ element.clear(); }); }
 		template <typename t_type> t_type *get(tag_id_type const tag) { return do_get <t_type>(*this, tag); }
 		template <typename t_type> t_type const *get(tag_id_type const tag) const { return do_get <t_type const>(*this, tag); }
 		

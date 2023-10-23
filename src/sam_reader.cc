@@ -87,6 +87,8 @@ namespace libbio::sam {
 			case sort_order_type::coordinate:
 				return "coordinate";
 		}
+		
+		return "unknown";
 	}
 	
 	
@@ -101,6 +103,8 @@ namespace libbio::sam {
 			case grouping_type::reference:
 				return "reference";
 		}
+		
+		return "none";
 	}
 	
 	

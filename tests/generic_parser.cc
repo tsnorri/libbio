@@ -9,6 +9,7 @@
 #include <libbio/generic_parser.hh>
 #include <rapidcheck.h>
 #include <rapidcheck/catch.h>		// rc::prop
+#include <string>
 #include <tuple>
 
 namespace lb	= libbio;
@@ -40,7 +41,7 @@ namespace {
 	template <>
 	struct type_mapping <std::string>
 	{
-		typedef string type;
+		typedef string type; // Refers to struct string declared above.
 	};
 	
 	template <typename t_type>
@@ -63,8 +64,8 @@ namespace {
 	template <typename t_fields>
 	struct generated_input_types
 	{
-		template <std::size_t t_i>
-		auto helper() const
+		template <std::size_t t_i = 0>
+		static auto helper_()
 		{
 			if constexpr (t_i == std::tuple_size_v <t_fields>)
 				return std::tuple{};
@@ -73,13 +74,15 @@ namespace {
 				typedef std::tuple_element_t <t_i, t_fields>			field_type;
 				typedef typename field_type::template value_type <true>	value_type;
 				if constexpr (std::is_same_v <void, value_type>)
-					return std::tuple_cat(std::tuple <mapped_type <std::string>>{}, helper <1 + t_i>());
+					return std::tuple_cat(std::tuple <mapped_type <std::string>>{}, helper_ <1 + t_i>());
 				else
-					return std::tuple_cat(std::tuple <mapped_type <value_type>>{}, helper <1 + t_i>());
+					return std::tuple_cat(std::tuple <mapped_type <value_type>>{}, helper_ <1 + t_i>());
 			}
 		}
 		
-		typedef std::invoke_result_t <decltype(&generated_input_types::helper <0>), generated_input_types> type;
+		static auto helper() { return helper_ <0>(); }
+		
+		typedef std::invoke_result_t <decltype(&helper)> type;
 	};
 	
 	

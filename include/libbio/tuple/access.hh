@@ -29,6 +29,19 @@ namespace libbio::tuples::detail {
 			(fn.template operator() <t_args>(), ...);
 		}
 	};
+	
+	
+	template <std::size_t t_idx, typename t_tuple, typename t_missing, bool t_is_less_than>
+	struct conditional_element_helper
+	{
+		typedef std::tuple_element_t <t_idx, t_tuple> type;
+	};
+	
+	template <std::size_t t_idx, typename t_tuple, typename t_missing>
+	struct conditional_element_helper <t_idx, t_tuple, t_missing, false>
+	{
+		typedef t_missing type;
+	};
 }
 
 
@@ -72,19 +85,7 @@ namespace libbio::tuples {
 	template <std::size_t t_idx, typename t_tuple, typename t_missing = void>
 	struct conditional_element
 	{
-		template <bool t_is_less_than>
-		struct helper
-		{
-			typedef std::tuple_element_t <t_idx, t_tuple> type;
-		};
-		
-		template <>
-		struct helper <false>
-		{
-			typedef t_missing type;
-		};
-		
-		typedef helper <t_idx < std::tuple_size_v <t_tuple>>::type type;
+		typedef detail::conditional_element_helper <t_idx, t_tuple, t_missing, t_idx < std::tuple_size_v <t_tuple>>::type type;
 	};
 	
 	template <std::size_t t_idx, typename t_tuple, typename t_missing = void>

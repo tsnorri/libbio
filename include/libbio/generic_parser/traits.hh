@@ -60,20 +60,11 @@ namespace libbio::parsing::traits {
 			struct delimiter_
 			{
 				static_assert(!is_optional_v <t_field> || std::is_void_v <t_next_field>, "Optional field can only appear as the final one");
-				
-				template <bool t_next_field_is_optional>
-				struct helper
-				{
-					typedef std::conditional_t <t_i == t_field_count - 1, line_separator_type, field_separator_type> type;
-				};
-				
-				template <>
-				struct helper <true>
-				{
-					typedef join_delimiters_t <field_separator_type, line_separator_type> type;
-				};
-				
-				typedef helper <is_optional_v <t_next_field>>::type type;
+				typedef std::conditional_t <
+					is_optional_v <t_next_field>,
+					join_delimiters_t <field_separator_type, line_separator_type>,
+					std::conditional_t <t_i == t_field_count - 1, line_separator_type, field_separator_type>
+				> type;
 			};
 			
 			template <typename t_field, typename t_next_field, std::size_t t_i>
