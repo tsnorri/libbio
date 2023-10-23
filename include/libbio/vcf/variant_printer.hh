@@ -302,6 +302,14 @@ namespace libbio::vcf {
 	{
 		output_vcf <variant_printer>(os, var);
 	}
+
+
+	template <typename t_string, typename t_format_access>
+	std::ostream &operator<<(std::ostream &os, formatted_variant <t_string, t_format_access> const &var)
+	{
+		output_vcf(os, var);
+		return os;
+	}
 }
 
 #endif
