@@ -3,6 +3,8 @@ include common.mk
 
 .PHONY: check-headers
 
+RAPIDCHECK_BUILD_DIR ?= build
+
 
 all:
 	$(MAKE) -C src all
@@ -35,11 +37,11 @@ check-headers:
 	echo "" >> check-headers/Makefile
 	$(MAKE) -C check-headers
 
-lib/rapidcheck/build/librapidcheck.a:
+lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a:
 	$(RM) -rf lib/rapidcheck/build && \
 	cd lib/rapidcheck && \
-	$(MKDIR) build && \
-	cd build && \
+	$(MKDIR) $(RAPIDCHECK_BUILD_DIR) && \
+	cd $(RAPIDCHECK_BUILD_DIR) && \
 	$(CMAKE) \
 		-DCMAKE_C_COMPILER="$(CC)" \
 		-DCMAKE_CXX_COMPILER="$(CXX)" \

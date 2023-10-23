@@ -1,6 +1,8 @@
 -include ../local.mk
 include ../common.mk
 
+RAPIDCHECK_BUILD_DIR ?= build
+
 # macOS 10.11 does not have std::uncaught_exceptions. We could use a custom-installed libc++
 # but set a configuration option instead for now.
 CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
@@ -55,10 +57,10 @@ all: tests
 rapidcheck: rc_tests
 
 tests: $(OBJECTS) $(GENERATED_TEST_FILES)
-	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/build/librapidcheck.a $(BOOST_LIBS)
+	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS)
 
 rc_tests: $(RC_OBJECTS)
-	$(CXX) -o $@ $(RC_OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/build/librapidcheck.a $(BOOST_LIBS)
+	$(CXX) -o $@ $(RC_OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS)
 
 clean:
 	$(RM) $(OBJECTS) $(RC_OBJECTS) $(GENERATED_TEST_FILES) tests rc_tests
