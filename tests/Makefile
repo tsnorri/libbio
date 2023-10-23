@@ -41,7 +41,8 @@ OBJECTS	=	algorithm.o \
 			subprocess_argument_parser.o \
 			vcf_reader.o
 
-RC_OBJECTS	=	sam_reader_arbitrary.rc.o \
+RC_OBJECTS	=	fasta_reader_arbitrary.rc.o \
+				sam_reader_arbitrary.rc.o \
 				rapidcheck_test_driver_main.o
 
 GENERATED_TEST_FILES = 	test-files/test-data-types.vcf.gz \
