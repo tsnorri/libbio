@@ -3,6 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#if !(defined(LIBBIO_NO_SAM_READER) && LIBBIO_NO_SAM_READER)
+
 #include <algorithm>					// std::sort
 #include <boost/io/ios_state.hpp>		// boost::io::ios_all_saver
 #include <format>
@@ -397,3 +399,5 @@ namespace libbio::sam {
 		return true;
 	}
 }
+
+#endif
