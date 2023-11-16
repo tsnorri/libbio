@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2019 Tuukka Norri
+ * Copyright (c) 2018–2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -32,6 +32,8 @@ namespace libbio { namespace detail {
 		}
 		
 	public:
+		constexpr inline bool is_reference() const { return true; }
+		
 		word_type load() const { return m_vector->load(m_idx); }
 		void assign_or(word_type val) { m_vector->assign_or(m_idx, val); }
 		
@@ -60,6 +62,8 @@ namespace libbio { namespace detail {
 		}
 		
 	public:
+		constexpr inline bool is_reference() const { return true; }
+		
 		word_type load(std::memory_order order = std::memory_order_seq_cst) const { return m_vector->load(m_idx, order); }
 		word_type fetch_or(word_type val, std::memory_order const order = std::memory_order_seq_cst) { return m_vector->fetch_or(m_idx, val, order); }
 		word_type fetch_and(word_type val, std::memory_order const order = std::memory_order_seq_cst) { return m_vector->fetch_and(m_idx, val, order); }
