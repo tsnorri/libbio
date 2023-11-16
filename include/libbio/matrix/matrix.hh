@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2019 Tuukka Norri
+ * Copyright (c) 2018–2023 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -48,9 +48,6 @@ namespace libbio {
 		
 	protected:
 		std::vector <value_type>	m_data;
-#ifndef LIBBIO_NDEBUG
-		std::size_t					m_columns{};
-#endif
 		std::size_t					m_stride{1};
 		
 	protected:
@@ -60,9 +57,6 @@ namespace libbio {
 		matrix() = default;
 		matrix(std::size_t const rows, std::size_t const columns):
 			m_data(columns * rows, 0),
-#ifndef LIBBIO_NDEBUG
-			m_columns(columns),
-#endif
 			m_stride(rows)
 		{
 			libbio_assert(m_stride);
@@ -80,6 +74,7 @@ namespace libbio {
 		void resize(std::size_t const rows, std::size_t const cols) { resize_if_needed(rows, cols); }
 		void resize(std::size_t const size) { m_data.resize(size); }
 		void set_stride(std::size_t const stride) { libbio_always_assert(0 == m_data.size() % m_stride); m_stride = stride; }
+		void clear() { m_data.clear(); }
 		
 		template <typename t_fn>
 		void apply(t_fn &&fn);
@@ -138,11 +133,8 @@ namespace libbio {
 		{
 			if (size() < rows * columns)
 				resize(rows * columns);
-
+			
 			set_stride(rows);
-#ifndef LIBBIO_NDEBUG
-			m_columns = columns;
-#endif
 		}
 	}
 	
@@ -153,9 +145,6 @@ namespace libbio {
 		using std::swap;
 		swap(m_data, rhs.m_data);
 		swap(m_stride, rhs.m_stride);
-#ifndef LIBBIO_NDEBUG
-		swap(m_columns, rhs.m_columns);
-#endif
 	}
 	
 	
