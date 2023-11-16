@@ -5,6 +5,7 @@ Classes and functions for use with bioinformatics.
 Features include:
 
 - VCF parsing
+- SAM parsing
 - FASTA parsing
 - Positional Burrows-Wheeler transform
 - Using C++ lambda functions with [libdispatch](https://github.com/apple/swift-corelibs-libdispatch)
