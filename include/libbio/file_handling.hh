@@ -10,6 +10,7 @@
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <initializer_list>
+#include <libbio/file_handle.hh>
 
 
 namespace libbio {
@@ -155,6 +156,13 @@ namespace libbio {
 		buffer.resize(size);
 		auto buffer_data(reinterpret_cast <typename t_stream::char_type *>(buffer.data()));
 		stream.read(buffer_data, size);
+	}
+	
+	
+	inline void open_stream_with_file_handle(file_ostream &stream, file_handle &fh)
+	{
+		stream.open(fh.get(), boost::iostreams::never_close_handle);
+		stream.exceptions(std::ostream::badbit);
 	}
 }
 
