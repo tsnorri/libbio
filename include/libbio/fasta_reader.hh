@@ -6,6 +6,7 @@
 #ifndef LIBBIO_FASTA_READER_HH
 #define LIBBIO_FASTA_READER_HH
 
+#include <filesystem>
 #include <iostream>
 #include <libbio/cxxcompat.hh>
 #include <libbio/file_handle.hh>
@@ -99,6 +100,7 @@ namespace libbio {
 	
 	
 	bool read_single_fasta_sequence(char const *fasta_path, std::vector <char> &seq, char const *seq_name = nullptr);
+	inline bool read_single_fasta_sequence(std::filesystem::path const &fasta_path, std::vector <char> &seq, char const *seq_name = nullptr) { return read_single_fasta_sequence(fasta_path.c_str(), seq, seq_name); }
 }
 
 #endif
