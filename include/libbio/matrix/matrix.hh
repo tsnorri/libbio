@@ -54,12 +54,20 @@ namespace libbio {
 		void resize_if_needed(std::size_t const rows, std::size_t const cols);
 		
 	public:
-		matrix() = default;
-		matrix(std::size_t const rows, std::size_t const columns):
+		constexpr matrix() = default;
+		
+		constexpr matrix(std::size_t const rows, std::size_t const columns):
 			m_data(columns * rows, 0),
 			m_stride(rows)
 		{
 			libbio_assert(m_stride);
+		}
+		
+		constexpr matrix(std::initializer_list <value_type> init, std::size_t const rows):
+			m_data(std::move(init)),
+			m_stride(rows)
+		{
+			libbio_assert_eq(0, init.size() % rows);
 		}
 		
 		inline std::size_t idx(std::size_t const y, std::size_t const x) const { return detail::matrix_index(*this, y, x); }
@@ -80,6 +88,8 @@ namespace libbio {
 		void apply(t_fn &&fn);
 		
 		void swap(matrix &rhs);
+		
+		bool operator==(matrix const &other) const { return m_data == other.m_data && m_stride == other.m_stride; }
 		
 		// Iterators.
 		iterator begin() { return m_data.begin(); }
