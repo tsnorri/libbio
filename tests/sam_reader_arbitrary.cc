@@ -3,6 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#if !(defined(LIBBIO_NO_SAM_READER) && LIBBIO_NO_SAM_READER)
+
 #include <libbio/markov_chain.hh>
 #include <libbio/sam/reader.hh>
 #include <range/v3/view/enumerate.hpp>
@@ -659,3 +661,5 @@ TEST_CASE(
 		}
 	);
 }
+
+#endif
