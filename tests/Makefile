@@ -12,7 +12,7 @@ CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
 
 CXXFLAGS +=	-ftemplate-backtrace-limit=0
 
-LIBBIO_PATH ?= ../src/libbio.a
+LIBBIO_PATH ?= ../src/libbio.coverage.a
 
 
 OBJECTS	=	algorithm.o \
@@ -54,10 +54,19 @@ CATCH2_HEADERS	= $(shell find ../lib/Catch2/include)
 
 all: tests
 
+.PHONY: rapidcheck clean run-tests coverage
+
+run-tests: tests
+	./tests
+
+coverage: run-tests
+	$(MKDIR) -p coverage
+	$(GCOVR) --gcov-executable $(GCOV) --root .. --filter ../include --filter ../src --print-summary --html --html-details -o coverage/index.html . ../src
+
 rapidcheck: rc_tests
 
 tests: $(OBJECTS) $(GENERATED_TEST_FILES)
-	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS)
+	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) -lgcov
 
 rc_tests: $(RC_OBJECTS)
 	$(CXX) -o $@ $(RC_OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS)

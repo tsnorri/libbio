@@ -73,3 +73,8 @@ vcfstats/vcfstats
 *.exe
 *.out
 *.app
+
+# Coverage
+*.gcda
+*.gcno
+tests/coverage

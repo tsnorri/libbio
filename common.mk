@@ -32,6 +32,8 @@ PATCH			?= patch
 PYTHON			?= python
 RAGEL			?= ragel
 RM				?= rm
+GCOV			?= gcov
+GCOVR			?= gcovr
 
 BOOST_ROOT		?= /usr
 BOOST_INCLUDE	?= -isystem $(BOOST_ROOT)/include
@@ -51,6 +53,11 @@ ifeq ($(shell uname -s),Linux)
 	CPPFLAGS    += -I../../swift-corelibs-libdispatch
 endif
 
+%.cov.o: %.cc
+	$(CXX) -c --coverage $(CXXFLAGS) $(CPPFLAGS) -o $@ $<
+
+%.cov.o: %.c
+	$(CC) -c --coverage $(CFLAGS) $(CPPFLAGS) -o $@ $<
 
 %.o: %.cc
 	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) -o $@ $<

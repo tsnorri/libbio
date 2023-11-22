@@ -34,13 +34,20 @@ OBJECTS		=	bed_reader.o \
 				vcf_subfield.o \
 				vcf_variant_format.o
 
+OBJECTS_COVERAGE    = $(OBJECTS:.o=.cov.o)
+GCDA                = $(OBJECTS_COVERAGE:.o=.gcda)
+GCNO                = $(OBJECTS_COVERAGE:.o=.gcno)
+
 CFLAGS		+= -fPIC
 CXXFLAGS	+= -fPIC
 
 all: libbio.a
 
 clean:
-	$(RM) $(OBJECTS) libbio.a
+	$(RM) $(OBJECTS) $(OBJECTS_COVERAGE) $(GCDA) $(GCNO) libbio.a libbio.coverage.a
 
 libbio.a: $(OBJECTS)
+	$(AR) rcs $@ $^
+
+libbio.coverage.a: $(OBJECTS_COVERAGE)
 	$(AR) rcs $@ $^
