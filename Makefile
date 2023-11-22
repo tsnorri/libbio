@@ -1,17 +1,14 @@
 -include local.mk
 include common.mk
 
-.PHONY: check-headers
-
 RAPIDCHECK_BUILD_DIR ?= build
 
 
-all:
-	$(MAKE) -C src all
+all: src/libbio.a
 
-tests: all lib/rapidcheck/build/librapidcheck.a
-	cd lib/Catch2 && $(PYTHON) scripts/generateSingleHeader.py
-	$(MAKE) -C tests all
+.PHONY: clean clean-all check-headers
+
+tests: tests/coverage/index.html
 
 clean:
 	$(MAKE) -C src clean
@@ -36,6 +33,16 @@ check-headers:
 	echo 'all: $$(SMOKE_TEST_OBJECTS)' >> check-headers/Makefile
 	echo "" >> check-headers/Makefile
 	$(MAKE) -C check-headers
+
+src/libbio.a:
+	$(MAKE) -C src all
+
+src/libbio.coverage.a:
+	$(MAKE) -C src libbio.coverage.a
+
+tests/coverage/index.html: src/libbio.coverage.a lib/rapidcheck/build/librapidcheck.a
+	cd lib/Catch2 && $(PYTHON) scripts/generateSingleHeader.py
+	$(MAKE) -C tests coverage
 
 lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a:
 	$(RM) -rf lib/rapidcheck/build && \

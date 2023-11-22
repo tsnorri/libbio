@@ -43,7 +43,7 @@ OBJECTS	=	algorithm.o \
 			subprocess_argument_parser.o \
 			vcf_reader.o
 
-RC_OBJECTS	=	fasta_reader_arbitrary.rc.o \
+OBJECTS_RC	=	fasta_reader_arbitrary.rc.o \
 				sam_reader_arbitrary.rc.o \
 				rapidcheck_test_driver_main.o
 
@@ -54,25 +54,28 @@ CATCH2_HEADERS	= $(shell find ../lib/Catch2/include)
 
 all: tests
 
-.PHONY: rapidcheck clean run-tests coverage
+.PHONY: rapidcheck clean run-tests
 
 run-tests: tests
 	./tests
 
-coverage: run-tests
+coverage: coverage/index.html
+
+coverage/index.html: run-tests
 	$(MKDIR) -p coverage
-	$(GCOVR) --gcov-executable $(GCOV) --root .. --filter ../include --filter ../src --print-summary --html --html-details -o coverage/index.html . ../src
+	$(GCOVR) --gcov-executable $(GCOV) --root .. --filter ../include --filter ../src --print-summary --html --html-details -o coverage/index.html ../src
 
 rapidcheck: rc_tests
 
 tests: $(OBJECTS) $(GENERATED_TEST_FILES)
 	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) -lgcov
 
-rc_tests: $(RC_OBJECTS)
-	$(CXX) -o $@ $(RC_OBJECTS) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS)
+rc_tests: $(OBJECTS_RC)
+	$(CXX) -o $@ $(OBJECTS_RC) $(LDFLAGS) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS)
 
 clean:
-	$(RM) $(OBJECTS) $(RC_OBJECTS) $(GENERATED_TEST_FILES) tests rc_tests
+	$(RM) $(OBJECTS) $(OBJECTS_RC) $(OBJECTS_COVERAGE) $(GENERATED_TEST_FILES) tests rc_tests
+	$(RM) -r coverage
 
 ../lib/Catch2/single_include/catch2/catch.hpp: $(CATCH2_HEADERS)
 	cd ../lib/Catch2 && $(PYTHON) scripts/generateSingleHeader.py
