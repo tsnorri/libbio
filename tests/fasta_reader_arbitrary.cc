@@ -3,18 +3,15 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <catch2/catch.hpp>
 #include <libbio/fasta_reader.hh>
 #include <libbio/file_handling.hh>
 #include <libbio/markov_chain.hh>
 #include <libbio/markov_chain_rapidcheck.hh>
 #include <range/v3/view/reverse.hpp>
 #include <range/v3/view/transform.hpp>
-#include <rapidcheck.h>
-#include <rapidcheck/catch.h>					// rc::prop
 #include <thread>
+#include "rapidcheck_test_driver.hh"
 
-namespace gen	= Catch::Generators;
 namespace ios	= boost::iostreams;
 namespace lb	= libbio;
 namespace mcs	= libbio::markov_chains;
@@ -348,7 +345,7 @@ TEST_CASE(
 	"[fasta_reader]"
 )
 {
-	rc::prop(
+	return lb::rc_check(
 		"fasta_reader works with arbitrary input",
 		[](fasta_input_with_sequence_headers const &input){
 			
