@@ -7,6 +7,7 @@
 #include <libbio/assert.hh>
 #include <libbio/cxxcompat.hh>
 #include <libbio/file_handling.hh>
+#include <libbio/vcf/parse_error.hh>
 #include <libbio/vcf/subfield.hh>
 #include <libbio/vcf/variant.hh>
 #include <libbio/vcf/variant_printer.hh>
@@ -625,94 +626,102 @@ namespace {
 		
 		bool should_continue(false);
 		std::size_t lineno{};
-		reader.parse_nc(
-			[
-				&reader,
-				&printer,
-				&stream,
-				&sample_names,
-				exclude_samples,
-				&alt_mapping,
-				&var_id_buffer,
-				&missing_id_idx,
-				&lineno,
-				expected_chr_id,	// Pointer
-				missing_id_prefix,	// Pointer
-				variant_types,		// enum
-				expected_zygosity	// std::int16_t
-			](vcf::transient_variant &var){
-				++lineno;
+		try
+		{
+			reader.parse_nc(
+				[
+					&reader,
+					&printer,
+					&stream,
+					&sample_names,
+					exclude_samples,
+					&alt_mapping,
+					&var_id_buffer,
+					&missing_id_idx,
+					&lineno,
+					expected_chr_id,	// Pointer
+					missing_id_prefix,	// Pointer
+					variant_types,		// enum
+					expected_zygosity	// std::int16_t
+				](vcf::transient_variant &var){
+					++lineno;
 
-				// FIXME: use vcf::reader’s filtering facility (and try to output correct line number counts anyway).
-				if (expected_chr_id && var.chrom_id() != expected_chr_id)
-					goto continue_parsing;
-
-				alt_mapping.clear();
-				if (variants_arg_SNPs == variant_types)
-				{
-					if (1 != var.ref().size())
+					// FIXME: use vcf::reader’s filtering facility (and try to output correct line number counts anyway).
+					if (expected_chr_id && var.chrom_id() != expected_chr_id)
 						goto continue_parsing;
 
-					alt_mapping.resize(var.alts().size(), 1);
-
-					// Count the SNPs and mark the other variants.
-					std::size_t snp_count{};
-					for (auto const &[idx, alt] : var.alts() | rsv::enumerate)
+					alt_mapping.clear();
+					if (variants_arg_SNPs == variant_types)
 					{
-						if (vcf::sv_type::NONE == alt.alt_sv_type && 1 == alt.alt.size())
-							++snp_count;
-						else
-							alt_mapping[idx] = 0;
+						if (1 != var.ref().size())
+							goto continue_parsing;
+
+						alt_mapping.resize(var.alts().size(), 1);
+
+						// Count the SNPs and mark the other variants.
+						std::size_t snp_count{};
+						for (auto const &[idx, alt] : var.alts() | rsv::enumerate)
+						{
+							if (vcf::sv_type::NONE == alt.alt_sv_type && 1 == alt.alt.size())
+								++snp_count;
+							else
+								alt_mapping[idx] = 0;
+						}
+
+						if (0 == snp_count)
+							goto continue_parsing;
+					}
+					
+					printer.begin_variant(reader);
+
+					{
+						auto &var_id(var.id());
+						if (missing_id_prefix && (var_id.empty() || std::erase(var_id, ".")))
+						{
+							++missing_id_idx;
+							var_id_buffer = boost::str(boost::format("%1%%2%") % missing_id_prefix % missing_id_idx);
+							var_id.emplace_back(var_id_buffer);
+						}
 					}
 
-					if (0 == snp_count)
-						goto continue_parsing;
-				}
-				
-				printer.begin_variant(reader);
-
-				{
-					auto &var_id(var.id());
-					if (missing_id_prefix && (var_id.empty() || std::erase(var_id, ".")))
+					if ((!sample_names.empty()) || exclude_samples)
 					{
-						++missing_id_idx;
-						var_id_buffer = boost::str(boost::format("%1%%2%") % missing_id_prefix % missing_id_idx);
-						var_id.emplace_back(var_id_buffer);
+						if (alt_mapping.empty())
+						{
+							alt_mapping.resize(var.alts().size());
+							std::fill(alt_mapping.begin(), alt_mapping.end(), 1);
+						}
+
+						// FIXME: a variant may be excluded if there are no non-zero and non-missing GT values.
+						if (
+							modify_variant_for_sample_exclusion(var, alt_mapping, sample_names, exclude_samples) &&
+							(-1 == expected_zygosity || check_zygosity(reader, var, expected_zygosity, sample_names, exclude_samples))
+						)
+						{
+							vcf::output_vcf(printer, stream, var);
+						}
 					}
-				}
-
-				if ((!sample_names.empty()) || exclude_samples)
-				{
-					if (alt_mapping.empty())
+					else if (-1 == expected_zygosity || check_zygosity(var, expected_zygosity))
 					{
-						alt_mapping.resize(var.alts().size());
-						std::fill(alt_mapping.begin(), alt_mapping.end(), 1);
-					}
-
-					// FIXME: a variant may be excluded if there are no non-zero and non-missing GT values.
-					if (
-						modify_variant_for_sample_exclusion(var, alt_mapping, sample_names, exclude_samples) &&
-						(-1 == expected_zygosity || check_zygosity(reader, var, expected_zygosity, sample_names, exclude_samples))
-					)
-					{
+						if (!alt_mapping.empty())
+							update_alt_mapping(alt_mapping, 1);
+						
 						vcf::output_vcf(printer, stream, var);
 					}
-				}
-				else if (-1 == expected_zygosity || check_zygosity(var, expected_zygosity))
-				{
-					if (!alt_mapping.empty())
-						update_alt_mapping(alt_mapping, 1);
 					
-					vcf::output_vcf(printer, stream, var);
+				continue_parsing:
+					if (0 == lineno % 1000000)
+						lb::log_time(std::cerr) << "Handled " << lineno << " lines…\n";
+					
+					return true;
 				}
-				
-			continue_parsing:
-				if (0 == lineno % 1000000)
-					lb::log_time(std::cerr) << "Handled " << lineno << " lines…\n";
-				
-				return true;
-			}
-		);
+			);
+		}
+		catch (vcf::parse_error const &exc)
+		{
+			std::cerr << "ERROR: Parse error on line " << (reader.last_header_lineno() + 1 + lineno) << ": " << exc.what() << '\n';
+			std::exit(EXIT_FAILURE);
+		}
 	}
 
 
