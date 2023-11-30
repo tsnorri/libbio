@@ -45,6 +45,9 @@ namespace libbio::parsing::fields {
 		
 		template <bool t_should_copy>
 		using value_type = cigar_vector;
+
+
+		constexpr void clear_value(cigar_vector &dst) const { dst.clear(); }
 		
 		
 		template <typename t_range>
@@ -124,16 +127,11 @@ namespace libbio::parsing::fields {
 				}
 			}
 			
-			if constexpr (t_field_position == field_position::final_)
-			{
-				if (range.is_at_end())
-					return {idx};
-			}
+			// t_delimiter not matched.
+			if constexpr (any(field_position::final_ & t_field_position))
+				return {INVALID_DELIMITER_INDEX};
 			else
-			{
-				if (range.is_at_end())
-					throw parse_error_tpl(errors::unexpected_eof());
-			}
+				throw parse_error_tpl(errors::unexpected_eof());
 			
 			libbio_fail("Should not be reached");
 			return {};
