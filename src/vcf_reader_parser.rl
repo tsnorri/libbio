@@ -128,8 +128,15 @@ namespace libbio::vcf {
 				std::string_view const qual_sv(start, fpc - start);
 				if (boost::spirit::qi::parse(qual_sv.begin(), qual_sv.end(), boost::spirit::qi::float_, qual))
 					m_current_variant.set_qual(qual);
-				else
+				else if (!m_should_skip_invalid)
 					throw parse_error("Unable to parse the given value as floating point", qual_sv);
+				else
+				{
+					// FIXME: Call the delegate.
+					std::cerr << "WARNING: Parse error on line " << (m_lineno + last_header_lineno()) << "; skipping.\n";
+					skip_to_next_nl();
+					fgoto main_nl;
+				}
 			}
 			
 			action end_info_key {
@@ -137,10 +144,30 @@ namespace libbio::vcf {
 				std::string_view const key_sv(start, fpc - start);
 				auto const it(m_info_fields.find(key_sv));
 				if (m_info_fields.cend() == it)
-					throw parse_error("Unknown INFO key", key_sv);
+				{
+					if (!m_should_skip_invalid)
+						throw parse_error("Unknown INFO key", key_sv);
+					else
+					{
+						// FIXME: Call the delegate.
+						std::cerr << "WARNING: Unknown INFO key on line " << (m_lineno + last_header_lineno()) << "; skipping.\n";
+						skip_to_next_nl();
+						fgoto main_nl;
+					}
+				}
 				current_info_field = it->second.get();
 				if (!current_info_field->m_metadata)
-					throw parse_error("Found INFO field not declared in the VCF header", key_sv);
+				{
+					if (!m_should_skip_invalid)
+						throw parse_error("Found INFO field not declared in the VCF header", key_sv);
+					else
+					{
+						// FIXME: Call the delegate.
+						std::cerr << "WARNING: Undeclared INFO key on line " << (m_lineno + last_header_lineno()) << "; skipping.\n";
+						skip_to_next_nl();
+						fgoto main_nl;
+					}
+				}
 				// FIXME: check for duplicate INFO keys?
 				m_current_record_info_fields.emplace_back(current_info_field);
 			}
@@ -150,7 +177,17 @@ namespace libbio::vcf {
 				libbio_assert(current_info_field);
 				libbio_assert(current_info_field->m_metadata);
 				if (!current_info_field->m_metadata->check_subfield_index(subfield_idx))
-					throw parse_error("More values in INFO field than declared");
+				{
+					if (!m_should_skip_invalid)
+						throw parse_error("More values in INFO field than declared");
+					else
+					{
+						// FIXME: Call the delegate.
+						std::cerr << "WARNING: Unexpected number of INFO values on line " << (m_lineno + last_header_lineno()) << "; skipping.\n";
+						skip_to_next_nl();
+						fgoto main_nl;
+					}
+				}
 				
 				std::string_view const val_sv(start, fpc - start);
 				current_info_field->parse_and_assign(val_sv, m_current_variant);
@@ -199,7 +236,17 @@ namespace libbio::vcf {
 					std::string_view const filter_name(start, fpc - start);
 					auto const it(filters.find(filter_name));
 					if (filters.end() == it)
-						throw parse_error("Unknown FILTER name", filter_name);
+					{
+						if (!m_should_skip_invalid)
+							throw parse_error("Unknown FILTER name", filter_name);
+						else
+						{
+							// FIXME: Call the delegate.
+							std::cerr << "WARNING: Unknown FILTER name on line " << (m_lineno + last_header_lineno()) << "; skipping.\n";
+							skip_to_next_nl();
+							fgoto main_nl;
+						}
+					}
 					m_current_variant.m_filters.emplace_back(&it->second);
 				}
 			}
@@ -226,7 +273,17 @@ namespace libbio::vcf {
 			action end_sample_field {
 				std::string_view const field_value(start, fpc - start);
 				if (! (subfield_idx < m_current_format_vec.size()))
-					throw parse_error("More fields in current sample than specified in FORMAT");
+				{
+					if (!m_should_skip_invalid)
+						throw parse_error("More fields in current sample than specified in FORMAT");
+					else
+					{
+						// FIXME: Call the delegate.
+						std::cerr << "WARNING: Unexpected number of genotype value fields on line " << (m_lineno + last_header_lineno()) << "; skipping.\n";
+						skip_to_next_nl();
+						fgoto main_nl;
+					}
+				}
 				
 				auto const &format_ptr(m_current_format_vec[subfield_idx]);
 				auto &samples(m_current_variant.m_samples);
@@ -250,14 +307,34 @@ namespace libbio::vcf {
 			
 			action handle_sample {
 				if (m_current_format_vec.size() != subfield_idx)
-					throw parse_error("Number of sample fields differs from FORMAT");
+				{
+					if (!m_should_skip_invalid)
+						throw parse_error("Number of sample fields differs from FORMAT");
+					else
+					{
+						// FIXME: Call the delegate.
+						std::cerr << "WARNING: Unexpected number of genotype value fields on line " << (m_lineno + last_header_lineno()) << "; skipping.\n";
+						skip_to_next_nl();
+						fgoto main_nl;
+					}
+				}
 				
 				++sample_idx;
 			}
 			
 			action handle_last_sample {
 				if (m_sample_indices_by_name.size() != sample_idx)
-					throw parse_error("Number of samples differs from VCF headers");
+				{
+					if (!m_should_skip_invalid)
+						throw parse_error("Number of samples differs from VCF headers");
+					else
+					{
+						// FIXME: Call the delegate.
+						std::cerr << "WARNING: Unexpected number of samples on line " << (m_lineno + last_header_lineno()) << "; skipping.\n";
+						skip_to_next_nl();
+						fgoto main_nl;
+					}
+				}
 				
 				if (!cb(m_current_variant))
 				{

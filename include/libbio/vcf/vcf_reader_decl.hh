@@ -141,6 +141,7 @@ namespace libbio::vcf {
 		field							m_max_parsed_field{};
 		bool							m_have_assigned_variant_format{};
 		bool							m_has_samples{};
+		bool							m_should_skip_invalid{};
 	
 	public:
 		reader() = default;
@@ -152,6 +153,7 @@ namespace libbio::vcf {
 		void set_variant_validator(struct variant_validator &validator) { m_chrom_pos_validator = &validator; }
 		inline void set_input(input_base &input);
 		void set_variant_format(variant_format *fmt) { libbio_always_assert(fmt); m_current_format.reset(fmt); m_have_assigned_variant_format = true; }
+		void set_should_skip_invalid_records(bool const flag) { m_should_skip_invalid = flag; }
 		void read_header();
 		void parse_nc(callback_fn const &callback);	// Callback takes non-const transient_variant.
 		void parse_nc(callback_fn &&callback);		// Callback takes non-const transient_variant.
