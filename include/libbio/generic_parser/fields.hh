@@ -584,6 +584,7 @@ namespace libbio::parsing::fields {
 		LIBBIO_CONSTEXPR_WITH_GOTO parsing_result parse(t_range &range, t_integer &val) const
 		{
 			bool is_negative{};
+			delimiter_index_type delimiter_index{INVALID_DELIMITER_INDEX};
 		
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
@@ -630,16 +631,10 @@ namespace libbio::parsing::fields {
 				auto const cc(*range.it);
 				if (auto const idx{t_delimiter::matching_index(cc)}; t_delimiter::size() != idx)
 				{
-					if constexpr (t_is_signed)
-					{
-						if (is_negative)
-							val *= -1;
-					}
-					
-					++range.it;
-					return {idx};
+					delimiter_index = idx;
+					goto finish_parsing;
 				}
-				
+
 				val *= 10;
 				if (! ('0' <= cc && cc <= '9'))
 					throw parse_error_tpl(errors::unexpected_character(cc));
@@ -647,10 +642,18 @@ namespace libbio::parsing::fields {
 				++range.it;
 			}
 			
-			if constexpr (any(field_position::final_ & t_field_position))
-				return {};
-			else
+			if constexpr (!any(field_position::final_ & t_field_position))
 				throw parse_error_tpl(errors::unexpected_eof());
+
+		finish_parsing:
+			if constexpr (t_is_signed)
+			{
+				if (is_negative)
+					val *= -1;
+			}
+			
+			++range.it;
+			return {delimiter_index};
 		}
 	};
 	
