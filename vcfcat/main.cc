@@ -827,6 +827,7 @@ int main(int argc, char **argv)
 	vcf::add_reserved_genotype_keys(reader.genotype_fields());
 	
 	// Parse.
+	reader.set_should_skip_invalid_records(args_info.skip_invalid_flag);
 	reader.set_variant_format(new variant_format());
 	reader.set_input(vcf_input);
 	reader.read_header();
