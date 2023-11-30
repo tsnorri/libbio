@@ -831,7 +831,7 @@ int main(int argc, char **argv)
 		auto const &info_fields(metadata.info());
 		auto const &genotype_fields(metadata.format());
 
-		for (int i(0); i < args_info.info_field_given; ++i)
+		for (unsigned int i(0); i < args_info.info_field_given; ++i)
 		{
 			auto const *field_id(args_info.info_field_arg[i]);
 			if (!genotype_fields.contains(field_id))
@@ -843,7 +843,7 @@ int main(int argc, char **argv)
 			retained_info_fields.emplace(field_id);
 		}
 
-		for (int i(0); i < args_info.genotype_field_given; ++i)
+		for (unsigned int i(0); i < args_info.genotype_field_given; ++i)
 		{
 			auto const *field_id(args_info.genotype_field_arg[i]);
 			if (!genotype_fields.contains(field_id))
