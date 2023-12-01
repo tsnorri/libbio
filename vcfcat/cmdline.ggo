@@ -9,7 +9,6 @@ usage		"vcfcat --input=input.vcf [ --output=output.vcf ] [ --sample=name ... ]"
 
 option		"input"					i	"Variant call file path"												string									typestr = "filename"					required
 option		"output"				o	"Output file path, defaults to stdout"									string									typestr = "filename"					optional
-option		"skip-invalid"			-	"Skip invalid records instead of stopping"								flag																			off
 
 section "Sample handling"
 option		"sample"				s	"Output only the given sample(s)"										string									typestr = "name"						optional	multiple
@@ -20,6 +19,7 @@ section "Variant filtering"
 option		"chromosome"			c	"Filter by chromosome identifier"										string									typestr = "chr"							optional
 option		"zygosity"				z	"Filter by number of set GT field values"								short									typestr = "count"		default = "-1"	optional
 option		"variants"				a	"Variants to be output"													enum									values = "all", "SNPs"	default = "all"	optional
+option		"skip-invalid"			-	"Skip invalid records instead of stopping"								flag																			off
 
 section "Output options"
 option		"preserve-field-order"	p	"Preserve the info and genotype field order"							flag																			off
