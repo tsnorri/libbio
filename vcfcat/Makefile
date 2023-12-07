@@ -12,6 +12,6 @@ clean:
 	$(RM) $(OBJECTS) vcfcat cmdline.h cmdline.c
 
 vcfcat: $(OBJECTS) ../src/libbio.a
-	$(CXX) -o $@ $(OBJECTS) $(LDFLAGS) ../src/libbio.a $(BOOST_LIBS)
+	$(CXX) -o $@ $(OBJECTS) ../src/libbio.a $(BOOST_LIBS) $(LDFLAGS)
 
 main.cc: cmdline.c
