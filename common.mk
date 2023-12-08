@@ -66,7 +66,7 @@ endif
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -o $@ $<
 
 %.c: %.ggo
-	$(GENGETOPT) --input="$<"
+	$(GENGETOPT) -i $< -F $(basename $@)
 
 %.cc: %.rl
 	$(RAGEL) -L -C -G2 -o $@ $<
