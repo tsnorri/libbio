@@ -10,6 +10,7 @@
 #include "rapidcheck_test_driver.hh"
 
 namespace lb		= libbio;
+namespace rsv		= ranges::views;
 
 typedef std::int32_t value_type;
 
@@ -100,6 +101,47 @@ TEST_CASE(
 			ranges::copy(expected, ranges::make_ostream_joiner(RC_LOG(), ","));
 			RC_LOG() << '\n';
 			RC_ASSERT(target == expected);
+			
+			return true;
+		}
+	);
+}
+
+
+TEST_CASE(
+	"remove_at_indices with arbitrary input",
+	"[remove_at_indices]"
+)
+{
+	return lb::rc_check(
+		"remove_at_indices works with arbitrary input",
+		[](std::vector <value_type> const &target_){
+			auto const removed_indices(*gen::container <std::set <std::size_t>>(gen::inRange(0, target_.size()));
+			
+			{
+				auto const removed_pct(double(removed_indices.size()) / target_.size());
+				RC_CLASSIFY(0.0 == removed_pct);
+				RC_CLASSIFY(0.0 < removed_pct < 0.25);
+				RC_CLASSIFY(0.25 <= removed_pct && removed_pct < 0.5);
+				RC_CLASSIFY(0.5 <= removed_pct && removed_pct < 0.75);
+				RC_CLASSIFY(0.75 <= removed_pct && removed_pct < 1.0);
+				RC_CLASSIFY(1.0 == removed_pct);
+			}
+			
+			auto expected(target_);
+			for (auto const idx : rsv::reverse(removed_indices))
+				expected.erase(expected.begin() + idx);
+			
+			auto actual(target_);
+			lb::remove_at_indices(actual.begin(), actual.end(), removed_indices.begin(), removed_indices.end());
+			
+			RC_LOG() << "actual:   ";
+			ranges::copy(actual, ranges::make_ostream_joiner(RC_LOG(), ","));
+			RC_LOG() << '\n';
+			RC_LOG() << "expected: ";
+			ranges::copy(expected, ranges::make_ostream_joiner(RC_LOG(), ","));
+			RC_LOG() << '\n';
+			RC_ASSERT(actual == expected);
 			
 			return true;
 		}
