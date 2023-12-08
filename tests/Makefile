@@ -39,6 +39,7 @@ OBJECTS	=	algorithm.o \
 			reverse_word.o \
 			rle_bit_vector.o \
 			sam_reader_arbitrary.o \
+			set_difference_inplace_arbitrary.o \
 			sorted_set_union.o \
 			subprocess_argument_parser.o \
 			vcf_reader.o
