@@ -75,7 +75,12 @@ TEST_CASE(
 				added.resize(added_count);
 				matched_.insert(added.begin(), added.end());
 				
-				RC_TAG("Added", double(added_count) / matched_.size());
+				auto const added_pct(double(added_count) / matched_.size());
+				RC_CLASSIFY(added_pct < 0.25);
+				RC_CLASSIFY(0.25 <= added_pct && added_pct < 0.5);
+				RC_CLASSIFY(0.5 <= added_pct && added_pct < 0.75);
+				RC_CLASSIFY(0.75 <= added_pct && added_pct < 1.0);
+				RC_CLASSIFY(1.0 == added_pct);
 			}
 			
 			std::vector matched(matched_.begin(), matched_.end());
