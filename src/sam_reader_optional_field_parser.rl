@@ -20,7 +20,7 @@ namespace libbio::sam {
 	void read_optional_fields(input_range_base &fsm, optional_field &dst)
 	{
 		typedef sam::optional_field::floating_point_type fp_type;
-		optional_field::tag_id_type	tag_id{};
+		tag_type					tag_id{};
 		std::int64_t				integer{};
 		bool						integer_is_negative{};
 		std::string					fp_buffer{};
