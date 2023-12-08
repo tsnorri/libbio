@@ -10,6 +10,7 @@
 #include <libbio/algorithm/min_max.hh>
 #include <libbio/algorithm/reverse_bits.hh>
 #include <libbio/algorithm/set_count.hh>
+#include <libbio/algorithm/set_difference_inplace.hh>
 #include <libbio/algorithm/sorted_set_union.hh>
 #include <libbio/algorithm/unique_count.hh>
 
