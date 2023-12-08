@@ -10,6 +10,7 @@
 #include <libbio/assert.hh>
 #include <libbio/generic_parser.hh>
 #include <libbio/sam/input_range.hh>
+#include <libbio/sam/tag.hh>
 #include <libbio/tuple.hh>
 #include <range/v3/view/take_exactly.hpp>
 
@@ -131,13 +132,12 @@ namespace libbio::sam {
 			container_of_t <t_type>
 		>;
 		
-		typedef std::uint16_t							tag_id_type;
 		typedef std::uint16_t							tag_count_type;	// We assume that there will not be more than 65536 tags.
 		struct tag_rank
 		{
 			// For alignment purposes all are std::uint16_t.
-			tag_id_type		tag_id{};
-			tag_id_type		type_index{};
+			tag_type		tag_id{};
+			tag_type		type_index{};
 			tag_count_type	rank{};
 			
 			bool operator<(tag_rank const &other) const { return tag_id < other.tag_id; }
@@ -147,8 +147,8 @@ namespace libbio::sam {
 		
 		struct tag_rank_cmp
 		{
-			bool operator()(tag_rank const &lhs, tag_id_type const rhs) const { return lhs.tag_id < rhs; }
-			bool operator()(tag_id_type const lhs, tag_rank const &rhs) const { return lhs < rhs.tag_id; }
+			bool operator()(tag_rank const &lhs, tag_type const rhs) const { return lhs.tag_id < rhs; }
+			bool operator()(tag_type const lhs, tag_rank const &rhs) const { return lhs < rhs.tag_id; }
 		};
 		
 		// Types from SAM 1.0 Section 1.5.
@@ -186,16 +186,16 @@ namespace libbio::sam {
 		
 	private:
 		template <typename t_type>
-		inline t_type &prepare_for_adding(tag_id_type const tag_id);
+		inline t_type &prepare_for_adding(tag_type const tag_id);
 		
 		template <typename t_type, typename t_value>
-		inline void add_value(tag_id_type const tag_id, t_value &&val);
+		inline void add_value(tag_type const tag_id, t_value &&val);
 		
-		inline void start_string(tag_id_type const tag_id);
+		inline void start_string(tag_type const tag_id);
 		inline std::string &current_string_value() { return std::get <container_of_t <std::string>>(m_values).back(); }
 		
 		template <typename t_type>
-		inline void start_array(tag_id_type const tag_id);
+		inline void start_array(tag_type const tag_id);
 		
 		template <typename t_type, typename t_value>
 		inline void add_array_value(t_value const);
@@ -203,7 +203,7 @@ namespace libbio::sam {
 		void update_tag_order() { std::sort(m_tag_ranks.begin(), m_tag_ranks.end()); }
 		
 		template <typename t_type, typename t_optional_field>
-		static inline t_type *do_get(t_optional_field &&of, tag_id_type const tag);
+		static inline t_type *do_get(t_optional_field &&of, tag_type const tag);
 		
 	public:
 		optional_field() = default;
@@ -217,8 +217,10 @@ namespace libbio::sam {
 		
 		bool empty() const { return m_tag_ranks.empty(); }
 		constexpr void clear() { m_tag_ranks.clear(); tuples::for_each(m_values, []<typename t_idx>(auto &element){ element.clear(); }); }
-		template <typename t_type> t_type *get(tag_id_type const tag) { return do_get <t_type>(*this, tag); }
-		template <typename t_type> t_type const *get(tag_id_type const tag) const { return do_get <t_type const>(*this, tag); }
+		template <typename t_type> t_type *get(tag_type const tag) { return do_get <t_type>(*this, tag); }
+		template <typename t_type> t_type const *get(tag_type const tag) const { return do_get <t_type const>(*this, tag); }
+		template <typename t_type> inline std::optional <t_type> get_(tag_type const tag) const;
+		template <tag t_tag> std::optional <tag_value_t <t_tag>> get_() const { return get_ <tag_value_t <t_tag>>(t_tag); }
 		
 		template <typename t_return, typename t_visitor>
 		t_return visit(tag_rank const &tr, t_visitor &&visitor) const;
@@ -231,7 +233,7 @@ namespace libbio::sam {
 	
 	
 	template <typename t_type>
-	auto optional_field::prepare_for_adding(tag_id_type const tag_id) -> t_type &
+	auto optional_field::prepare_for_adding(tag_type const tag_id) -> t_type &
 	{
 		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, t_type>};
 		auto &dst(std::get <t_type>(m_values));
@@ -241,14 +243,14 @@ namespace libbio::sam {
 	
 	
 	template <typename t_type, typename t_value>
-	void optional_field::add_value(tag_id_type const tag_id, t_value &&val)
+	void optional_field::add_value(tag_type const tag_id, t_value &&val)
 	{
 		auto &dst(prepare_for_adding <container_of_t <t_type>>(tag_id));
 		dst.emplace_back(std::forward <t_value>(val));
 	}
 	
 	
-	void optional_field::start_string(tag_id_type const tag_id)
+	void optional_field::start_string(tag_type const tag_id)
 	{
 		auto &dst(prepare_for_adding <container_of_t <std::string>>(tag_id));
 		dst.emplace_back();
@@ -256,7 +258,7 @@ namespace libbio::sam {
 	
 	
 	template <typename t_type>
-	void optional_field::start_array(tag_id_type const tag_id)
+	void optional_field::start_array(tag_type const tag_id)
 	{
 		auto &dst(prepare_for_adding <array_vector <t_type>>(tag_id));
 		dst.emplace_back();
@@ -270,8 +272,16 @@ namespace libbio::sam {
 	}
 	
 	
+	template <typename t_type>
+	std::optional <t_type> optional_field::get_(tag_type const tag) const
+	{
+		auto const * const ptr(get(tag));
+		return ptr ? {*ptr} : {};
+	}
+	
+	
 	template <typename t_type, typename t_optional_field>
-	t_type *optional_field::do_get(t_optional_field &&of, tag_id_type const tag)
+	t_type *optional_field::do_get(t_optional_field &&of, tag_type const tag)
 	{
 		typedef value_container_t <t_type> tuple_element_type;
 		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, tuple_element_type>};

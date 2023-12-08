@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <libbio/sam/cigar.hh>
+#include <libbio/sam/flag.hh>
 #include <libbio/sam/optional_field.hh>
 #include <string>
 #include <vector>
@@ -40,7 +41,7 @@ namespace libbio::sam {
 		
 		std::int32_t			tlen{};
 		
-		std::uint16_t			flag{};
+		flag_type				flag{};
 		mapping_quality_type	mapq{};
 	};
 	
