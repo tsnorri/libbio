@@ -12,6 +12,7 @@
 #include <libbio/algorithm/set_count.hh>
 #include <libbio/algorithm/set_difference_inplace.hh>
 #include <libbio/algorithm/sorted_set_union.hh>
+#include <libbio/algorithm/stable_partition_left.hh>
 #include <libbio/algorithm/unique_count.hh>
 
 #endif
