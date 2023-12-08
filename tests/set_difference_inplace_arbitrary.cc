@@ -7,6 +7,7 @@
 #include <random>
 #include <range/v3/algorithm/copy.hpp>
 #include <range/v3/iterator/stream_iterators.hpp>
+#include <range/v3/view/reverse.hpp>
 #include "rapidcheck_test_driver.hh"
 
 namespace lb		= libbio;
@@ -116,12 +117,12 @@ TEST_CASE(
 	return lb::rc_check(
 		"remove_at_indices works with arbitrary input",
 		[](std::vector <value_type> const &target_){
-			auto const removed_indices(*gen::container <std::set <std::size_t>>(gen::inRange(0, target_.size()));
+			auto const removed_indices(*rc::gen::container <std::set <std::size_t>>(rc::gen::inRange(std::size_t(0), target_.size())));
 			
 			{
 				auto const removed_pct(double(removed_indices.size()) / target_.size());
 				RC_CLASSIFY(0.0 == removed_pct);
-				RC_CLASSIFY(0.0 < removed_pct < 0.25);
+				RC_CLASSIFY(0.0 < removed_pct && removed_pct < 0.25);
 				RC_CLASSIFY(0.25 <= removed_pct && removed_pct < 0.5);
 				RC_CLASSIFY(0.5 <= removed_pct && removed_pct < 0.75);
 				RC_CLASSIFY(0.75 <= removed_pct && removed_pct < 1.0);
@@ -133,7 +134,11 @@ TEST_CASE(
 				expected.erase(expected.begin() + idx);
 			
 			auto actual(target_);
-			lb::remove_at_indices(actual.begin(), actual.end(), removed_indices.begin(), removed_indices.end());
+			
+			{
+				auto const it(lb::remove_at_indices(actual.begin(), actual.end(), removed_indices.begin(), removed_indices.end()));
+				actual.erase(it, actual.end());
+			}
 			
 			RC_LOG() << "actual:   ";
 			ranges::copy(actual, ranges::make_ostream_joiner(RC_LOG(), ","));

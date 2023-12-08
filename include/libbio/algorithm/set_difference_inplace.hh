@@ -7,14 +7,15 @@
 #define LIBBIO_ALGORITHM_SET_DIFFERENCE_INPLACE_HH
 
 #include <algorithm>
-#include <functional> // std::identity
+#include <functional>		// std::identity
+#include <libbio/assert.hh>
 
 
 namespace libbio {
 	
 	// Remove the values at the given indices.
 	template <typename t_values_it, typename t_idxs_it, typename t_proj>
-	t_values_it remove_at_indices(
+	[[nodiscard]] t_values_it remove_at_indices(
 		t_values_it values_it,
 		t_values_it const values_end,
 		t_idxs_it idxs_it, 
@@ -42,10 +43,11 @@ namespace libbio {
 			if (1 + prev_idx != idx)
 			{
 				std::move(values_it + prev_idx + 1, values_it + idx, values_it + range_start);
-				range_start = idx;
+				range_start += idx - (prev_idx + 1);
 			}
 			
 			prev_idx = idx;
+			++idxs_it;
 		}
 		
 		return std::move(values_it + prev_idx + 1, values_end, values_it + range_start);
@@ -53,7 +55,7 @@ namespace libbio {
 	
 	
 	template <typename t_values_it, typename t_idxs_it>
-	t_values_it remove_at_indices(
+	[[nodiscard]] t_values_it remove_at_indices(
 		t_values_it values_it,
 		t_values_it const values_end,
 		t_idxs_it idxs_it, 
@@ -66,7 +68,7 @@ namespace libbio {
 	
 	// Computes the difference of the two given sorted sets in such a way that the first is overwritten by the result.
 	template <typename t_dst_it, typename t_matching_it, typename t_cmp>
-	t_dst_it set_difference_inplace(
+	[[nodiscard]] t_dst_it set_difference_inplace(
 		t_dst_it dst_it,
 		t_dst_it const dst_end,
 		t_matching_it matching_it, 
