@@ -7,11 +7,32 @@
 
 #include <algorithm>					// std::sort
 #include <boost/io/ios_state.hpp>		// boost::io::ios_all_saver
-#include <format>
 #include <libbio/sam/reader.hh>
 #include <ostream>
 #include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/zip.hpp>
+#include <version>
+
+#if defined(__cpp_lib_format) && 201907L <= __cpp_lib_format
+#	include <format>
+
+namespace {
+	inline auto format_optional_field_byte_array_value(unsigned char const bb)
+	{
+		return std::format("{:02X}", bb);
+	}
+}
+#else
+#	include <boost/format.hpp>
+
+namespace {
+	inline auto format_optional_field_byte_array_value(unsigned char const bb)
+	{
+		static boost::format const fmt("%02hhX");
+		return boost::format(fmt) % bb;
+	}
+}
+#endif
 
 namespace io	= boost::io;
 namespace lb	= libbio;
@@ -243,7 +264,7 @@ namespace libbio::sam {
 			[&os]<std::size_t t_idx, char t_type_code>(auto const &val) requires (!('H' == t_type_code || 'B' == t_type_code)) { os << val; }, // Not array.
 			[&os]<std::size_t t_idx, char t_type_code>(auto const &vec) requires ('H' == t_type_code) {
 				for (auto const val : vec)
-					os << std::format("{:02X}", static_cast <unsigned char>(val));
+					os << format_optional_field_byte_array_value(static_cast <unsigned char>(val));
 			},
 			[&os]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &vec) requires ('B' == t_type_code) {
 				typedef typename t_type::value_type element_type;
