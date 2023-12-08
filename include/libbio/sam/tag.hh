@@ -14,8 +14,8 @@
 
 namespace libbio::sam {
 	
-	typedef std::uint16_t				tag_type;
-	typedef std::vector <sam_tag_type>	tag_vector;
+	typedef std::uint16_t			tag_type;
+	typedef std::vector <tag_type>	tag_vector;
 	
 	
 	// Convert a SAM tag to a std::array <char, N> where 2 ≤ N.
@@ -46,7 +46,7 @@ namespace libbio::sam {
 	
 	constexpr inline tag_type operator ""_tag(char const *str, std::size_t const size)
 	{
-		libbio_assert_eq(2 == size);
+		libbio_assert_eq(2, size);
 		return to_tag(std::array{str[0], str[1]});
 	}
 	
