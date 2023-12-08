@@ -7,10 +7,13 @@
 #ifndef LIBBIO_RAPIDCHECK_TEST_DRIVER
 #define LIBBIO_RAPIDCHECK_TEST_DRIVER
 
-#include <exception>		// Needed by RapidCheck
+#include <exception>										// Needed by RapidCheck
 #include <iostream>
+#include <libbio/utility/compare_strings_transparent.hh>
 #include <rapidcheck.h>
-#include <utility>			// std::forward
+#include <set>
+#include <string>
+#include <utility>											// std::forward
 #include <vector>
 
 
@@ -23,6 +26,13 @@ namespace libbio {
 	
 	class test_driver
 	{
+	public:
+		typedef std::set <
+			std::string,
+			libbio::compare_strings_transparent
+		> test_name_set;
+
+	private:
 		std::vector <test_case *> m_test_cases;
 		
 	public:
@@ -38,7 +48,9 @@ namespace libbio {
 			return m_test_cases.size() - 1;
 		}
 		
+		void list_tests();
 		std::size_t run_all_tests();
+		std::size_t run_given_tests(test_name_set const &names);
 	};
 	
 	

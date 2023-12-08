@@ -49,6 +49,7 @@ OBJECTS_RC	=	fasta_reader_arbitrary.rc.o \
 				sam_reader_arbitrary.rc.o \
 				set_difference_inplace_arbitrary.rc.o \
 				stable_partition_left_arbitrary.rc.o \
+				rapidcheck_test_driver_cmdline.o \
 				rapidcheck_test_driver_main.o
 
 GENERATED_TEST_FILES = 	test-files/test-data-types.vcf.gz \
