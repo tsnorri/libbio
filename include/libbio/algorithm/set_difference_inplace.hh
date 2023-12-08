@@ -49,18 +49,16 @@ namespace libbio {
 		
 		// Continue by shifting.
 		auto it(dst_it);
-		while (++it != dst_end)
+		++it;
+		while (it != dst_end)
 		{
 			auto &rr(*it);
 			auto const &mm(*matching_it);
 			
 			if (cmp(mm, rr))
 			{
-				// mm < rr; preserve rr, advance matched.
-				*dst_it = std::move(*rr);
-				++dst_it;
+				// mm < rr.
 				++matching_it;
-				
 				if (matching_end == matching_it)
 					break;
 				
@@ -70,12 +68,14 @@ namespace libbio {
 			if (cmp(rr, mm))
 			{
 				// rr < mm; preserve rr, advance dst.
-				*dst_it = std::move(*rr);
+				*dst_it = std::move(rr);
+				++it;
 				++dst_it;
 				continue;
 			}
 			
 			// rr = mm.
+			++it;
 			++matching_it;
 			if (matching_end == matching_it)
 				break;
