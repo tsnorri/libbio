@@ -220,7 +220,7 @@ namespace libbio::sam {
 		template <typename t_type> t_type *get(tag_type const tag) { return do_get <t_type>(*this, tag); }
 		template <typename t_type> t_type const *get(tag_type const tag) const { return do_get <t_type const>(*this, tag); }
 		template <typename t_type> inline std::optional <t_type> get_(tag_type const tag) const;
-		template <tag t_tag> std::optional <tag_value_t <t_tag>> get_() const { return get_ <tag_value_t <t_tag>>(t_tag); }
+		template <tag_type t_tag> std::optional <tag_value_t <t_tag>> get_() const { return get_ <tag_value_t <t_tag>>(t_tag); }
 		
 		template <typename t_return, typename t_visitor>
 		t_return visit(tag_rank const &tr, t_visitor &&visitor) const;
@@ -275,8 +275,10 @@ namespace libbio::sam {
 	template <typename t_type>
 	std::optional <t_type> optional_field::get_(tag_type const tag) const
 	{
-		auto const * const ptr(get(tag));
-		return ptr ? {*ptr} : {};
+		auto const * const ptr(get <t_type>(tag));
+		if (ptr)
+			return {*ptr};
+		return {};
 	}
 	
 	
