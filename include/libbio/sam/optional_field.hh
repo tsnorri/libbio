@@ -7,11 +7,13 @@
 #define LIBBIO_SAM_OPTIONAL_FIELD_HH
 
 #include <array>
+#include <libbio/algorithm.hh>
 #include <libbio/assert.hh>
 #include <libbio/generic_parser.hh>
 #include <libbio/sam/input_range.hh>
 #include <libbio/sam/tag.hh>
 #include <libbio/tuple.hh>
+#include <range/v3/view/subrange.hpp>
 #include <range/v3/view/take_exactly.hpp>
 
 
@@ -65,7 +67,6 @@ namespace libbio::sam::detail {
 	template <typename t_callback, typename... t_args>
 	struct callback_table_builder <t_callback, std::tuple <t_args...>>
 	{
-		// The first template paramter contains the type code (one of A, i, f, Z, H, B) and the second is the value type (e.g. char, std::vector <std::int16_t>).
 		constexpr static std::array const fns{(&t_callback::template operator() <t_args>)...};
 	};
 	
@@ -141,6 +142,7 @@ namespace libbio::sam {
 			tag_count_type	rank{};
 			
 			bool operator<(tag_rank const &other) const { return tag_id < other.tag_id; }
+			auto type_and_rank_to_tuple() const { return std::make_tuple(type_index, rank); }
 		};
 		
 		typedef std::vector <tag_rank> tag_rank_vector;
@@ -223,9 +225,15 @@ namespace libbio::sam {
 		template <tag_type t_tag> std::optional <tag_value_t <t_tag>> get_() const { return get_ <tag_value_t <t_tag>>(t_tag); }
 		
 		template <typename t_return, typename t_visitor>
+		t_return visit_type(tag_type const type_index, t_visitor &&visitor);
+		
+		template <typename t_return, typename t_visitor>
 		t_return visit(tag_rank const &tr, t_visitor &&visitor) const;
 		
 		bool operator==(optional_field const &other) const;
+		
+		template <typename t_predicate>
+		void erase_if(t_predicate &&predicate);
 	};
 	
 	
@@ -297,6 +305,31 @@ namespace libbio::sam {
 	
 	
 	template <typename t_return, typename t_visitor>
+	t_return optional_field::visit_type(tag_type const type_index, t_visitor &&visitor)
+	{
+		auto visitor_caller([this, &visitor]<typename t_idx_type> -> t_return {
+			constexpr auto const idx{t_idx_type::value};
+			auto &val(std::get <idx>(m_values));
+			if (std::is_void_v <t_return>)
+				visitor(val);
+			else
+				return visitor(val);
+		});
+		
+		typedef detail::callback_table_builder <
+			decltype(visitor_caller),
+			tuples::index_constant_sequence_for_tuple <value_tuple_type>
+		> callback_table_type;
+		
+		constexpr auto const &fns(callback_table_type::fns);
+		if (std::is_void_v <t_return>)
+			(visitor_caller.*fns[type_index])();
+		else
+			return (visitor_caller.*fns[type_index])();
+	}
+	
+	
+	template <typename t_return, typename t_visitor>
 	t_return optional_field::visit(tag_rank const &tr, t_visitor &&visitor) const
 	{
 		auto visitor_caller([this, rank = tr.rank, &visitor]<typename t_idx_type> -> t_return {
@@ -320,6 +353,57 @@ namespace libbio::sam {
 			(visitor_caller.*fns[tr.type_index])();
 		else
 			return (visitor_caller.*fns[tr.type_index])();
+	}
+	
+	
+	template <typename t_predicate>
+	void optional_field::erase_if(t_predicate &&predicate)
+	{
+		// Find the range [it, m_tag_ranks.end()) of items to be removed and sort.
+		auto const rank_end(m_tag_ranks.end());
+		auto rank_it(libbio::stable_partition_left(m_tag_ranks.begin(), rank_end, predicate));
+		auto const rank_it_(rank_it);
+		std::sort(rank_it, rank_end, [](tag_rank const &lhs, tag_rank const &rhs){
+			return lhs.type_and_rank_to_tuple() < rhs.type_and_rank_to_tuple();
+		});
+		
+		// Process each vector or array_vector.
+		while (rank_it != rank_end)
+		{
+			auto const rank_mid(std::partition_point(rank_it, rank_end, [type_index = rank_it->type_index](tag_rank const &tr){
+				return tr.type_index == type_index;
+			}));
+			
+			visit_type(rank_it->type_index, aggregate {
+				[rank_it, rank_mid]<typename t_type>(std::vector <t_type> &vec){
+					auto const end(vec.end());
+					auto const it(libbio::remove_at_indices(vec.begin(), end, rank_it, rank_mid, [](tag_rank const &tr){ return tr.rank; }));
+					vec.erase(it, end);
+				},
+				[rank_it, rank_mid]<typename t_type>(detail::vector_container <t_type> &vc){
+					auto const begin(vc.begin());
+					auto const end(vc.end());
+					auto const mid(libbio::stable_partition_left_at_indices(begin, end, rank_it, rank_mid, [](tag_rank const &tr){ return tr.rank; }));
+					auto const new_size(std::distance(begin, mid));
+					for (auto &val : ranges::subrange(mid, end))
+						val.clear();
+					
+					vc.size_ = new_size;
+				}
+			});
+			
+			rank_it = rank_mid;
+		}
+		
+		// Erase the removed ranks.
+		m_tag_ranks.erase(rank_it_, rank_end);
+		
+		// Assign new ranks to the remaining tags.
+		{
+			std::array <tag_count_type, std::tuple_size_v <value_tuple_type>> new_ranks;
+			for (auto &tr : m_tag_ranks)
+				tr.rank = new_ranks[tr.type_index]++;
+		}
 	}
 }
 
