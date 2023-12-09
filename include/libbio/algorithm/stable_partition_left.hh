@@ -52,6 +52,26 @@ namespace libbio::detail {
 		
 		return shift(values_it + range_start, values_it + prev_idx + 1, values_end);
 	}
+	
+	
+	struct shift_partition
+	{
+		template <typename t_iterator>
+		t_iterator operator()(t_iterator first, t_iterator mid, t_iterator last)
+		{
+			return std::rotate(first, mid, last);
+		}
+	};
+	
+	
+	struct shift_remove
+	{
+		template <typename t_iterator>
+		t_iterator operator()(t_iterator first, t_iterator mid, t_iterator last)
+		{
+			return std::move(mid, last, first);
+		}
+	};
 }
 
 
@@ -90,16 +110,7 @@ namespace libbio {
 		t_proj &&proj
 	)
 	{
-		struct shift
-		{
-			template <typename t_iterator>
-			t_iterator operator(t_iterator first, t_iterator mid, t_iterator last)
-			{
-				return std::rotate(first, mid, last);
-			}
-		};
-		
-		return detail::shift_at_indices(values_it, values_end, idxs_it, idxs_end, proj, shift{});
+		return detail::shift_at_indices(values_it, values_end, idxs_it, idxs_end, proj, detail::shift_partition{});
 	}
 	
 	
@@ -124,16 +135,7 @@ namespace libbio {
 		t_proj &&proj
 	)
 	{
-		struct shift
-		{
-			template <typename t_iterator>
-			t_iterator operator(t_iterator first, t_iterator mid, t_iterator last)
-			{
-				return std::move(mid, last, first);
-			}
-		};
-		
-		return detail::shift_at_indices(values_it, values_end, idxs_it, idxs_end, proj, shift{});
+		return detail::shift_at_indices(values_it, values_end, idxs_it, idxs_end, proj, detail::shift_remove{});
 	}
 	
 	
