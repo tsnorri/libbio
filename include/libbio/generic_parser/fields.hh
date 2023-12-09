@@ -59,7 +59,7 @@ namespace libbio::parsing {
 	struct is_optional_repeating <t_type, decltype(void(t_type::is_optional_repeating))> : public std::bool_constant <t_type::is_optional_repeating> {};
 	
 	template <typename t_type>
-	constexpr static inline bool is_optional_repeating_v = is_optional_repeating <t_type>::value;
+	constexpr static inline bool is_optional_repeating_v{is_optional_repeating <t_type>::value};
 	
 
 	template <typename t_type, typename = void>
@@ -69,7 +69,7 @@ namespace libbio::parsing {
 	struct is_optional <t_type, decltype(void(t_type::is_optional))> : public std::bool_constant <t_type::is_optional> {};
 
 	template <typename t_type>
-	constexpr static inline bool is_optional_v = is_optional <t_type>::value;
+	constexpr static inline bool is_optional_v{is_optional <t_type>::value};
 
 	
 	template <typename t_type, typename = void>
@@ -79,7 +79,7 @@ namespace libbio::parsing {
 	struct is_repeating <t_type, decltype(void(t_type::is_repeating))> : public std::bool_constant <t_type::is_repeating> {};
 	
 	template <typename t_type>
-	constexpr static inline bool is_repeating_v = is_repeating <t_type>::value;
+	constexpr static inline bool is_repeating_v{is_repeating <t_type>::value};
 	
 	
 	template <typename t_type>
