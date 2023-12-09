@@ -7,7 +7,6 @@
 #include <random>
 #include <range/v3/algorithm/copy.hpp>
 #include <range/v3/iterator/stream_iterators.hpp>
-#include <range/v3/view/reverse.hpp>
 #include "rapidcheck_test_driver.hh"
 
 namespace lb		= libbio;
