@@ -68,9 +68,6 @@ namespace libbio {
 		virtual bool run_test() = 0;
 	};
 	
-	template <typename t_unique_type>
-	class test_case_tpl {};
-	
 	
 	template <typename ... t_args>
 	auto rc_check(t_args && ... args)
