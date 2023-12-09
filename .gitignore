@@ -12,6 +12,9 @@
 /src/vcf_reader_header_parser.cc
 /src/vcf_reader_header_parser.pdf
 /src/vcf_reader_parser.cc
+/tests/rapidcheck_test_driver_cmdline.c
+/tests/rapidcheck_test_driver_cmdline.h
+/tests/rc_tests
 /tests/tests
 /vcf-check-reference/cmdline.c
 /vcf-check-reference/cmdline.h
