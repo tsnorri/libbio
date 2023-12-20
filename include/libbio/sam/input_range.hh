@@ -24,7 +24,7 @@ namespace libbio::sam {
 	{
 		using input_range_base::input_range_base;
 		
-		character_range(std::string_view const sv):
+		explicit character_range(std::string_view const sv):
 			input_range_base(sv.data(), sv.data() + sv.size())
 		{
 		}
@@ -39,9 +39,26 @@ namespace libbio::sam {
 		file_handle			&fh;
 		std::vector <char>	buffer;
 		
-		file_handle_input_range(file_handle &fh_):
+		explicit file_handle_input_range(file_handle &fh_):
 			input_range_base(nullptr, nullptr),
 			fh(fh_)
+		{
+			buffer.resize(fh.io_op_blocksize(), 0);
+		}
+		
+		void prepare() override { update(); }
+		bool update() override;
+	};
+	
+	
+	struct file_handle_input_range_ final : public input_range_base
+	{
+		file_handle 		fh;
+		std::vector <char>	buffer;
+		
+		explicit file_handle_input_range_(file_handle &&fh_):
+			input_range_base(nullptr, nullptr),
+			fh(std::move(fh_))
 		{
 			buffer.resize(fh.io_op_blocksize(), 0);
 		}
