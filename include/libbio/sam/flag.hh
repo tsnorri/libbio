@@ -31,15 +31,30 @@ namespace libbio::sam {
 	};
 	
 	
+	template <typename t_type>
+	concept Flag = std::is_same_v <t_type, flag_type> || std::is_same_v <t_type, flag>;
+}
+
+
+namespace libbio::sam::detail {
+	
+	template <Flag t_flag> constexpr flag_type flag_value(t_flag const flag) { return std::to_underlying(flag); }
+	template <> constexpr flag_type flag_value(flag_type const flag) { return flag; }
+}
+
+
+namespace libbio::sam {
+
 	constexpr inline flag operator|(flag const lhs, flag const rhs)
 	{
 		return static_cast <flag>(std::to_underlying(lhs) | std::to_underlying(rhs));
 	}
 	
 	
-	constexpr inline flag operator&(flag const lhs, flag const rhs)
+	template <Flag t_lhs, Flag t_rhs>
+	constexpr inline flag operator&(t_lhs const lhs, t_rhs const rhs)
 	{
-		return static_cast <flag>(std::to_underlying(lhs) & std::to_underlying(rhs));
+		return static_cast <flag>(detail::flag_value(lhs) & detail::flag_value(rhs));
 	}
 	
 	
@@ -51,7 +66,8 @@ namespace libbio::sam {
 	}
 	
 	
-	constexpr inline flag &operator&=(flag &lhs, flag const rhs)
+	template <Flag t_lhs, Flag t_rhs>
+	constexpr inline flag &operator&=(t_lhs &lhs, t_rhs const rhs)
 	{
 		auto const res(lhs & rhs);
 		lhs = res;
