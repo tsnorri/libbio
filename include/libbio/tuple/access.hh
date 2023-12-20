@@ -59,6 +59,14 @@ namespace libbio::tuples {
 	using second_t = std::tuple_element_t <1, t_tuple>;
 	
 	
+	template <std::size_t t_index>
+	struct element_at_index
+	{
+		template <typename t_tuple>
+		using type = std::tuple_element_t <t_index, t_tuple>;
+	};
+	
+	
 	template <typename t_tuple, typename t_default, std::size_t t_size = std::tuple_size_v <t_tuple>>
 	struct head_
 	{
