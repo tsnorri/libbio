@@ -67,8 +67,6 @@ namespace libbio::sam {
 		}
 	}
 	
-	constexpr inline cigar_operation operator ""_cigar_operation(char const op) { return make_cigar_operation(op); }
-	
 	inline std::ostream &operator<<(std::ostream &os, cigar_operation const op) { os << cigar_operation_identifiers[to_underlying(op)]; return os; }
 	
 	

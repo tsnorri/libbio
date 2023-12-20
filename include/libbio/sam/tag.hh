@@ -58,13 +58,6 @@ namespace libbio::sam {
 	}
 	
 	
-	constexpr inline tag_type operator ""_tag(char const *str, std::size_t const size)
-	{
-		libbio_assert_eq(2, size);
-		return to_tag(std::array{str[0], str[1]});
-	}
-	
-	
 	template <tag_type t_tag> struct tag_value {};
 	
 	template <> struct tag_value <"NM"_tag> { typedef std::int32_t	type; };
