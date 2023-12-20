@@ -21,13 +21,15 @@ namespace libbio {
 		
 	protected:
 		file_descriptor_type			m_fd{-1};
+		bool							m_should_close{true};
 		
 	public:
 		file_handle() = default;
 		
 		// Takes ownership.
-		explicit file_handle(file_descriptor_type fd) noexcept:
-			m_fd(fd)
+		explicit file_handle(file_descriptor_type fd, bool should_close = true) noexcept:
+			m_fd(fd),
+			m_should_close(should_close)
 		{
 		}
 		
@@ -59,6 +61,7 @@ namespace libbio {
 	{
 		using std::swap;
 		swap(m_fd, other.m_fd);
+		swap(m_should_close, other.m_should_close);
 	}
 	
 	
@@ -68,6 +71,7 @@ namespace libbio {
 		{
 			using std::swap;
 			swap(m_fd, other.m_fd);
+			swap(m_should_close, other.m_should_close);
 		}
 		return *this;
 	}
