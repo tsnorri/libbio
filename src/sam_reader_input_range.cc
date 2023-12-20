@@ -6,9 +6,9 @@
 #include <libbio/sam/input_range.hh>
 
 
-namespace libbio { namespace sam {
+namespace {
 	
-	bool file_handle_input_range::update()
+	bool do_update(std::vector <char> &buffer, file_handle &fh)
 	{
 		auto const size(fh.read(buffer.size(), buffer.data()));
 		if (0 == size)
@@ -21,5 +21,20 @@ namespace libbio { namespace sam {
 		it = buffer.data();
 		sentinel = it + size;
 		return true;
+	}
+}
+
+
+namespace libbio { namespace sam {
+	
+	bool file_handle_input_range::update()
+	{
+		return do_update(buffer, fh);
+	}
+	
+	
+	bool file_handle_input_range_::update()
+	{
+		return do_update(buffer, fh);
 	}
 }}
