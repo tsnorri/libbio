@@ -38,7 +38,6 @@ namespace libbio::sam {
 	private:
 		void prepare_record(header const &header_, parser_type::record_type &src, record &dst) const;
 		void prepare_parser_record(record &src, parser_type::record_type &dst) const;
-		void sort_reference_sequence_identifiers(header &) const;
 		
 	public:
 		void read_header(header &, input_range_base &) const;

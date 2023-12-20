@@ -290,17 +290,12 @@ namespace libbio::sam {
 	}
 	
 	
-	void reader::sort_reference_sequence_identifiers(header &header_) const
+	void header::assign_reference_sequence_identifiers() const
 	{
-		header_.reference_sequence_identifiers.clear();
-		header_.reference_sequence_identifiers.reserve(header_.reference_sequences.size());
-		
-		for (auto const &[idx, ref_seq] : rsv::enumerate(header_.reference_sequences))
-			header_.reference_sequence_identifiers.emplace_back(&ref_seq.name, idx);
-		
-		std::sort(header_.reference_sequence_identifiers.begin(), header_.reference_sequence_identifiers.end(), [](auto const &lhs, auto const &rhs){
-			return *lhs.first < *rhs.first;
-		});
+		reference_sequence_identifiers.clear();
+		reference_sequence_identifiers.resize(reference_sequences.size());
+		std::iota(reference_sequence_identifiers.begin(), reference_sequence_identifiers.end(), reference_sequence_identifier_type{});
+		std::sort(reference_sequence_identifiers.begin(), reference_sequence_identifiers.end(), reference_sequence_identifier_cmp{reference_sequences});
 	}
 	
 	
