@@ -13,6 +13,7 @@
 #include <libbio/sam/input_range.hh>
 #include <libbio/sam/tag.hh>
 #include <libbio/tuple.hh>
+#include <optional>
 #include <range/v3/view/subrange.hpp>
 #include <range/v3/view/take_exactly.hpp>
 
@@ -20,15 +21,6 @@
 namespace libbio::sam::detail {
 	
 	typedef double floating_point_type;
-	
-	template <typename t_type>
-	struct is_vector : public std::false_type {};
-	
-	template <typename t_type>
-	struct is_vector <std::vector <t_type>> : public std::true_type {};
-	
-	template <typename t_type>
-	constexpr inline bool const is_vector_v{is_vector <t_type>::value};
 	
 	
 	template <typename t_type, bool t_should_clear_elements = false>
@@ -108,6 +100,22 @@ namespace libbio::sam::detail {
 	template <> struct array_type_code <std::int32_t>			: public array_type_code_helper_t <'i'> {};
 	template <> struct array_type_code <std::uint32_t>			: public array_type_code_helper_t <'I'> {};
 	template <> struct array_type_code <floating_point_type>	: public array_type_code_helper_t <'f'> {};
+	
+	
+	template <typename t_type>
+	struct value_container
+	{
+		typedef container_of_t <t_type> type;
+	};
+	
+	template <typename t_type, typename ... t_args>
+	struct value_container <std::vector <t_type, t_args...>>
+	{
+		typedef array_vector <t_type> type;
+	};
+	
+	template <typename t_type>
+	using value_container_t = value_container <t_type>::type;
 }
 
 
@@ -122,16 +130,9 @@ namespace libbio::sam {
 		typedef detail::floating_point_type	floating_point_type;
 		
 		// Type mapping.
-		template <typename t_type> using value_vector = detail::value_vector <t_type>;
-		template <typename t_type> using array_vector = detail::array_vector <t_type>;
-		template <typename t_type> using container_of_t = detail::container_of_t <t_type>;
-		
-		template <typename t_type>
-		using value_container_t = std::conditional_t <
-			detail::is_vector_v <t_type>,
-			array_vector <typename t_type::value_type>,
-			container_of_t <t_type>
-		>;
+		template <typename t_type> using array_vector		= detail::array_vector <t_type>;
+		template <typename t_type> using container_of_t		= detail::container_of_t <t_type>;
+		template <typename t_type> using value_container_t	= detail::value_container_t <t_type>;
 		
 		typedef std::uint16_t							tag_count_type;	// We assume that there will not be more than 65536 tags.
 		struct tag_rank
@@ -158,7 +159,6 @@ namespace libbio::sam {
 		static_assert(!std::is_same_v <std::byte, std::int8_t>); // Just to make sure.
 		static_assert(!std::is_same_v <std::byte, std::uint8_t>);
 		
-	public:
 		typedef std::tuple <
 			container_of_t <char>,
 			container_of_t <std::int32_t>,			// Type from BAM, see SAM 1.0, footnote 16.
@@ -183,6 +183,10 @@ namespace libbio::sam {
 		constexpr static inline auto const array_type_code_v{detail::array_type_code <t_type>::value};
 		
 	private:
+		template <typename t_optional_field>
+		using find_rank_return_type_t = if_const_t <t_optional_field, tag_rank_vector::const_iterator, tag_rank_vector::iterator>;
+		
+	private:
 		tag_rank_vector		m_tag_ranks;	// Rank of the tag among its value type.
 		value_tuple_type	m_values;
 		
@@ -205,7 +209,18 @@ namespace libbio::sam {
 		void update_tag_order() { std::sort(m_tag_ranks.begin(), m_tag_ranks.end()); }
 		
 		template <typename t_type, typename t_optional_field>
+		static inline auto find_rank(t_optional_field &&of, tag_type const tag) -> find_rank_return_type_t <t_optional_field>;
+		
+		template <typename t_type, typename t_optional_field>
+		static inline t_type *do_get(t_optional_field &&of, tag_rank_vector::const_iterator it, tag_type const tag);
+		
+		template <typename t_type, typename t_optional_field>
 		static inline t_type *do_get(t_optional_field &&of, tag_type const tag);
+		
+		void erase_values_in_range(tag_rank_vector::const_iterator rank_it, tag_rank_vector::const_iterator const rank_end);
+		
+		template <typename t_predicate, typename t_callback>
+		void erase_if_(t_predicate &&predicate, t_callback &&erase_callback);
 		
 	public:
 		optional_field() = default;
@@ -219,10 +234,16 @@ namespace libbio::sam {
 		
 		bool empty() const { return m_tag_ranks.empty(); }
 		constexpr void clear() { m_tag_ranks.clear(); tuples::for_each(m_values, []<typename t_idx>(auto &element){ element.clear(); }); }
+		
 		template <typename t_type> t_type *get(tag_type const tag) { return do_get <t_type>(*this, tag); }
 		template <typename t_type> t_type const *get(tag_type const tag) const { return do_get <t_type const>(*this, tag); }
+		template <tag_type t_tag> tag_value_t <t_tag> *get() const { return get <tag_value_t <t_tag>>(t_tag); }
 		template <typename t_type> inline std::optional <t_type> get_(tag_type const tag) const;
 		template <tag_type t_tag> std::optional <tag_value_t <t_tag>> get_() const { return get_ <tag_value_t <t_tag>>(t_tag); }
+		
+		// Get or insert (even on type mismatch).
+		template <typename t_type> t_type &obtain(tag_type const tag);
+		template <tag_type t_tag> tag_value_t <t_tag> &obtain() { return obtain <tag_value_t <t_tag>>(t_tag); }
 		
 		template <typename t_return, typename t_visitor>
 		t_return visit_type(tag_type const type_index, t_visitor &&visitor);
@@ -233,18 +254,21 @@ namespace libbio::sam {
 		bool operator==(optional_field const &other) const;
 		
 		template <typename t_predicate>
-		void erase_if(t_predicate &&predicate);
+		void erase_if(t_predicate &&predicate) { erase_if_(std::forward <t_predicate>(predicate), [](auto const, auto const){}); }
+		
+		template <typename t_predicate, typename t_callback>
+		void erase_if(t_predicate &&predicate, t_callback &&erase_callback) { erase_if_(std::forward <t_predicate>(predicate), std::forward <t_callback>(erase_callback)); }
 	};
 	
 	
 	std::ostream &operator<<(std::ostream &os, optional_field const &of);
 	
 	
-	template <typename t_type>
-	auto optional_field::prepare_for_adding(tag_type const tag_id) -> t_type &
+	template <typename t_container_type>
+	auto optional_field::prepare_for_adding(tag_type const tag_id) -> t_container_type &
 	{
-		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, t_type>};
-		auto &dst(std::get <t_type>(m_values));
+		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, t_container_type>};
+		auto &dst(std::get <t_container_type>(m_values));
 		m_tag_ranks.emplace_back(tag_id, idx, dst.size());
 		return dst;
 	}
@@ -291,16 +315,61 @@ namespace libbio::sam {
 	
 	
 	template <typename t_type, typename t_optional_field>
-	t_type *optional_field::do_get(t_optional_field &&of, tag_type const tag)
+	auto optional_field::find_rank(t_optional_field &&of, tag_type const tag) -> find_rank_return_type_t <t_optional_field>
 	{
-		typedef value_container_t <t_type> tuple_element_type;
-		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, tuple_element_type>};
 		auto const end(of.m_tag_ranks.end());
 		auto const it(std::lower_bound(of.m_tag_ranks.begin(), end, tag, tag_rank_cmp{}));
+		return it;
+	}
+	
+	
+	template <typename t_type, typename t_optional_field>
+	t_type *optional_field::do_get(t_optional_field &&of, tag_rank_vector::const_iterator it, tag_type const tag)
+	{
+		typedef value_container_t <std::remove_const_t <t_type>> tuple_element_type;
+		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, tuple_element_type>};
+		auto const end(of.m_tag_ranks.cend());
 		if (end == it) return nullptr;
 		if (it->tag_id != tag) return nullptr;
 		if (it->type_index != idx) return nullptr;
-		return &std::get <tuple_element_type>(of.m_values)[it->rank];
+		return &std::get <idx>(of.m_values)[it->rank]; // Non-const of used here.
+	}
+	
+	
+	template <typename t_type, typename t_optional_field>
+	t_type *optional_field::do_get(t_optional_field &&of, tag_type const tag)
+	{
+		auto const it(find_rank <t_type>(of, tag));
+		return do_get <t_type>(of, it, tag);
+	}
+	
+	
+	template <typename t_type>
+	t_type &optional_field::obtain(tag_type const tag)
+	{
+		typedef value_container_t <std::remove_const_t <t_type>> tuple_element_type;
+		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, tuple_element_type>};
+		
+		auto const it(find_rank <t_type>(*this, tag));
+		auto const end(m_tag_ranks.cend());
+		auto &dst(std::get <idx>(m_values));
+		
+		if (end == it || it->tag_id != tag)
+		{
+			m_tag_ranks.emplace(it, tag, idx, dst.size());
+			return dst.emplace_back();
+		}
+		
+		// it->tag_id == tag.
+		if (it->type_index == idx)
+			return dst[it->rank];
+		
+		// it->type_index != idx.
+		// Erase the old value and return a reference to a new one.
+		erase_values_in_range(it, it + 1);
+		it->type_index = idx;
+		it->rank = dst.size();
+		return dst.emplace_back();
 	}
 	
 	
@@ -356,8 +425,8 @@ namespace libbio::sam {
 	}
 	
 	
-	template <typename t_predicate>
-	void optional_field::erase_if(t_predicate &&predicate)
+	template <typename t_predicate, typename t_erase_callback>
+	void optional_field::erase_if_(t_predicate &&predicate, t_erase_callback &&callback)
 	{
 		// Find the range [it, m_tag_ranks.end()) of items to be removed and sort.
 		auto const rank_end(m_tag_ranks.end());
@@ -373,29 +442,12 @@ namespace libbio::sam {
 			auto const rank_mid(std::partition_point(rank_it, rank_end, [type_index = rank_it->type_index](tag_rank const &tr){
 				return tr.type_index == type_index;
 			}));
-			
-			visit_type(rank_it->type_index, aggregate {
-				[rank_it, rank_mid]<typename t_type>(std::vector <t_type> &vec){
-					auto const end(vec.end());
-					auto const it(libbio::remove_at_indices(vec.begin(), end, rank_it, rank_mid, [](tag_rank const &tr){ return tr.rank; }));
-					vec.erase(it, end);
-				},
-				[rank_it, rank_mid]<typename t_type>(detail::vector_container <t_type> &vc){
-					auto const begin(vc.begin());
-					auto const end(vc.end());
-					auto const mid(libbio::stable_partition_left_at_indices(begin, end, rank_it, rank_mid, [](tag_rank const &tr){ return tr.rank; }));
-					auto const new_size(std::distance(begin, mid));
-					for (auto &val : ranges::subrange(mid, end))
-						val.clear();
-					
-					vc.size_ = new_size;
-				}
-			});
-			
+			erase_values_in_range(rank_it, rank_mid);
 			rank_it = rank_mid;
 		}
 		
 		// Erase the removed ranks.
+		callback(tag_rank_vector::const_iterator(rank_it_), m_tag_ranks.cend());
 		m_tag_ranks.erase(rank_it_, rank_end);
 		
 		// Assign new ranks to the remaining tags.
