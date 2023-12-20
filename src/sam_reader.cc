@@ -419,6 +419,29 @@ namespace libbio::sam {
 		
 		return true;
 	}
+	
+	
+	void optional_field::erase_values_in_range(tag_rank_vector::const_iterator rank_it, tag_rank_vector::const_iterator const rank_end)
+	{
+		// Precondition: the items in [rank_it, rank_end) refer to the same type.
+		visit_type(rank_it->type_index, aggregate {
+			[rank_it, rank_end]<typename t_type>(std::vector <t_type> &vec){
+				auto const end(vec.end());
+				auto const it(libbio::remove_at_indices(vec.begin(), end, rank_it, rank_end, [](tag_rank const &tr){ return tr.rank; }));
+				vec.erase(it, end);
+			},
+			[rank_it, rank_end]<typename t_type>(detail::vector_container <t_type> &vc){
+				auto const begin(vc.begin());
+				auto const end(vc.end());
+				auto const mid(libbio::stable_partition_left_at_indices(begin, end, rank_it, rank_end, [](tag_rank const &tr){ return tr.rank; }));
+				auto const new_size(std::distance(begin, mid));
+				for (auto &val : ranges::subrange(mid, end))
+					val.clear();
+				
+				vc.size_ = new_size;
+			}
+		});
+	}
 }
 
 #endif
