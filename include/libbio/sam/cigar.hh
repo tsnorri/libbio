@@ -37,6 +37,8 @@ namespace libbio::sam {
 	
 	constexpr static std::array const cigar_operation_identifiers{'M', 'I', 'D', 'N', 'S', 'H', 'P', '=', 'X'};
 	
+	constexpr inline char to_char(cigar_operation const op) { return cigar_operation_identifiers[std::to_underlying(op)]; }
+	
 	constexpr inline cigar_operation make_cigar_operation(char const op, void(*cigar_error_handler)(char) = &detail::cigar_error_handler)
 	{
 		switch (op)
@@ -81,15 +83,18 @@ namespace libbio::sam {
 	public:
 		cigar_run() = default;
 		
-		cigar_run(cigar_operation const op, count_type const count):
+		constexpr cigar_run(cigar_operation const op, count_type const count):
 			value((count_type(to_underlying(op)) << 28U) | count)
 		{
 			libbio_always_assert_lt(count, 1U << 28U);
 		}
 		
-		count_type count() const { return 0xfff'ffff & value; }
-		cigar_operation operation() const { return static_cast <cigar_operation>(value >> 28U); }
-		bool operator==(cigar_run const other) const { return value == other.value; }
+		constexpr count_type count() const { return 0xfff'ffff & value; }
+		constexpr cigar_operation operation() const { return static_cast <cigar_operation>(value >> 28U); }
+		constexpr bool operator==(cigar_run const other) const { return value == other.value; }
+		
+		constexpr void assign(count_type const count) { value = (0xf000'0000 & value) | (0xfff'ffff & count); }
+		constexpr void assign(cigar_operation const op) { value = (0xfff'ffff & value) | (to_underlying(op) << 28U); }
 	};
 	
 	
