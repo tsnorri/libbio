@@ -60,9 +60,6 @@ namespace libbio::sam {
 	
 	template <tag_type t_tag> struct tag_value {};
 	
-	template <> struct tag_value <"NM"_tag> { typedef std::int32_t	type; };
-	template <> struct tag_value <"OA"_tag> { typedef std::string	type; };
-	
 	template <tag_type t_tag>
 	using tag_value_t = tag_value <t_tag>::type;
 }
