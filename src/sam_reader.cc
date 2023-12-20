@@ -213,7 +213,7 @@ namespace libbio::sam {
 		os << '\t';
 		
 		// POS, MAPQ
-		os	<< rec.pos << '\t'
+		os	<< (1 + rec.pos) << '\t'
 			<< +rec.mapq << '\t';
 		
 		// CIGAR
@@ -233,7 +233,7 @@ namespace libbio::sam {
 		os << '\t';
 		
 		// PNEXT, TLEN
-		os	<< rec.pnext << '\t'
+		os	<< (1 + rec.pnext) << '\t'
 			<< rec.tlen << '\t';
 		
 		// SEQ
@@ -329,6 +329,9 @@ namespace libbio::sam {
 		dst.tlen = std::get <TLEN>(src);
 		dst.flag = std::get <FLAG>(src);
 		dst.mapq = std::get <MAPQ>(src);
+		
+		--dst.pos; // In input 1-based, 0 for invalid.
+		--dst.pnext;
 	}
 	
 	
