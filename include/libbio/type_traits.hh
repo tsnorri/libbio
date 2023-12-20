@@ -25,6 +25,14 @@ namespace libbio {
 	
 	template <typename t_type>
 	using make_unsigned_rr_t = typename std::make_unsigned_t <std::remove_reference_t <t_type>>;
+	
+	
+	template <typename t_type, typename t_true, typename t_false>
+	using if_const_t = std::conditional_t <
+		std::is_const_v <std::remove_reference_t <t_type>>,
+		t_true,
+		t_false
+	>;
 }
 
 #endif
