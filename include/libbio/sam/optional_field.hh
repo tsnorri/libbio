@@ -35,7 +35,18 @@ namespace libbio::sam::detail {
 		t_type const &operator[](std::size_t const idx) const { return values[idx]; }
 		t_type &back() { libbio_assert_lt(0, size_); return values[size_ - 1]; }
 		t_type const &back() const { libbio_assert_lt(0, size_); return values[size_ - 1]; }
-		
+
+		auto begin() { return values.begin(); }
+		auto begin() const { return values.begin(); }
+		auto cbegin() const { return values.begin(); }
+
+		auto end() { return values.begin() + size_; }
+		auto end() const { return values.begin() + size_; }
+		auto cend() const { return values.begin() + size_; }
+
+		auto value_range() { return values | ranges::views::take_exactly(size_); }
+		auto value_range() const { return values | ranges::views::take_exactly(size_); }
+
 		template <typename ... t_args>
 		inline t_type &emplace_back(t_args && ... args);
 	};
