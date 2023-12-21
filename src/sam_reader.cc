@@ -290,7 +290,7 @@ namespace libbio::sam {
 	}
 	
 	
-	void header::assign_reference_sequence_identifiers() const
+	void header::assign_reference_sequence_identifiers()
 	{
 		reference_sequence_identifiers.clear();
 		reference_sequence_identifiers.resize(reference_sequences.size());
@@ -422,7 +422,7 @@ namespace libbio::sam {
 	void optional_field::erase_values_in_range(tag_rank_vector::const_iterator rank_it, tag_rank_vector::const_iterator const rank_end)
 	{
 		// Precondition: the items in [rank_it, rank_end) refer to the same type.
-		visit_type(rank_it->type_index, aggregate {
+		visit_type <void>(rank_it->type_index, aggregate {
 			[rank_it, rank_end]<typename t_type>(std::vector <t_type> &vec){
 				auto const end(vec.end());
 				auto const it(libbio::remove_at_indices(vec.begin(), end, rank_it, rank_end, [](tag_rank const &tr){ return tr.rank; }));
