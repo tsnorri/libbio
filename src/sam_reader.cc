@@ -290,7 +290,7 @@ namespace libbio::sam {
 	}
 	
 	
-	void header::assign_reference_sequence_identifiers() const
+	void header::assign_reference_sequence_identifiers()
 	{
 		reference_sequence_identifiers.clear();
 		reference_sequence_identifiers.resize(reference_sequences.size());
