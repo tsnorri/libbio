@@ -139,7 +139,7 @@ namespace libbio::sam {
 			}
 			
 			action finish_parsing {
-				sort_reference_sequence_identifiers(header_);
+				header_.assign_reference_sequence_identifiers();
 				return;
 			}
 			
