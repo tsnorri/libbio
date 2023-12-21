@@ -5,21 +5,24 @@
 
 #include <libbio/sam/input_range.hh>
 
+namespace lb	= libbio;
+namespace sam	= libbio::sam;
+
 
 namespace {
 	
-	bool do_update(std::vector <char> &buffer, file_handle &fh)
+	bool do_update(sam::input_range_base &ir, std::vector <char> &buffer, lb::file_handle &fh)
 	{
 		auto const size(fh.read(buffer.size(), buffer.data()));
 		if (0 == size)
 		{
-			it = nullptr;
-			sentinel = nullptr;
+			ir.it = nullptr;
+			ir.sentinel = nullptr;
 			return false;
 		}
 		
-		it = buffer.data();
-		sentinel = it + size;
+		ir.it = buffer.data();
+		ir.sentinel = ir.it + size;
 		return true;
 	}
 }
@@ -29,12 +32,12 @@ namespace libbio { namespace sam {
 	
 	bool file_handle_input_range::update()
 	{
-		return do_update(buffer, fh);
+		return do_update(*this, buffer, fh);
 	}
 	
 	
 	bool file_handle_input_range_::update()
 	{
-		return do_update(buffer, fh);
+		return do_update(*this, buffer, fh);
 	}
 }}
