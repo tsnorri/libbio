@@ -59,7 +59,6 @@ namespace libbio::sam {
 		parser_type::record_type rec;
 		record rec_;
 		
-		range.prepare();
 		while (parser.parse(range, rec))
 		{
 			prepare_record(header_, rec, rec_);
