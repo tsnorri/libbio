@@ -95,15 +95,17 @@ namespace libbio::sam::fields {
 			// Process the CIGAR.
 			while (!range.is_at_end())
 			{
+				{
+					auto const cc(*range.it);
+					if (auto const idx{t_delimiter::matching_index(cc)}; t_delimiter::size() != idx)
+					{
+						++range.it;
+						return {idx};
+					}
+				}
+				
 			continue_parsing_2:
 				dst.emplace_back(parse_one(range));
-				
-				auto const cc(*range.it);
-				if (auto const idx{t_delimiter::matching_index(cc)}; t_delimiter::size() != idx)
-				{
-					++range.it;
-					return {idx};
-				}
 			}
 			
 			if constexpr (t_field_position == parsing::field_position::final_)
