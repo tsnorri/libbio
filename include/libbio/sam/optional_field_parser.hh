@@ -29,7 +29,7 @@ namespace libbio::sam::fields {
 		template <typename t_delimiter, parsing::field_position t_field_position, typename t_range>
 		constexpr parsing::parsing_result parse(t_range &range, sam::optional_field &dst) const
 		{
-			dst.clear();
+			dst.clear(); // FIXME: Unneeded here?
 			
 			if constexpr (any(parsing::field_position::initial_ & t_field_position))
 			{

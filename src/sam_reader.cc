@@ -92,6 +92,98 @@ namespace {
 		auto const max(std::max(lhsa, rhsa));
 		return diff <= max * multiplier * std::numeric_limits <t_type>::epsilon();
 	}
+	
+	
+	void output_record_(std::ostream &os, sam::header const &header_, sam::record const &rec)
+	{
+		// QNAME
+		if (rec.qname.empty())
+			os << '*';
+		else
+			os	<< rec.qname;
+		os << '\t';
+		
+		// FLAG
+		os << rec.flag << '\t';
+		
+		// RNAME
+		if (sam::INVALID_REFERENCE_ID == rec.rname_id)
+			os << '*';
+		else
+			os << header_.reference_sequences[rec.rname_id].name;
+		os << '\t';
+		
+		// POS, MAPQ
+		os	<< (1 + rec.pos) << '\t'
+			<< +rec.mapq << '\t';
+		
+		// CIGAR
+		if (rec.cigar.empty())
+			os << '*';
+		else
+			std::copy(rec.cigar.begin(), rec.cigar.end(), std::ostream_iterator <sam::cigar_run>(os));
+		os << '\t';
+		
+		// RNEXT
+		if (sam::INVALID_REFERENCE_ID == rec.rnext_id)
+			os << '*';
+		else if (rec.rname_id == rec.rnext_id)
+			os << '=';
+		else
+			os << header_.reference_sequences[rec.rnext_id].name;
+		os << '\t';
+		
+		// PNEXT, TLEN
+		os	<< (1 + rec.pnext) << '\t'
+			<< rec.tlen << '\t';
+		
+		// SEQ
+		if (rec.seq.empty())
+			os << '*';
+		else
+			std::copy(rec.seq.begin(), rec.seq.end(), std::ostream_iterator <char>(os));
+		os << '\t';
+		
+		// QUAL
+		if (rec.qual.empty())
+			os << '*';
+		else
+			std::copy(rec.qual.begin(), rec.qual.end(), std::ostream_iterator <char>(os));
+	}
+	
+	
+	template <typename t_range>
+	void output_optional_field(std::ostream &os, sam::optional_field const &of, t_range &&range)
+	{
+		io::ios_all_saver guard(os);
+		os << std::setprecision(std::numeric_limits <sam::optional_field::floating_point_type>::digits10 + 1);
+		
+		auto visitor(lb::aggregate{
+			[&os]<std::size_t t_idx, char t_type_code>(auto const &val) requires (!('H' == t_type_code || 'B' == t_type_code)) { os << val; }, // Not array.
+			[&os]<std::size_t t_idx, char t_type_code>(auto const &vec) requires ('H' == t_type_code) {
+				for (auto const val : vec)
+					os << format_optional_field_byte_array_value(static_cast <unsigned char>(val));
+			},
+			[&os]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &vec) requires ('B' == t_type_code) {
+				typedef typename t_type::value_type element_type;
+				os << sam::optional_field::array_type_code_v <element_type>;
+				for (auto const val : vec)
+					os << ',' << +val;
+			}
+		});
+		
+		bool is_first{true};
+		for (auto const &tr : range)
+		{
+			if (is_first)
+				is_first = false;
+			else
+				os << '\t';
+			
+			os << char(tr.tag_id >> 8) << char(tr.tag_id & 0xff) << ':' << sam::optional_field::type_codes[tr.type_index] << ':';
+			of.visit <void>(tr, visitor);
+		}
+	}
 }
 
 
@@ -195,59 +287,7 @@ namespace libbio::sam {
 	
 	void output_record(std::ostream &os, header const &header_, record const &rec)
 	{
-		// QNAME
-		if (rec.qname.empty())
-			os << '*';
-		else
-			os	<< rec.qname;
-		os << '\t';
-		
-		// FLAG
-		os << rec.flag << '\t';
-		
-		// RNAME
-		if (INVALID_REFERENCE_ID == rec.rname_id)
-			os << '*';
-		else
-			os << header_.reference_sequences[rec.rname_id].name;
-		os << '\t';
-		
-		// POS, MAPQ
-		os	<< (1 + rec.pos) << '\t'
-			<< +rec.mapq << '\t';
-		
-		// CIGAR
-		if (rec.cigar.empty())
-			os << '*';
-		else
-			std::copy(rec.cigar.begin(), rec.cigar.end(), std::ostream_iterator <cigar_run>(os));
-		os << '\t';
-		
-		// RNEXT
-		if (INVALID_REFERENCE_ID == rec.rnext_id)
-			os << '*';
-		else if (rec.rname_id == rec.rnext_id)
-			os << '=';
-		else
-			os << header_.reference_sequences[rec.rnext_id].name;
-		os << '\t';
-		
-		// PNEXT, TLEN
-		os	<< (1 + rec.pnext) << '\t'
-			<< rec.tlen << '\t';
-		
-		// SEQ
-		if (rec.seq.empty())
-			os << '*';
-		else
-			std::copy(rec.seq.begin(), rec.seq.end(), std::ostream_iterator <char>(os));
-		os << '\t';
-		
-		// QUAL
-		if (rec.qual.empty())
-			os << '*';
-		else
-			std::copy(rec.qual.begin(), rec.qual.end(), std::ostream_iterator <char>(os));
+		output_record_(os, header_, rec);
 		
 		// Optional fields
 		if (!rec.optional_fields.empty())
@@ -255,38 +295,34 @@ namespace libbio::sam {
 	}
 	
 	
+	void output_record_in_parsed_order(std::ostream &os, header const &header_, record const &rec, std::vector <std::size_t> &buffer)
+	{
+		output_record_(os, header_, rec);
+		
+		// Optional fields
+		if (!rec.optional_fields.empty())
+		{
+			os << '\t';
+			output_optional_field_in_parsed_order(os, rec.optional_fields, buffer);
+		}
+	}
+	
+	
 	std::ostream &operator<<(std::ostream &os, optional_field const &of)
 	{
-		io::ios_all_saver guard(os);
-		os << std::setprecision(std::numeric_limits <optional_field::floating_point_type>::digits10 + 1);
-		
-		auto visitor(aggregate{
-			[&os]<std::size_t t_idx, char t_type_code>(auto const &val) requires (!('H' == t_type_code || 'B' == t_type_code)) { os << val; }, // Not array.
-			[&os]<std::size_t t_idx, char t_type_code>(auto const &vec) requires ('H' == t_type_code) {
-				for (auto const val : vec)
-					os << format_optional_field_byte_array_value(static_cast <unsigned char>(val));
-			},
-			[&os]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &vec) requires ('B' == t_type_code) {
-				typedef typename t_type::value_type element_type;
-				os << optional_field::array_type_code_v <element_type>;
-				for (auto const val : vec)
-					os << ',' << +val;
-			}
-		});
-		
-		bool is_first{true};
-		for (auto const &tr : of.m_tag_ranks)
-		{
-			if (is_first)
-				is_first = false;
-			else
-				os << '\t';
-			
-			os << char(tr.tag_id >> 8) << char(tr.tag_id & 0xff) << ':' << optional_field::type_codes[tr.type_index] << ':';
-			of.visit <void>(tr, visitor);
-		}
-		
+		output_optional_field(os, of, of.m_tag_ranks);
 		return os;
+	}
+	
+	
+	void output_optional_field_in_parsed_order(std::ostream &os, optional_field const &of, std::vector <std::size_t> &buffer)
+	{
+		buffer.resize(of.m_tag_ranks.size());
+		std::iota(buffer.begin(), buffer.end(), std::size_t(0));
+		std::sort(buffer.begin(), buffer.end(), [&of](auto const lhs, auto const rhs){
+			return of.m_tag_ranks[lhs].parsed_rank < of.m_tag_ranks[rhs].parsed_rank;
+		});
+		output_optional_field(os, of, buffer | rsv::transform([&of](auto const idx){ return of.m_tag_ranks[idx]; }));
 	}
 	
 	

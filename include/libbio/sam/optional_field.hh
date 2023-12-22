@@ -136,6 +136,7 @@ namespace libbio::sam {
 	{
 		friend void read_optional_fields(input_range_base &range, optional_field &dst);
 		friend std::ostream &operator<<(std::ostream &, optional_field const &);
+		friend void output_optional_field_in_parsed_order(std::ostream &, optional_field const &, std::vector <std::size_t> &);
 		
 	public:
 		typedef detail::floating_point_type	floating_point_type;
@@ -146,12 +147,29 @@ namespace libbio::sam {
 		template <typename t_type> using value_container_t	= detail::value_container_t <t_type>;
 		
 		typedef std::uint16_t							tag_count_type;	// We assume that there will not be more than 65536 tags.
+		constexpr static inline tag_count_type const TAG_COUNT_MAX{std::numeric_limits <tag_count_type>::max()};
 		struct tag_rank
 		{
 			// For alignment purposes all are std::uint16_t.
 			tag_type		tag_id{};
 			tag_type		type_index{};
 			tag_count_type	rank{};
+			tag_count_type	parsed_rank{TAG_COUNT_MAX};
+			
+			tag_rank() = default;
+			
+			constexpr tag_rank(
+				tag_type const tag_id_,
+				tag_type const type_index_,
+				tag_count_type const rank_,
+				tag_count_type const parsed_rank_ = TAG_COUNT_MAX
+			):
+				tag_id(tag_id_),
+				type_index(type_index_),
+				rank(rank_),
+				parsed_rank(parsed_rank_)
+			{
+			}
 			
 			bool operator<(tag_rank const &other) const { return tag_id < other.tag_id; }
 			auto type_and_rank_to_tuple() const { return std::make_tuple(type_index, rank); }
@@ -273,14 +291,16 @@ namespace libbio::sam {
 	
 	
 	std::ostream &operator<<(std::ostream &os, optional_field const &of);
+	void output_optional_field_in_parsed_order(std::ostream &os, optional_field const &of, std::vector <std::size_t> &buffer);
 	
 	
 	template <typename t_container_type>
 	auto optional_field::prepare_for_adding(tag_type const tag_id) -> t_container_type &
 	{
+		// Precondition: libbio::sam::fields::optional_field (i.e. the parser) calls clear() before handling the optional fields of each record.
 		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, t_container_type>};
 		auto &dst(std::get <t_container_type>(m_values));
-		m_tag_ranks.emplace_back(tag_id, idx, dst.size());
+		m_tag_ranks.emplace_back(tag_id, idx, dst.size(), m_tag_ranks.size()); // Precondition used here for the last parameter.
 		return dst;
 	}
 	

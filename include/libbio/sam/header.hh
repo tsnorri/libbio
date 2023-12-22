@@ -143,6 +143,7 @@ namespace libbio::sam {
 	std::ostream &operator<<(std::ostream &os, header const &);
 	
 	void output_record(std::ostream &os, header const &header_, record const &record);
+	void output_record_in_parsed_order(std::ostream &os, header const &header_, record const &record, std::vector <std::size_t> &buffer);
 	
 	
 	constexpr inline header::copy_selection_type operator~(
