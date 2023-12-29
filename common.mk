@@ -45,7 +45,7 @@ endif
 
 CFLAGS			+= -std=c99   $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CFLAGS)
 CXXFLAGS		+= -std=c++2b $(OPT_FLAGS) $(WARNING_FLAGS) $(WARNING_CXXFLAGS) $(SYSTEM_CXXFLAGS)
-CPPFLAGS		+= -I../include -I../lib/GSL/include -I../lib/range-v3/include $(BOOST_INCLUDE) $(SYSTEM_CPPFLAGS) $(IQUOTE)
+CPPFLAGS		+= -I../include -I../lib/GSL/include -I../lib/range-v3/include $(BOOST_INCLUDE)
 LDFLAGS			+= $(SYSTEM_LDFLAGS)
 
 # Assume that swift-corelibs-libdispatch is a submodule of the containing project (for now).
