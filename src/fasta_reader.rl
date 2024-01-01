@@ -24,6 +24,7 @@ namespace
 	protected:
 		sequence_vector	&m_sequence;
 		char const		*m_sequence_id{};
+		bool			m_seen_non_seq{};
 		bool			m_is_copying{};
 		
 	public:
@@ -33,10 +34,12 @@ namespace
 		{
 		}
 		
-		bool handle_comment_line(lb::fasta_reader_base &reader, std::string_view const &sv) override { return true; }
+		bool handle_comment_line(lb::fasta_reader_base &reader, std::string_view const &sv) override { m_seen_non_seq = true; return true; }
 		
 		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra) override
 		{
+			m_seen_non_seq = true;
+
 			// FIXME: Check if the identifier has multiple fields.
 			if (nullptr == m_sequence_id || identifier == m_sequence_id)
 				m_is_copying = true;
@@ -47,7 +50,12 @@ namespace
 		bool handle_sequence_chunk(lb::fasta_reader_base &reader, std::string_view const &sv, bool has_newline) override
 		{
 			if (!m_is_copying)
-				return true;
+			{
+				if (!m_seen_non_seq)
+					m_is_copying = true;
+				else
+					return true;
+			}
 			
 			std::copy(sv.begin(), sv.end(), std::back_inserter(m_sequence));
 			return true;
@@ -196,8 +204,9 @@ namespace libbio
 			
 			# Allow missing final newline.
 			
-			sequence_line			= ([A-Za-z*\-]+ "\n") >sequence_line @sequence_line_end;
-			final_sequence_line		= sequence_line | ([A-Za-z*\-]+) >sequence_line %sequence_line_end;
+			sequence				= [A-Za-z*\-]+ "\n";
+			sequence_line			= sequence >sequence_line @sequence_line_end;
+			final_sequence_line		= sequence_line | sequence >sequence_line %sequence_line_end;
 			
 			comment_line			= (";" [^\n]* "\n") >comment @comment_end;
 			final_comment_line		= comment_line | (";" [^\n]*) >comment %comment_end;
@@ -207,7 +216,7 @@ namespace libbio
 			final_fasta_sequence	= ((fasta_sequence_? final_sequence_line) | (fasta_sequence_ final_comment_line)) %sequence_end;
 		
 			fasta_records			= comment_line* (header_line fasta_sequence)* header_line final_fasta_sequence;
-			sequence_only			= final_sequence_line %sequence_end;
+			sequence_only			= sequence_line* final_sequence_line %sequence_end;
 			
 			main := ("" | sequence_only | fasta_records) $eof(main_eof) $err(error);
 			
