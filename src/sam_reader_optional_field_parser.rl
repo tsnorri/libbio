@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
+
+#if !(defined(LIBBIO_NO_SAM_READER) && LIBBIO_NO_SAM_READER)
 
 #include <boost/spirit/home/x3.hpp>
 #include <libbio/sam/optional_field_parser.hh>
@@ -142,3 +144,5 @@ namespace libbio::sam {
 		}
 	}
 }
+
+#endif

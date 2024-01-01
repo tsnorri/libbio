@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
+
+#if !(defined(LIBBIO_NO_SAM_READER) && LIBBIO_NO_SAM_READER)
 
 #include <libbio/sam/input_range.hh>
 
@@ -23,3 +25,5 @@ namespace libbio { namespace sam {
 		return true;
 	}
 }}
+
+#endif
