@@ -68,7 +68,7 @@ namespace libbio::parsing::traits {
 			};
 			
 			template <typename t_field, typename t_next_field, std::size_t t_i>
-			using delimiter = delimiter_ <t_field, t_next_field, t_i>::type;
+			using delimiter = typename delimiter_ <t_field, t_next_field, t_i>::type;
 		};
 	};
 }

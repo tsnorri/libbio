@@ -54,7 +54,7 @@ namespace libbio::sam::detail {
 	
 	template <typename t_type> struct container_of	{ typedef value_vector <t_type> type; };
 	template <> struct container_of <std::string>	{ typedef vector_container <std::string> type; };
-	template <typename t_type> using container_of_t = container_of <t_type>::type;
+	template <typename t_type> using container_of_t = typename container_of <t_type>::type;
 	
 	
 	// For using the visitor pattern with the optional fields and their values

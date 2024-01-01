@@ -85,11 +85,11 @@ namespace libbio::tuples {
 	template <std::size_t t_idx, typename t_tuple, typename t_missing = void>
 	struct conditional_element
 	{
-		typedef detail::conditional_element_helper <t_idx, t_tuple, t_missing, t_idx < std::tuple_size_v <t_tuple>>::type type;
+		typedef typename detail::conditional_element_helper <t_idx, t_tuple, t_missing, t_idx <std::tuple_size_v <t_tuple>>::type type;
 	};
 	
 	template <std::size_t t_idx, typename t_tuple, typename t_missing = void>
-	using conditional_element_t = conditional_element <t_idx, t_tuple, t_missing>::type;
+	using conditional_element_t = typename conditional_element <t_idx, t_tuple, t_missing>::type;
 	
 	
 	template <typename, template <typename...> typename>
@@ -102,7 +102,7 @@ namespace libbio::tuples {
 	};
 	
 	template <typename t_type, template <typename...> typename t_target>
-	using forward_t = forward <t_type, t_target>::type;
+	using forward_t = typename forward <t_type, t_target>::type;
 	
 	
 	template <template <typename...> typename t_tpl>
@@ -118,7 +118,7 @@ namespace libbio::tuples {
 		};
 		
 		template <typename t_type>
-		using parameters_of_t = parameters_of <t_type>::type;
+		using parameters_of_t = typename parameters_of <t_type>::type;
 	};
 	
 	

@@ -102,7 +102,7 @@ namespace libbio::parsing {
 	};
 	
 	template <typename t_lhs, typename t_rhs>
-	using join_delimiters_t = join_delimiters <t_lhs, t_rhs>::type;
+	using join_delimiters_t = typename join_delimiters <t_lhs, t_rhs>::type;
 }
 
 #endif
