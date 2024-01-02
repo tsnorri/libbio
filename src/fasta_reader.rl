@@ -115,7 +115,7 @@ namespace libbio
 		int cs(0);
 		
 		%%{
-			action header {
+			action header_begin {
 				++lineno;
 				line_start = fpc;
 				text_start = 1 + fpc;
@@ -127,7 +127,7 @@ namespace libbio
 				seq_identifier_range.end = fpc - line_start;
 			}
 			
-			action header_extra {
+			action header_extra_begin {
 				text_start = fpc;
 			}
 			
@@ -149,7 +149,7 @@ namespace libbio
 					return parsing_status::cancelled;
 			}
 			
-			action comment {
+			action comment_begin {
 				++lineno;
 				line_start = fpc;
 				text_start = 1 + fpc;
@@ -160,7 +160,7 @@ namespace libbio
 					return parsing_status::cancelled;
 			}
 			
-			action sequence_line {
+			action sequence_line_begin {
 				++lineno;
 				in_sequence = true;
 				line_start = fpc;
@@ -169,6 +169,12 @@ namespace libbio
 			
 			action sequence_line_end {
 				if (!delegate.handle_sequence_chunk(*this, std::string_view{text_start, fpc}, true))
+					return parsing_status::cancelled;
+				in_sequence = false;
+			}
+			
+			action sequence_line_end_ {
+				if (!delegate.handle_sequence_chunk(*this, std::string_view{text_start, fpc}, false))
 					return parsing_status::cancelled;
 				in_sequence = false;
 			}
@@ -199,17 +205,17 @@ namespace libbio
 			header_field			= (any - space)+;
 			header_field_separator	= space - "\n";
 			header_identifier_field	= header_field %header_identifier_end;
-			header_extra_fields		= (header_field_separator+ (header_field >header_extra %header_extra_end))*;
-			header_line				= (">" header_identifier_field header_extra_fields "\n") >header @header_end <eof(header_eof);
+			header_extra_fields		= (header_field_separator+ (header_field >header_extra_begin %header_extra_end))*;
+			header_line				= (">" header_identifier_field header_extra_fields "\n") >header_begin @header_end <eof(header_eof);
 			
 			# Allow missing final newline.
 			
-			sequence				= [A-Za-z*\-]+ "\n";
-			sequence_line			= sequence >sequence_line @sequence_line_end;
-			final_sequence_line		= sequence_line | sequence >sequence_line %sequence_line_end;
+			sequence				= [A-Za-z*\-]+;
+			sequence_line			= (sequence "\n") >sequence_line_begin @sequence_line_end;
+			final_sequence_line		= sequence_line | (sequence >sequence_line_begin %sequence_line_end_);
 			
-			comment_line			= (";" [^\n]* "\n") >comment @comment_end;
-			final_comment_line		= comment_line | (";" [^\n]*) >comment %comment_end;
+			comment_line			= (";" [^\n]* "\n") >comment_begin @comment_end;
+			final_comment_line		= comment_line | (";" [^\n]*) >comment_begin %comment_end;
 			
 			fasta_sequence_			= (comment_line* sequence_line)+ comment_line*;
 			fasta_sequence			= fasta_sequence_ %sequence_end;
