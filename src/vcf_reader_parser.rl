@@ -126,6 +126,7 @@ namespace libbio::vcf {
 			action end_qual_value {
 				double qual{};
 				std::string_view const qual_sv(start, fpc - start);
+				// FIXME: std::from_chars could be used instead. The leading “+” sign may not be passed to it, though.
 				if (boost::spirit::qi::parse(qual_sv.begin(), qual_sv.end(), boost::spirit::qi::float_, qual))
 					m_current_variant.set_qual(qual);
 				else if (!m_should_skip_invalid)
@@ -368,6 +369,12 @@ namespace libbio::vcf {
 			
 			integer		= ("+" | ("-" >{ integer_is_negative = true; }))? ([0-9]+) >(start_integer) $(update_integer);
 			
+			# Floating point values, VCF 4.3 § 1.3.
+			floating_point_dec	= [\-+]? [0-9]* [.]? [0-9]+ ([eE] [\-+]? [0-9]+)?;
+			floating_point_inf	= [\-+]? ('INF' | 'INFINITY');
+			floating_point_nan	= [\-+]? ('NAN');
+			floating_point		= floating_point_dec | floating_point_inf | floating_point_nan;
+			
 			chrom_id	= (chr+)
 				>(start_string)
 				%{ HANDLE_STRING_END_VAR(&var_t::set_chrom_id); };
@@ -432,7 +439,9 @@ namespace libbio::vcf {
 			alt_part		= alt_string | alt_unknown;
 			alt				= (alt_part (',' alt_part)*) >{ subfield_idx = 0; };
 			
-			qual_numeric	= (([0-9]+ ('.' [0-9]+)?) | ('.' [0-9]+)) >(start_string) %(end_qual_value);
+			
+			
+			qual_numeric	= floating_point >(start_string) %(end_qual_value);
 			qual_unknown	= '.';
 			
 			qual			= (qual_numeric | qual_unknown) >begin_qual;
