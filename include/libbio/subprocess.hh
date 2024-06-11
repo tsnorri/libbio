@@ -6,6 +6,7 @@
 #ifndef LIBBIO_SUBPROCESS_HH
 #define LIBBIO_SUBPROCESS_HH
 
+#include <cstdlib>
 #include <libbio/assert.hh>
 #include <libbio/bits.hh>
 #include <libbio/file_handle.hh>
@@ -298,7 +299,7 @@ namespace libbio {
 	subprocess <t_handle_spec> subprocess <t_handle_spec>::subprocess_with_arguments_(t_type const &args, subprocess_handle_spec const spec)
 	{
 		auto const argc(args.size());
-		char const *argv[argc + 1];
+		auto argv(static_cast <char const *>(::alloca((argc + 1) * sizeof(char const *))));
 		for (auto &&[i, arg] : ranges::views::enumerate(args))
 			argv[i] = detail::argument_data(arg);
 		argv[argc] = nullptr;
