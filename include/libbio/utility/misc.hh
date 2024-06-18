@@ -29,7 +29,11 @@ namespace libbio {
 	
 	
 	template <typename... t_args>
-	struct aggregate : public t_args... { using t_args::operator()...; };
+	struct aggregate : public t_args...
+	{
+		using t_args::operator()...;
+		constexpr aggregate(t_args && ... args): t_args(std::move(args))... {}
+	};
 	
 	
 	template <typename... t_args>
