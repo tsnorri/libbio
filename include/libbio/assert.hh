@@ -25,7 +25,7 @@
 // Requires formatted output.
 #define libbio_assert_test_bin_(LHS, RHS, TEST, MESSAGE)	do { ::libbio::detail::assert_test_bin <TEST, true>(LHS, RHS, __FILE__, __LINE__, MESSAGE); } while (false)
 #define libbio_assert_test_msg(TEST, ...)					do { ::libbio::detail::assert_test(bool(TEST), __FILE__, __LINE__, __VA_ARGS__); } while (false)
-#define libbio_assert_test_rel_message(TEST, REL_EXPR, ...)	do { ::libbio::detail::assert_test(bool(TEST), __FILE__, __LINE__, __VA_ARGS__, ": ", (REL_EXPR), '.'); } while (false)
+#define libbio_assert_test_rel_msg(TEST, REL_EXPR, ...)		do { ::libbio::detail::assert_test(bool(TEST), __FILE__, __LINE__, __VA_ARGS__, ": ", (REL_EXPR), '.'); } while (false)
 
 // FIXME: Make this work when immediately evaluated.
 #define libbio_fail(...) do { \
