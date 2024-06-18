@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 Tuukka Norri
+ * Copyright (c) 2017-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -20,61 +20,41 @@
 
 #define libbio_stringify(X) (#X)
 
-// Contracts not yet available in either Clang or GCC.
-#define libbio_assert_test(TEST, MESSAGE)				do { \
-		if (!(TEST)) ::libbio::detail::assertion_failure(__FILE__, __LINE__, MESSAGE); \
-	} while (false)
-
-#define libbio_assert_test_bin(LHS, RHS, TEST, MESSAGE)	do { \
-		auto const &assert_lhs(LHS); \
-		auto const &assert_rhs(RHS); \
-		if (!(TEST(assert_lhs, assert_rhs))) \
-			::libbio::detail::assertion_failure(__FILE__, __LINE__, assert_lhs, assert_rhs, MESSAGE); \
-	} while (false)
-
+#define libbio_assert_test(TEST, MESSAGE)					do { ::libbio::detail::assert_test(bool(TEST), __FILE__, __LINE__, MESSAGE); } while (false)
+#define libbio_assert_test_bin(LHS, RHS, TEST, MESSAGE)		do { ::libbio::detail::assert_test_bin <TEST>(LHS, RHS, __FILE__, __LINE__, MESSAGE); } while (false)
 // Requires formatted output.
-#define libbio_assert_test_bin_(LHS, RHS, TEST, MESSAGE)	do { \
-		auto const &assert_lhs(LHS); \
-		auto const &assert_rhs(RHS); \
-		if (!(TEST(assert_lhs, assert_rhs))) \
-			::libbio::detail::assertion_failure <true>(__FILE__, __LINE__, assert_lhs, assert_rhs, MESSAGE); \
-	} while (false)
-
-#define libbio_assert_test_msg(TEST, ...)				do { \
-		if (!(TEST)) \
-			::libbio::detail::assertion_failure(__FILE__, __LINE__, __VA_ARGS__); \
-	} while (false)
-
-#define libbio_assert_test_rel_msg(TEST, REL_EXPR, ...)	libbio_assert_test_msg((TEST), __VA_ARGS__, ": ", (REL_EXPR), '.')
+#define libbio_assert_test_bin_(LHS, RHS, TEST, MESSAGE)	do { ::libbio::detail::assert_test_bin <TEST, true>(LHS, RHS, __FILE__, __LINE__, MESSAGE); } while (false)
+#define libbio_assert_test_msg(TEST, ...)					do { ::libbio::detail::assert_test(bool(TEST), __FILE__, __LINE__, __VA_ARGS__); } while (false)
+#define libbio_assert_test_rel_message(TEST, REL_EXPR, ...)	do { ::libbio::detail::assert_test(bool(TEST), __FILE__, __LINE__, __VA_ARGS__, ": ", (REL_EXPR), '.'); } while (false)
 
 // FIXME: Make this work when immediately evaluated.
 #define libbio_fail(...) do { \
 		::libbio::detail::assertion_failure(__FILE__, __LINE__, __VA_ARGS__); \
 	} while (false)
 
-#define libbio_always_assert(X)					libbio_assert_test((X),										#X)
-#define libbio_always_assert_lt(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lt,			libbio_stringify(X <  #Y))
-#define libbio_always_assert_lte(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lte,			libbio_stringify(X <= #Y))
-#define libbio_always_assert_gt(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lte,			libbio_stringify(X >  #Y))
-#define libbio_always_assert_gte(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_lt,			libbio_stringify(X >= #Y))
-#define libbio_always_assert_eq(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_equal,		libbio_stringify(X == #Y))
-#define libbio_always_assert_neq(X, Y)			libbio_assert_test_bin((X), (Y), !::libbio::is_equal,		libbio_stringify(X != #Y))
+#define libbio_always_assert(X)					libbio_assert_test((X),											#X)
+#define libbio_always_assert_lt(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lt_,				libbio_stringify(X <  #Y))
+#define libbio_always_assert_lte(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_lte_,				libbio_stringify(X <= #Y))
+#define libbio_always_assert_gt(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_not_lte_,			libbio_stringify(X >  #Y))
+#define libbio_always_assert_gte(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_not_lt_,			libbio_stringify(X >= #Y))
+#define libbio_always_assert_eq(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_equal_,			libbio_stringify(X == #Y))
+#define libbio_always_assert_neq(X, Y)			libbio_assert_test_bin((X), (Y), ::libbio::is_not_equal_,		libbio_stringify(X != #Y))
 
 // Variants that require X and Y to be printable using operator <<.
-#define libbio_always_assert_lt_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_lt,			libbio_stringify(X <  #Y))
-#define libbio_always_assert_lte_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_lte,			libbio_stringify(X <= #Y))
-#define libbio_always_assert_gt_(X, Y)			libbio_assert_test_bin_((X), (Y), !::libbio::is_lte,		libbio_stringify(X >  #Y))
-#define libbio_always_assert_gte_(X, Y)			libbio_assert_test_bin_((X), (Y), !::libbio::is_lt,			libbio_stringify(X >= #Y))
-#define libbio_always_assert_eq_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_equal,		libbio_stringify(X == #Y))
-#define libbio_always_assert_neq_(X, Y)			libbio_assert_test_bin_((X), (Y), !::libbio::is_equal,		libbio_stringify(X != #Y))
+#define libbio_always_assert_lt_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_lt_,				libbio_stringify(X <  #Y))
+#define libbio_always_assert_lte_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_lte_,			libbio_stringify(X <= #Y))
+#define libbio_always_assert_gt_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_not_lte_,		libbio_stringify(X >  #Y))
+#define libbio_always_assert_gte_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_not_lt_,			libbio_stringify(X >= #Y))
+#define libbio_always_assert_eq_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_equal_,			libbio_stringify(X == #Y))
+#define libbio_always_assert_neq_(X, Y)			libbio_assert_test_bin_((X), (Y), ::libbio::is_not_equal_,		libbio_stringify(X != #Y))
 
-#define libbio_always_assert_msg(X, ...)		libbio_assert_test_msg((X),																__VA_ARGS__)
-#define libbio_always_assert_lt_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lt((X), (Y)),		libbio_stringify(X < Y),	__VA_ARGS__)
-#define libbio_always_assert_lte_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lte((X), (Y)),		libbio_stringify(X <= Y),	__VA_ARGS__)
-#define libbio_always_assert_gt_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lt((Y), (X)),		libbio_stringify(X > Y),	__VA_ARGS__)
-#define libbio_always_assert_gte_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lte((Y), (X)),		libbio_stringify(X >= Y),	__VA_ARGS__)
-#define libbio_always_assert_eq_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_equal((X), (Y)),	libbio_stringify(X == Y),	__VA_ARGS__)
-#define libbio_always_assert_neq_msg(X, Y, ...)	libbio_assert_test_rel_msg(!::libbio::is_equal((X), (Y)),	libbio_stringify(X != Y),	__VA_ARGS__)
+#define libbio_always_assert_msg(X, ...)		libbio_assert_test_msg((X),																	__VA_ARGS__)
+#define libbio_always_assert_lt_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lt((X), (Y)),			libbio_stringify(X < Y),	__VA_ARGS__)
+#define libbio_always_assert_lte_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lte((X), (Y)),			libbio_stringify(X <= Y),	__VA_ARGS__)
+#define libbio_always_assert_gt_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lt((Y), (X)),			libbio_stringify(X > Y),	__VA_ARGS__)
+#define libbio_always_assert_gte_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lte((Y), (X)),			libbio_stringify(X >= Y),	__VA_ARGS__)
+#define libbio_always_assert_eq_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_equal((X), (Y)),		libbio_stringify(X == Y),	__VA_ARGS__)
+#define libbio_always_assert_neq_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_not_equal((X), (Y)),	libbio_stringify(X != Y),	__VA_ARGS__)
 
 #ifdef LIBBIO_NDEBUG
 #	define libbio_assert(X)
@@ -93,7 +73,7 @@
 #	define libbio_assert_eq_(X, Y)
 #	define libbio_assert_neq_(X, Y)
 
-#	define libbio_do_and_assert_eq(X, Y)	do { (X); } while (false)
+#	define libbio_do_and_assert_eq(X, Y)	do { (X); } while (false) // FIXME: try to determine what this is supposed to do.
 
 #	define libbio_assert_msg(X, ...)
 #	define libbio_assert_lt_msg(X, Y, ...)
@@ -273,6 +253,23 @@ namespace libbio { namespace detail {
 		{
 			assertion_failure_ <t_requires_formatted_output_fn>(file, line, lhs, rhs, message);
 		}
+	}
+
+
+	template <typename t_line, typename ... t_args>
+	constexpr inline void assert_test(bool const test, char const *file, t_line const line, t_args && ... args)
+	{
+		if (!test)
+			assertion_failure(file, line, std::forward <t_args>(args)...);
+	}
+
+
+	template <typename t_test, bool t_requires_formatted_output_fn = false, typename t_lhs, typename t_rhs, typename t_line>
+	constexpr inline void assert_test_bin(t_lhs &&lhs, t_rhs &&rhs, char const *file, t_line const line, char const *message)
+	{
+		t_test test;
+		if (!test(lhs, rhs))
+			assertion_failure <t_requires_formatted_output_fn>(file, line, lhs, rhs, message);
 	}
 }}
 
