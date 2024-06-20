@@ -314,7 +314,7 @@ namespace libbio {
 	subprocess <t_handle_spec> subprocess <t_handle_spec>::subprocess_with_arguments(char const * const args, subprocess_handle_spec const spec)
 	{
 		auto parsed_args(parse_command_arguments(args));
-		return subprocess_with_arguments(parsed_args);
+		return subprocess_with_arguments(parsed_args, spec);
 	}
 }
 
