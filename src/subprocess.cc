@@ -8,6 +8,7 @@
 #include <libbio/subprocess.hh>
 #include <memory_resource>
 #include <mutex>
+#include <signal.h>
 #include <stdexcept>
 #include <sys/mman.h>
 #include <sys/wait.h>
@@ -57,6 +58,16 @@ namespace {
 	{
 		static std::pmr::unsynchronized_pool_resource pool_resource{&g_shm_resource};
 		return pool_resource;
+	}
+
+
+	void change_signal_mask(int const how)
+	{
+		sigset_t set{};
+		::sigemptyset(&set);
+		::sigaddset(&set, SIGUSR1);
+		if (0 != ::sigprocmask(how, &set))
+			throw std::runtime_error(::strerror(errno));
 	}
 }
 
