@@ -45,7 +45,7 @@ namespace libbio {
 	
 	
 	template <typename t_type>
-	using subprocess_object_ptr = std::unique_ptr <t_type, subprocess_object_deallocator <t_type>>;
+	using subprocess_object_ptr = std::unique_ptr <t_type volatile, subprocess_object_deallocator <t_type>>;
 	
 	
 	enum class execution_status_type : std::uint8_t
