@@ -158,7 +158,7 @@ namespace libbio { namespace detail {
 			if (0 != ::pipe(fd_pair))
 				throw std::runtime_error(::strerror(errno));
 		});
-		
+
 		auto const pid(::fork());
 		switch (pid)
 		{
@@ -299,5 +299,30 @@ namespace libbio {
 			
 			return {close_status::unknown, 0, pid};
 		}
+	}
+}
+
+
+namespace libbio::detail {
+
+	void subprocess_status::output_status(std::ostream &os, bool const detailed)
+	{
+		switch (execution_status)
+		{
+			case execution_status_type::no_error:
+				return;
+
+			case execution_status_type::file_descriptor_handling_failed:
+				os << "File descriptor handling failed";
+				break;
+			case execution_status_type::exec_failed:
+				os << "Execution failed";
+				break;
+		}
+
+		os << "; " << ::strerror(error);
+
+		if (detailed)
+			os << "(line " << line << ")";
 	}
 }

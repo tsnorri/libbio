@@ -86,6 +86,9 @@ namespace libbio { namespace detail {
 		execution_status_type	execution_status{};
 		std::uint32_t			line{}; // For debugging.
 		int						error{};
+
+		constexpr operator bool() const { return 0 == error && execution_status_type::no_error == execution_status; }
+		void output_status(std::ostream &os, bool const detailed);
 	};
 	
 	
