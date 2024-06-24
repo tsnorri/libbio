@@ -183,18 +183,31 @@ namespace libbio { namespace detail {
 				// Try to make the child continue when debugging.
 				::signal(SIGTRAP, SIG_IGN);
 				
+				// Open /dev/null if needed.
+				auto dn_handle([&]() {
+					if (3 == res.stdio_handles.size())
+						return file_handle{-1, status_reporter};
+					
+					auto const fd(::open("/dev/null", O_RDWR));
+					if (-1 == fd)
+						EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69); // EX_UNAVAILABLE in sysexits.h.
+					
+					return file_handle{fd, status_reporter};
+				}());
+				
+				// Redirect I/O.
 				{
 					auto it(res.stdio_handles.begin());
-					auto const handle_stdio_fh([&res, &it, handle_spec, status_fd](lb::subprocess_handle_spec const spec, int const fd, int const oflags){
+					auto const handle_stdio_fh([&res, &it, &dn_handle, handle_spec, status_fd](lb::subprocess_handle_spec const spec, int const fd, int const oflags){
 						if (handle_spec & spec)
 						{
 							if (-1 == ::dup2(it->get(), fd))
-								EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69); // EX_UNAVAILABLE in sysexits.h.
+								EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69);
 							++it;
 						}
 						else
 						{
-							if (-1 == ::openat(fd, "/dev/null", oflags))
+							if (-1 == ::dup2(dn_handle.get(), fd))
 								EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69);
 						}
 					});
@@ -207,6 +220,9 @@ namespace libbio { namespace detail {
 				// Close everything and check.
 				res.stdio_handles.clear();
 				if (!status_reporter)
+					EXIT_SUBPROCESS(lb::execution_status_type::file_descriptor_handling_failed, 69);
+				
+				if (!dn_handle.close())
 					EXIT_SUBPROCESS(lb::execution_status_type::file_descriptor_handling_failed, 69);
 				
 				// According to POSIX, “the argv[] and envp[] arrays of pointers and the strings to which those arrays point
