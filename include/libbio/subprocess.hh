@@ -30,7 +30,7 @@ namespace libbio {
 	};
 	
 	
-	enum subprocess_handle_spec : std::uint8_t
+	enum class subprocess_handle_spec : std::uint8_t
 	{
 		NONE	= 0x0,
 		STDIN	= 0x1,

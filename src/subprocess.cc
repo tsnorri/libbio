@@ -93,7 +93,7 @@ namespace {
 		
 		auto const add_handle_if_needed([&](lb::subprocess_handle_spec const spec, bool const is_out_handle){
 			int fds[2]{-1, -1};
-			if (handle_spec & spec)
+			if (std::to_underlying(handle_spec & spec))
 			{
 				if (-1 == ::pipe(fds))
 					throw MAKE_STATUS(lb::execution_status_type::file_descriptor_handling_failed);
@@ -199,7 +199,7 @@ namespace libbio { namespace detail {
 				{
 					auto it(res.stdio_handles.begin());
 					auto const handle_stdio_fh([&res, &it, &dn_handle, handle_spec, status_fd](lb::subprocess_handle_spec const spec, int const fd, int const oflags){
-						if (handle_spec & spec)
+						if (std::to_underlying(handle_spec & spec))
 						{
 							if (-1 == ::dup2(it->get(), fd))
 								EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69);
