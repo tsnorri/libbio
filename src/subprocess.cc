@@ -3,7 +3,9 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <boost/container/static_vector.hpp>
 #include <cstring>
+#include <expected>
 #include <fcntl.h>
 #include <libbio/subprocess.hh>
 #include <mutex>
@@ -12,15 +14,124 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-namespace lb	= libbio;
+namespace bits		= libbio::bits;
+namespace container	= boost::container;
+namespace lb		= libbio;
 
 
-#define PARENT_ERROR(EXECUTION_STATUS)					open_subprocess_error(subprocess_status((EXECUTION_STATUS), __LINE__, errno))
-#define RETURN_FAILURE(EXECUTION_STATUS)				do { retval.status = subprocess_status((EXECUTION_STATUS), __LINE__, errno); return retval; } while (false)
-#define EXIT_SUBPROCESS(EXECUTION_STATUS, EXIT_STATUS)	do { do_exit(status_pipe[1], (EXIT_STATUS), (EXECUTION_STATUS), __LINE__, errno); } while (false)
+#define MAKE_STATUS(EXECUTION_STATUS)					lb::subprocess_status{(EXECUTION_STATUS), __LINE__, errno}
+#define EXIT_SUBPROCESS(EXECUTION_STATUS, EXIT_STATUS)	do_exit(status_fd, (EXIT_STATUS), (EXECUTION_STATUS), __LINE__, errno)
 
 
 namespace {
+	
+	struct file_handle_status_reporter
+	{
+		int error{};
+		
+		constexpr operator bool() const { return !error; }
+		
+		void handle_error()
+		{
+			if (!error)
+				error = errno;
+		}
+	};
+	
+	
+	class file_handle final : public lb::file_handle
+	{
+	protected:
+		file_handle_status_reporter	*m_sr{};
+		
+		void handle_close_error() override { m_sr->handle_error(); }
+		
+	public:
+		explicit file_handle(file_handle_status_reporter &sr):
+			lb::file_handle(),
+			m_sr(&sr)
+		{
+		}
+		
+		file_handle(int fd, file_handle_status_reporter &sr):
+			lb::file_handle(fd, true),
+			m_sr(&sr)
+		{
+		}
+		
+		void assign(int const fd) { m_fd = fd; }
+	};
+	
+	
+	struct fork_result
+	{
+		pid_t										pid{-1};
+		file_handle									status_handle;
+		container::static_vector <file_handle, 3>	stdio_handles; // Makes things easier since clear() is available.
+		
+		explicit fork_result(lb::subprocess_handle_spec const handle_spec, file_handle_status_reporter &status_reporter):
+			status_handle(status_reporter)
+		{
+		}
+	};
+	
+	
+	std::expected <fork_result, lb::subprocess_status>
+	do_fork(lb::subprocess_handle_spec const handle_spec, file_handle_status_reporter &status_reporter)
+	{
+		fork_result parent_res(handle_spec, status_reporter);
+		fork_result child_res(handle_spec, status_reporter);
+		
+		{
+			int fds[2]{-1, -1};
+			if (-1 == ::pipe(fds))
+				return std::unexpected{MAKE_STATUS(lb::execution_status_type::file_descriptor_handling_failed)};
+			
+			parent_res.status_handle.assign(fds[0]);
+			child_res.status_handle.assign(fds[1]);
+		}
+		
+		auto const add_handle_if_needed([&](lb::subprocess_handle_spec const spec, bool const is_out_handle){
+			int fds[2]{-1, -1};
+			if (handle_spec & spec)
+			{
+				if (-1 == ::pipe(fds))
+					throw MAKE_STATUS(lb::execution_status_type::file_descriptor_handling_failed);
+				
+				parent_res.stdio_handles.emplace_back(fds[1 - is_out_handle], status_reporter);
+				child_res.stdio_handles.emplace_back(fds[0 + is_out_handle], status_reporter);
+			}
+		});
+		
+		try // This is the least cluttered approach.
+		{
+			add_handle_if_needed(lb::subprocess_handle_spec::STDIN, false);
+			add_handle_if_needed(lb::subprocess_handle_spec::STDOUT, true);
+			add_handle_if_needed(lb::subprocess_handle_spec::STDERR, true);
+		}
+		catch (lb::subprocess_status const &status)
+		{
+			return std::unexpected{status};
+		}
+		
+		auto const pid(::fork());
+		switch (pid)
+		{
+			case -1:
+				return std::unexpected(MAKE_STATUS(lb::execution_status_type::fork_failed));
+				break;
+		
+			// We close the other handle here.
+			case 0: // Child
+				child_res.pid = 0;
+				return child_res;
+		
+			default: // Parent
+				parent_res.pid = pid;
+				return parent_res;
+		}
+	}
+	
 	
 	void do_exit(
 		int const fd,
@@ -37,116 +148,66 @@ namespace {
 		::close(fd);
 		::_exit(exit_status);
 	}
-	
-	
-	struct open_subprocess_error
-	{
-		lb::subprocess_status status;
-	};
 }
 
 
 namespace libbio { namespace detail {
 	
-	struct subprocess_handle_trait
-	{
-		std::size_t	sp_fd_idx{};	// Index in the array passed to ::pipe()
-		int			fd{};
-		int			oflags{};		// Flags passed to ::open().
-	};
-	
-	static std::array const
-	s_handle_traits{
-		subprocess_handle_trait{0, STDIN_FILENO, O_RDONLY},
-		subprocess_handle_trait{1, STDOUT_FILENO, O_WRONLY},
-		subprocess_handle_trait{1, STDERR_FILENO, O_WRONLY}
-	};
-	
-	
-	open_subprocess_result
-	open_subprocess(char const * const args[], subprocess_handle_spec const handle_spec) // nullptr-terminated list of arguments.
+	subprocess_status
+	open_subprocess(
+		process_handle &ph,
+		char const * const args[],
+		subprocess_handle_spec const handle_spec,
+		lb::file_handle *dst_handles
+	) // nullptr-terminated list of arguments.
 	{
 		// Note that if this function is invoked simultaneously from different threads,
 		// the subprocesses can leak file descriptors b.c. the ones resulting from the
 		// call to pipe() may not have been closed or marked closed-on-exec.
 		
+		file_handle_status_reporter status_reporter;
+		auto res_(do_fork(handle_spec, status_reporter));
 		
-		open_subprocess_result retval;
-		int status_pipe[2]{-1, -1};						// For detecting execvp().
-		int io_fds[3][2]{{-1, -1}, {-1, -1}, {-1, -1}};	// The requested pipes.
-		
-		auto process_all_fds([&io_fds](auto &&cb){
-			for (std::size_t i(0); i < 3; ++i)
-			{
-				auto const &trait(s_handle_traits[i]);
-				cb(static_cast <subprocess_handle_spec>(0x1 << i), io_fds[i], trait);
-			}
-		});
-		
-		auto process_open_fds([&process_all_fds, handle_spec](auto &&cb){
-			process_all_fds([&cb, handle_spec](auto const curr_spec, auto &fd_pair, auto const &trait){
-				if (to_underlying(curr_spec & handle_spec))
-					cb(curr_spec, fd_pair, trait);
-			});
-		});
-		
-		// Status pipe.
-		if (0 != ::pipe(status_pipe))
-			RETURN_FAILURE(execution_status_type::file_descriptor_handling_failed);
-		
-		// Create the requested pipes.
-		try
+		if (res_)
 		{
-			process_open_fds([](auto const, auto &fd_pair, auto const &trait){
-				if (0 != ::pipe(fd_pair))
-					throw PARENT_ERROR(execution_status_type::file_descriptor_handling_failed);
-			});
-		}
-		catch (open_subprocess_error const &err)
-		{
-			retval.status = err.status;
-			return retval;
-		}
-
-		auto const pid(::fork());
-		switch (pid)
-		{
-			case -1:
+			auto &res(*res_);
+			if (0 == res.pid)
 			{
-				process_open_fds([](auto const, auto &fd_pair, auto const &trait){
-					::close(fd_pair[0]);
-					::close(fd_pair[1]);
-				});
-				RETURN_FAILURE(execution_status_type::fork_failed);
-			}
-			
-			case 0: // Child.
-			{
-				// Close the read end of the status pipe.
-				::close(status_pipe[0]);
+				// Child.
 				
 				// Mark close-on-exec.
-				if (-1 == ::fcntl(status_pipe[1], F_SETFD, FD_CLOEXEC))
+				auto const status_fd(res.status_handle.get());
+				if (-1 == ::fcntl(status_fd, F_SETFD, FD_CLOEXEC))
 					std::abort(); // Unable to report this error.
 				
 				// Try to make the child continue when debugging.
 				::signal(SIGTRAP, SIG_IGN);
 				
-				process_all_fds([handle_spec, &status_pipe](auto const curr_spec, auto &fd_pair, auto const &trait){
-					if (to_underlying(curr_spec & handle_spec))
-					{
-						// Keep opened.
-						if (-1 == ::dup2(fd_pair[trait.sp_fd_idx], trait.fd))		EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69);	// EX_UNAVAILABLE in sysexits.h.
-						if (-1 == ::close(fd_pair[0]))								EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69);
-						if (-1 == ::close(fd_pair[1]))								EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69);
-					}
-					else
-					{
-						// Re-open with /dev/null.
-						if (-1 == ::close(trait.fd))								EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69);
-						if (-1 == ::openat(trait.fd, "/dev/null", trait.oflags))	EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69);
-					}
-				});
+				{
+					auto it(res.stdio_handles.begin());
+					auto const handle_stdio_fh([&res, &it, handle_spec, status_fd](lb::subprocess_handle_spec const spec, int const fd, int const oflags){
+						if (handle_spec & spec)
+						{
+							if (-1 == ::dup2(it->get(), fd))
+								EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69); // EX_UNAVAILABLE in sysexits.h.
+							++it;
+						}
+						else
+						{
+							if (-1 == ::openat(fd, "/dev/null", oflags))
+								EXIT_SUBPROCESS(execution_status_type::file_descriptor_handling_failed, 69);
+						}
+					});
+					
+					handle_stdio_fh(lb::subprocess_handle_spec::STDIN, STDIN_FILENO, O_RDONLY);
+					handle_stdio_fh(lb::subprocess_handle_spec::STDOUT, STDOUT_FILENO, O_WRONLY);
+					handle_stdio_fh(lb::subprocess_handle_spec::STDERR, STDERR_FILENO, O_WRONLY);
+				}
+				
+				// Close everything and check.
+				res.stdio_handles.clear();
+				if (!status_reporter)
+					EXIT_SUBPROCESS(lb::execution_status_type::file_descriptor_handling_failed, 69);
 				
 				// According to POSIX, “the argv[] and envp[] arrays of pointers and the strings to which those arrays point
 				// shall not be modified by a call to one of the exec functions, except as a consequence of replacing the
@@ -177,66 +238,46 @@ namespace libbio { namespace detail {
 					default:
 						EXIT_SUBPROCESS(execution_status_type::exec_failed, 71);	// EX_OSERR in sysexits.h
 				}
-				
-				break;
 			}
-			
-			default: // Parent.
+			else
 			{
-				// Close the write end of the status pipe.
-				::close(status_pipe[1]);
+				// Parent.
+				auto const status_fd(res.status_handle.get());
+				lb::subprocess_status status;
 				
-				try
 				{
-					process_open_fds([](auto const curr_spec, auto &fd_pair, auto const &trait){
-						auto const parent_fd_idx(1 - trait.sp_fd_idx);
-						
-						::close(fd_pair[trait.sp_fd_idx]);
-						if (-1 == ::fcntl(fd_pair[parent_fd_idx], F_SETFD, FD_CLOEXEC))
-							throw PARENT_ERROR(execution_status_type::file_descriptor_handling_failed);
-					});
-					
+					auto const read_amt(::read(status_fd, &status, sizeof(status)));
+					switch (read_amt)
 					{
-						auto const read_amt(::read(status_pipe[0], &retval.status, sizeof(retval.status)));
-						switch (read_amt)
-						{
-							case -1:
-								::close(status_pipe[0]);
-								throw PARENT_ERROR(execution_status_type::file_descriptor_handling_failed);
-							
-							case 0:
-							case (sizeof(retval.status)):
-								break;
-							
-							default:
-								::close(status_pipe[0]);
-								errno = EBADMSG;
-								throw PARENT_ERROR(execution_status_type::file_descriptor_handling_failed);
-						}
+						case -1:
+							return MAKE_STATUS(execution_status_type::file_descriptor_handling_failed);
+						
+						case 0:
+						case (sizeof(status)):
+							break;
+						
+						default:
+							errno = EBADMSG;
+							return MAKE_STATUS(execution_status_type::file_descriptor_handling_failed);
 					}
 				}
-				catch (open_subprocess_error const &err)
-				{
-					// Clean up if there was an error.
-					process_open_fds([](auto const curr_spec, auto &fd_pair, auto const &trait){
-						auto const parent_fd_idx(1 - trait.sp_fd_idx);
-						::close(fd_pair[parent_fd_idx]);
-					});
-					
-					::kill(pid, SIGTERM);
-					
-					retval.status = err.status;
-					return retval;
-				}
+				
+				if (!status)
+					return status;
+				
+				if (!res.status_handle.close())
+					return MAKE_STATUS(execution_status_type::file_descriptor_handling_failed);
+				
+				ph = process_handle(res.pid);
+				for (auto &&fh : res.stdio_handles)
+					*dst_handles++ = std::move(fh);
+				
+				return status;
 			}
 		}
 		
-		retval.pid = pid;
-		// Return stdin’s write end and the read end of the other two.
-		retval.handles[0] = io_fds[0][1];
-		retval.handles[1] = io_fds[1][0];
-		retval.handles[2] = io_fds[2][0];
-		return retval;
+		// Fork failed.
+		return res_.error();
 	}
 }}
 
@@ -278,7 +319,7 @@ namespace libbio {
 	}
 	
 	
-	void subprocess_status::output_status(std::ostream &os, bool const detailed)
+	void subprocess_status::output_status(std::ostream &os, bool const detailed) const
 	{
 		switch (execution_status)
 		{
@@ -296,9 +337,9 @@ namespace libbio {
 				break;
 		}
 
-		os << "; " << std::strerror(error);
+		os << ". " << std::strerror(error) << '.';
 
 		if (detailed)
-			os << "(line " << line << ")";
+			os << " (" << __FILE__ << ':' << line << ")";
 	}
 }

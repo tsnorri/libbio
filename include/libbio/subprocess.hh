@@ -18,6 +18,9 @@
 
 namespace libbio {
 	
+	class process_handle; // Fwd.
+	
+	
 	enum class execution_status_type : std::uint8_t
 	{
 		no_error,
@@ -27,7 +30,7 @@ namespace libbio {
 	};
 	
 	
-	enum class subprocess_handle_spec : std::uint8_t
+	enum subprocess_handle_spec : std::uint8_t
 	{
 		NONE	= 0x0,
 		STDIN	= 0x1,
@@ -50,27 +53,20 @@ namespace libbio {
 	
 	struct subprocess_status
 	{
-		execution_status_type	execution_status{};
+		execution_status_type	execution_status{execution_status_type::no_error};
 		std::uint32_t			line{}; // For debugging.
 		int						error{};
 
 		constexpr operator bool() const { return execution_status_type::no_error == execution_status; }
-		void output_status(std::ostream &os, bool const detailed);
+		void output_status(std::ostream &os, bool const detailed) const;
 	};
 }
 
 
 namespace libbio { namespace detail {
 	
-	struct open_subprocess_result
-	{
-		subprocess_status	status{};
-		pid_t				pid{};
-		int					handles[3]{};
-	};
-	
-	open_subprocess_result
-	open_subprocess(char const * const args[], subprocess_handle_spec const handle_spec); // nullptr-terminated list of arguments.
+	[[nodiscard]] subprocess_status
+	open_subprocess(process_handle &ph, char const * const args[], subprocess_handle_spec const handle_spec, libbio::file_handle *dst_handles); // nullptr-terminated list of arguments.
 	
 	
 	[[nodiscard]] consteval std::size_t handle_count(subprocess_handle_spec const t_spec)
@@ -101,41 +97,6 @@ namespace libbio { namespace detail {
 		auto const lower_count(bits::count_bits_set(lower_bits));
 		
 		return lower_count;
-	}
-	
-	
-	template <std::size_t t_n, std::size_t... t_i>
-	[[nodiscard]] std::array <libbio::file_handle, t_n>
-	make_handle_array_(std::array <int, t_n> const &fds, std::index_sequence <t_i...>)
-	{
-		return {{libbio::file_handle(std::get <t_i>(fds))...}};
-	}
-	
-	
-	template <std::size_t t_n, typename t_idxs = std::make_index_sequence <t_n>>
-	[[nodiscard]] std::array <libbio::file_handle, t_n>
-	make_handle_array(std::array <int, t_n> const &fds)
-	{
-		return make_handle_array_(fds, t_idxs{});
-	}
-	
-	
-	template <subprocess_handle_spec t_spec, std::size_t t_handle_count = handle_count(t_spec)>
-	[[nodiscard]] std::array <libbio::file_handle, t_handle_count>
-	make_handle_array(int const fds_[3])
-	{
-		typedef std::underlying_type_t <subprocess_handle_spec> underlying_t;
-		std::array <int, t_handle_count> fds;
-		
-		// Compile-time check everything.
-		if constexpr (to_underlying(subprocess_handle_spec::STDIN & t_spec))
-			std::get <handle_index(subprocess_handle_spec::STDIN,  t_spec)>(fds) = fds_[0];
-		if constexpr (to_underlying(subprocess_handle_spec::STDOUT & t_spec))
-			std::get <handle_index(subprocess_handle_spec::STDOUT, t_spec)>(fds) = fds_[1];
-		if constexpr (to_underlying(subprocess_handle_spec::STDERR & t_spec))
-			std::get <handle_index(subprocess_handle_spec::STDERR, t_spec)>(fds) = fds_[2];
-		
-		return make_handle_array(fds);
 	}
 	
 	
@@ -214,16 +175,19 @@ namespace libbio {
 		template <subprocess_handle_spec t_spec> [[nodiscard]] constexpr file_handle       &handle()       { return std::get <handle_index(t_spec)>(m_handles); }
 		template <subprocess_handle_spec t_spec> [[nodiscard]] constexpr file_handle const &handle() const { return std::get <handle_index(t_spec)>(m_handles); }
 		
+		subprocess_status open__(char const * const argv[], subprocess_handle_spec const spec);
+		
 		template <typename t_type>
-		subprocess_status open_subprocess_(t_type const &args, subprocess_handle_spec const spec);
+		subprocess_status open_(t_type const &args, subprocess_handle_spec const spec);
 		
 	public:
 		subprocess() = default;
 		
 		// The second argument is useful for having a set of subprocess instances of the same size.
-		subprocess_status open_subprocess(char const * const args, subprocess_handle_spec const spec = t_handle_spec);
-		subprocess_status open_subprocess(std::initializer_list <char const *> const &il, subprocess_handle_spec const spec = t_handle_spec) { return open_subprocess_(il, spec); }
-		subprocess_status open_subprocess(std::vector <std::string> const &args, subprocess_handle_spec const spec = t_handle_spec) { return open_subprocess_(args, spec); }
+		subprocess_status open(char const * const path, subprocess_handle_spec const spec = t_handle_spec);
+		subprocess_status open(std::initializer_list <char const *> const &il, subprocess_handle_spec const spec = t_handle_spec) { return open_(il, spec); }
+		subprocess_status open(std::vector <std::string> const &args, subprocess_handle_spec const spec = t_handle_spec) { return open_(args, spec); }
+		subprocess_status parse_and_open(char const * const args, subprocess_handle_spec const spec = t_handle_spec);
 		
 		inline close_return_type close();
 		
@@ -257,16 +221,24 @@ namespace libbio {
 	
 	
 	template <subprocess_handle_spec t_handle_spec>
-	subprocess_status subprocess <t_handle_spec>::open_subprocess(char const * const args, subprocess_handle_spec const spec)
+	subprocess_status subprocess <t_handle_spec>::open(char const * const path, subprocess_handle_spec const spec)
+	{
+		char const * const argv[]{path, nullptr};
+		return open__(argv, spec);
+	}
+	
+	
+	template <subprocess_handle_spec t_handle_spec>
+	subprocess_status subprocess <t_handle_spec>::parse_and_open(char const * const args, subprocess_handle_spec const spec)
 	{
 		auto parsed_args(parse_command_arguments(args));
-		return open_subprocess_(parsed_args, spec);
+		return open_(parsed_args, spec);
 	}
 	
 	
 	template <subprocess_handle_spec t_handle_spec>
 	template <typename t_type>
-	subprocess_status subprocess <t_handle_spec>::open_subprocess_(t_type const &args, subprocess_handle_spec const spec)
+	subprocess_status subprocess <t_handle_spec>::open_(t_type const &args, subprocess_handle_spec const spec)
 	{
 		auto const argc(args.size());
 		auto argv(static_cast <char const **>(::alloca((argc + 1) * sizeof(char const *))));
@@ -274,14 +246,16 @@ namespace libbio {
 			argv[i] = detail::argument_data(arg);
 		argv[argc] = nullptr;
 		
-		auto res(detail::open_subprocess(args, spec));
-		if (res.status)
-		{
-			m_handles = detail::make_handle_array <t_handle_spec>(res.handles);
-			m_process = process_handle(res.pid);
-		}
-		
-		return res.status;
+		return open__(argv, spec);
+	}
+	
+	
+	template <subprocess_handle_spec t_handle_spec>
+	subprocess_status subprocess <t_handle_spec>::open__(char const * const argv[], subprocess_handle_spec const spec)
+	{
+		// argv must be nullptr-terminated.
+		// m_handles has at least enough space for the handles specified by spec.
+		return detail::open_subprocess(m_process, argv, spec, m_handles.data());
 	}
 }
 
