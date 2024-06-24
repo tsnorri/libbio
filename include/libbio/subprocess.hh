@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -16,37 +16,7 @@
 #include <tuple>
 
 
-namespace libbio::detail {
-	void deallocate_subprocess_object_memory(void *ptr, std::size_t const size, std::size_t const alignment);
-}
-
-
 namespace libbio {
-	
-	struct shared_memory_allocation_error : public std::bad_alloc
-	{
-		int error{};
-		
-		shared_memory_allocation_error(int const error_):
-			error(error_)
-		{
-		}
-		
-		char const *what() const noexcept override { return strerror(error); }
-	};
-	
-	
-	template <typename t_type>
-	struct subprocess_object_deallocator
-	{
-		// All objects are placement-new-constructed.
-		void operator()(t_type *ptr) noexcept { ptr->~t_type(); detail::deallocate_subprocess_object_memory(ptr, sizeof(t_type), alignof(t_type)); }
-	};
-	
-	
-	template <typename t_type>
-	using subprocess_object_ptr = std::unique_ptr <t_type volatile, subprocess_object_deallocator <t_type>>;
-	
 	
 	enum class execution_status_type : std::uint8_t
 	{
@@ -87,23 +57,25 @@ namespace libbio { namespace detail {
 		std::uint32_t			line{}; // For debugging.
 		int						error{};
 
-		constexpr operator bool() const { return 0 == error && execution_status_type::no_error == execution_status; }
+		constexpr operator bool() const { return execution_status_type::no_error == execution_status; }
 		void output_status(std::ostream &os, bool const detailed);
 	};
 	
 	
-	std::tuple <pid_t, int, int, int, subprocess_object_ptr <subprocess_status>>
+	typedef std::tuple <pid_t, int, int, int, subprocess_status> open_subprocess_return_type;
+	
+	open_subprocess_return_type
 	open_subprocess(char const * const args[], subprocess_handle_spec const handle_spec); // nullptr-terminated list of arguments.
 	
 	
-	consteval std::size_t handle_count(subprocess_handle_spec const t_spec)
+	[[nodiscard]] consteval std::size_t handle_count(subprocess_handle_spec const t_spec)
 	{
 		return bits::count_bits_set(to_underlying(t_spec));
 	}
 	
 	
 	// Calculate the rank of curr in all.
-	constexpr std::size_t handle_index(subprocess_handle_spec const curr, subprocess_handle_spec const all)
+	[[nodiscard]] constexpr std::size_t handle_index(subprocess_handle_spec const curr, subprocess_handle_spec const all)
 	{
 		typedef std::underlying_type_t <subprocess_handle_spec> underlying_t;
 		
@@ -128,7 +100,7 @@ namespace libbio { namespace detail {
 	
 	
 	template <std::size_t t_n, std::size_t... t_i>
-	std::array <libbio::file_handle, t_n>
+	[[nodiscard]] std::array <libbio::file_handle, t_n>
 	make_handle_array_(std::array <int, t_n> const &fds, std::index_sequence <t_i...>)
 	{
 		return {{libbio::file_handle(std::get <t_i>(fds))...}};
@@ -136,7 +108,7 @@ namespace libbio { namespace detail {
 	
 	
 	template <std::size_t t_n, typename t_idxs = std::make_index_sequence <t_n>>
-	std::array <libbio::file_handle, t_n>
+	[[nodiscard]] std::array <libbio::file_handle, t_n>
 	make_handle_array(std::array <int, t_n> const &fds)
 	{
 		return make_handle_array_(fds, t_idxs{});
@@ -144,8 +116,8 @@ namespace libbio { namespace detail {
 	
 	
 	template <subprocess_handle_spec t_spec, std::size_t t_handle_count = handle_count(t_spec)>
-	std::array <libbio::file_handle, t_handle_count>
-	make_handle_array(std::tuple <pid_t, int, int, int, subprocess_object_ptr <subprocess_status>> const &pid_fd_tuple)
+	[[nodiscard]] std::array <libbio::file_handle, t_handle_count>
+	make_handle_array(open_subprocess_return_type const &pid_fd_tuple)
 	{
 		typedef std::underlying_type_t <subprocess_handle_spec> underlying_t;
 		std::array <int, t_handle_count> fds;
@@ -163,9 +135,9 @@ namespace libbio { namespace detail {
 	
 	
 	template <typename t_type>
-	constexpr inline decltype(auto) argument_data(t_type const &arg) { return std::data(arg); }
+	[[nodiscard]] constexpr inline decltype(auto) argument_data(t_type const &arg) { return std::data(arg); }
 	
-	constexpr inline auto argument_data(char const *arg) { return arg; }
+	[[nodiscard]] constexpr inline auto argument_data(char const *arg) { return arg; }
 }}
 
 
@@ -206,13 +178,13 @@ namespace libbio {
 		}
 		
 		inline process_handle &operator=(process_handle &&other) &;
-		pid_t pid() const { return m_pid; }
+		[[nodiscard]] pid_t pid() const { return m_pid; }
 		close_return_type close();
 		~process_handle() { if (-1 != m_pid) close(); }
 	};
 	
 	
-	std::vector <std::string> parse_command_arguments(char const *args);
+	[[nodiscard]] std::vector <std::string> parse_command_arguments(char const *args);
 	
 	
 	template <subprocess_handle_spec t_handle_spec>
@@ -226,30 +198,29 @@ namespace libbio {
 		>											handle_array;
 		
 		typedef detail::subprocess_status			status_type;
-		typedef subprocess_object_ptr <status_type>	status_type_ptr;
 		
 	protected:
-		status_type_ptr	m_status{};
+		status_type		m_status{};
 		process_handle	m_process{};	// Data member destructors called in reverse order; important for closing the pipe first.
 		handle_array	m_handles;
 		
 	protected:
-		explicit subprocess(std::tuple <pid_t, int, int, int, status_type_ptr> &&tup):
-			m_status(std::move(std::get <4>(tup))),
+		explicit subprocess(detail::open_subprocess_return_type &&tup):
+			m_status(std::get <4>(tup)),
 			m_process(std::get <0>(tup)),
 			m_handles(detail::make_handle_array <t_handle_spec>(tup))
 		{
 		}
 		
 		template <typename t_type>
-		static subprocess subprocess_with_arguments_(t_type const &args, subprocess_handle_spec const spec);
+		[[nodiscard]] static subprocess subprocess_with_arguments_(t_type const &args, subprocess_handle_spec const spec);
 		
 		template <subprocess_handle_spec t_spec>
-		constexpr static bool has_handle() { return libbio::has_handle <t_handle_spec, t_spec>(); }
+		[[nodiscard]] constexpr static bool has_handle() { return libbio::has_handle <t_handle_spec, t_spec>(); }
 		
-		constexpr static std::size_t handle_index(subprocess_handle_spec const spec) { return detail::handle_index(spec, t_handle_spec); }
-		template <subprocess_handle_spec t_spec> constexpr file_handle       &handle()       { return std::get <handle_index(t_spec)>(m_handles); }
-		template <subprocess_handle_spec t_spec> constexpr file_handle const &handle() const { return std::get <handle_index(t_spec)>(m_handles); }
+		[[nodiscard]] constexpr static std::size_t handle_index(subprocess_handle_spec const spec) { return detail::handle_index(spec, t_handle_spec); }
+		template <subprocess_handle_spec t_spec> [[nodiscard]] constexpr file_handle       &handle()       { return std::get <handle_index(t_spec)>(m_handles); }
+		template <subprocess_handle_spec t_spec> [[nodiscard]] constexpr file_handle const &handle() const { return std::get <handle_index(t_spec)>(m_handles); }
 		
 	public:
 		subprocess() = default;
@@ -261,19 +232,19 @@ namespace libbio {
 			libbio_assert_eq(0x0, to_underlying(spec) & ~to_underlying(t_handle_spec));
 		}
 		
-		static subprocess subprocess_with_arguments(std::initializer_list <char const *> const &il, subprocess_handle_spec const spec = t_handle_spec) { return subprocess_with_arguments_(il, spec); }
-		static subprocess subprocess_with_arguments(std::vector <std::string> const &args, subprocess_handle_spec const spec = t_handle_spec) { return subprocess_with_arguments_(args, spec); }
-		static subprocess subprocess_with_arguments(char const * const args, subprocess_handle_spec const spec = t_handle_spec);
+		[[nodiscard]] static subprocess subprocess_with_arguments(std::initializer_list <char const *> const &il, subprocess_handle_spec const spec = t_handle_spec) { return subprocess_with_arguments_(il, spec); }
+		[[nodiscard]] static subprocess subprocess_with_arguments(std::vector <std::string> const &args, subprocess_handle_spec const spec = t_handle_spec) { return subprocess_with_arguments_(args, spec); }
+		[[nodiscard]] static subprocess subprocess_with_arguments(char const * const args, subprocess_handle_spec const spec = t_handle_spec);
 		
-		status_type const &status() const { return *m_status; }
+		[[nodiscard]] status_type const &status() const { return m_status; }
 		inline close_return_type close();
 		
-		file_handle       &stdin_handle()        requires (has_handle <subprocess_handle_spec::STDIN>())  { return handle <subprocess_handle_spec::STDIN>(); }
-		file_handle const &stdin_handle()  const requires (has_handle <subprocess_handle_spec::STDIN>())  { return handle <subprocess_handle_spec::STDIN>(); }
-		file_handle       &stdout_handle()       requires (has_handle <subprocess_handle_spec::STDOUT>()) { return handle <subprocess_handle_spec::STDOUT>(); }
-		file_handle const &stdout_handle() const requires (has_handle <subprocess_handle_spec::STDOUT>()) { return handle <subprocess_handle_spec::STDOUT>(); }
-		file_handle       &stderr_handle()       requires (has_handle <subprocess_handle_spec::STDERR>()) { return handle <subprocess_handle_spec::STDERR>(); }
-		file_handle const &stderr_handle() const requires (has_handle <subprocess_handle_spec::STDERR>()) { return handle <subprocess_handle_spec::STDERR>(); }
+		[[nodiscard]] file_handle       &stdin_handle()        requires (has_handle <subprocess_handle_spec::STDIN>())  { return handle <subprocess_handle_spec::STDIN>(); }
+		[[nodiscard]] file_handle const &stdin_handle()  const requires (has_handle <subprocess_handle_spec::STDIN>())  { return handle <subprocess_handle_spec::STDIN>(); }
+		[[nodiscard]] file_handle       &stdout_handle()       requires (has_handle <subprocess_handle_spec::STDOUT>()) { return handle <subprocess_handle_spec::STDOUT>(); }
+		[[nodiscard]] file_handle const &stdout_handle() const requires (has_handle <subprocess_handle_spec::STDOUT>()) { return handle <subprocess_handle_spec::STDOUT>(); }
+		[[nodiscard]] file_handle       &stderr_handle()       requires (has_handle <subprocess_handle_spec::STDERR>()) { return handle <subprocess_handle_spec::STDERR>(); }
+		[[nodiscard]] file_handle const &stderr_handle() const requires (has_handle <subprocess_handle_spec::STDERR>()) { return handle <subprocess_handle_spec::STDERR>(); }
 	};
 	
 	
