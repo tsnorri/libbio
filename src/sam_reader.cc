@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -187,6 +187,52 @@ namespace {
 }
 
 
+namespace libbio::sam::detail {
+	
+	void prepare_record(header const &header_, parser_type::record_type &src, record &dst)
+	{
+		using std::swap;
+		
+		swap(std::get <QNAME>(src), dst.qname);
+		swap(std::get <CIGAR>(src), dst.cigar);
+		swap(std::get <SEQ>(src), dst.seq);
+		swap(std::get <QUAL>(src), dst.qual);
+		swap(std::get <OPTIONAL>(src), dst.optional_fields);
+		
+		if ("*" == dst.qname) dst.qname.clear();
+		if ("*" == std::string_view(dst.seq.begin(), dst.seq.end())) dst.seq.clear();
+		if ("*" == std::string_view(dst.qual.begin(), dst.qual.end())) dst.qual.clear();
+		
+		dst.rname_id = header_.find_reference(std::get <RNAME>(src));
+		if ("=" == std::get <RNEXT>(src))
+			dst.rnext_id = dst.rname_id;
+		else
+			dst.rnext_id = header_.find_reference(std::get <RNEXT>(src));
+		
+		dst.pos = std::get <POS>(src);
+		dst.pnext = std::get <PNEXT>(src);
+		dst.tlen = std::get <TLEN>(src);
+		dst.flag = std::get <FLAG>(src);
+		dst.mapq = std::get <MAPQ>(src);
+		
+		--dst.pos; // In input 1-based, 0 for invalid.
+		--dst.pnext;
+	}
+	
+	
+	void prepare_parser_record(record &src, parser_type::record_type &dst)
+	{
+		using std::swap;
+		
+		swap(std::get <QNAME>(dst), src.qname);
+		swap(std::get <CIGAR>(dst), src.cigar);
+		swap(std::get <SEQ>(dst), src.seq);
+		swap(std::get <QUAL>(dst), src.qual);
+		swap(std::get <OPTIONAL>(dst), src.optional_fields);
+	}
+}
+
+
 namespace libbio::sam {
 	
 	char const *to_chars(sort_order_type const so)
@@ -335,49 +381,6 @@ namespace libbio::sam {
 	}
 	
 	
-	void reader::prepare_record(header const &header_, parser_type::record_type &src, record &dst) const
-	{
-		using std::swap;
-		
-		swap(std::get <QNAME>(src), dst.qname);
-		swap(std::get <CIGAR>(src), dst.cigar);
-		swap(std::get <SEQ>(src), dst.seq);
-		swap(std::get <QUAL>(src), dst.qual);
-		swap(std::get <OPTIONAL>(src), dst.optional_fields);
-		
-		if ("*" == dst.qname) dst.qname.clear();
-		if ("*" == std::string_view(dst.seq.begin(), dst.seq.end())) dst.seq.clear();
-		if ("*" == std::string_view(dst.qual.begin(), dst.qual.end())) dst.qual.clear();
-		
-		dst.rname_id = header_.find_reference(std::get <RNAME>(src));
-		if ("=" == std::get <RNEXT>(src))
-			dst.rnext_id = dst.rname_id;
-		else
-			dst.rnext_id = header_.find_reference(std::get <RNEXT>(src));
-		
-		dst.pos = std::get <POS>(src);
-		dst.pnext = std::get <PNEXT>(src);
-		dst.tlen = std::get <TLEN>(src);
-		dst.flag = std::get <FLAG>(src);
-		dst.mapq = std::get <MAPQ>(src);
-		
-		--dst.pos; // In input 1-based, 0 for invalid.
-		--dst.pnext;
-	}
-	
-	
-	void reader::prepare_parser_record(record &src, parser_type::record_type &dst) const
-	{
-		using std::swap;
-		
-		swap(std::get <QNAME>(dst), src.qname);
-		swap(std::get <CIGAR>(dst), src.cigar);
-		swap(std::get <SEQ>(dst), src.seq);
-		swap(std::get <QUAL>(dst), src.qual);
-		swap(std::get <OPTIONAL>(dst), src.optional_fields);
-	}
-
-
 	// Debugging helper.
 	template <std::size_t t_idx = 0, typename t_tuple>
 	std::size_t compare_tuples(t_tuple const &lhs, t_tuple const &rhs)
