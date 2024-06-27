@@ -44,7 +44,7 @@ namespace libbio::sam {
 	}
 	
 	
-	// Convert a std::array <char, 2> to a SeqAn 3 SAM tag.
+	// Convert a std::array <char, 2> to a SAM tag.
 	constexpr inline tag_type to_tag(std::array <char, 2> const &buffer)
 	{
 		// The tag needs to match /[A-Za-z][A-Za-z0-9]/ (SAMv1, Section 1.5 The alignment section: optional fields),
