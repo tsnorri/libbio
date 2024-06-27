@@ -34,7 +34,7 @@ namespace libbio::sam {
 	};
 	
 	
-	struct file_handle_input_range final : public input_range_base
+	struct file_handle_input_range final : public input_range_base // Does not own the file handle.
 	{
 		file_handle			&fh;
 		std::vector <char>	buffer;
@@ -51,7 +51,7 @@ namespace libbio::sam {
 	};
 	
 	
-	struct file_handle_input_range_ final : public input_range_base
+	struct file_handle_input_range_ final : public input_range_base // Owns the file handle.
 	{
 		file_handle 		fh;
 		std::vector <char>	buffer;
