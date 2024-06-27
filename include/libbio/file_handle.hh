@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Tuukka Norri
+ * Copyright (c) 2021–2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -23,6 +23,9 @@ namespace libbio {
 		file_descriptor_type			m_fd{-1};
 		bool							m_should_close{true};
 		
+	protected:
+		virtual void handle_close_error();
+		
 	public:
 		file_handle() = default;
 		
@@ -33,7 +36,7 @@ namespace libbio {
 		{
 		}
 		
-		~file_handle();
+		virtual ~file_handle();
 		
 		// Copying not allowed.
 		file_handle(file_handle const &) = delete;
@@ -53,7 +56,7 @@ namespace libbio {
 		void stat(struct ::stat &sb) const; // throws
 		std::size_t io_op_blocksize() const; // throws
 		
-		void close();
+		bool close();
 	};
 	
 	

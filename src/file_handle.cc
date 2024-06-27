@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Tuukka Norri
+ * Copyright (c) 2021–2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -16,18 +16,24 @@ namespace libbio {
 	{
 		if (-1 != m_fd && m_should_close)
 		{
-			auto const res(::close(m_fd));
-			if (0 != res)
-				std::cerr << "ERROR: unable to close file handle " << m_fd << ": " << std::strerror(errno) << '\n';
+			if (0 != ::close(m_fd))
+				this->handle_close_error();
 		}
 	}
 	
 	
-	void file_handle::close()
+	void file_handle::handle_close_error()
 	{
-		// FIXME: should we check the status?
-		::close(m_fd);
+		std::cerr << "ERROR: unable to close file handle " << m_fd << ": " << std::strerror(errno) << '\n';
+	}
+	
+	
+	bool file_handle::close()
+	{
+		if (0 != ::close(m_fd))
+			return false;
 		m_fd = -1;
+		return true;
 	}
 	
 	
