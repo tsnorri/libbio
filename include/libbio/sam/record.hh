@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -24,6 +24,7 @@ namespace libbio::sam {
 	
 	constexpr static inline position_type const INVALID_POSITION{std::numeric_limits <position_type>::max()};
 	constexpr static inline reference_id_type const INVALID_REFERENCE_ID{std::numeric_limits <reference_id_type>::max()};
+	constexpr static inline mapping_quality_type const MAPQ_MIN{'!'};
 	
 	struct header; // Fwd.
 	
