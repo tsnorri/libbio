@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,13 +7,13 @@
 #define LIBBIO_SAM_OPTIONAL_FIELD_HH
 
 #include <array>
+#include <expected>
 #include <libbio/algorithm.hh>
 #include <libbio/assert.hh>
 #include <libbio/generic_parser.hh>
 #include <libbio/sam/input_range.hh>
 #include <libbio/sam/tag.hh>
 #include <libbio/tuple.hh>
-#include <optional>
 #include <range/v3/view/subrange.hpp>
 #include <range/v3/view/take_exactly.hpp>
 
@@ -139,18 +139,29 @@ namespace libbio::sam {
 		friend void output_optional_field_in_parsed_order(std::ostream &, optional_field const &, std::vector <std::size_t> &);
 		
 	public:
+		enum class get_value_error
+		{
+			not_found,
+			type_mismatch
+		};
+		
 		typedef detail::floating_point_type	floating_point_type;
 		
 		// Type mapping.
-		template <typename t_type> using array_vector		= detail::array_vector <t_type>;
-		template <typename t_type> using container_of_t		= detail::container_of_t <t_type>;
-		template <typename t_type> using value_container_t	= detail::value_container_t <t_type>;
+		template <typename t_type> using array_vector				= detail::array_vector <t_type>;
+		template <typename t_type> using container_of_t				= detail::container_of_t <t_type>;
+		template <typename t_type> using value_container_t			= detail::value_container_t <t_type>;
 		
-		typedef std::uint16_t							tag_count_type;	// We assume that there will not be more than 65536 tags.
+		template <typename t_type> using get_value_return_type_t	= std::expected <std::reference_wrapper <t_type>, get_value_error>; // // std::expected does not currently allow reference types.
+		
+		typedef std::uint16_t										tag_count_type;	// We assume that there will not be more than 65536 tags.
 		constexpr static inline tag_count_type const TAG_COUNT_MAX{std::numeric_limits <tag_count_type>::max()};
 		struct tag_rank
 		{
 			// For alignment purposes all are std::uint16_t.
+			// Since the tags are sorted by tag_id, the rank (unfortunately) needs to be stored, too
+			// (i.e. calculating the rank with std::distance is not possible).
+			// FIXME: since there are typically very few tags, linear search could be utilised instead.
 			tag_type		tag_id{};
 			tag_type		type_index{};
 			tag_count_type	rank{};
@@ -241,10 +252,10 @@ namespace libbio::sam {
 		static inline auto find_rank(t_optional_field &&of, tag_type const tag) -> find_rank_return_type_t <t_optional_field>;
 		
 		template <typename t_type, typename t_optional_field>
-		static inline t_type *do_get(t_optional_field &&of, tag_rank_vector::const_iterator it, tag_type const tag);
+		static inline get_value_return_type_t <t_type> do_get(t_optional_field &&of, tag_rank_vector::const_iterator it, tag_type const tag);
 		
 		template <typename t_type, typename t_optional_field>
-		static inline t_type *do_get(t_optional_field &&of, tag_type const tag);
+		static inline get_value_return_type_t <t_type> do_get(t_optional_field &&of, tag_type const tag);
 		
 		void erase_values_in_range(tag_rank_vector::const_iterator rank_it, tag_rank_vector::const_iterator const rank_end);
 		
@@ -264,11 +275,10 @@ namespace libbio::sam {
 		bool empty() const { return m_tag_ranks.empty(); }
 		constexpr void clear() { m_tag_ranks.clear(); tuples::for_each(m_values, []<typename t_idx>(auto &element){ element.clear(); }); }
 		
-		template <typename t_type> t_type *get(tag_type const tag) { return do_get <t_type>(*this, tag); }
-		template <typename t_type> t_type const *get(tag_type const tag) const { return do_get <t_type const>(*this, tag); }
-		template <tag_type t_tag> tag_value_t <t_tag> *get() const { return get <tag_value_t <t_tag>>(t_tag); }
-		template <typename t_type> inline std::optional <t_type> get_(tag_type const tag) const;
-		template <tag_type t_tag> std::optional <tag_value_t <t_tag>> get_() const { return get_ <tag_value_t <t_tag>>(t_tag); }
+		template <typename t_type> get_value_return_type_t <t_type> get(tag_type const tag) { return do_get <t_type>(*this, tag); }
+		template <typename t_type> get_value_return_type_t <t_type const> get(tag_type const tag) const { return do_get <t_type const>(*this, tag); }
+		template <tag_type t_tag> get_value_return_type_t <tag_value_t <t_tag>> get() { return get <tag_value_t <t_tag>>(t_tag); }
+		template <tag_type t_tag> get_value_return_type_t <tag_value_t <t_tag> const> get() const { return get <tag_value_t <t_tag>>(t_tag); }
 		
 		// Get or insert (even on type mismatch).
 		template <typename t_type> t_type &obtain(tag_type const tag);
@@ -335,40 +345,31 @@ namespace libbio::sam {
 	}
 	
 	
-	template <typename t_type>
-	std::optional <t_type> optional_field::get_(tag_type const tag) const
-	{
-		auto const * const ptr(get <t_type>(tag));
-		if (ptr)
-			return {*ptr};
-		return {};
-	}
-	
-	
 	template <typename t_type, typename t_optional_field>
 	auto optional_field::find_rank(t_optional_field &&of, tag_type const tag) -> find_rank_return_type_t <t_optional_field>
 	{
+		auto const begin(of.m_tag_ranks.begin());
 		auto const end(of.m_tag_ranks.end());
-		auto const it(std::lower_bound(of.m_tag_ranks.begin(), end, tag, tag_rank_cmp{}));
+		auto const it(std::lower_bound(begin, end, tag, tag_rank_cmp{}));
 		return it;
 	}
 	
 	
 	template <typename t_type, typename t_optional_field>
-	t_type *optional_field::do_get(t_optional_field &&of, tag_rank_vector::const_iterator it, tag_type const tag)
+	auto optional_field::do_get(t_optional_field &&of, tag_rank_vector::const_iterator it, tag_type const tag) -> get_value_return_type_t <t_type>
 	{
 		typedef value_container_t <std::remove_const_t <t_type>> tuple_element_type;
 		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, tuple_element_type>};
 		auto const end(of.m_tag_ranks.cend());
-		if (end == it) return nullptr;
-		if (it->tag_id != tag) return nullptr;
-		if (it->type_index != idx) return nullptr;
-		return &std::get <idx>(of.m_values)[it->rank]; // Non-const of used here.
+		if (end == it) return std::unexpected{get_value_error::not_found};
+		if (it->tag_id != tag) return std::unexpected{get_value_error::not_found};
+		if (it->type_index != idx) return std::unexpected{get_value_error::type_mismatch};
+		return std::ref(std::get <idx>(of.m_values)[it->rank]);	// Non-const of used here.
 	}
 	
 	
 	template <typename t_type, typename t_optional_field>
-	t_type *optional_field::do_get(t_optional_field &&of, tag_type const tag)
+	auto optional_field::do_get(t_optional_field &&of, tag_type const tag) -> get_value_return_type_t <t_type>
 	{
 		auto const it(find_rank <t_type>(of, tag));
 		return do_get <t_type>(of, it, tag);
