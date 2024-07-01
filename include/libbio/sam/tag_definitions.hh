@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -12,6 +12,7 @@
 
 namespace libbio::sam {
 	
+	template <> struct tag_value <"AS"_tag> { typedef std::int32_t	type; };
 	template <> struct tag_value <"NM"_tag> { typedef std::int32_t	type; };
 	template <> struct tag_value <"OA"_tag> { typedef std::string	type; };
 }
