@@ -71,6 +71,8 @@ namespace libbio::parsing {
 	{
 		template <typename, bool, typename...>
 		friend class parser_tpl;
+
+		friend std::ostream &operator<<(std::ostream &, parse_error const &);
 		
 	protected:
 		std::any			m_expected_delimiter{};
@@ -88,6 +90,7 @@ namespace libbio::parsing {
 	template <typename t_error>
 	class parse_error_tpl final : public parse_error
 	{
+
 	protected:
 		t_error	m_error{};
 		
@@ -105,6 +108,7 @@ namespace libbio::parsing {
 	inline std::ostream &operator<<(std::ostream &os, parse_error const &error)
 	{
 		error.output_error(os);
+		os << " field index: " << error.m_field_index << " position: " << error.m_position;
 		return os;
 	}
 }
