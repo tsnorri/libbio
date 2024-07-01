@@ -249,13 +249,13 @@ namespace libbio::sam {
 		void update_tag_order() { std::sort(m_tag_ranks.begin(), m_tag_ranks.end()); }
 		
 		template <typename t_type, typename t_optional_field>
-		static inline auto find_rank(t_optional_field &&of, tag_type const tag) -> find_rank_return_type_t <t_optional_field>;
+		constexpr static inline auto find_rank(t_optional_field &&of, tag_type const tag) -> find_rank_return_type_t <t_optional_field>;
 		
 		template <typename t_type, typename t_optional_field>
-		static inline get_value_return_type_t <t_type> do_get(t_optional_field &&of, tag_rank_vector::const_iterator it, tag_type const tag);
+		constexpr static inline get_value_return_type_t <t_type> do_get(t_optional_field &&of, tag_rank_vector::const_iterator it, tag_type const tag);
 		
 		template <typename t_type, typename t_optional_field>
-		static inline get_value_return_type_t <t_type> do_get(t_optional_field &&of, tag_type const tag);
+		constexpr static inline get_value_return_type_t <t_type> do_get(t_optional_field &&of, tag_type const tag);
 		
 		void erase_values_in_range(tag_rank_vector::const_iterator rank_it, tag_rank_vector::const_iterator const rank_end);
 		
@@ -272,13 +272,13 @@ namespace libbio::sam {
 			update_tag_order();
 		}
 		
-		bool empty() const { return m_tag_ranks.empty(); }
+		constexpr bool empty() const { return m_tag_ranks.empty(); }
 		constexpr void clear() { m_tag_ranks.clear(); tuples::for_each(m_values, []<typename t_idx>(auto &element){ element.clear(); }); }
 		
-		template <typename t_type> get_value_return_type_t <t_type> get(tag_type const tag) { return do_get <t_type>(*this, tag); }
-		template <typename t_type> get_value_return_type_t <t_type const> get(tag_type const tag) const { return do_get <t_type const>(*this, tag); }
-		template <tag_type t_tag> get_value_return_type_t <tag_value_t <t_tag>> get() { return get <tag_value_t <t_tag>>(t_tag); }
-		template <tag_type t_tag> get_value_return_type_t <tag_value_t <t_tag> const> get() const { return get <tag_value_t <t_tag>>(t_tag); }
+		template <typename t_type> constexpr get_value_return_type_t <t_type> get(tag_type const tag) { return do_get <t_type>(*this, tag); }
+		template <typename t_type> constexpr get_value_return_type_t <t_type const> get(tag_type const tag) const { return do_get <t_type const>(*this, tag); }
+		template <tag_type t_tag>  constexpr get_value_return_type_t <tag_value_t <t_tag>> get() { return get <tag_value_t <t_tag>>(t_tag); }
+		template <tag_type t_tag>  constexpr get_value_return_type_t <tag_value_t <t_tag> const> get() const { return get <tag_value_t <t_tag>>(t_tag); }
 		
 		// Get or insert (even on type mismatch).
 		template <typename t_type> t_type &obtain(tag_type const tag);
@@ -346,7 +346,7 @@ namespace libbio::sam {
 	
 	
 	template <typename t_type, typename t_optional_field>
-	auto optional_field::find_rank(t_optional_field &&of, tag_type const tag) -> find_rank_return_type_t <t_optional_field>
+	constexpr auto optional_field::find_rank(t_optional_field &&of, tag_type const tag) -> find_rank_return_type_t <t_optional_field>
 	{
 		auto const begin(of.m_tag_ranks.begin());
 		auto const end(of.m_tag_ranks.end());
@@ -356,7 +356,7 @@ namespace libbio::sam {
 	
 	
 	template <typename t_type, typename t_optional_field>
-	auto optional_field::do_get(t_optional_field &&of, tag_rank_vector::const_iterator it, tag_type const tag) -> get_value_return_type_t <t_type>
+	constexpr auto optional_field::do_get(t_optional_field &&of, tag_rank_vector::const_iterator it, tag_type const tag) -> get_value_return_type_t <t_type>
 	{
 		typedef value_container_t <std::remove_const_t <t_type>> tuple_element_type;
 		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, tuple_element_type>};
@@ -369,7 +369,7 @@ namespace libbio::sam {
 	
 	
 	template <typename t_type, typename t_optional_field>
-	auto optional_field::do_get(t_optional_field &&of, tag_type const tag) -> get_value_return_type_t <t_type>
+	constexpr auto optional_field::do_get(t_optional_field &&of, tag_type const tag) -> get_value_return_type_t <t_type>
 	{
 		auto const it(find_rank <t_type>(of, tag));
 		return do_get <t_type>(of, it, tag);
