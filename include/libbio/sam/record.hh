@@ -31,9 +31,11 @@ namespace libbio::sam {
 	
 	struct record
 	{
+		typedef std::vector <char>	sequence_type;
+		
 		std::string				qname;	// Empty for missing.
 		std::vector <cigar_run>	cigar;
-		std::vector <char>		seq;
+		sequence_type			seq;
 		std::vector <char>		qual;
 		optional_field			optional_fields;
 		
@@ -46,7 +48,10 @@ namespace libbio::sam {
 		std::int32_t			tlen{};
 		
 		flag_type				flag{};
-		mapping_quality_type	mapq{};
+		mapping_quality_type	mapq{MAPQ_MIN};
+		
+		constexpr bool is_primary() const { return 0 == std::to_underlying(flag & (flag::secondary_alignment | flag::supplementary_alignment)); } // SAMv1 § 1.4
+		constexpr mapping_quality_type normalised_mapping_quality() const { return mapq - MAPQ_MIN; }
 	};
 	
 	
