@@ -381,6 +381,7 @@ namespace libbio::sam {
 	{
 		typedef value_container_t <std::remove_const_t <t_type>> tuple_element_type;
 		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, tuple_element_type>};
+		static_assert(std::is_same_v <tuple_element_type, std::tuple_element_t <idx, value_tuple_type>>);
 		
 		auto const it(find_rank <t_type>(*this, tag));
 		auto const end(m_tag_ranks.cend());
@@ -437,7 +438,9 @@ namespace libbio::sam {
 			constexpr auto const idx{t_idx_type::value};
 			constexpr auto const type_code{type_codes[idx]};
 			// Pass the type code as a template parameter to the visitor.
-			auto &val(std::get <idx>(m_values)[rank]);
+			auto &vec(std::get <idx>(m_values));
+			libbio_assert_lt(rank, vec.size());
+			auto &val(vec[rank]);
 			if (std::is_void_v <t_return>)
 				visitor.template operator()<idx, type_code>(val);
 			else
