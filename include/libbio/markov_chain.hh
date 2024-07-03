@@ -269,7 +269,7 @@ namespace libbio::markov_chains::detail {
 		// (Not necessarily consecutive.)
 		constexpr static auto const transition_node_indices{[] consteval {
 			constexpr auto const size(std::tuple_size_v <transition_nodes_type>);
-			std::array <node_type, size> retval;
+			std::array <node_type, size> retval{};
 			auto const cb([size, &retval]<std::size_t t_transition_idx, node_type t_node>(auto &&cb, index <t_transition_idx>, node_index <t_node>) constexpr {
 				if constexpr (t_transition_idx < size)
 				{
@@ -293,7 +293,7 @@ namespace libbio::markov_chains::detail {
 				auto const last(std::unique(sorted.begin(), sorted.end()));
 				return std::make_pair(sorted, std::distance(sorted.begin(), last));
 			}());
-			std::array <node_type, res.second> retval;
+			std::array <node_type, res.second> retval{};
 			std::copy_n(res.first.begin(), res.second, retval.begin());
 			return retval;
 		}()};
@@ -336,7 +336,7 @@ namespace libbio::markov_chains::detail {
 				}
 			));
 			
-			std::array <value_type, transition_count> retval;
+			std::array <value_type, transition_count> retval; // Initialised below.
 			for (std::size_t i{}; i < transition_count; ++i)
 			{
 				auto const src_node{node_indices_by_transition_idx[i]};
