@@ -401,7 +401,7 @@ namespace libbio::sam {
 		// it->type_index != idx.
 		// Erase the old value and return a reference to a new one.
 		erase_values_in_range(it, it + 1);
-		for (auto it_(it + 1; end != it_; ++it_)
+		for (auto it_(it + 1); end != it_; ++it_)
 		{
 			// Assign new ranks to the succeeding tags of the same type as the removed one.
 			if (it->type_index == it_->type_index && it->rank < it_->rank)
