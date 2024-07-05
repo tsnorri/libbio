@@ -301,9 +301,10 @@ namespace libbio::sam {
 	
 	
 	std::ostream &operator<<(std::ostream &os, optional_field const &of);
+	std::ostream &operator<<(std::ostream &os, optional_field::tag_rank const tr); // For debugging.
 	void output_optional_field_in_parsed_order(std::ostream &os, optional_field const &of, std::vector <std::size_t> &buffer);
-	
-	
+
+
 	template <typename t_container_type>
 	auto optional_field::prepare_for_adding(tag_type const tag_id) -> t_container_type &
 	{
@@ -381,6 +382,7 @@ namespace libbio::sam {
 	{
 		typedef value_container_t <std::remove_const_t <t_type>> tuple_element_type;
 		constexpr auto const idx{tuples::first_index_of_v <value_tuple_type, tuple_element_type>};
+		static_assert(std::is_same_v <tuple_element_type, std::tuple_element_t <idx, value_tuple_type>>);
 		
 		auto const it(find_rank <t_type>(*this, tag));
 		auto const end(m_tag_ranks.cend());
@@ -444,7 +446,9 @@ namespace libbio::sam {
 			constexpr auto const idx{t_idx_type::value};
 			constexpr auto const type_code{type_codes[idx]};
 			// Pass the type code as a template parameter to the visitor.
-			auto &val(std::get <idx>(m_values)[rank]);
+			auto &vec(std::get <idx>(m_values));
+			libbio_assert_lt(rank, vec.size());
+			auto &val(vec[rank]);
 			if (std::is_void_v <t_return>)
 				visitor.template operator()<idx, type_code>(val);
 			else
@@ -474,7 +478,7 @@ namespace libbio::sam {
 		std::sort(rank_it, rank_end, [](tag_rank const &lhs, tag_rank const &rhs){
 			return lhs.type_and_rank_to_tuple() < rhs.type_and_rank_to_tuple();
 		});
-		
+
 		// Process each vector or array_vector.
 		while (rank_it != rank_end)
 		{
@@ -484,14 +488,14 @@ namespace libbio::sam {
 			erase_values_in_range(rank_it, rank_mid);
 			rank_it = rank_mid;
 		}
-		
+
 		// Erase the removed ranks.
 		callback(tag_rank_vector::const_iterator(rank_it_), m_tag_ranks.cend());
 		m_tag_ranks.erase(rank_it_, rank_end);
-		
+
 		// Assign new ranks to the remaining tags.
 		{
-			std::array <tag_count_type, std::tuple_size_v <value_tuple_type>> new_ranks;
+			std::array <tag_count_type, std::tuple_size_v <value_tuple_type>> new_ranks{};
 			for (auto &tr : m_tag_ranks)
 				tr.rank = new_ranks[tr.type_index]++;
 		}

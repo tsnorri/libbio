@@ -359,6 +359,13 @@ namespace libbio::sam {
 		output_optional_field(os, of, of.m_tag_ranks);
 		return os;
 	}
+
+
+	std::ostream &operator<<(std::ostream &os, optional_field::tag_rank const tr)
+	{
+		os << "tag_id: " << tr.tag_id << " type_index: " << tr.type_index << " rank: " << tr.rank << " parsed_rank: " << tr.parsed_rank;
+		return os;
+	}
 	
 	
 	void output_optional_field_in_parsed_order(std::ostream &os, optional_field const &of, std::vector <std::size_t> &buffer)

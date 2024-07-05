@@ -27,7 +27,7 @@ namespace libbio::sam::detail {
 	template <std::size_t t_n>
 	struct string_literal
 	{
-		std::array <char, t_n>	value;
+		std::array <char, t_n>	value{};
 		
 		template <std::size_t t_i>
 		constexpr /* implicit */ string_literal(char const (&value_)[t_i])

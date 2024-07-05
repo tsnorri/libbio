@@ -165,7 +165,7 @@ namespace libbio {
 		
 	protected:
 		process_handle	m_process{};	// Data member destructors called in reverse order; important for closing the pipe first.
-		handle_array	m_handles;
+		handle_array	m_handles{};
 		
 	protected:
 		template <subprocess_handle_spec t_spec>

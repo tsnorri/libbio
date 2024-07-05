@@ -121,8 +121,8 @@ namespace libbio {
 		typedef t_map <t_char>	map_type;
 		
 	protected:
-		map_type				m_to_comp;
-		map_type				m_to_char;
+		map_type				m_to_comp{};
+		map_type				m_to_char{};
 		
 	public:
 		consecutive_alphabet_mt() = default;
