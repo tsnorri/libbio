@@ -151,7 +151,7 @@ namespace libbio {
 		auto const fd(lb::open_file_for_writing(output_path_.data(), lb::writing_open_mode::CREATE));
 		if (-1 == fd)
 		{
-			std::cerr << "ERROR: Unable to open '" << output_path_ << "' for writing.\n";
+			std::cerr << "ERROR: Unable to open ‘" << output_path_ << "’ for writing.\n";
 			std::abort();
 		}
 
