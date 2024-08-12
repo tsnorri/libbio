@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,6 +7,7 @@
 
 #include <libbio/markov_chain.hh>
 #include <libbio/sam/reader.hh>
+#include <libbio/sam/literals.hh>
 #include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/generate.hpp>
 #include <range/v3/view/iota.hpp>
