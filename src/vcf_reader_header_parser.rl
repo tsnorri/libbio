@@ -8,6 +8,10 @@
 #include "vcf_reader_private.hh"
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+
+
 %% machine vcf_header_parser;
 %% write data;
 
@@ -332,3 +336,5 @@ namespace libbio::vcf {
 		swap(m_current_variant, var);
 	}
 }
+
+#pragma GCC diagnostic pop

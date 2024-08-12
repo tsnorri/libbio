@@ -13,6 +13,10 @@
 #include "vcf_reader_private.hh"
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+
+
 %% machine vcf_parser;
 %% write data;
 
@@ -626,3 +630,5 @@ namespace libbio::vcf {
 	bool reader::parse_one(callback_cq_fn const &callback, parser_state &state)	{ return parse2(callback, state, true); }
 	bool reader::parse_one(callback_cq_fn &&callback, parser_state &state)		{ return parse2(callback, state, true); }
 }
+
+#pragma GCC diagnostic pop

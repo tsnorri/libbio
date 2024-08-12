@@ -8,6 +8,11 @@
 #include <libbio/sam/parse_error.hh>
 #include <libbio/sam/reader.hh>
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+
+
 namespace x3 = boost::spirit::x3;
 
 
@@ -142,3 +147,5 @@ namespace libbio::sam {
 		}
 	}
 }
+
+#pragma GCC diagnostic pop

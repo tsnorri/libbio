@@ -8,6 +8,10 @@
 #include <libbio/vcf/vcf_reader.hh>
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+
+
 %% machine gt_parser;
 %% write data;
 
@@ -104,3 +108,5 @@ namespace libbio::vcf {
 		return true;
 	}
 }
+
+#pragma GCC diagnostic pop

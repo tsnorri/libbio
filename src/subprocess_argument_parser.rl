@@ -1,11 +1,15 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #include <boost/format.hpp>
 #include <cstring>
 #include <libbio/subprocess.hh>
+
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 
 
 %% machine subprocess_argument_parser;
@@ -89,3 +93,5 @@ namespace libbio {
 		return retval;
 	}
 }
+
+#pragma GCC diagnostic pop

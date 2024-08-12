@@ -8,6 +8,10 @@
 #include <libbio/file_handle.hh>
 #include <libbio/file_handling.hh>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+
+
 namespace lb = libbio;
 
 
@@ -283,3 +287,5 @@ namespace libbio
 		return fasta_reader::parsing_status::success == res || fasta_reader::parsing_status::cancelled == res;
 	}
 }
+
+#pragma GCC diagnostic pop

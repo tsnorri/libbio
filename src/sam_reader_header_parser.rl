@@ -10,6 +10,10 @@
 #include <string_view>
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+
+
 #define LAST_REF_SEQ	(header_.reference_sequences.back())
 #define LAST_READ_GROUP	(header_.read_groups.back())
 #define LAST_PROG		(header_.programs.back())
@@ -158,3 +162,5 @@ namespace libbio::sam {
 		}
 	}
 }
+
+#pragma GCC diagnostic pop
