@@ -86,16 +86,24 @@ namespace libbio::markov_chains::detail {
 		return (filter_one(index <t_idxs>{}, predicate) + ...);
 	}
 	
-	
-#ifdef __clang__
+
+#if defined(__clang__) && __clang_major__ < 16
 	template <typename t_type>
 	decltype(auto) declval() { return std::declval <t_type>(); }
 #else
+	// FIXME: Use this branch in all cases?
+	
 	// std::declval may not be used in evaluated context but we would like to determine
 	// a type of a tuple by using the return type of a function template. To alleviate,
 	// we just declare a function that works like std::declval but do not provide a definition.
+	
+#	pragma clang diagnostic push
+#	pragma clang diagnostic ignored "-Wundefined-internal"
+	
 	template <typename t_type>
 	std::add_rvalue_reference_t <t_type> declval();
+
+#	pragma clang diagnostic pop
 #endif
 }
 
