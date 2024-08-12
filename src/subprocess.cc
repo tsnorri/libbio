@@ -133,7 +133,7 @@ namespace {
 	}
 	
 	
-	void do_exit(
+	[[noreturn]] void do_exit(
 		int const fd,
 		int const exit_status,
 		lb::execution_status_type const execution_status,
