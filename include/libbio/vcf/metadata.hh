@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022 Tuukka Norri
+ * Copyright (c) 2019-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -35,7 +35,7 @@ namespace libbio::vcf {
 #define LIBBIO_VCF_METADATA_INT32_FIELD(NAME) \
 	public: \
 		virtual void set_##NAME(std::int32_t const val) final { m_##NAME = val; } \
-		int32_t const get_##NAME() const { return m_##NAME; } \
+		int32_t get_##NAME() const { return m_##NAME; } \
 	protected: std::int32_t m_##NAME
 
 #define LIBBIO_VCF_METADATA_NUMBER_FIELD \
