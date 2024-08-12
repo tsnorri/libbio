@@ -64,9 +64,8 @@ namespace {
 		header_container(sam::header &&header_, std::vector <std::string> &&program_ids):
 			header(std::move(header_))
 		{
-			header.reference_sequence_identifiers.reserve(header.reference_sequences.size());
-			for (auto const &[idx, entry] : rsv::enumerate(header.reference_sequences))
-				header.reference_sequence_identifiers.emplace_back(&entry.name, idx);
+			header.reference_sequence_identifiers.resize(header.reference_sequences.size());
+			std::iota(header.reference_sequence_identifiers.begin(), header.reference_sequence_identifiers.end(), 0);
 			
 			for (auto &&[entry, id] : rsv::zip(header.programs, program_ids))
 				entry.id = std::move(id);
