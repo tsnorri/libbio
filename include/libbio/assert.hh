@@ -54,7 +54,7 @@
 #define libbio_always_assert_gt_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lt((Y), (X)),			libbio_stringify(X > Y),	__VA_ARGS__)
 #define libbio_always_assert_gte_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_lte((Y), (X)),			libbio_stringify(X >= Y),	__VA_ARGS__)
 #define libbio_always_assert_eq_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_equal((X), (Y)),		libbio_stringify(X == Y),	__VA_ARGS__)
-#define libbio_always_assert_neq_msg(X, Y, ...)	libbio_assert_test_rel_msg(::libbio::is_not_equal((X), (Y)),	libbio_stringify(X != Y),	__VA_ARGS__)
+#define libbio_always_assert_neq_msg(X, Y, ...)	libbio_assert_test_rel_msg((!::libbio::is_equal((X), (Y))),		libbio_stringify(X != Y),	__VA_ARGS__)
 
 #ifdef LIBBIO_NDEBUG
 #	define libbio_assert(X)
