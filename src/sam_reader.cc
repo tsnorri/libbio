@@ -28,8 +28,9 @@ namespace {
 namespace {
 	inline auto format_optional_field_byte_array_value(unsigned char const bb)
 	{
-		static boost::format const fmt("%02hhX");
-		return boost::format(fmt) % bb;
+		static boost::format const fmt("%02X");
+		// For some reason Boost Format does not seem to honour the field width unless the value is converted to integer.
+		return boost::format(fmt) % (+bb);
 	}
 }
 #endif
