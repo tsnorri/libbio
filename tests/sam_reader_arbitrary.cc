@@ -611,7 +611,10 @@ TEST_CASE(
 			{
 				sam::header parsed_header;
 				std::vector <sam::record> parsed_records;
-				
+				auto const input_view(stream.view());
+
+				RC_LOG() << "Expected (" << input_view.size() << " characters):\n" << input << '\n';
+			
 				sam::character_range input_range(stream.view());
 				sam::reader reader;
 				reader.read_header(parsed_header, input_range);
@@ -619,7 +622,6 @@ TEST_CASE(
 					parsed_records.emplace_back(rec);
 				});
 				
-				RC_LOG() << "Expected:\n" << input << '\n';
 				RC_LOG() << "Actual:\n" << record_set(input, parsed_records) << '\n';
 
 				// TODO: Compare the headers?
