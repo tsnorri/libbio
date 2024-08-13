@@ -5,7 +5,7 @@ SHELL			?= /bin/bash
 
 # Default values.
 WARNING_FLAGS_		?=
-WARNING_FLAGS		?= -Wall -Werror -Wno-deprecated-declarations -Wno-unused -Wno-misleading-indentation $(WARNING_FLAGS_)
+WARNING_FLAGS		?= -Wall -Werror -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-unused -Wno-misleading-indentation $(WARNING_FLAGS_)
 WARNING_CXXFLAGS_	?=
 WARNING_CXXFLAGS	?= $(WARNING_CXXFLAGS_)
 OPT_FLAGS			?= -O2 -g
@@ -46,7 +46,7 @@ endif
 CFLAGS			+= -std=c99   $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CFLAGS)
 CXXFLAGS		+= -std=c++2b $(OPT_FLAGS) $(WARNING_FLAGS) $(WARNING_CXXFLAGS) $(SYSTEM_CXXFLAGS)
 CPPFLAGS		+= -I../include -I../lib/GSL/include -I../lib/range-v3/include $(BOOST_INCLUDE) $(SYSTEM_CPPFLAGS) $(IQUOTE)
-LDFLAGS			+= $(SYSTEM_LDFLAGS)
+LDFLAGS			+= $(SYSTEM_LDFLAGS) -lz
 
 # Assume that swift-corelibs-libdispatch is a submodule of the containing project (for now).
 ifeq ($(shell uname -s),Linux)
