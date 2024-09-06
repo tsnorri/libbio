@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2021 Tuukka Norri
+ * Copyright (c) 2021-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_template_test_macros.hpp>
 #include <iostream>
 #include <iterator>
 #include <libbio/variable_byte_codec.hh>

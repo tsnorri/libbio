@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2021 Tuukka Norri
+ * Copyright (c) 2021-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <libbio/buffered_writer/file_handle_buffered_writer.hh>
 #include <libbio/file_handling.hh>
 #include <libbio/utility.hh>										// libbio::is_equal()

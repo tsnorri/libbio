@@ -1,8 +1,6 @@
 -include local.mk
 include common.mk
 
-RAPIDCHECK_BUILD_DIR ?= build
-
 
 all: src/libbio.a
 
@@ -17,6 +15,7 @@ clean:
 
 clean-all: clean
 	$(RM) -rf lib/rapidcheck/build
+	$(RM) -rf lib/Catch2/build
 
 check-headers:
 	$(RM) -rf check-headers
@@ -40,18 +39,31 @@ src/libbio.a:
 src/libbio.coverage.a:
 	$(MAKE) -C src libbio.coverage.a
 
-tests/coverage/index.html: src/libbio.coverage.a lib/rapidcheck/build/librapidcheck.a
-	cd lib/Catch2 && $(PYTHON) scripts/generateSingleHeader.py
+tests/coverage/index.html: src/libbio.coverage.a lib/rapidcheck/build/librapidcheck.a lib/Catch2/build/src/libCatch2.a
 	$(MAKE) -C tests coverage
 
-lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a:
+lib/rapidcheck/build/librapidcheck.a:
 	$(RM) -rf lib/rapidcheck/build && \
 	cd lib/rapidcheck && \
-	$(MKDIR) $(RAPIDCHECK_BUILD_DIR) && \
-	cd $(RAPIDCHECK_BUILD_DIR) && \
+	$(MKDIR) build && \
+	cd build && \
 	$(CMAKE) \
 		-DCMAKE_C_COMPILER="$(CC)" \
 		-DCMAKE_CXX_COMPILER="$(CXX)" \
 		-DBUILD_SHARED_LIBS=OFF \
 		.. && \
 	$(MAKE)
+
+lib/Catch2/build/src/libCatch2.a:
+	$(RM) -rf lib/Catch2/build && \
+	cd lib/Catch2 && \
+	$(MKDIR) build && \
+	cd build && \
+	$(CMAKE) \
+		-DCMAKE_C_COMPILER="$(CC)" \
+		-DCMAKE_CXX_COMPILER="$(CXX)" \
+		-DCMAKE_CXX_FLAGS="$(CXXFLAGS)" \
+		-DBUILD_SHARED_LIBS=OFF \
+		.. && \
+	VERBOSE=1 $(MAKE)
+

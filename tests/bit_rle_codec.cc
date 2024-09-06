@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #include <algorithm>
 #include <boost/iostreams/stream.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <libbio/bit_rle_codec.hh>
 #include <vector>
 

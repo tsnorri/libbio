@@ -1,11 +1,13 @@
 /*
- * Copyright (c) 2020 Tuukka Norri
+ * Copyright (c) 2020-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
+#include <catch2/generators/catch_generators_range.hpp>
 #include <libbio/vcf/variant_printer.hh>
 #include <libbio/vcf/vcf_reader.hh>
 #include <map>

@@ -91,7 +91,7 @@ namespace libbio {
 		static inline bool __attribute__ ((always_inline)) LIBBIO_TEST_FN_NAME()
 	
 #else
-#	include <catch2/catch.hpp>
+#	include <catch2/catch_test_macros.hpp>
 #	include <rapidcheck/catch.h>	// rc::prop
 
 namespace libbio {

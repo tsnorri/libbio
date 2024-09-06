@@ -6,7 +6,8 @@ RAPIDCHECK_BUILD_DIR ?= build
 # macOS 10.11 does not have std::uncaught_exceptions. We could use a custom-installed libc++
 # but set a configuration option instead for now.
 CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
-			-I../lib/Catch2/single_include \
+			-I../lib/Catch2/src \
+			-I../lib/Catch2/build/generated-includes \
 			-I../lib/rapidcheck/include \
 			-I../lib/rapidcheck/extras/catch/include \
 
@@ -32,7 +33,6 @@ OBJECTS	=	algorithm.o \
 			is_lt.o \
 			is_lte.o \
 			is_equal.o \
-			main.o \
 			matrix.o \
 			merge_projected.o \
 			radix_sort.o \
@@ -73,7 +73,7 @@ coverage/index.html: run-tests
 rapidcheck: rc_tests
 
 tests: $(OBJECTS) $(GENERATED_TEST_FILES)
-	$(CXX) -o $@ $(OBJECTS) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) -lgcov $(LDFLAGS)
+	$(CXX) -o $@ $(OBJECTS) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) -lgcov ../lib/Catch2/build/src/libCatch2Main.a ../lib/Catch2/build/src/libCatch2.a $(LDFLAGS)
 
 rc_tests: $(OBJECTS_RC)
 	$(CXX) -o $@ $(OBJECTS_RC) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) -lgcov $(LDFLAGS)

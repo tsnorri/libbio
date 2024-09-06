@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2021 Tuukka Norri
+ * Copyright (c) 2021-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_NO_DISPATCH
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <libbio/buffered_writer/dispatch_io_channel_buffered_writer.hh>
 #include <libbio/file_handle.hh>
 #include <libbio/file_handling.hh>

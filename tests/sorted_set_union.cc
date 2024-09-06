@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_template_test_macros.hpp>
 #include <libbio/algorithm/sorted_set_union.hh>
 #include <rapidcheck.h>
 #include <rapidcheck/catch.h>		// rc::prop
