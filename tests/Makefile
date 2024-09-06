@@ -77,7 +77,7 @@ coverage/index.html: run-tests
 rapidcheck: rc_tests
 
 tests: $(OBJECTS) $(GENERATED_TEST_FILES) $(TEST_DEPENDENCIES)
-	$(CXX) -o $@ $(OBJECTS) $(TEST_DEPENDENCIES) -lgcov$(LDFLAGS)
+	$(CXX) -o $@ $(OBJECTS) $(TEST_DEPENDENCIES) -lgcov $(LDFLAGS)
 
 rc_tests: $(OBJECTS_RC)
 	$(CXX) -o $@ $(OBJECTS_RC) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) -lgcov $(LDFLAGS)
