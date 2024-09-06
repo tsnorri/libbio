@@ -55,7 +55,11 @@ OBJECTS_RC	=	fasta_reader_arbitrary.rc.o \
 GENERATED_TEST_FILES = 	test-files/test-data-types.vcf.gz \
 						test-files/test-simple.vcf.gz
 
-CATCH2_HEADERS	= $(shell find ../lib/Catch2/include)
+TEST_DEPENDENCIES =	$(LIBBIO_PATH) \
+					../lib/rapidcheck/build/librapidcheck.a \
+					../lib/Catch2/build/src/libCatch2Main.a \
+					../lib/Catch2/build/src/libCatch2.a \
+					$(BOOST_LIBS)
 
 all: tests
 
@@ -72,8 +76,8 @@ coverage/index.html: run-tests
 
 rapidcheck: rc_tests
 
-tests: $(OBJECTS) $(GENERATED_TEST_FILES)
-	$(CXX) -o $@ $(OBJECTS) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) -lgcov ../lib/Catch2/build/src/libCatch2Main.a ../lib/Catch2/build/src/libCatch2.a $(LDFLAGS)
+tests: $(OBJECTS) $(GENERATED_TEST_FILES) $(TEST_DEPENDENCIES)
+	$(CXX) -o $@ $(OBJECTS) $(TEST_DEPENDENCIES) -lgcov$(LDFLAGS)
 
 rc_tests: $(OBJECTS_RC)
 	$(CXX) -o $@ $(OBJECTS_RC) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) -lgcov $(LDFLAGS)
@@ -81,9 +85,6 @@ rc_tests: $(OBJECTS_RC)
 clean:
 	$(RM) $(OBJECTS) $(OBJECTS_RC) $(OBJECTS_COVERAGE) $(GENERATED_TEST_FILES) tests rc_tests
 	$(RM) -r coverage
-
-../lib/Catch2/single_include/catch2/catch.hpp: $(CATCH2_HEADERS)
-	cd ../lib/Catch2 && $(PYTHON) scripts/generateSingleHeader.py
 
 %.rc.o: %.cc
 	$(CXX) -DBUILD_RAPIDCHECK_TEST_DRIVER -c $(CXXFLAGS) $(CPPFLAGS) -o $@ $<
