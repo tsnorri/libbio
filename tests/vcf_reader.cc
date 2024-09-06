@@ -967,7 +967,7 @@ SCENARIO("The VCF reader can parse VCF header", "[vcf_reader]")
 
 
 // FIXME: combine the following two.
-SCENARIO("The VCF reader can parse simple VCF records", "[vcf_reader")
+SCENARIO("The VCF reader can parse simple VCF records", "[vcf_reader]")
 {
 	test_fixture fixture;
 	auto const vcf_input_types(fixture.all_vcf_input_types());
