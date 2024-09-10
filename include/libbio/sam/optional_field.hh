@@ -8,6 +8,7 @@
 
 #include <array>
 #include <expected>
+#include <functional>						// std::not_fn
 #include <libbio/algorithm.hh>
 #include <libbio/assert.hh>
 #include <libbio/generic_parser.hh>
@@ -471,20 +472,25 @@ namespace libbio::sam {
 	template <typename t_predicate, typename t_erase_callback>
 	void optional_field::erase_if_(t_predicate &&predicate, t_erase_callback &&callback)
 	{
+		// Partition the ranks and the values in such a way that the order of the preserved tags is maintained.
+		// This way new ranks can be assigned to the maintained items quite easily.
+		
 		// Find the range [it, m_tag_ranks.end()) of items to be removed and sort.
 		auto const rank_end(m_tag_ranks.end());
-		auto rank_it(libbio::stable_partition_left(m_tag_ranks.begin(), rank_end, predicate));
+		auto rank_it(libbio::stable_partition_left(m_tag_ranks.begin(), rank_end, std::not_fn(predicate)));
 		auto const rank_it_(rank_it);
 		std::sort(rank_it, rank_end, [](tag_rank const &lhs, tag_rank const &rhs){
 			return lhs.type_and_rank_to_tuple() < rhs.type_and_rank_to_tuple();
 		});
 
 		// Process each vector or array_vector.
+		// Find runs of the same type_index and use erase_values_in_range().
 		while (rank_it != rank_end)
 		{
 			auto const rank_mid(std::partition_point(rank_it, rank_end, [type_index = rank_it->type_index](tag_rank const &tr){
 				return tr.type_index == type_index;
 			}));
+			// Calls lb::remove_at_indices if the vector contains scalar values and lb::stable_partition_left_at_indices in case of vector values, clearing the vectors on the right.
 			erase_values_in_range(rank_it, rank_mid);
 			rank_it = rank_mid;
 		}
