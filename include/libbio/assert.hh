@@ -278,6 +278,9 @@ namespace libbio {
 
 	typedef boost::error_info <struct tag_stacktrace, boost::stacktrace::stacktrace> traced;
 
+
+	constexpr extern inline void assertion_failure() {} // For debugging.
+
 	
 	class assertion_failure_exception : public std::exception
 	{
@@ -316,12 +319,14 @@ namespace libbio::detail {
 	
 	[[noreturn]] constexpr inline void assertion_failure(char const *file, long const line)
 	{
+		libbio::assertion_failure();
 		throw_with_trace <assertion_failure_exception>(file, line);
 	}
 
 
 	[[noreturn]] constexpr inline void assertion_failure(char const *file, long const line, char const *assertion)
 	{
+		libbio::assertion_failure();
 		throw_with_trace <assertion_failure_exception> (file, line, assertion);
 	}
 
