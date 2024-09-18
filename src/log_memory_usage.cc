@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -43,8 +43,37 @@ namespace {
 	constinit static std::uint64_t				s_buffer_size{};
 	constinit static std::atomic_uint64_t		s_allocated_memory{};
 	static std::jthread							s_logging_thread{};
-
-
+	
+	
+	template <typename t_type> 
+	struct malloc_allocator
+	{
+		typedef t_type		value_type;
+		typedef value_type	*pointer;
+		typedef std::size_t	size_type;
+		
+		malloc_allocator() throw() {}
+		malloc_allocator(malloc_allocator const &) throw() {}
+		
+		template <typename T>
+		malloc_allocator(malloc_allocator <T> const &) throw() {}
+		
+		pointer allocate(size_type const size)
+		{
+			if (!size)
+				return nullptr;
+			
+			auto *retval(static_cast <pointer>(::malloc(size * sizeof(t_type))));
+			if (!retval)
+				throw std::bad_alloc{};
+			
+			return retval;
+		}
+		
+		void deallocate(pointer ptr, size_type) { ::free(ptr); }
+	};
+	
+	
 	void clean_up()
 	{
 		s_should_continue.store(false, std::memory_order_release);
@@ -57,12 +86,12 @@ namespace {
 	typedef std::uint64_t record_value_type;
 	constexpr inline std::size_t const RECORD_ITEM_COUNT{2};
 	constexpr inline std::size_t const RECORD_SIZE{RECORD_ITEM_COUNT * sizeof(record_value_type)};
-
-
+	
+	
 	void log_allocations()
 	{
 		typedef record_value_type value_type;
-		std::vector <value_type> buffer;
+		std::vector <value_type, malloc_allocator <value_type>> buffer;
 		buffer.reserve(s_buffer_size);
 		while (s_should_continue.load(std::memory_order_acquire))
 		{
@@ -88,7 +117,7 @@ namespace {
 			
 			auto const finish_time(chrono::steady_clock::now().time_since_epoch());
 			auto const diff_ms(chrono::duration_cast <chrono::milliseconds>(finish_time - sampling_time).count());
-			if (diff_ms < s_logging_interval)
+			if (0 <= diff_ms && std::uint64_t(diff_ms) < s_logging_interval)
 			{
 				using namespace std::chrono_literals;
 				std::this_thread::sleep_for((s_logging_interval - diff_ms) * 1ms);
