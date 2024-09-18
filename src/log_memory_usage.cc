@@ -25,7 +25,10 @@ namespace lb		= libbio;
 
 
 namespace {
-
+	
+	typedef chrono::steady_clock	clock_type;
+	
+	
 	struct allocation_size
 	{
 		// tag currently unused.
@@ -42,6 +45,7 @@ namespace {
 	constinit static std::uint64_t				s_logging_interval{1000};
 	constinit static std::uint64_t				s_buffer_size{};
 	constinit static std::atomic_uint64_t		s_allocated_memory{};
+	constinit static clock_type::time_point		s_start_time{};
 	static std::jthread							s_logging_thread{};
 	
 	
@@ -90,17 +94,19 @@ namespace {
 	
 	void log_allocations()
 	{
-		typedef record_value_type value_type;
+		typedef record_value_type		value_type;
+		
 		std::vector <value_type, malloc_allocator <value_type>> buffer;
 		buffer.reserve(s_buffer_size);
 		while (s_should_continue.load(std::memory_order_acquire))
 		{
-			auto const sampling_time(chrono::steady_clock::now().time_since_epoch());
-			value_type const sampling_time_ms(chrono::duration_cast <chrono::milliseconds>(sampling_time).count());
+			auto const sampling_time(clock_type::now());
+			auto const sampling_diff(sampling_time - s_start_time);
+			value_type const sampling_diff_ms(chrono::duration_cast <chrono::milliseconds>(sampling_diff).count());
 			auto const allocated_memory(s_allocated_memory.load(std::memory_order_relaxed));
 			
 			// We use big endian byte order b.c. it is easier to read with e.g. xxd or Hex Fiend.
-			buffer.push_back(endian::native_to_big(sampling_time_ms));
+			buffer.push_back(endian::native_to_big(sampling_diff_ms));
 			buffer.push_back(endian::native_to_big(allocated_memory));
 			
 			if (buffer.size() == s_buffer_size)
@@ -115,12 +121,12 @@ namespace {
 				buffer.clear();
 			}
 			
-			auto const finish_time(chrono::steady_clock::now().time_since_epoch());
-			auto const diff_ms(chrono::duration_cast <chrono::milliseconds>(finish_time - sampling_time).count());
-			if (0 <= diff_ms && std::uint64_t(diff_ms) < s_logging_interval)
+			auto const finish_time(clock_type::now());
+			auto const time_spent_ms(chrono::duration_cast <chrono::milliseconds>(finish_time - sampling_time).count());
+			if (0 <= time_spent_ms && std::uint64_t(time_spent_ms) < s_logging_interval)
 			{
 				using namespace std::chrono_literals;
-				std::this_thread::sleep_for((s_logging_interval - diff_ms) * 1ms);
+				std::this_thread::sleep_for((s_logging_interval - time_spent_ms) * 1ms);
 			}
 		}
 		
@@ -149,6 +155,8 @@ namespace libbio {
 
 	void setup_allocated_memory_logging_()
 	{
+		s_start_time = clock_type::now();
+		
 		char const *log_basename_(std::getenv("LIBBIO_ALLOCATION_LOG") ?: "allocations");
 		std::string_view const log_basename(log_basename_);
 		if (log_basename.contains('/'))
