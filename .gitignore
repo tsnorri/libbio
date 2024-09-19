@@ -4,6 +4,7 @@
 /msa-identity-regions/cmdline.c
 /msa-identity-regions/cmdline.h
 /msa-identity-regions/msa_identity_regions
+/read-allocation-log/read_allocation_log
 /src/fasta_reader.cc
 /src/subprocess_argument_parser.cc
 /src/subprocess_argument_parser.pdf
