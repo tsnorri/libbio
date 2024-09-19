@@ -7,21 +7,29 @@
 
 #include <atomic>
 #include <boost/endian.hpp>
-#include <charconv>					// std::from_chars
-#include <cstdlib>					// std::malloc, std::free
+#include <charconv>						// std::from_chars
+#include <cstdlib>						// std::malloc, std::free
 #include <iostream>
 #include <libbio/assert.hh>
 #include <libbio/file_handle.hh>
 #include <libbio/file_handling.hh>
+#include <libbio/log_memory_usage.hh>
 #include <new>
 #include <sstream>
-#include <thread>					// std::jthread
-#include <unistd.h>					// struct stat
+#include <thread>						// std::jthread
+#include <unistd.h>						// struct stat
 #include <vector>
 
 namespace chrono	= std::chrono;
 namespace endian	= boost::endian;
 namespace lb		= libbio;
+namespace ml		= libbio::memory_logger;
+
+
+namespace libbio::memory_logger::detail {
+	
+	std::atomic_uint64_t s_current_state{};
+}
 
 
 namespace {
@@ -87,38 +95,61 @@ namespace {
 	}
 
 
-	typedef std::uint64_t record_value_type;
-	constexpr inline std::size_t const RECORD_ITEM_COUNT{2};
-	constexpr inline std::size_t const RECORD_SIZE{RECORD_ITEM_COUNT * sizeof(record_value_type)};
+	constexpr inline std::size_t const RECORD_SIZE{sizeof(ml::event)};
+	static_assert(sizeof(std::uint64_t) == RECORD_SIZE);
+	
+	typedef std::uint64_t buffer_value_type;
+	typedef std::vector <buffer_value_type, malloc_allocator <buffer_value_type>> buffer_type;
+	
+	
+	void push_and_check(std::uint64_t const value, buffer_type &buffer)
+	{
+		// We use big endian byte order b.c. it is easier to read with e.g. xxd or Hex Fiend.
+		buffer.push_back(endian::native_to_big(value));
+		
+		if (buffer.size() == s_buffer_size)
+		{
+			auto const res(::write(s_logging_handle.get(), buffer.data(), buffer.size() * RECORD_SIZE));
+			if (-1 == res)
+			{
+				std::cerr << "ERROR: Unable to write to allocation log: " << std::strerror(errno) << '\n';
+				std::abort();
+			}
+			
+			buffer.clear();
+		}
+	}
 	
 	
 	void log_allocations()
 	{
-		typedef record_value_type		value_type;
-		
-		std::vector <value_type, malloc_allocator <value_type>> buffer;
+		std::uint64_t prev_state{};
+		buffer_type buffer;
 		buffer.reserve(s_buffer_size);
 		while (s_should_continue.load(std::memory_order_acquire))
 		{
 			auto const sampling_time(clock_type::now());
-			auto const sampling_diff(sampling_time - s_start_time);
-			value_type const sampling_diff_ms(chrono::duration_cast <chrono::milliseconds>(sampling_diff).count());
-			auto const allocated_memory(s_allocated_memory.load(std::memory_order_relaxed));
+			auto const sampling_time_diff(sampling_time - s_start_time);
+			buffer_value_type const sampling_time_diff_ms(chrono::duration_cast <chrono::milliseconds>(sampling_time_diff).count());
 			
-			// We use big endian byte order b.c. it is easier to read with e.g. xxd or Hex Fiend.
-			buffer.push_back(endian::native_to_big(sampling_diff_ms));
-			buffer.push_back(endian::native_to_big(allocated_memory));
+			push_and_check(sampling_time_diff_ms, buffer);
 			
-			if (buffer.size() == s_buffer_size)
+			// Add a marker if needed
 			{
-				auto const res(::write(s_logging_handle.get(), buffer.data(), buffer.size() * sizeof(value_type)));
-				if (-1 == res)
+				auto const current_state(ml::detail::s_current_state.load(std::memory_order_relaxed));
+				if (prev_state != current_state)
 				{
-					std::cerr << "ERROR: Unable to write to allocation log: " << std::strerror(errno) << '\n';
-					std::abort();
+					push_and_check(ml::event::marker_event(current_state), buffer);
+					prev_state = current_state;
 				}
-				
-				buffer.clear();
+			}
+			
+			// Allocated memory
+			{
+				auto const allocated_memory(s_allocated_memory.load(std::memory_order_relaxed));
+				auto evt(ml::event::allocated_amount_event(allocated_memory));
+				evt.mark_last_in_series();
+				push_and_check(evt, buffer);
 			}
 			
 			auto const finish_time(clock_type::now());
@@ -130,7 +161,7 @@ namespace {
 			}
 		}
 		
-		::write(s_logging_handle.get(), buffer.data(), buffer.size() * sizeof(value_type));
+		::write(s_logging_handle.get(), buffer.data(), buffer.size() * RECORD_SIZE);
 	}
 
 
@@ -195,7 +226,7 @@ namespace libbio {
 		s_logging_handle = lb::file_handle(fd);
 		struct ::stat sb{};
 		s_logging_handle.stat(sb);
-		s_buffer_size = RECORD_ITEM_COUNT * ((sb.st_blksize / RECORD_SIZE) ?: 1U);
+		s_buffer_size = ((sb.st_blksize / RECORD_SIZE) ?: 16U);
 
 		// Start the logging thread.
 		s_logging_thread = std::jthread(log_allocations);

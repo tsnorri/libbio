@@ -11,6 +11,7 @@ OBJECTS		=	bed_reader.o \
 				file_handle.o \
 				file_handle_buffered_writer.o \
 				file_handling.o \
+				log_memory_usage_support.o \
 				progress_bar.o \
 				progress_indicator.o \
 				sam_reader.o \
