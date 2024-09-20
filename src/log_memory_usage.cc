@@ -93,6 +93,7 @@ namespace {
 				std::abort();
 			}
 			
+			::fsync(s_logging_handle.get());
 			buffer.clear();
 		}
 	}
@@ -211,7 +212,7 @@ namespace libbio {
 		s_logging_handle = lb::file_handle(fd);
 		struct ::stat sb{};
 		s_logging_handle.stat(sb);
-		s_buffer_size = ((sb.st_blksize / (2 * RECORD_SIZE)) ?: 16U);
+		s_buffer_size = (4 * ((sb.st_blksize / (2 * RECORD_SIZE)) ?: 16U));
 		
 		{
 			ml::header_writer header_writer;
