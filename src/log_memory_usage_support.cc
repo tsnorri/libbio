@@ -151,7 +151,7 @@ namespace libbio::memory_logger {
 		auto const * const state_data_end(state_data + state_list_length);
 		while (state_data < state_data_end)
 		{
-			if ((state_data_end - state_data) < sizeof(std::uint64_t) + 1) // At least one NUL character in the label
+			if (std::size_t(state_data_end - state_data) < sizeof(std::uint64_t) + 1) // At least one NUL character in the label
 				throw std::runtime_error("Unexpected end of file");
 			
 			// State index
