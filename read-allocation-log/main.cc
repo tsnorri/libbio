@@ -24,8 +24,17 @@ namespace {
 	struct file_handle
 	{
 		FILE *fp{};
+		bool should_close{};
+
+		file_handle() = default;
+
+		explicit file_handle(FILE *fp_, bool should_close_ = true):
+			fp(fp_),
+			should_close(should_close_)
+		{
+		}
 		
-		~file_handle() { if (fp) std::fclose(fp); }
+		~file_handle() { if (fp && should_close) std::fclose(fp); }
 		constexpr operator bool() const { return nullptr != fp; }
 	};
 	
@@ -75,19 +84,28 @@ namespace {
 
 int main(int argc, char **argv)
 {
-	if (2 != argc)
+	if (2 < argc || (2 == argc && 0 == std::strcmp("--help", argv[1])))
 	{
-		std::cerr << "Usage: read_allocations log-path\n";
+		std::cerr << "Usage: read_allocations [ log-path ]\n";
 		std::exit(EXIT_FAILURE);
 	}
 
-	char *path{argv[1]};
-	file_handle handle{std::fopen(path, "r")};
-	if (!handle)
-	{
-		std::perror("fopen");
-		std::exit(EXIT_FAILURE);
-	}
+	auto handle([&]{
+		if (1 == argc)
+			return file_handle(stdin, false);
+		else
+		{
+			char *path{argv[1]};
+			file_handle handle{std::fopen(path, "r")};
+			if (!handle)
+			{
+				std::perror("fopen");
+				std::exit(EXIT_FAILURE);
+			}
+
+			return handle;
+		}
+	}());
 	
 	auto const state_mapping([&]{
 		header_reader_delegate delegate;
