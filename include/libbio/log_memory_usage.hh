@@ -11,6 +11,7 @@
 #include <ostream>
 #include <type_traits>					// std::underlying_type_t
 #include <utility>						// std::to_underlying
+#include <vector>
 
 
 namespace libbio::memory_logger::detail {
