@@ -33,6 +33,28 @@ namespace {
 			should_close(should_close_)
 		{
 		}
+
+		file_handle(file_handle const &) = delete;
+		file_handle &operator=(file_handle const &) = delete;
+
+		file_handle(file_handle &&other):
+			fp(other.fp),
+			should_close(other.should_close)
+		{
+			other.should_close = false;
+		}
+
+		file_handle &operator=(file_handle &&other) &
+		{
+			if (this != &other)
+			{
+				using std::swap;
+				swap(fp, other.fp);
+				swap(should_close, other.should_close);
+			}
+
+			return *this;
+		}
 		
 		~file_handle() { if (fp && should_close) std::fclose(fp); }
 		constexpr operator bool() const { return nullptr != fp; }
@@ -79,6 +101,23 @@ namespace {
 			os << it->second;
 		}
 	};
+
+
+	void open_input(file_handle &handle, int const argc, char **argv)
+	{
+		if (1 == argc)
+			handle = file_handle(stdin, false);
+		else
+		{
+			char const *path{argv[1]};
+			handle = file_handle{std::fopen(path, "r")};
+			if (!handle)
+			{
+				std::perror("fopen");
+				std::exit(EXIT_FAILURE);
+			}
+		}
+	}
 }
 
 
@@ -90,23 +129,9 @@ int main(int argc, char **argv)
 		std::exit(EXIT_FAILURE);
 	}
 
-	auto handle([&]{
-		if (1 == argc)
-			return file_handle(stdin, false);
-		else
-		{
-			char *path{argv[1]};
-			file_handle handle{std::fopen(path, "r")};
-			if (!handle)
-			{
-				std::perror("fopen");
-				std::exit(EXIT_FAILURE);
-			}
+	file_handle handle;
+	open_input(handle, argc, argv);
 
-			return handle;
-		}
-	}());
-	
 	auto const state_mapping([&]{
 		header_reader_delegate delegate;
 		ml::header_reader reader;
