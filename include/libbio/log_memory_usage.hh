@@ -174,29 +174,35 @@ namespace libbio::memory_logger {
 	}
 	
 	
-#if defined(LIBBIO_LOG_ALLOCATED_MEMORY) && LIBBIO_LOG_ALLOCATED_MEMORY
 	template <typename t_type>
 	requires (std::is_integral_v <t_type> || std::is_scoped_enum_v <t_type>)
-	struct state_guard
+	struct state_guard_
 	{
 		t_type prev_state{};
 		
-		state_guard() = default;
+		state_guard_() = default;
 		
-		state_guard(t_type const state):
+		state_guard_(t_type const state):
 			prev_state(swap_current_state(state))
 		{
 		}
 		
-		~state_guard() { swap_current_state(prev_state); }
+		~state_guard_() { swap_current_state(prev_state); }
 	};
-#else
+
 	template <typename t_type>
 	requires (std::is_integral_v <t_type> || std::is_scoped_enum_v <t_type>)
-	struct state_guard
+	struct state_guard_noop
 	{
-		state_guard(t_type const) {}
+		state_guard_noop(t_type const) {}
 	};
+
+#if defined(LIBBIO_LOG_ALLOCATED_MEMORY) && LIBBIO_LOG_ALLOCATED_MEMORY
+	template <typename t_type>
+	using state_guard = state_guard_ <t_type>;
+#else
+	template <typename t_type>
+	using state_guard = state_guard_noop <t_type>;
 #endif
 }
 
