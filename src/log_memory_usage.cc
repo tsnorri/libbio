@@ -83,7 +83,7 @@ namespace {
 		// We use big endian byte order b.c. it is easier to read with e.g. xxd or Hex Fiend.
 		buffer.push_back(endian::native_to_big(value));
 		
-		if (buffer.size() == s_buffer_size)
+		if (s_buffer_size <= buffer.size())
 		{
 			auto const write_amt(buffer.size() * RECORD_SIZE); // Calculate the number of bytes to be written.
 			auto const res(::write(s_logging_handle.get(), buffer.data(), write_amt));
@@ -165,6 +165,26 @@ namespace {
 		s_allocated_memory.fetch_sub(as->size, std::memory_order_relaxed);
 		// allocation_size is trivially destructible and constructed with placement new.
 	}
+
+
+	template <typename t_type>
+	bool read_numeric_from_environment(char const *env_var, t_type &dst)
+	{
+		char const *value(std::getenv(env_var));
+		if (value)
+		{
+			auto const res(std::from_chars(value, value + std::strlen(value), dst));
+			if (std::errc{} != res.ec)
+			{
+				std::cerr << "ERROR: Unable to parse " << env_var << ".\n";
+				std::abort();
+			}
+
+			return true;
+		}
+
+		return false;
+	}
 }
 
 
@@ -182,15 +202,10 @@ namespace libbio {
 			std::abort();
 		}
 
-		char const *allocation_interval(std::getenv("LIBBIO_ALLOCATION_LOGGING_INTERVAL"));
-		if (allocation_interval)
+		if (read_numeric_from_environment("LIBBIO_ALLOCATION_LOGGING_INTERVAL", s_logging_interval) && 0 == s_logging_interval)
 		{
-			auto const res(std::from_chars(allocation_interval, allocation_interval + std::strlen(allocation_interval), s_logging_interval));
-			if (std::errc{} != res.ec)
-			{
-				std::cerr << "ERROR: Unable to parse LIBBIO_ALLOCATION_LOGGING_INTERVAL.\n";
-				std::abort();
-			}
+			std::cerr << "ERROR: LIBBIO_ALLOCATION_LOGGING_INTERVAL was zero.\n";
+			std::abort();
 		}
 
 		std::atexit(&clean_up);
@@ -210,9 +225,22 @@ namespace libbio {
 		}
 
 		s_logging_handle = lb::file_handle(fd);
-		struct ::stat sb{};
-		s_logging_handle.stat(sb);
-		s_buffer_size = (4 * ((sb.st_blksize / (2 * RECORD_SIZE)) ?: 16U));
+		if (read_numeric_from_environment("LIBBIO_ALLOCATION_LOGGING_BUFFER_SIZE", s_buffer_size))
+		{
+			if (!s_buffer_size)
+			{
+				std::cerr << "ERROR: LIBBIO_ALLOCATION_LOGGING_BUFFER_SIZE was zero.\n";
+				std::abort();
+			}
+
+			s_buffer_size *= 2; // Space for timestamps.
+		}
+		else
+		{
+			struct ::stat sb{};
+			s_logging_handle.stat(sb);
+			s_buffer_size = ((sb.st_blksize / (2 * RECORD_SIZE)) ?: 16U);
+		}
 		
 		{
 			ml::header_writer header_writer;
