@@ -82,8 +82,9 @@ namespace {
 		
 		if (buffer.size() == s_buffer_size)
 		{
-			auto const res(::write(s_logging_handle.get(), buffer.data(), buffer.size() * RECORD_SIZE));
-			if (-1 == res)
+			auto const write_amt(buffer.size() * RECORD_SIZE); // Calculate the number of bytes to be written.
+			auto const res(::write(s_logging_handle.get(), buffer.data(), write_amt));
+			if (!lb::is_equal(write_amt, res))
 			{
 				std::cerr << "ERROR: Unable to write to allocation log: " << std::strerror(errno) << '\n';
 				std::abort();
@@ -135,7 +136,14 @@ namespace {
 			}
 		}
 		
-		::write(s_logging_handle.get(), buffer.data(), buffer.size() * RECORD_SIZE);
+		{
+			auto const write_amt(buffer.size() * RECORD_SIZE);
+			if (!lb::is_equal(write_amt, ::write(s_logging_handle.get(), buffer.data(), buffer.size() * RECORD_SIZE)))
+			{
+				std::cerr << "ERROR: Unable to write to allocation log: " << std::strerror(errno) << '\n';
+				std::abort();
+			}
+		}
 	}
 
 
