@@ -5,6 +5,9 @@
 
 #if defined(LIBBIO_LOG_ALLOCATED_MEMORY) && LIBBIO_LOG_ALLOCATED_MEMORY
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
+
 #include <atomic>
 #include <boost/endian.hpp>
 #include <charconv>						// std::from_chars
@@ -322,5 +325,7 @@ void operator delete[](void *ptr, std::align_val_t const aln) noexcept
 {
 	do_deallocate_aligned(ptr, std::to_underlying(aln));
 }
+
+#pragma GCC diagnostic pop
 
 #endif
