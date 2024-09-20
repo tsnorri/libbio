@@ -14,6 +14,7 @@
 #include <libbio/file_handle.hh>
 #include <libbio/file_handling.hh>
 #include <libbio/log_memory_usage.hh>
+#include <libbio/malloc_allocator.hh>
 #include <new>
 #include <sstream>
 #include <thread>						// std::jthread
@@ -29,6 +30,7 @@ namespace ml		= libbio::memory_logger;
 namespace libbio::memory_logger::detail {
 	
 	std::atomic_uint64_t s_current_state{};
+	std::atomic_uint64_t s_state_counter{};
 }
 
 
@@ -57,35 +59,6 @@ namespace {
 	static std::jthread							s_logging_thread{};
 	
 	
-	template <typename t_type> 
-	struct malloc_allocator
-	{
-		typedef t_type		value_type;
-		typedef value_type	*pointer;
-		typedef std::size_t	size_type;
-		
-		malloc_allocator() throw() {}
-		malloc_allocator(malloc_allocator const &) throw() {}
-		
-		template <typename T>
-		malloc_allocator(malloc_allocator <T> const &) throw() {}
-		
-		pointer allocate(size_type const size)
-		{
-			if (!size)
-				return nullptr;
-			
-			auto *retval(static_cast <pointer>(::malloc(size * sizeof(t_type))));
-			if (!retval)
-				throw std::bad_alloc{};
-			
-			return retval;
-		}
-		
-		void deallocate(pointer ptr, size_type) { ::free(ptr); }
-	};
-	
-	
 	void clean_up()
 	{
 		s_should_continue.store(false, std::memory_order_release);
@@ -99,7 +72,7 @@ namespace {
 	static_assert(sizeof(std::uint64_t) == RECORD_SIZE);
 	
 	typedef std::uint64_t buffer_value_type;
-	typedef std::vector <buffer_value_type, malloc_allocator <buffer_value_type>> buffer_type;
+	typedef std::vector <buffer_value_type, lb::malloc_allocator <buffer_value_type>> buffer_type;
 	
 	
 	void push_and_check(std::uint64_t const value, buffer_type &buffer)
@@ -123,7 +96,7 @@ namespace {
 	
 	void log_allocations()
 	{
-		std::uint64_t prev_state{};
+		std::uint64_t prev_state_index{};
 		buffer_type buffer;
 		buffer.reserve(s_buffer_size);
 		while (s_should_continue.load(std::memory_order_acquire))
@@ -136,11 +109,12 @@ namespace {
 			
 			// Add a marker if needed
 			{
-				auto const current_state(ml::detail::s_current_state.load(std::memory_order_relaxed));
-				if (prev_state != current_state)
+				auto const current_state_index(ml::detail::s_state_counter.load(std::memory_order_acquire));
+				if (prev_state_index != current_state_index)
 				{
+					prev_state_index = current_state_index;
+					auto const current_state(ml::detail::s_current_state.load(std::memory_order_relaxed));
 					push_and_check(ml::event::marker_event(current_state), buffer);
-					prev_state = current_state;
 				}
 			}
 			
@@ -184,7 +158,7 @@ namespace {
 
 namespace libbio {
 
-	void setup_allocated_memory_logging_()
+	void setup_allocated_memory_logging_(ml::header_writer_delegate &delegate)
 	{
 		s_start_time = clock_type::now();
 		
@@ -227,7 +201,12 @@ namespace libbio {
 		struct ::stat sb{};
 		s_logging_handle.stat(sb);
 		s_buffer_size = ((sb.st_blksize / RECORD_SIZE) ?: 16U);
-
+		
+		{
+			ml::header_writer header_writer;
+			header_writer.write_header(fd, delegate);
+		}
+		
 		// Start the logging thread.
 		s_logging_thread = std::jthread(log_allocations);
 		std::cerr << "Logging memory allocations.\n";

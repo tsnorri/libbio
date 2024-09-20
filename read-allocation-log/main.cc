@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <libbio/log_memory_usage.hh>
+#include <map>
 #include <unistd.h>
 
 namespace endian	= boost::endian;
@@ -17,12 +18,57 @@ namespace ml		= libbio::memory_logger;
 
 namespace {
 	
+	typedef std::map <std::uint64_t, std::string>	state_map;
+	
+	
 	struct file_handle
 	{
 		FILE *fp{};
 		
 		~file_handle() { if (fp) std::fclose(fp); }
 		constexpr operator bool() const { return nullptr != fp; }
+	};
+	
+	
+	struct header_reader_delegate final : public ml::header_reader_delegate
+	{
+		state_map state_mapping;
+		
+		void handle_state(ml::header_reader &reader, std::uint64_t const idx, std::string_view const name) override
+		{
+			state_mapping.emplace(idx, name);
+		}
+	};
+	
+	
+	struct event_visitor
+	{
+		state_map const	&state_mapping;
+		std::ostream	&os;
+		
+		void visit_unknown_event(ml::event const evt)
+		{
+			os << "unknown\tunknown";
+		}
+		
+		void visit_allocated_amount_event(ml::event const evt)
+		{
+			os << "allocated_amount\t" << evt.event_data();
+		}
+		
+		void visit_marker_event(ml::event const evt)
+		{
+			os << "marker\t";
+			
+			auto const it(state_mapping.find(evt.event_data()));
+			if (it == state_mapping.end())
+			{
+				os << "unknown";
+				return;
+			}
+			
+			os << it->second;
+		}
 	};
 }
 
@@ -42,6 +88,18 @@ int main(int argc, char **argv)
 		std::perror("fopen");
 		std::exit(EXIT_FAILURE);
 	}
+	
+	auto const state_mapping([&]{
+		header_reader_delegate delegate;
+		ml::header_reader reader;
+		
+		reader.read_header(handle.fp, delegate);
+		return delegate.state_mapping;
+	}());
+	
+	event_visitor evt_visitor{state_mapping, std::cout};
+	
+	std::cout << "SECONDS\tEVENT\tDATA\n";
 
 	constexpr std::size_t const max_count{64};
 	std::array <std::uint64_t, max_count> buffer{};
@@ -65,7 +123,7 @@ int main(int argc, char **argv)
 			ml::event const event(endian::big_to_native(buffer[i]));
 			
 			std::cout << (sampling_time_ms / 1000) << '\t';
-			event.output_record(std::cout);
+			event.visit(evt_visitor);
 			std::cout << '\n';
 			
 			if (event.is_last_in_series())
