@@ -122,13 +122,13 @@ int main(int argc, char **argv)
 	constexpr std::size_t const max_count{64};
 	std::array <std::uint64_t, max_count> buffer{};
 	bool is_at_start{true};
+	std::uint64_t sampling_time_ms{};
 	while (true)
 	{
 		auto const count(std::fread(buffer.data(), sizeof(std::uint64_t), max_count, handle.fp));
 		if (0 == count)
 			break;
 		
-		std::uint64_t sampling_time_ms{};
 		for (std::size_t i(0); i < count; ++i)
 		{
 			if (is_at_start)
