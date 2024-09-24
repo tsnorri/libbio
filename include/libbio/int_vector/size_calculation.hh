@@ -17,9 +17,9 @@ namespace libbio::size_calculation {
 	{
 		typedef int_vector_tpl <t_bits, t_word, t_trait> value_type;
 
-		void operator()(size_calculator &sc, size_calculator_entry &entry, value_type const &val) const
+		void operator()(size_calculator &sc, entry_index_type const entry_idx, value_type const &val) const
 		{
-			calculate_value_size(sc, entry, val.m_values);
+			calculate_value_size(sc, entry_idx, val.m_values);
 		}
 	};
 }

@@ -13,7 +13,7 @@ namespace rsv	= ranges::views;
 
 namespace libbio {
 
-	auto size_calculator::add_root_entry() -> entry &
+	auto size_calculator::add_root_entry() -> add_entry_return_type
 	{
 		entry *root_entry{};
 		if (entries.empty())
@@ -26,15 +26,15 @@ namespace libbio {
 			root_entry = &entries.front();
 		}
 
-		return *root_entry;
+		return {*root_entry, 0};
 	}
 
 
-	auto size_calculator::add_entry(entry const &parent) -> entry &
+	auto size_calculator::add_entry(entry_index_type const parent_idx) -> add_entry_return_type
 	{
-		auto const parent_idx(&parent - entries.data());
-		auto &retval(entries.emplace_back());
-		retval.parent = parent_idx;
+		auto const idx{entries.size()};
+		add_entry_return_type retval{entries.emplace_back(), idx};
+		retval.entry.parent = parent_idx;
 		return retval;
 	}
 
