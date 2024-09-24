@@ -61,8 +61,8 @@ namespace libbio {
 		
 		struct add_entry_return_type
 		{
-			entry				&entry;
-			entry_index_type	index{};
+			size_calculator_entry		&entry;
+			entry_index_type			index{};
 		};
 
 		std::vector <entry>	entries;
