@@ -28,14 +28,15 @@ namespace libbio {
 		fork_failed,
 		exec_failed
 	};
-	
+
 	
 	enum class subprocess_handle_spec : std::uint8_t
 	{
-		NONE	= 0x0,
-		STDIN	= 0x1,
-		STDOUT	= 0x2,
-		STDERR	= 0x4
+		NONE		= 0x0,
+		STDIN		= 0x1,
+		STDOUT		= 0x2,
+		STDERR		= 0x4,
+		KEEP_STDERR	= 0x80
 	};
 	
 	constexpr inline subprocess_handle_spec operator|(subprocess_handle_spec const lhs, subprocess_handle_spec const rhs)
@@ -71,7 +72,8 @@ namespace libbio { namespace detail {
 	
 	[[nodiscard]] consteval std::size_t handle_count(subprocess_handle_spec const t_spec)
 	{
-		return bits::count_bits_set(to_underlying(t_spec));
+		typedef std::underlying_type_t <subprocess_handle_spec> underlying_t;
+		return bits::count_bits_set(underlying_t(0xf & to_underlying(t_spec)));
 	}
 	
 	
@@ -83,6 +85,10 @@ namespace libbio { namespace detail {
 		// Require that there is a (non-zero) handle and it is in the given set.
 		if (!to_underlying(curr & all))
 			throw std::invalid_argument("Given handle specification is either zero or not in the set of all specifications");
+
+		// Require that the given set contains only values that refer to instantiated handles.
+		if (underlying_t(0xf0) & to_underlying(curr))
+			throw std::invalid_argument("Given handle specification contains unexpected values");
 		
 		// Determine the 1-based index of the current value.
 		auto const bit_idx(bits::highest_bit_set(to_underlying(curr)));
@@ -157,6 +163,8 @@ namespace libbio {
 	class subprocess
 	{
 	public:
+		constexpr static subprocess_handle_spec const handle_spec{t_handle_spec};
+
 		typedef process_handle::close_return_type	close_return_type;
 		typedef std::array <
 			file_handle,

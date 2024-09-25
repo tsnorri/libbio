@@ -214,7 +214,9 @@ namespace libbio { namespace detail {
 					
 					handle_stdio_fh(lb::subprocess_handle_spec::STDIN, STDIN_FILENO, O_RDONLY);
 					handle_stdio_fh(lb::subprocess_handle_spec::STDOUT, STDOUT_FILENO, O_WRONLY);
-					handle_stdio_fh(lb::subprocess_handle_spec::STDERR, STDERR_FILENO, O_WRONLY);
+
+					if (! to_underlying(lb::subprocess_handle_spec::KEEP_STDERR & handle_spec))
+						handle_stdio_fh(lb::subprocess_handle_spec::STDERR, STDERR_FILENO, O_WRONLY);
 				}
 				
 				// Close everything and check.
