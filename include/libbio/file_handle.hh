@@ -21,7 +21,7 @@ namespace libbio {
 		
 	protected:
 		file_descriptor_type			m_fd{-1};
-		bool							m_should_close{true};
+		bool							m_should_close{};
 		
 	protected:
 		virtual void handle_close_error();
