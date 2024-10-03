@@ -64,6 +64,9 @@ namespace libbio::sam {
 	constexpr inline tag_type to_tag(std::span <char const, t_n> const &span) { return to_tag_(span); }
 	
 	
+	constexpr inline tag_type to_tag(std::array <char, 2> const &arr) { return to_tag_(std::span{arr}); }
+	
+	
 	template <tag_type t_tag> struct tag_value {};
 	
 	template <tag_type t_tag>
