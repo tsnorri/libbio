@@ -20,6 +20,7 @@ OBJECTS		=	bed_reader.o \
 				sam_reader_optional_field_parser.o \
 				sequence_container.o \
 				sequence_reader.o \
+				size_calculator.o \
 				subprocess.o \
 				subprocess_argument_parser.o \
 				types.o \

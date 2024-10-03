@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2019 Tuukka Norri
+ * Copyright (c) 2018–2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -23,6 +23,12 @@
 namespace libbio {
 	template <unsigned int, typename, template <typename, unsigned int, typename> typename>
 	class int_vector_tpl;
+}
+
+
+namespace libbio::size_calculation {
+	template <typename>
+	struct value_size_calculator;
 }
 
 
@@ -154,6 +160,9 @@ namespace libbio {
 		
 		template <typename t_archive, unsigned int t_bits_1, typename t_word_1, template <typename, unsigned int, typename> typename t_trait_1>
 		friend void serialize(t_archive &, int_vector_tpl <t_bits_1, t_word_1, t_trait_1> &);
+
+		template <typename>
+		friend struct size_calculation::value_size_calculator;
 		
 	public:
 		typedef t_word																	word_type;

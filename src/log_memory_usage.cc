@@ -5,6 +5,9 @@
 
 #if defined(LIBBIO_LOG_ALLOCATED_MEMORY) && LIBBIO_LOG_ALLOCATED_MEMORY
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
+
 #include <atomic>
 #include <boost/endian.hpp>
 #include <charconv>						// std::from_chars
@@ -14,6 +17,7 @@
 #include <libbio/file_handle.hh>
 #include <libbio/file_handling.hh>
 #include <libbio/log_memory_usage.hh>
+#include <libbio/malloc_allocator.hh>
 #include <new>
 #include <sstream>
 #include <thread>						// std::jthread
@@ -29,6 +33,7 @@ namespace ml		= libbio::memory_logger;
 namespace libbio::memory_logger::detail {
 	
 	std::atomic_uint64_t s_current_state{};
+	std::atomic_uint64_t s_state_counter{};
 }
 
 
@@ -57,35 +62,6 @@ namespace {
 	static std::jthread							s_logging_thread{};
 	
 	
-	template <typename t_type> 
-	struct malloc_allocator
-	{
-		typedef t_type		value_type;
-		typedef value_type	*pointer;
-		typedef std::size_t	size_type;
-		
-		malloc_allocator() throw() {}
-		malloc_allocator(malloc_allocator const &) throw() {}
-		
-		template <typename T>
-		malloc_allocator(malloc_allocator <T> const &) throw() {}
-		
-		pointer allocate(size_type const size)
-		{
-			if (!size)
-				return nullptr;
-			
-			auto *retval(static_cast <pointer>(::malloc(size * sizeof(t_type))));
-			if (!retval)
-				throw std::bad_alloc{};
-			
-			return retval;
-		}
-		
-		void deallocate(pointer ptr, size_type) { ::free(ptr); }
-	};
-	
-	
 	void clean_up()
 	{
 		s_should_continue.store(false, std::memory_order_release);
@@ -99,7 +75,7 @@ namespace {
 	static_assert(sizeof(std::uint64_t) == RECORD_SIZE);
 	
 	typedef std::uint64_t buffer_value_type;
-	typedef std::vector <buffer_value_type, malloc_allocator <buffer_value_type>> buffer_type;
+	typedef std::vector <buffer_value_type, lb::malloc_allocator <buffer_value_type>> buffer_type;
 	
 	
 	void push_and_check(std::uint64_t const value, buffer_type &buffer)
@@ -107,15 +83,17 @@ namespace {
 		// We use big endian byte order b.c. it is easier to read with e.g. xxd or Hex Fiend.
 		buffer.push_back(endian::native_to_big(value));
 		
-		if (buffer.size() == s_buffer_size)
+		if (s_buffer_size <= buffer.size())
 		{
-			auto const res(::write(s_logging_handle.get(), buffer.data(), buffer.size() * RECORD_SIZE));
-			if (-1 == res)
+			auto const write_amt(buffer.size() * RECORD_SIZE); // Calculate the number of bytes to be written.
+			auto const res(::write(s_logging_handle.get(), buffer.data(), write_amt));
+			if (!lb::is_equal(write_amt, res))
 			{
 				std::cerr << "ERROR: Unable to write to allocation log: " << std::strerror(errno) << '\n';
 				std::abort();
 			}
 			
+			::fsync(s_logging_handle.get());
 			buffer.clear();
 		}
 	}
@@ -123,7 +101,7 @@ namespace {
 	
 	void log_allocations()
 	{
-		std::uint64_t prev_state{};
+		std::uint64_t prev_state_index{};
 		buffer_type buffer;
 		buffer.reserve(s_buffer_size);
 		while (s_should_continue.load(std::memory_order_acquire))
@@ -136,11 +114,12 @@ namespace {
 			
 			// Add a marker if needed
 			{
-				auto const current_state(ml::detail::s_current_state.load(std::memory_order_relaxed));
-				if (prev_state != current_state)
+				auto const current_state_index(ml::detail::s_state_counter.load(std::memory_order_acquire));
+				if (prev_state_index != current_state_index)
 				{
+					prev_state_index = current_state_index;
+					auto const current_state(ml::detail::s_current_state.load(std::memory_order_relaxed));
 					push_and_check(ml::event::marker_event(current_state), buffer);
-					prev_state = current_state;
 				}
 			}
 			
@@ -161,7 +140,14 @@ namespace {
 			}
 		}
 		
-		::write(s_logging_handle.get(), buffer.data(), buffer.size() * RECORD_SIZE);
+		{
+			auto const write_amt(buffer.size() * RECORD_SIZE);
+			if (!lb::is_equal(write_amt, ::write(s_logging_handle.get(), buffer.data(), buffer.size() * RECORD_SIZE)))
+			{
+				std::cerr << "ERROR: Unable to write to allocation log: " << std::strerror(errno) << '\n';
+				std::abort();
+			}
+		}
 	}
 
 
@@ -179,12 +165,32 @@ namespace {
 		s_allocated_memory.fetch_sub(as->size, std::memory_order_relaxed);
 		// allocation_size is trivially destructible and constructed with placement new.
 	}
+
+
+	template <typename t_type>
+	bool read_numeric_from_environment(char const *env_var, t_type &dst)
+	{
+		char const *value(std::getenv(env_var));
+		if (value)
+		{
+			auto const res(std::from_chars(value, value + std::strlen(value), dst));
+			if (std::errc{} != res.ec)
+			{
+				std::cerr << "ERROR: Unable to parse " << env_var << ".\n";
+				std::abort();
+			}
+
+			return true;
+		}
+
+		return false;
+	}
 }
 
 
 namespace libbio {
 
-	void setup_allocated_memory_logging_()
+	void setup_allocated_memory_logging_(ml::header_writer_delegate &delegate)
 	{
 		s_start_time = clock_type::now();
 		
@@ -196,15 +202,10 @@ namespace libbio {
 			std::abort();
 		}
 
-		char const *allocation_interval(std::getenv("LIBBIO_ALLOCATION_LOGGING_INTERVAL"));
-		if (allocation_interval)
+		if (read_numeric_from_environment("LIBBIO_ALLOCATION_LOGGING_INTERVAL", s_logging_interval) && 0 == s_logging_interval)
 		{
-			auto const res(std::from_chars(allocation_interval, allocation_interval + std::strlen(allocation_interval), s_logging_interval));
-			if (std::errc{} != res.ec)
-			{
-				std::cerr << "ERROR: Unable to parse LIBBIO_ALLOCATION_LOGGING_INTERVAL.\n";
-				std::abort();
-			}
+			std::cerr << "ERROR: LIBBIO_ALLOCATION_LOGGING_INTERVAL was zero.\n";
+			std::abort();
 		}
 
 		std::atexit(&clean_up);
@@ -224,10 +225,28 @@ namespace libbio {
 		}
 
 		s_logging_handle = lb::file_handle(fd);
-		struct ::stat sb{};
-		s_logging_handle.stat(sb);
-		s_buffer_size = ((sb.st_blksize / RECORD_SIZE) ?: 16U);
+		if (read_numeric_from_environment("LIBBIO_ALLOCATION_LOGGING_BUFFER_SIZE", s_buffer_size))
+		{
+			if (!s_buffer_size)
+			{
+				std::cerr << "ERROR: LIBBIO_ALLOCATION_LOGGING_BUFFER_SIZE was zero.\n";
+				std::abort();
+			}
 
+			s_buffer_size *= 2; // Space for timestamps.
+		}
+		else
+		{
+			struct ::stat sb{};
+			s_logging_handle.stat(sb);
+			s_buffer_size = ((sb.st_blksize / (2 * RECORD_SIZE)) ?: 16U);
+		}
+		
+		{
+			ml::header_writer header_writer;
+			header_writer.write_header(fd, delegate);
+		}
+		
 		// Start the logging thread.
 		s_logging_thread = std::jthread(log_allocations);
 		std::cerr << "Logging memory allocations.\n";
@@ -335,5 +354,7 @@ void operator delete[](void *ptr, std::align_val_t const aln) noexcept
 {
 	do_deallocate_aligned(ptr, std::to_underlying(aln));
 }
+
+#pragma GCC diagnostic pop
 
 #endif
