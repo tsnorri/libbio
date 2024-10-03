@@ -16,14 +16,12 @@
 
 namespace libbio::sam {
 	
-	typedef std::uint32_t	position_type;
-	typedef std::int32_t	position_type_;
+	typedef std::int32_t	position_type;
 	typedef std::uint8_t	mapping_quality_type;
-	typedef std::uint32_t	reference_id_type;
-	typedef std::int32_t	reference_id_type_;
+	typedef std::int32_t	reference_id_type;
 	
-	constexpr static inline position_type const INVALID_POSITION{std::numeric_limits <position_type>::max()};
-	constexpr static inline reference_id_type const INVALID_REFERENCE_ID{std::numeric_limits <reference_id_type>::max()};
+	constexpr static inline position_type const INVALID_POSITION{-1};
+	constexpr static inline reference_id_type const INVALID_REFERENCE_ID{-1};
 	constexpr static inline mapping_quality_type const MAPQ_MIN{'!'};
 	
 	struct header; // Fwd.
