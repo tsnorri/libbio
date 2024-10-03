@@ -44,18 +44,24 @@ namespace libbio::sam {
 	}
 	
 	
-	// Convert a std::array <char, 2> to a SAM tag.
-	constexpr inline tag_type to_tag(std::array <char, 2> const &buffer)
+	// Convert a std::span <char, N> to a SAM tag.
+	template <std::size_t t_n>
+	requires (2 <= t_n) // allows std::dynamic_extent
+	constexpr inline tag_type to_tag_(std::span <char const, t_n> const &span)
 	{
 		// The tag needs to match /[A-Za-z][A-Za-z0-9]/ (SAMv1, Section 1.5 The alignment section: optional fields),
 		// so the values will not be negative.
-		libbio_always_assert(detail::check_tag_character_1(std::get <0>(buffer)));
-		libbio_always_assert(detail::check_tag_character_2(std::get <1>(buffer)));
-		tag_type retval(std::get <0>(buffer)); // Narrows when () (not {}) are used.
+		libbio_always_assert(detail::check_tag_character_1(span[0]));
+		libbio_always_assert(detail::check_tag_character_2(span[1]));
+		tag_type retval(span[0]); // Narrows when () (not {}) are used.
 		retval <<= 8;
-		retval |= std::get <1>(buffer);
+		retval |= span[1];
 		return retval;
 	}
+	
+	template <std::size_t t_n>
+	requires (2 == t_n) // allows std::dynamic_extent
+	constexpr inline tag_type to_tag(std::span <char const, t_n> const &span) { return to_tag_(span); }
 	
 	
 	template <tag_type t_tag> struct tag_value {};
