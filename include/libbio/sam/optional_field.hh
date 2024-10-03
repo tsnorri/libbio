@@ -131,6 +131,11 @@ namespace libbio::sam::detail {
 }
 
 
+namespace libbio::bam::fields::detail {
+	struct optional_helper;
+}
+
+
 namespace libbio::sam {
 	
 	class optional_field
@@ -138,6 +143,7 @@ namespace libbio::sam {
 		friend void read_optional_fields(input_range_base &range, optional_field &dst);
 		friend std::ostream &operator<<(std::ostream &, optional_field const &);
 		friend void output_optional_field_in_parsed_order(std::ostream &, optional_field const &, std::vector <std::size_t> &);
+		friend struct bam::fields::detail::optional_helper;
 		
 	public:
 		enum class get_value_error
@@ -202,7 +208,12 @@ namespace libbio::sam {
 		
 		typedef std::tuple <
 			container_of_t <char>,
+			container_of_t <std::int8_t>,			// BAM only
+			container_of_t <std::uint8_t>,			// BAM only
+			container_of_t <std::int16_t>,			// BAM only
+			container_of_t <std::uint16_t>,			// BAM only
 			container_of_t <std::int32_t>,			// Type from BAM, see SAM 1.0, footnote 16.
+			container_of_t <std::uint32_t>,			// BAM only
 			container_of_t <floating_point_type>,
 			container_of_t <std::string>,
 			array_vector <std::byte>,
@@ -215,8 +226,8 @@ namespace libbio::sam {
 			array_vector <floating_point_type>
 		> value_tuple_type;
 		
-		constexpr static std::array type_codes{'A', 'i', 'f', 'Z', 'H', 'B', 'B', 'B', 'B', 'B', 'B', 'B'};
-		constexpr static std::array array_type_codes{'\0', '\0', '\0', '\0', '\0', 'c', 'C', 's', 'S', 'i', 'I', 'f'};
+		constexpr static std::array type_codes{'A', 'c', 'C', 's', 'S', 'i', 'I', 'f', 'Z', 'H', 'B', 'B', 'B', 'B', 'B', 'B', 'B'};
+		constexpr static std::array array_type_codes{'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', 'c', 'C', 's', 'S', 'i', 'I', 'f'};
 		static_assert(std::tuple_size_v <value_tuple_type> == type_codes.size());
 		static_assert(array_type_codes.size() == type_codes.size());
 		
@@ -238,11 +249,12 @@ namespace libbio::sam {
 		template <typename t_type, typename t_value>
 		inline void add_value(tag_type const tag_id, t_value &&val);
 		
-		inline void start_string(tag_type const tag_id);
+		inline std::string &start_string(tag_type const tag_id);
 		inline std::string &current_string_value() { return std::get <container_of_t <std::string>>(m_values).back(); }
 		
+		// FIXME: Use some typedef in the return type.
 		template <typename t_type>
-		inline void start_array(tag_type const tag_id);
+		inline std::vector <t_type> &start_array(tag_type const tag_id);
 		
 		template <typename t_type, typename t_value>
 		inline void add_array_value(t_value const);
@@ -325,18 +337,18 @@ namespace libbio::sam {
 	}
 	
 	
-	void optional_field::start_string(tag_type const tag_id)
+	std::string &optional_field::start_string(tag_type const tag_id)
 	{
 		auto &dst(prepare_for_adding <container_of_t <std::string>>(tag_id));
-		dst.emplace_back();
+		return dst.emplace_back();
 	}
 	
 	
 	template <typename t_type>
-	void optional_field::start_array(tag_type const tag_id)
+	std::vector <t_type> &optional_field::start_array(tag_type const tag_id)
 	{
 		auto &dst(prepare_for_adding <array_vector <t_type>>(tag_id));
-		dst.emplace_back();
+		return dst.emplace_back();
 	}
 	
 	
