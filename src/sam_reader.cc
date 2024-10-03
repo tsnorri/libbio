@@ -409,6 +409,7 @@ namespace libbio::sam {
 	
 	bool is_equal(header const &lhsh, header const &rhsh, record const &lhsr, record const &rhsr)
 	{
+		// Make a tuple out of the directly comparable values.
 		auto const directly_comparable_to_tuple([](record const &rec){
 			return std::tie(rec.qname, rec.cigar, rec.seq, rec.qual, rec.pos, rec.pnext, rec.tlen, rec.flag, rec.mapq);
 		});
