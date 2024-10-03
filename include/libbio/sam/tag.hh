@@ -60,7 +60,7 @@ namespace libbio::sam {
 	}
 	
 	template <std::size_t t_n>
-	requires (2 == t_n) // allows std::dynamic_extent
+	requires (2 == t_n)
 	constexpr inline tag_type to_tag(std::span <char const, t_n> const &span) { return to_tag_(span); }
 	
 	
