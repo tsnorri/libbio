@@ -47,7 +47,7 @@ namespace libbio {
 	}
 	
 	
-	std::size_t file_handle::read(std::size_t const len, char * const dst)
+	std::size_t file_handle::read(std::size_t const len, std::byte * const dst)
 	{
 		while (true)
 		{
