@@ -44,6 +44,7 @@ namespace libbio::sam {
 		position_type			pnext{};
 		
 		std::int32_t			tlen{};
+		std::uint16_t			bin{};
 		
 		flag_type				flag{};
 		mapping_quality_type	mapq{MAPQ_MIN};
