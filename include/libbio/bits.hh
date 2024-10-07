@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,7 +7,9 @@
 #define LIBBIO_BITS_HH
 
 #include <climits>
+#include <concepts>
 #include <cstdint>
+#include <optional>
 
 
 namespace libbio { namespace bits { namespace detail {
@@ -80,16 +82,16 @@ namespace libbio { namespace bits { namespace detail {
 	
 	
 	// Starting from the most significant bit position.
-	inline std::uint8_t leading_zeros(unsigned int const i)
+	inline std::uint8_t leading_zeros(unsigned int const ii)
 	{
-		if (0 == i) return (CHAR_BIT * sizeof(unsigned int));
-		return __builtin_clz(i);
+		if (0 == ii) return (CHAR_BIT * sizeof(unsigned int));
+		return __builtin_clz(ii);
 	}
 	
-	inline std::uint8_t leading_zeros(unsigned long const l)
+	inline std::uint8_t leading_zeros(unsigned long const ll)
 	{
-		if (0 == l) return (CHAR_BIT * sizeof(unsigned long));
-		return __builtin_clzl(l);
+		if (0 == ll) return (CHAR_BIT * sizeof(unsigned long));
+		return __builtin_clzl(ll);
 	}
 	
 	inline std::uint8_t leading_zeros(unsigned long long const ll)
@@ -107,7 +109,7 @@ namespace libbio { namespace bits { namespace detail {
 	inline std::uint8_t leading_zeros(unsigned short const ii)
 	{
 		if (0 == ii) return (CHAR_BIT * sizeof(unsigned short));
-		return __builtin_clz(ii) - (CHAR_BIT * (sizeof(unsigned short) - sizeof(unsigned char)));
+		return __builtin_clz(ii) - (CHAR_BIT * (sizeof(unsigned int) - sizeof(unsigned short)));
 	}
 }}}
 
@@ -184,6 +186,33 @@ namespace libbio { namespace bits {
 	{
 		// Return the 1-based index.
 		return CHAR_BIT * sizeof(t_integer) - leading_zeros(val);
+	}
+	
+	
+	template <std::unsigned_integral t_value>
+	constexpr bool is_power_of_2(t_value const val)
+	{
+		return 1 == count_bits_set(val);
+	}
+
+
+	template <std::unsigned_integral t_value>
+	constexpr std::optional <t_value> gte_power_of_2(t_value const val)
+	{
+		if (0 == val)
+			return {1};
+		
+		constexpr static t_value const highest_mask{t_value(1) << (sizeof(t_value) * CHAR_BIT - 1)};
+		constexpr static t_value const lower_mask{highest_mask - 1};
+		if (val & highest_mask && val & lower_mask)
+			return {};
+	
+		auto const hbs(highest_bit_set(val));
+		auto const power(t_value(1) << (hbs - 1));
+		auto const mask(power - 1);
+		if (val & mask)
+			return {power << 1};
+		return {power};
 	}
 }}
 
