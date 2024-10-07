@@ -72,7 +72,7 @@ namespace libbio::tests {
 		std::size_t	identifier{};
 		
 		virtual ~test_case_base() {}
-		virtual char const *message() = 0;
+		virtual char const *message() const = 0;
 		virtual bool run_test() = 0;
 	};
 	
@@ -115,7 +115,7 @@ namespace libbio {
 #	define TEST_CASE(MESSAGE, TAGS) \
 		static inline bool __attribute__ ((always_inline)) LIBBIO_TEST_FN_NAME(); /* Forward declaration */ \
 		static struct : public ::libbio::tests::test_case { \
-			char const *message() override { return MESSAGE; } \
+			char const *message() const override { return MESSAGE; } \
 			bool run_test() override { return LIBBIO_TEST_FN_NAME(); } \
 		} LIBBIO_TEST_CASE_VARIABLE_NAME; \
 		static inline bool __attribute__ ((always_inline)) LIBBIO_TEST_FN_NAME()
@@ -134,11 +134,11 @@ namespace libbio {
 					m_message{std::format("{} [{}]", MESSAGE, boost::typeindex::type_id <t_type>().pretty_name())} \
 				{ \
 				} \
-				char const *message() override { return m_message.data(); } \
+				char const *message() const override { return m_message.data(); } \
 				bool run_test() override { return LIBBIO_TEST_FN_NAME <t_type>(); } \
 			}; \
 			libbio::tuples::map_t <std::tuple <__VA_ARGS__>, test_case> tests{}; \
-			char const *message() override { return MESSAGE; } \
+			char const *message() const override { return MESSAGE; } \
 			bool run_test() override { return std::apply([](auto... tt){ return (tt.run_test() && ...); }, tests); } \
 		} LIBBIO_TEST_CASE_VARIABLE_NAME; \
 		template <typename TestType> \
