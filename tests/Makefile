@@ -11,9 +11,15 @@ CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
 			-I../lib/rapidcheck/include \
 			-I../lib/rapidcheck/extras/catch/include \
 
-CXXFLAGS +=	-ftemplate-backtrace-limit=0
-
+ifeq ($(origin NO_COVERAGE_CHECK),undefined)
+TEST_LDFLAGS = $(BOOST_LIBS) $(LDFLAGS)
+LIBBIO_PATH ?= ../src/libbio.a
+else
+TEST_LDFLAGS = -lgcov $(BOOST_LIBS) $(LDFLAGS)
 LIBBIO_PATH ?= ../src/libbio.coverage.a
+endif
+
+CXXFLAGS +=	-ftemplate-backtrace-limit=0
 
 
 OBJECTS	=	algorithm.o \
@@ -35,6 +41,8 @@ OBJECTS	=	algorithm.o \
 			is_equal.o \
 			matrix.o \
 			merge_projected.o \
+			power_of_two.o \
+			power_of_two_arbitrary.o \
 			radix_sort.o \
 			reverse_word.o \
 			rle_bit_vector.o \
@@ -46,6 +54,7 @@ OBJECTS	=	algorithm.o \
 			vcf_reader.o
 
 OBJECTS_RC	=	fasta_reader_arbitrary.rc.o \
+				power_of_two_arbitrary.rc.o \
 				sam_reader_arbitrary.rc.o \
 				set_difference_inplace_arbitrary.rc.o \
 				stable_partition_left_arbitrary.rc.o \
@@ -58,8 +67,7 @@ GENERATED_TEST_FILES = 	test-files/test-data-types.vcf.gz \
 TEST_DEPENDENCIES =	$(LIBBIO_PATH) \
 					../lib/rapidcheck/build/librapidcheck.a \
 					../lib/Catch2/build/src/libCatch2Main.a \
-					../lib/Catch2/build/src/libCatch2.a \
-					$(BOOST_LIBS)
+					../lib/Catch2/build/src/libCatch2.a
 
 all: tests
 
@@ -77,10 +85,10 @@ coverage/index.html: run-tests
 rapidcheck: rc_tests
 
 tests: $(OBJECTS) $(GENERATED_TEST_FILES) $(TEST_DEPENDENCIES)
-	$(CXX) -o $@ $(OBJECTS) $(TEST_DEPENDENCIES) -lgcov $(LDFLAGS)
+	$(CXX) -o $@ $(OBJECTS) $(TEST_DEPENDENCIES) $(TEST_LDFLAGS)
 
 rc_tests: $(OBJECTS_RC)
-	$(CXX) -o $@ $(OBJECTS_RC) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) -lgcov $(LDFLAGS)
+	$(CXX) -o $@ $(OBJECTS_RC) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) $(TEST_LDFLAGS)
 
 clean:
 	$(RM) $(OBJECTS) $(OBJECTS_RC) $(OBJECTS_COVERAGE) $(GENERATED_TEST_FILES) tests rc_tests

@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Tuukka Norri
+# Copyright (c) 2023-2024 Tuukka Norri
 # This code is licensed under MIT license (see LICENSE for details).
 
 package		"libbio RapidCheck test driver"
@@ -7,7 +7,9 @@ purpose		"Run tests written with RapidCheck"
 description	"The driver makes it possible to run  RapidCheck in reproduce mode."
 
 defmode		"List"	modedesc = "List the tests."
-modeoption	"list"	L	"List the tests."											mode = "List"	required
+modeoption	"list"				l	"List the tests."													mode = "List"	optional
+modeoption	"list-templates"	L	"List the template tests."											mode = "List"	optional
 
 defmode		"Run"	modedesc = "Run the tests."
-modeoption	"test"	t	"Run only the given test(s)"	string	typestr = "TEST"	mode = "Run"	optional	multiple
+modeoption	"test"				t	"Run only the given test(s)"		string	typestr = "TEST"		mode = "Run"	optional	multiple
+modeoption	"template-test"		T	"Run only the given template tests"	string	typestr = "TEMPLATE"	mode = "Run"	optional	multiple
