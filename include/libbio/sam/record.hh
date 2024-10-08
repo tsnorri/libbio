@@ -30,11 +30,12 @@ namespace libbio::sam {
 	struct record
 	{
 		typedef std::vector <char>	sequence_type;
+		typedef std::vector <char>	qual_type;
 		
 		std::string				qname;	// Empty for missing.
 		std::vector <cigar_run>	cigar;
 		sequence_type			seq;
-		std::vector <char>		qual;
+		qual_type				qual;
 		optional_field			optional_fields;
 		
 		reference_id_type		rname_id{};
