@@ -5,7 +5,6 @@
 
 #include <boost/format.hpp>
 #include <libbio/assert.hh>
-#include <libbio/cxxcompat.hh>
 #include <libbio/file_handling.hh>
 #include <libbio/vcf/parse_error.hh>
 #include <libbio/vcf/subfield.hh>

@@ -28,9 +28,9 @@ namespace {
 	public:
 		std::string &sequence() { return m_sequence; }
 		
-		bool handle_comment_line(lb::fasta_reader &reader, std::string_view const &sv) override { return true; }
+		bool handle_comment_line(lb::fasta_reader_base &reader, std::string_view const &sv) override { return true; }
 		
-		bool handle_identifier(lb::fasta_reader &reader, std::string_view const &sv) override
+		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &sv, std::vector <std::string_view> const &additional_info) override
 		{
 			if (m_is_first)
 			{
@@ -44,11 +44,13 @@ namespace {
 			}
 		}
 		
-		bool handle_sequence_line(lb::fasta_reader &reader, std::string_view const &sv) override
+		bool handle_sequence_chunk(lb::fasta_reader_base &reader, std::string_view const &sv, bool original_has_newline) override
 		{
 			m_sequence += sv;
 			return true;
 		}
+		
+		bool handle_sequence_end(lb::fasta_reader_base &reader) override { return m_is_first; }
 	};
 	
 	
@@ -177,8 +179,7 @@ int main(int argc, char **argv)
 	{
 		lb::fasta_reader fasta_reader;
 		fasta_reader_delegate delegate;
-		lb::mmap_handle <char> handle;
-		handle.open(args_info.reference_arg);
+		lb::file_handle handle(lb::open_file_for_reading(args_info.reference_arg));
 		fasta_reader.parse(handle, delegate);
 		reference = std::move(delegate.sequence());
 	}

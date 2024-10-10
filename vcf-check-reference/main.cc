@@ -4,7 +4,6 @@
  */
 
 #include <libbio/assert.hh>
-#include <libbio/cxxcompat.hh>
 #include <libbio/file_handling.hh>
 #include <libbio/vcf/variant.hh>
 #include <libbio/vcf/vcf_reader.hh>
