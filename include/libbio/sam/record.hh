@@ -57,6 +57,8 @@ namespace libbio::sam {
 	
 	// Compares records.
 	bool is_equal(header const &lhsh, header const &rhsh, record const &lhsr, record const &rhsr);
+	// Ignore some type checks.
+	bool is_equal_(header const &lhsh, header const &rhsh, record const &lhsr, record const &rhsr);
 }
 
 #endif

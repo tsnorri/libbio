@@ -275,6 +275,8 @@ namespace libbio::sam {
 		template <typename t_predicate, typename t_callback>
 		void erase_if_(t_predicate &&predicate, t_callback &&erase_callback);
 		
+		bool compare_values_strict(optional_field const &other, tag_rank const &lhsr, tag_rank const &rhsr) const;
+		
 	public:
 		optional_field() = default;
 		
@@ -303,6 +305,7 @@ namespace libbio::sam {
 		template <typename t_return, typename t_visitor>
 		t_return visit(tag_rank const &tr, t_visitor &&visitor) const;
 		
+		bool compare_without_type_check(optional_field const &other) const;
 		bool operator==(optional_field const &other) const;
 		
 		template <typename t_predicate>
@@ -474,6 +477,9 @@ namespace libbio::sam {
 		> callback_table_type;
 		
 		constexpr auto const &fns(callback_table_type::fns);
+		if (! (tr.type_index < fns.size()))
+			throw std::invalid_argument("Invalid type index");
+		
 		if (std::is_void_v <t_return>)
 			(visitor_caller.*fns[tr.type_index])();
 		else

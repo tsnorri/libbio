@@ -57,6 +57,16 @@ namespace {
 		QUAL,
 		OPTIONAL
 	};
+	
+	
+	constexpr static std::array optional_field_type_codes_for_output{'A', 'i', 'i', 'i', 'i', 'i', 'i', 'f', 'Z', 'H', 'B', 'B', 'B', 'B', 'B', 'B', 'B'};
+	
+	
+	template <std::size_t t_n>
+	constexpr bool is_in(char const cc, std::array <char, t_n> const &arr)
+	{
+		return arr.end() != std::find(arr.begin(), arr.end(), cc);
+	}
 
 	
 	inline bool check_reference_ids(
@@ -160,7 +170,9 @@ namespace {
 		os << std::setprecision(std::numeric_limits <sam::optional_field::floating_point_type>::digits10 + 1);
 		
 		auto visitor(lb::aggregate{
-			[&os]<std::size_t t_idx, char t_type_code>(auto const &val) requires (!('H' == t_type_code || 'B' == t_type_code)) { os << val; }, // Not array.
+			[&os]<std::size_t t_idx, char t_type_code>(auto const &val) requires (is_in(t_type_code, std::array{'c', 'C', 's', 'S', 'i', 'I'})) { os << +val; }, // Not array.
+			[&os]<std::size_t t_idx, char t_type_code>(auto const &val) requires ('A' == t_type_code) { os << char(val); },
+			[&os]<std::size_t t_idx, char t_type_code>(auto const &val) requires (is_in(t_type_code, std::array{'f', 'Z'})) { os << val; },
 			[&os]<std::size_t t_idx, char t_type_code>(auto const &vec) requires ('H' == t_type_code) {
 				for (auto const val : vec)
 					os << format_optional_field_byte_array_value(static_cast <unsigned char>(val));
@@ -181,9 +193,47 @@ namespace {
 			else
 				os << '\t';
 			
-			os << char(tr.tag_id >> 8) << char(tr.tag_id & 0xff) << ':' << sam::optional_field::type_codes[tr.type_index] << ':';
+			// Output integral types as signed 32-bit integer (SAMv1 § 4.2.4).
+			os << char(tr.tag_id >> 8) << char(tr.tag_id & 0xff) << ':' << optional_field_type_codes_for_output[tr.type_index] << ':';
 			of.visit <void>(tr, visitor);
 		}
+	}
+
+
+	// Debugging helper.
+	template <std::size_t t_idx = 0, typename t_tuple>
+	std::size_t compare_tuples(t_tuple const &lhs, t_tuple const &rhs)
+	{
+		if constexpr (std::tuple_size_v <t_tuple> == t_idx)
+			return SIZE_MAX;
+		else
+		{
+			auto const &lhs_(std::get <t_idx>(lhs));
+			auto const &rhs_(std::get <t_idx>(rhs));
+			if (lhs_ != rhs_)
+				return t_idx;
+			return compare_tuples <1 + t_idx>(lhs, rhs);
+		}
+	}
+
+
+	bool is_equal__(sam::header const &lhsh, sam::header const &rhsh, sam::record const &lhsr, sam::record const &rhsr)
+	{
+		// Make a tuple out of the directly comparable values.
+		auto const directly_comparable_to_tuple([](sam::record const &rec){
+			return std::tie(rec.qname, rec.cigar, rec.seq, rec.qual, rec.pos, rec.pnext, rec.tlen, rec.flag, rec.mapq);
+		});
+		
+		if (SIZE_MAX != compare_tuples(directly_comparable_to_tuple(lhsr), directly_comparable_to_tuple(rhsr)))
+			return false;
+		
+		if (!check_reference_ids(lhsr.rname_id, rhsr.rname_id, lhsh.reference_sequences, rhsh.reference_sequences))
+			return false;
+		
+		if (!check_reference_ids(lhsr.rnext_id, rhsr.rnext_id, lhsh.reference_sequences, rhsh.reference_sequences))
+			return false;
+		
+		return true;
 	}
 }
 
@@ -389,41 +439,100 @@ namespace libbio::sam {
 	}
 	
 	
-	// Debugging helper.
-	template <std::size_t t_idx = 0, typename t_tuple>
-	std::size_t compare_tuples(t_tuple const &lhs, t_tuple const &rhs)
-	{
-		if constexpr (std::tuple_size_v <t_tuple> == t_idx)
-			return SIZE_MAX;
-		else
-		{
-			auto const &lhs_(std::get <t_idx>(lhs));
-			auto const &rhs_(std::get <t_idx>(rhs));
-			if (lhs_ != rhs_)
-				return t_idx;
-			return compare_tuples <1 + t_idx>(lhs, rhs);
-		}
-	}
-	
-	
-	
 	bool is_equal(header const &lhsh, header const &rhsh, record const &lhsr, record const &rhsr)
 	{
-		// Make a tuple out of the directly comparable values.
-		auto const directly_comparable_to_tuple([](record const &rec){
-			return std::tie(rec.qname, rec.cigar, rec.seq, rec.qual, rec.pos, rec.pnext, rec.tlen, rec.flag, rec.mapq);
+		if (!is_equal__(lhsh, rhsh, lhsr, rhsr))
+			return false;
+		return lhsr.optional_fields == rhsr.optional_fields;
+	}
+
+
+	bool is_equal_(header const &lhsh, header const &rhsh, record const &lhsr, record const &rhsr)
+	{
+		if (!is_equal__(lhsh, rhsh, lhsr, rhsr))
+			return false;
+		return lhsr.optional_fields.compare_without_type_check(rhsr.optional_fields);
+	}
+
+
+	bool optional_field::compare_values_strict(optional_field const &other, tag_rank const &lhsr, tag_rank const &rhsr) const
+	{
+		auto do_cmp([this, &other, &rhsr]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &lhs_val){
+			auto const &rhs_values(std::get <t_idx>(other.m_values));
+			if (! (rhsr.rank < rhs_values.size()))
+				throw std::invalid_argument("Invalid rank");
+			auto const &rhs_val(rhs_values[rhsr.rank]); // Get a value of the same type.
+			constexpr double const epsilon_multiplier{10.0}; // FIXME: better value?
+			return aggregate {
+				[]<typename t_type_>(
+					std::vector <t_type_> const &lhs_val,
+					std::vector <t_type_> const &rhs_val
+				){
+					if (lhs_val.size() != rhs_val.size()) return false;
+					for (auto const [lhs, rhs] : rsv::zip(lhs_val, rhs_val))
+					{
+						if (!cmp(lhs, rhs, epsilon_multiplier))
+							return false;
+					}
+					return true;
+				},
+				[](auto const lhs, auto const rhs){
+					return cmp(lhs, rhs, epsilon_multiplier);
+				}
+			}(lhs_val, rhs_val);
 		});
 		
-		if (SIZE_MAX != compare_tuples(directly_comparable_to_tuple(lhsr), directly_comparable_to_tuple(rhsr)))
+		return visit <bool>(lhsr, do_cmp);
+	}
+
+
+	bool optional_field::compare_without_type_check(optional_field const &other) const
+	{
+		if (m_tag_ranks.size() != other.m_tag_ranks.size())
 			return false;
 		
-		if (!check_reference_ids(lhsr.rname_id, rhsr.rname_id, lhsh.reference_sequences, rhsh.reference_sequences))
-			return false;
+		typedef std::optional <std::int32_t> common_type;
+		auto const to_common_type(lb::aggregate{
+			[]<std::size_t t_idx, char t_type_code>(std::uint32_t const val) -> common_type requires ('I' == t_type_code){
+				if (val <= std::uint32_t(INT32_MAX))
+					return {std::int32_t(val)};
+				return common_type{};
+			},
+			[]<std::size_t t_idx, char t_type_code>(auto const &val) -> common_type requires (is_in(t_type_code, std::array{'c', 'C', 's', 'S', 'i'})) { return {std::int32_t(val)}; },
+			[]<std::size_t t_idx, char t_type_code>(auto const &val) -> common_type requires (!is_in(t_type_code, std::array{'c', 'C', 's', 'S', 'i', 'I'})) { return common_type{}; }
+		});
+
+		for (auto const &[lhsr, rhsr] : rsv::zip(m_tag_ranks, other.m_tag_ranks))
+		{
+			if (lhsr.tag_id != rhsr.tag_id)
+				return false;
+			
+			if (lhsr.type_index == rhsr.type_index)
+			{
+				if (!compare_values_strict(other, lhsr, rhsr))
+					return false;
+			}
+			else
+			{
+				if (! (lhsr.type_index < type_codes.size() && rhsr.type_index < type_codes.size()))
+					throw std::invalid_argument("Invalid type code");
+				
+				if ('i' == optional_field_type_codes_for_output[lhsr.type_index] && 'i' == optional_field_type_codes_for_output[rhsr.type_index])
+				{
+					auto const lhs(visit <common_type>(lhsr, to_common_type));
+					auto const rhs(other.visit <common_type>(rhsr, to_common_type));
+					if (! (lhs && rhs))
+						return false;
+					
+					if (*lhs == *rhs)
+						continue;
+				}
+				
+				return false;
+			}
+		}
 		
-		if (!check_reference_ids(lhsr.rnext_id, rhsr.rnext_id, lhsh.reference_sequences, rhsh.reference_sequences))
-			return false;
-		
-		return lhsr.optional_fields == rhsr.optional_fields;
+		return true;
 	}
 	
 	
@@ -436,31 +545,7 @@ namespace libbio::sam {
 		{
 			if (lhsr.tag_id != rhsr.tag_id) return false;
 			if (lhsr.type_index != rhsr.type_index) return false;
-			
-			auto do_cmp([this, &other, &rhsr]<std::size_t t_idx, char t_type_code, typename t_type>(t_type const &lhs_val){
-				auto const &rhs_val(std::get <t_idx>(other.m_values)[rhsr.rank]);
-				constexpr double const epsilon_multiplier{10.0}; // FIXME: better value?
-				return aggregate {
-					[]<typename t_type_>(
-						std::vector <t_type_> const &lhs_val,
-						std::vector <t_type_> const &rhs_val
-					){
-						if (lhs_val.size() != rhs_val.size()) return false;
-						for (auto const [lhs, rhs] : rsv::zip(lhs_val, rhs_val))
-						{
-							if (!cmp(lhs, rhs, epsilon_multiplier))
-								return false;
-						}
-						return true;
-					},
-					[](auto const lhs, auto const rhs){
-						return cmp(lhs, rhs, epsilon_multiplier);
-					}
-				}(lhs_val, rhs_val);
-			});
-			
-			if (!visit <bool>(lhsr, do_cmp))
-				return false;
+			if (!compare_values_strict(other, lhsr, rhsr)) return false;
 		}
 		
 		return true;
