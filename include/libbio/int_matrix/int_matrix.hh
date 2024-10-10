@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2019 Tuukka Norri
+ * Copyright (c) 2018–2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -33,24 +33,6 @@ namespace libbio { namespace detail {
 		
 		word_type operator()(std::size_t const y, std::size_t const x) const { auto &self(as_matrix()); return self.m_data[self.idx(y, x)]; }
 		reference_proxy operator()(std::size_t const y, std::size_t const x) { auto &self(as_matrix()); return self.m_data[self.idx(y, x)]; }
-		
-	protected:
-		t_matrix &as_matrix() { return static_cast <t_matrix &>(*this); }
-		t_matrix const &as_matrix() const { return static_cast <t_matrix const &>(*this); }
-	};
-	
-	
-	template <typename t_matrix, unsigned int t_bits, typename t_word>
-	struct atomic_int_matrix_trait
-	{
-		typedef t_word									word_type;
-		typedef atomic_int_vector <t_bits, t_word>		vector_type;
-		typedef typename vector_type::reference_proxy	reference_proxy;
-		
-		inline word_type load(std::size_t const y, std::size_t const x, std::memory_order order = std::memory_order_seq_cst) const;
-		inline word_type fetch_or(std::size_t const y, std::size_t const x, std::memory_order order = std::memory_order_seq_cst) const;
-		word_type operator()(std::size_t const y, std::size_t const x, std::memory_order order = std::memory_order_seq_cst) const { return load(y, x, order); };
-		inline reference_proxy operator()(std::size_t const y, std::size_t const x);
 		
 	protected:
 		t_matrix &as_matrix() { return static_cast <t_matrix &>(*this); }
@@ -101,9 +83,6 @@ namespace libbio {
 	{
 		template <typename, unsigned int, typename>
 		friend struct detail::int_matrix_trait;
-		
-		template <typename, unsigned int, typename>
-		friend struct detail::atomic_int_matrix_trait;
 		
 		template <typename, unsigned int, typename>
 		friend struct detail::int_matrix_width;
@@ -252,40 +231,10 @@ namespace libbio {
 }
 
 
-namespace libbio { namespace detail {
-	
-	template <typename t_matrix, unsigned int t_bits, typename t_word>
-	auto atomic_int_matrix_trait <t_matrix, t_bits, t_word>::load(std::size_t const y, std::size_t const x, std::memory_order order) const -> word_type
-	{
-		auto &self(as_matrix());
-		return self.m_data.load(self.idx(y, x), order);
-	}
-	
-	
-	template <typename t_matrix, unsigned int t_bits, typename t_word>
-	auto atomic_int_matrix_trait <t_matrix, t_bits, t_word>::fetch_or(std::size_t const y, std::size_t const x, std::memory_order order) const -> word_type
-	{
-		auto &self(as_matrix());
-		return self.m_data.fetch_or(self.idx(y, x), order);
-	}
-	
-	
-	template <typename t_matrix, unsigned int t_bits, typename t_word>
-	auto atomic_int_matrix_trait <t_matrix, t_bits, t_word>::operator()(std::size_t const y, std::size_t const x) -> reference_proxy
-	{
-		auto &self(as_matrix());
-		return self.m_data(self.idx(y, x));
-	}
-}}
-
-
 namespace libbio {
 	
 	template <unsigned int t_bits, typename t_word = std::uint64_t>
 	using int_matrix = int_matrix_tpl <t_bits, t_word, detail::int_matrix_trait>;
-	
-	template <unsigned int t_bits, typename t_word = std::uint64_t>
-	using atomic_int_matrix = int_matrix_tpl <t_bits, t_word, detail::atomic_int_matrix_trait>;
 	
 	typedef int_matrix <1>	bit_matrix;
 	

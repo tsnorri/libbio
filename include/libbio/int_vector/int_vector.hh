@@ -59,8 +59,6 @@ namespace libbio { namespace detail {
 			ELEMENT_BITS	= width_type::ELEMENT_BITS
 		};
 		
-		constexpr static inline bool is_atomic{false};
-		
 		// Primitives.
 		inline word_type load(std::size_t const idx) const;
 		inline void assign_or(std::size_t const idx, word_type val);
@@ -82,7 +80,6 @@ namespace libbio { namespace detail {
 		reference_proxy back() { return (*this)[as_vector().size() - 1]; }
 		
 		// Resizing
-		// Since m_values does not contain std::atomic <...>, its contents can be moved and thus the vector can be resized.
 		void resize(std::size_t new_size);
 		void resize(std::size_t new_size, word_type bit_pattern);
 		void reserve(std::size_t new_size);
@@ -96,49 +93,6 @@ namespace libbio { namespace detail {
 		
 	protected:
 		value_vector make_value_vector(std::size_t const size) const { return value_vector(calculate_word_count(size, as_vector().element_count_in_word()), 0); }
-		t_vector &as_vector() { return static_cast <t_vector &>(*this); }
-		t_vector const &as_vector() const { return static_cast <t_vector const &>(*this); }
-	};
-	
-	
-	template <typename t_vector, unsigned int t_bits, typename t_word>
-	struct atomic_int_vector_trait : public int_vector_trait_base
-	{
-		typedef detail::int_vector_width <t_bits, t_word>				width_type;
-		typedef t_word													word_type;
-		typedef std::vector <std::atomic <word_type>>					value_vector;
-		typedef typename value_vector::reference						word_reference;
-		typedef detail::atomic_int_vector_value_reference <t_vector>	reference_proxy;
-		typedef reference_proxy											reference;
-		typedef t_word													const_reference;
-		
-		enum {
-			WORD_BITS		= width_type::WORD_BITS,
-			ELEMENT_BITS	= width_type::ELEMENT_BITS
-		};
-		
-		constexpr static inline bool is_atomic{true};
-		
-		// Primitives.
-		inline word_type load(std::size_t const idx, std::memory_order = std::memory_order_seq_cst) const;
-		inline word_type fetch_or(std::size_t const idx, word_type val, std::memory_order const = std::memory_order_seq_cst);
-		inline word_type fetch_and(std::size_t const idx, word_type val, std::memory_order const = std::memory_order_seq_cst);
-		
-		word_type operator()(std::size_t const idx, std::memory_order order = std::memory_order_seq_cst) const { return load(idx, order); }
-		reference_proxy operator()(std::size_t const idx) { return reference_proxy(as_vector(), idx); }
-		word_type word_at(std::size_t const idx) const { return as_vector().m_values[idx]; }
-		word_reference word_at(std::size_t const idx) { return as_vector().m_values[idx]; }
-		
-		// Convenience functions.
-		// FIXME: consider adding a memory order to the non-const versions of the functions below and adding it as a variable to the proxy.
-		// This will cause the reference’s load() etc. to work slightly different from the one defined in this struct above.
-		word_type front(std::memory_order order = std::memory_order_seq_cst) const { return (*this)(0, order); }
-		reference_proxy front() { return (*this)[0]; }
-		word_type back(std::memory_order order = std::memory_order_seq_cst) const { return (*this)(as_vector().size() - 1, order); }
-		reference_proxy back() { return (*this)[as_vector().size() - 1]; }
-		
-	protected:
-		value_vector make_value_vector(std::size_t const size) const { return value_vector(calculate_word_count(size, as_vector().element_count_in_word())); }
 		t_vector &as_vector() { return static_cast <t_vector &>(*this); }
 		t_vector const &as_vector() const { return static_cast <t_vector const &>(*this); }
 	};
@@ -215,8 +169,6 @@ namespace libbio {
 	public:
 		int_vector_tpl() = default;
 		
-		int_vector_tpl(int_vector_tpl const &) requires(!trait_type::is_atomic) = default;
-		
 		template <bool t_dummy = true, std::enable_if_t <t_dummy && 0 != t_bits, int> = 0>
 		explicit int_vector_tpl(std::size_t const size):
 			int_vector_tpl(size, 0, protected_tag())
@@ -285,11 +237,7 @@ namespace libbio {
 	template <unsigned int t_bits, typename t_word = std::uint64_t>
 	using int_vector = int_vector_tpl <t_bits, t_word, detail::int_vector_trait>;
 	
-	template <unsigned int t_bits, typename t_word = std::uint64_t>
-	using atomic_int_vector = int_vector_tpl <t_bits, t_word, detail::atomic_int_vector_trait>;
-	
 	typedef int_vector <1> bit_vector;
-	typedef atomic_int_vector <1> atomic_bit_vector;
 }
 
 
@@ -482,74 +430,6 @@ namespace libbio { namespace detail {
 			pair[0] |= (pair[1] << shift_left);
 		}
 		*self.m_values.rbegin() >>= shift_right;
-	}
-	
-	
-	template <typename t_vector, unsigned int t_bits, typename t_word>
-	auto atomic_int_vector_trait <t_vector, t_bits, t_word>::load(
-		std::size_t const idx,
-		std::memory_order const order
-	) const -> word_type
-	{
-		auto &self(as_vector());
-		libbio_assert(idx < self.m_size);
-		auto const word_idx(idx / self.element_count_in_word());
-		auto const el_idx(idx % self.element_count_in_word());
-		word_type const retval(self.m_values[word_idx].load(order));
-		return ((retval >> self.bits_before_element(el_idx)) & self.element_mask());
-	}
-	
-	
-	template <typename t_vector, unsigned int t_bits, typename t_word>
-	auto atomic_int_vector_trait <t_vector, t_bits, t_word>::fetch_or(
-		std::size_t const idx,
-		word_type val,
-		std::memory_order const order
-	) -> word_type
-	{
-		// Determine the position of the given index
-		// inside a word and shift the given value.
-		auto &self(as_vector());
-		libbio_assert(idx < self.m_size);
-		libbio_assert_eq_msg(val, (val & self.element_mask()), "Attempted to fetch_or '", +val, "'.");
-
-		auto const word_idx(idx / self.element_count_in_word());
-		auto const el_idx(idx % self.element_count_in_word());
-		auto const shift_amt(self.bits_before_element(el_idx));
-	
-		val &= self.element_mask();
-		val <<= shift_amt;
-		
-		word_type const retval(self.m_values[word_idx].fetch_or(val, order));
-		return ((retval >> shift_amt) & self.element_mask());
-	}
-		
-		
-	template <typename t_vector, unsigned int t_bits, typename t_word>
-	auto atomic_int_vector_trait <t_vector, t_bits, t_word>::fetch_and(
-		std::size_t const idx,
-		word_type val,
-		std::memory_order const order
-	) -> word_type
-	{
-		// Create a mask that has all bits set except for the given value.
-		// Then use bitwise or with the given value and use fetch_and.
-		auto &self(as_vector());
-		libbio_assert(idx < self.m_size);
-		libbio_assert(val == (val & self.element_mask()));
-		
-		word_type mask(self.element_mask());
-		auto const word_idx(idx / self.element_count_in_word());
-		auto const el_idx(idx % self.element_count_in_word());
-		auto const shift_amt(self.bits_before_element(el_idx));
-		
-		mask <<= shift_amt;
-		val <<= shift_amt;
-		mask = ~mask;
-		val |= mask;
-		
-		word_type const retval(self.m_values[word_idx].fetch_and(val, order));
-		return ((retval >> shift_amt) & self.element_mask());
 	}
 }}
 

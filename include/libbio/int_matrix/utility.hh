@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2019 Tuukka Norri
+ * Copyright (c) 2018–2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -12,29 +12,6 @@
 
 
 namespace libbio { namespace matrices {
-	
-	template <typename t_matrix>
-	void initialize_atomic(t_matrix &matrix, std::size_t const rows, std::size_t const cols)
-	{
-		using std::swap;
-		
-		auto const number_of_rows(matrix.number_of_rows());
-		auto const number_of_columns(matrix.number_of_columns());
-		if (number_of_rows < rows || number_of_columns < cols)
-		{
-			if (matrix.available_size() < rows * cols)
-			{
-				t_matrix temp(rows, cols);
-				swap(matrix, temp);
-			}
-			else
-			{
-				matrix.set_size(rows * cols);
-				matrix.set_stride(rows);
-			}
-		}
-	}
-	
 	
 	template <typename t_matrix>
 	void copy_to_word_aligned(
