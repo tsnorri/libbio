@@ -3,20 +3,20 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_EVENTS_SOURCE_HH
-#define PANVC3_DISPATCH_EVENTS_SOURCE_HH
+#ifndef LIBBIO_DISPATCH_EVENTS_SOURCE_HH
+#define LIBBIO_DISPATCH_EVENTS_SOURCE_HH
 
 #include <atomic>
 #include <cstdint>
 #include <libbio/assert.hh>
+#include <libbio/dispatch/fwd.hh>
+#include <libbio/dispatch/queue.hh>
+#include <libbio/dispatch/task_decl.hh>
 #include <memory>
-#include <panvc3/dispatch/fwd.hh>
-#include <panvc3/dispatch/queue.hh>
-#include <panvc3/dispatch/task_decl.hh>
 #include <utility>						// std::forward
 
 
-namespace panvc3::dispatch::events::detail {
+namespace libbio::dispatch::events::detail {
 	
 	class enabled_status
 	{
@@ -29,7 +29,7 @@ namespace panvc3::dispatch::events::detail {
 }
 
 
-namespace panvc3::dispatch::events {
+namespace libbio::dispatch::events {
 	
 	typedef int				file_descriptor_type;
 	typedef int				signal_type;

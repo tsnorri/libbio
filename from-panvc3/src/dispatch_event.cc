@@ -4,14 +4,14 @@
  */
 
 #include <chrono>
-#include <panvc3/dispatch/event.hh>
-#include <panvc3/dispatch/task_def.hh>
+#include <libbio/dispatch/event.hh>
+#include <libbio/dispatch/task_def.hh>
 #include <sys/wait.h>					// ::waitpid()
 
 namespace chrono	= std::chrono;
 
 
-namespace panvc3::dispatch::events
+namespace libbio::dispatch::events
 {
 	void manager_base::stop_and_wait()
 	{

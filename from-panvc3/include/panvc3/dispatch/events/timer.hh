@@ -3,16 +3,16 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_EVENTS_TIMER_HH
-#define PANVC3_DISPATCH_EVENTS_TIMER_HH
+#ifndef LIBBIO_DISPATCH_EVENTS_TIMER_HH
+#define LIBBIO_DISPATCH_EVENTS_TIMER_HH
 
 #include <chrono>
+#include <libbio/dispatch/fwd.hh>
+#include <libbio/dispatch/events/source.hh>
 #include <limits>
-#include <panvc3/dispatch/fwd.hh>
-#include <panvc3/dispatch/events/source.hh>
 
 
-namespace panvc3::dispatch::events {
+namespace libbio::dispatch::events {
 	
 	class timer final : public source_tpl <timer>
 	{
@@ -44,7 +44,7 @@ namespace panvc3::dispatch::events {
 }
 
 
-namespace panvc3::dispatch::detail {
+namespace libbio::dispatch::detail {
 	
 	template <>
 	struct member_callable_target <events::timer>

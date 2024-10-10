@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_RAPIDCHECK_ADDITIONS_HH
-#define PANVC3_RAPIDCHECK_ADDITIONS_HH
+#ifndef LIBBIO_RAPIDCHECK_ADDITIONS_HH
+#define LIBBIO_RAPIDCHECK_ADDITIONS_HH
 
 #include <rapidcheck.h>
 

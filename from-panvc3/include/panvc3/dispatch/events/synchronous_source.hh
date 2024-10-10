@@ -3,13 +3,13 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_EVENTS_SYNCHRONOUS_SOURCE_HH
-#define PANVC3_DISPATCH_EVENTS_SYNCHRONOUS_SOURCE_HH
+#ifndef LIBBIO_DISPATCH_EVENTS_SYNCHRONOUS_SOURCE_HH
+#define LIBBIO_DISPATCH_EVENTS_SYNCHRONOUS_SOURCE_HH
 
-#include <panvc3/dispatch/events/source.hh>
+#include <libbio/dispatch/events/source.hh>
 
 
-namespace panvc3::dispatch::events {
+namespace libbio::dispatch::events {
 	
 	// Used with Linux’s special file descriptors in such a way that
 	// the event can be handled in the manager’s thread.

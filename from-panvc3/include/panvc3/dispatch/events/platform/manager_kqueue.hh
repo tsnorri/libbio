@@ -3,13 +3,13 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_EVENTS_PLATFORM_MANAGER_KQUEUE_HH
-#define PANVC3_DISPATCH_EVENTS_PLATFORM_MANAGER_KQUEUE_HH
+#ifndef LIBBIO_DISPATCH_EVENTS_PLATFORM_MANAGER_KQUEUE_HH
+#define LIBBIO_DISPATCH_EVENTS_PLATFORM_MANAGER_KQUEUE_HH
 
-#include <panvc3/dispatch/events/manager.hh>
+#include <libbio/dispatch/events/manager.hh>
 
 
-namespace panvc3::dispatch::events::platform::kqueue {
+namespace libbio::dispatch::events::platform::kqueue {
 	
 	typedef std::int16_t	filter_type;				// Type from struct kevent.
 	
@@ -33,9 +33,9 @@ namespace panvc3::dispatch::events::platform::kqueue {
 
 
 template <>
-struct std::hash <panvc3::dispatch::events::platform::kqueue::source_key>
+struct std::hash <libbio::dispatch::events::platform::kqueue::source_key>
 {
-	constexpr std::size_t operator()(panvc3::dispatch::events::platform::kqueue::source_key const &sk) const noexcept
+	constexpr std::size_t operator()(libbio::dispatch::events::platform::kqueue::source_key const &sk) const noexcept
 	{
 		std::size_t retval(std::abs(sk.value));
 		retval <<= 17;
@@ -46,7 +46,7 @@ struct std::hash <panvc3::dispatch::events::platform::kqueue::source_key>
 };
 
 
-namespace panvc3::dispatch::events::platform::kqueue {
+namespace libbio::dispatch::events::platform::kqueue {
 	
 	class signal_mask
 	{

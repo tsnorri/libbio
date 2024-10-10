@@ -3,15 +3,15 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_TEST_ATOMIC_VARIABLE_HH
-#define PANVC3_TEST_ATOMIC_VARIABLE_HH
+#ifndef LIBBIO_TEST_ATOMIC_VARIABLE_HH
+#define LIBBIO_TEST_ATOMIC_VARIABLE_HH
 
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 
 
-namespace panvc3::tests {
+namespace libbio::tests {
 	
 	template <typename t_value, t_value t_initial = t_value{}>
 	class atomic_variable

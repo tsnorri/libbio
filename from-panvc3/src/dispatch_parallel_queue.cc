@@ -3,10 +3,10 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <panvc3/dispatch.hh>
+#include <libbio/dispatch.hh>
 
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 	
 	parallel_queue &parallel_queue::shared_queue()
 	{
@@ -39,7 +39,7 @@ namespace panvc3::dispatch {
 		enqueue(queue_item{
 			std::move(tt),
 			nullptr
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 			, current_barrier()
 #endif
 		});
@@ -52,14 +52,14 @@ namespace panvc3::dispatch {
 		enqueue(queue_item{
 			std::move(tt),
 			&gg
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 			, current_barrier()
 #endif
 		});
 	}
 	
 	
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 	void parallel_queue::barrier(task tt)
 	{
 		// Prepare the barrier.

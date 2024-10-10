@@ -5,14 +5,14 @@
 
 #include <cmath>				// std::floor
 #include <libbio/assert.hh>
-#include <panvc3/dispatch.hh>
+#include <libbio/dispatch.hh>
 #include <signal.h>				// sigfillset, ::pthread_sigmask
 #include <thread>
 
 namespace chrono	= std::chrono;
 
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 	
 	thread_pool::thread_count_type const thread_pool::default_max_worker_threads = thread_pool::thread_count_type(
 		std::floor(1.5 * std::thread::hardware_concurrency())
@@ -103,7 +103,7 @@ namespace panvc3::dispatch {
 							{
 								++executed_tasks;
 						
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 								{
 									libbio_assert(queue_item.barrier_);
 									auto &bb(*queue_item.barrier_);

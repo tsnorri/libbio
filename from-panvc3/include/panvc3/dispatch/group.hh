@@ -1,20 +1,20 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_GROUP_HH
-#define PANVC3_DISPATCH_GROUP_HH
+#ifndef LIBBIO_DISPATCH_GROUP_HH
+#define LIBBIO_DISPATCH_GROUP_HH
 
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
+#include <libbio/dispatch/fwd.hh>
+#include <libbio/dispatch/task_decl.hh>
 #include <mutex>
-#include <panvc3/dispatch/fwd.hh>
-#include <panvc3/dispatch/task_decl.hh>
 
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 	
 	class group
 	{

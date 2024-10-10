@@ -4,16 +4,16 @@
  */
 
 #include <chrono>
-#include <panvc3/dispatch/events/platform/manager_kqueue.hh>
-#include <panvc3/dispatch/task_def.hh>
+#include <libbio/dispatch/events/platform/manager_kqueue.hh>
+#include <libbio/dispatch/task_def.hh>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
 
 namespace chrono	= std::chrono;
-namespace events	= panvc3::dispatch::events;
-namespace kq		= panvc3::dispatch::events::platform::kqueue;
+namespace events	= libbio::dispatch::events;
+namespace kq		= libbio::dispatch::events::platform::kqueue;
 
 
 namespace {
@@ -58,7 +58,7 @@ namespace {
 }
 
 
-namespace panvc3::dispatch::events::platform::kqueue {
+namespace libbio::dispatch::events::platform::kqueue {
 	
 	void signal_mask::add(int const sig)
 	{

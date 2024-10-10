@@ -4,10 +4,10 @@
  */
 
 #include <libbio/assert.hh>
-#include <panvc3/dispatch.hh>
+#include <libbio/dispatch.hh>
 
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 	
 	void group::wait()
 	{

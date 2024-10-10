@@ -3,23 +3,23 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_TASK_DECL_HH
-#define PANVC3_DISPATCH_TASK_DECL_HH
+#ifndef LIBBIO_DISPATCH_TASK_DECL_HH
+#define LIBBIO_DISPATCH_TASK_DECL_HH
 
 #include <cstddef>					// std::byte
 #include <libbio/tuple/access.hh>	// libbio::tuples::forward_to
+#include <libbio/dispatch/fwd.hh>
 #include <memory>					// std::weak_ptr
-#include <panvc3/dispatch/fwd.hh>
 #include <utility>					// std::forward
 
 
-namespace panvc3::dispatch::detail {
+namespace libbio::dispatch::detail {
 	
 	template <typename...> struct callable; // Fwd.
 }
 
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 	
 	constexpr static inline std::size_t const TASK_BUFFER_SIZE{4 * sizeof(void *)}; // Enough for “most” cases; holds vptr + shared_ptr + void *.
 	
@@ -55,7 +55,7 @@ namespace panvc3::dispatch {
 }
 
 
-namespace panvc3::dispatch::detail {
+namespace libbio::dispatch::detail {
 	
 	template <typename t_ptr>
 	struct ptr_value_type { typedef typename t_ptr::element_type type; }; // For smart pointers.
@@ -418,7 +418,7 @@ namespace panvc3::dispatch::detail {
 }
 
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 	
 	template <typename ... t_args>
 	using task_t = detail::task <t_args...>;

@@ -1,22 +1,22 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_BARRIER_HH
-#define PANVC3_DISPATCH_BARRIER_HH
+#ifndef LIBBIO_DISPATCH_BARRIER_HH
+#define LIBBIO_DISPATCH_BARRIER_HH
 
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 
 #include <atomic>
 #include <cstdint>
+#include <libbio/dispatch/fwd.hh>
+#include <libbio/dispatch/task_decl.hh>
 #include <limits>	// std::numeric_limits
 #include <memory>	// std::shared_ptr
-#include <panvc3/dispatch/fwd.hh>
-#include <panvc3/dispatch/task_decl.hh>
 
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 	
 	// When a barrier B is added to the queue, it is not added to the lock-free queue but instead:
 	//	– B’ = m_current_barrier.exchange(B, std::memory_order_release) is used.

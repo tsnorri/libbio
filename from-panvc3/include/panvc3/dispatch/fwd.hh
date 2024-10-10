@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_FWD_HH
-#define PANVC3_DISPATCH_FWD_HH
+#ifndef LIBBIO_DISPATCH_FWD_HH
+#define LIBBIO_DISPATCH_FWD_HH
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 	
 	// Fwd.
 	class thread_pool;
@@ -20,7 +20,7 @@ namespace panvc3::dispatch {
 }
 
 
-namespace panvc3::dispatch::detail {
+namespace libbio::dispatch::detail {
 	struct serial_queue_executor_callable;
 }
 

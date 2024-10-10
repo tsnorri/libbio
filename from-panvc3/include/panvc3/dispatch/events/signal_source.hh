@@ -3,18 +3,18 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_EVENTS_SIGNAL_SOURCE_HH
-#define PANVC3_DISPATCH_EVENTS_SIGNAL_SOURCE_HH
+#ifndef LIBBIO_DISPATCH_EVENTS_SIGNAL_SOURCE_HH
+#define LIBBIO_DISPATCH_EVENTS_SIGNAL_SOURCE_HH
 
+#include <libbio/dispatch/fwd.hh>
+#include <libbio/dispatch/events/source.hh>
+#include <libbio/dispatch/task_decl.hh>
 #include <memory>							// std::make_shared, std::shared_ptr
-#include <panvc3/dispatch/fwd.hh>
-#include <panvc3/dispatch/events/source.hh>
-#include <panvc3/dispatch/task_decl.hh>
 #include <sys/event.h>						// EVFILT_SIGNAL
 #include <utility>							// std::forward
 
 
-namespace panvc3::dispatch::events {
+namespace libbio::dispatch::events {
 	
 	class signal_source final : public source_tpl <signal_source>
 	{
@@ -51,7 +51,7 @@ namespace panvc3::dispatch::events {
 }
 
 
-namespace panvc3::dispatch::detail {
+namespace libbio::dispatch::detail {
 	
 	template <>
 	struct member_callable_target <events::signal_source>

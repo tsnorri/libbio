@@ -3,19 +3,19 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_QUEUE_HH
-#define PANVC3_DISPATCH_QUEUE_HH
+#ifndef LIBBIO_DISPATCH_QUEUE_HH
+#define LIBBIO_DISPATCH_QUEUE_HH
 
 #include <atomic>
-#include <panvc3/dispatch/fwd.hh>
-#include <panvc3/dispatch/barrier.hh>
-#include <panvc3/dispatch/group.hh>
-#include <panvc3/dispatch/queue_.hh>
-#include <panvc3/dispatch/task_decl.hh>
-#include <panvc3/dispatch/thread_pool.hh>
+#include <libbio/dispatch/fwd.hh>
+#include <libbio/dispatch/barrier.hh>
+#include <libbio/dispatch/group.hh>
+#include <libbio/dispatch/queue_.hh>
+#include <libbio/dispatch/task_decl.hh>
+#include <libbio/dispatch/thread_pool.hh>
 
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 	
 	struct queue
 	{
@@ -24,7 +24,7 @@ namespace panvc3::dispatch {
 		virtual void async(task tt) = 0;
 		virtual void group_async(group &gg, task tt) = 0;
 		
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 		virtual void barrier(task tt) = 0;
 #endif
 	};
@@ -39,7 +39,7 @@ namespace panvc3::dispatch {
 		{
 			task				task_{};
 			group				*group_{};
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 			shared_barrier_ptr	barrier_{};
 #endif
 		};
@@ -50,7 +50,7 @@ namespace panvc3::dispatch {
 	private:
 		thread_pool							*m_thread_pool{};
 		queue_type							m_task_queue;
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 		std::atomic <shared_barrier_ptr>	m_current_barrier{std::make_shared <class barrier>()};	// To get atomic store() etc.
 #endif
 		
@@ -81,14 +81,14 @@ namespace panvc3::dispatch {
 		void async(task tt) override;
 		void group_async(group &gg, task tt) override;
 		
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 		void barrier(task tt) override;
 #endif
 		
 	private:
 		inline void enqueue(queue_item &&item);
 		
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 		shared_barrier_ptr current_barrier() const { return m_current_barrier.load(std::memory_order_acquire); }
 #endif
 	};
@@ -133,7 +133,7 @@ namespace panvc3::dispatch {
 		void async(task tt) override { async_(std::move(tt)); }
 		void group_async(group &gg, task tt) override;
 		
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 		void barrier(task tt) override { async_(std::move(tt)); }
 #endif
 	private:
@@ -171,7 +171,7 @@ namespace panvc3::dispatch {
 		void async(task tt) override { async_(std::move(tt)); }
 		void group_async(group &gg, task tt) override;
 		
-#if PANVC3_ENABLE_DISPATCH_BARRIER
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
 		void barrier(task tt) override { async_(std::move(tt)); }
 #endif
 		

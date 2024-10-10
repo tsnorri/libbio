@@ -3,17 +3,17 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_EVENTS_MANAGER_HH
-#define PANVC3_DISPATCH_EVENTS_MANAGER_HH
+#ifndef LIBBIO_DISPATCH_EVENTS_MANAGER_HH
+#define LIBBIO_DISPATCH_EVENTS_MANAGER_HH
 
 #include <chrono>
 #include <cstdint>
+#include <libbio/dispatch/events/file_descriptor_source.hh>
+#include <libbio/dispatch/events/signal_source.hh>
+#include <libbio/dispatch/events/synchronous_source.hh>
+#include <libbio/dispatch/events/timer.hh>
 #include <memory>
 #include <mutex>
-#include <panvc3/dispatch/events/file_descriptor_source.hh>
-#include <panvc3/dispatch/events/signal_source.hh>
-#include <panvc3/dispatch/events/synchronous_source.hh>
-#include <panvc3/dispatch/events/timer.hh>
 #include <thread>											// std::jthread
 #include <unistd.h>											// ::close
 #include <utility>											// std::greater, std::to_underlying
@@ -21,7 +21,7 @@
 #include <unordered_map>
 
 
-namespace panvc3::dispatch::events::detail {
+namespace libbio::dispatch::events::detail {
 	
 	struct file_handle
 	{
@@ -34,7 +34,7 @@ namespace panvc3::dispatch::events::detail {
 }
 
 
-namespace panvc3::dispatch::events {
+namespace libbio::dispatch::events {
 	
 	class manager_base
 	{

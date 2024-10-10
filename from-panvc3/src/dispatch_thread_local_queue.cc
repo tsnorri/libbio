@@ -3,10 +3,10 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <panvc3/dispatch.hh>
+#include <libbio/dispatch.hh>
 
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 	
 	void thread_local_queue::async_(task &&tt)
 	{

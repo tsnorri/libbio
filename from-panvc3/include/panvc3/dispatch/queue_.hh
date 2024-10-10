@@ -3,8 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_QUEUE__HH
-#define PANVC3_DISPATCH_QUEUE__HH
+#ifndef LIBBIO_DISPATCH_QUEUE__HH
+#define LIBBIO_DISPATCH_QUEUE__HH
 
 #ifndef DISPATCH_USE_CONCURRENT_TASK_QUEUE
 #	define DISPATCH_USE_CONCURRENT_TASK_QUEUE 0
@@ -19,7 +19,7 @@
 #endif
 
 
-namespace panvc3::dispatch::detail {
+namespace libbio::dispatch::detail {
 	
 	template <typename t_item>
 	class blocking_queue

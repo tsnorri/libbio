@@ -4,10 +4,10 @@
  */
 
 #include <libbio/assert.hh>
-#include <panvc3/dispatch.hh>
+#include <libbio/dispatch.hh>
 
 
-namespace panvc3::dispatch::detail {
+namespace libbio::dispatch::detail {
 	
 	struct serial_queue_executor_callable : public callable <>
 	{
@@ -31,7 +31,7 @@ namespace panvc3::dispatch::detail {
 }
 
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 	
 	void detail::serial_queue_executor_callable::enqueue_transient_async(struct queue &qq)
 	{

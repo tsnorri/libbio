@@ -3,15 +3,15 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_EVENTS_PLATFORM_MANAGER_LINUX_HH
-#define PANVC3_DISPATCH_EVENTS_PLATFORM_MANAGER_LINUX_HH
+#ifndef LIBBIO_DISPATCH_EVENTS_PLATFORM_MANAGER_LINUX_HH
+#define LIBBIO_DISPATCH_EVENTS_PLATFORM_MANAGER_LINUX_HH
 
-#include <panvc3/dispatch/events/manager.hh>
+#include <libbio/dispatch/events/manager.hh>
 #include <signal.h>
 #include <sys/signalfd.h>	// struct signalfd_siginfo
 
 
-namespace panvc3::dispatch::events::platform::linux {
+namespace libbio::dispatch::events::platform::linux {
 	
 	struct source_key
 	{
@@ -40,9 +40,9 @@ namespace panvc3::dispatch::events::platform::linux {
 
 
 template <>
-struct std::hash <panvc3::dispatch::events::platform::linux::source_key>
+struct std::hash <libbio::dispatch::events::platform::linux::source_key>
 {
-	constexpr std::size_t operator()(panvc3::dispatch::events::platform::linux::source_key const &sk) const noexcept
+	constexpr std::size_t operator()(libbio::dispatch::events::platform::linux::source_key const &sk) const noexcept
 	{
 		std::size_t retval(std::abs(sk.value));
 		retval <<= 2;
@@ -53,7 +53,7 @@ struct std::hash <panvc3::dispatch::events::platform::linux::source_key>
 };
 
 
-namespace panvc3::dispatch::events::platform::linux {
+namespace libbio::dispatch::events::platform::linux {
 
 	typedef events::detail::file_handle	file_handle;
 	

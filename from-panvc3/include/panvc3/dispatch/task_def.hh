@@ -3,15 +3,15 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_TASK_DEF_HH
-#define PANVC3_DISPATCH_TASK_DEF_HH
+#ifndef LIBBIO_DISPATCH_TASK_DEF_HH
+#define LIBBIO_DISPATCH_TASK_DEF_HH
 
-#include <panvc3/dispatch/queue.hh>
-#include <panvc3/dispatch/task_decl.hh>
+#include <libbio/dispatch/queue.hh>
+#include <libbio/dispatch/task_decl.hh>
 #include <stdexcept>					// std::logic_error
 
 
-namespace panvc3::dispatch::detail {
+namespace libbio::dispatch::detail {
 	
 	template <typename t_type>
 	using add_pointer_to_const_t = std::add_pointer_t <std::add_const_t <t_type>>;

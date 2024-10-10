@@ -5,15 +5,15 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <cstdio>						// ::strerror
-#include <panvc3/dispatch.hh>
-#include <panvc3/dispatch/event.hh>
+#include <libbio/dispatch.hh>
+#include <libbio/dispatch/event.hh>
 #include <signal.h>						// ::kill
 #include <unistd.h>						// ::getpid
 #include "atomic_variable.hh"
 
-namespace dispatch	= panvc3::dispatch;
-namespace events	= panvc3::dispatch::events;
-namespace tests		= panvc3::tests;
+namespace dispatch	= libbio::dispatch;
+namespace events	= libbio::dispatch::events;
+namespace tests		= libbio::tests;
 
 
 namespace {

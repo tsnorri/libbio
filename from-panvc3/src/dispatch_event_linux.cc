@@ -4,8 +4,8 @@
  */
 
 #include <chrono>
-#include <panvc3/dispatch/events/platform/manager_linux.hh>
-#include <panvc3/dispatch/task_def.hh>
+#include <libbio/dispatch/events/platform/manager_linux.hh>
+#include <libbio/dispatch/task_def.hh>
 #include <range/v3/view/take_exactly.hpp>
 #include <signal.h>
 #include <sys/epoll.h>
@@ -37,7 +37,7 @@ namespace {
 }
 
 
-namespace panvc3::dispatch::events::platform::linux {
+namespace libbio::dispatch::events::platform::linux {
 	
 	void signal_mask::add(int const sig)
 	{

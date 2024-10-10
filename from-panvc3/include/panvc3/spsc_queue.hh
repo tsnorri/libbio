@@ -3,48 +3,20 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_SPSC_QUEUE_HH
-#define PANVC3_SPSC_QUEUE_HH
+#ifndef LIBBIO_BOUNDED_SPSC_QUEUE_HH
+#define LIBBIO_BOUNDED_SPSC_QUEUE_HH
 
 #include <atomic>
-#include <libbio/bits.hh>					// libbio::bits::gte_power_of_2
-#include <limits>							// std::numeric_limits
-#include <numeric>							// std::iota
+#include <libbio/bits.hh>	// libbio::bits::gte_power_of_2
+#include <limits>			// std::numeric_limits
+#include <numeric>			// std::iota
 #include <vector>
 
-#if defined(PANVC3_USE_GCD) && PANVC3_USE_GCD
-#	include <dispatch/dispatch.h>
-#	include <libbio/dispatch/dispatch_ptr.hh>
-#else
-#	include <semaphore>
-#endif
 
-
-namespace panvc3 {
-	
-#if defined(PANVC3_USE_GCD) && PANVC3_USE_GCD
-	class dispatch_semaphore_gcd
-	{
-	public:
-		typedef libbio::dispatch_ptr <dispatch_semaphore_t>	dispatch_semaphore_ptr;
-		
-	private:
-		dispatch_semaphore_ptr	m_semaphore_ptr{};
-		
-	public:
-		explicit dispatch_semaphore_gcd(std::uint16_t const size):
-			m_semaphore_ptr(dispatch_semaphore_create(size))
-		{
-		}
-		
-		void acquire() { dispatch_semaphore_wait(*m_semaphore_ptr, DISPATCH_TIME_FOREVER); }
-		void release() { dispatch_semaphore_signal(*m_semaphore_ptr); }
-	};
-#endif
-	
+namespace libbio {
 	
 	template <typename t_value>
-	class spsc_queue
+	class bounded_spsc_queue
 	{
 	public:
 		typedef t_value			value_type;
@@ -68,11 +40,7 @@ namespace panvc3 {
 		
 		typedef std::vector <value_type>					value_array;
 		typedef std::vector <index>							index_array;
-#if defined(PANVC3_USE_GCD) && PANVC3_USE_GCD		
-		typedef dispatch_semaphore_gcd						semaphore_type;
-#else
 		typedef std::counting_semaphore <MAX_SIZE>			semaphore_type;
-#endif
 		
 	protected:
 		size_type alignas(std::hardware_destructive_interference_size)	m_read_idx{};		// Used by thread 1.
@@ -86,7 +54,7 @@ namespace panvc3 {
 		static inline std::size_t queue_size(size_type const size_);
 
 	public:
-		spsc_queue(size_type const size_, size_type const queue_size_):
+		bounded_spsc_queue(size_type const size_, size_type const queue_size_):
 			m_semaphore(queue_size_),
 			m_indices(queue_size_),
 			m_values(queue_size_),
@@ -96,8 +64,8 @@ namespace panvc3 {
 			std::iota(m_indices.begin(), m_indices.end(), 0);
 		}
 		
-		explicit spsc_queue(size_type const size_):
-			spsc_queue(size_, queue_size(size_))
+		explicit bounded_spsc_queue(size_type const size_):
+			bounded_spsc_queue(size_, queue_size(size_))
 		{
 		}
 
@@ -113,7 +81,7 @@ namespace panvc3 {
 	
 	
 	template <typename t_value>
-	std::size_t spsc_queue <t_value>::queue_size(size_type const size_)
+	std::size_t bounded_spsc_queue <t_value>::queue_size(size_type const size_)
 	{
 		auto const power(libbio::bits::gte_power_of_2(std::size_t(size_)));
 		if (!power)
@@ -128,7 +96,7 @@ namespace panvc3 {
 	
 	
 	template <typename t_value>
-	auto spsc_queue <t_value>::pop_index() -> size_type
+	auto bounded_spsc_queue <t_value>::pop_index() -> size_type
 	{
 		// Called from thread 1.
 		m_semaphore.acquire();
@@ -143,7 +111,7 @@ namespace panvc3 {
 	
 	
 	template <typename t_value>
-	void spsc_queue <t_value>::push(value_type &val)
+	void bounded_spsc_queue <t_value>::push(value_type &val)
 	{
 		// Called from thread 2.
 		auto const val_idx(std::distance(&m_values.front(), &val));

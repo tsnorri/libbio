@@ -3,19 +3,19 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef PANVC3_DISPATCH_THREAD_POOL_HH
-#define PANVC3_DISPATCH_THREAD_POOL_HH
+#ifndef LIBBIO_DISPATCH_THREAD_POOL_HH
+#define LIBBIO_DISPATCH_THREAD_POOL_HH
 
 #include <atomic>
 #include <chrono>					// std::chrono::steady_clock etc.
 #include <cstdint>
+#include <libbio/dispatch/fwd.hh>
 #include <mutex>
-#include <panvc3/dispatch/fwd.hh>
 #include <shared_mutex>
 #include <vector>
 
 
-namespace panvc3::dispatch {
+namespace libbio::dispatch {
 
 	void block_signals();
 
