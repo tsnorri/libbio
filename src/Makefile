@@ -5,6 +5,12 @@ include ../common.mk
 
 OBJECTS		=	bed_reader.o \
 				buffered_writer_base.o \
+				dispatch_event.o \
+				dispatch_group.o \
+				dispatch_parallel_queue.o \
+				dispatch_serial_queue.o \
+				dispatch_thread_local_queue.o \
+				dispatch_thread_pool.o \
 				fasta_reader.o \
 				file_handle.o \
 				file_handle_buffered_writer.o \
@@ -32,9 +38,15 @@ OBJECTS		=	bed_reader.o \
 				vcf_subfield.o \
 				vcf_variant_format.o
 
-OBJECTS_COVERAGE    = $(OBJECTS:.o=.cov.o)
-GCDA                = $(OBJECTS_COVERAGE:.o=.gcda)
-GCNO                = $(OBJECTS_COVERAGE:.o=.gcno)
+ifeq ($(shell uname -s),Linux)
+	OBJECTS	+=	dispatch_event_linux.o
+else
+	OBJECTS	+=	dispatch_event_kqueue.o
+endif
+
+OBJECTS_COVERAGE	= $(OBJECTS:.o=.cov.o)
+GCDA				= $(OBJECTS_COVERAGE:.o=.gcda)
+GCNO				= $(OBJECTS_COVERAGE:.o=.gcno)
 
 CFLAGS		+= -fPIC
 CXXFLAGS	+= -fPIC

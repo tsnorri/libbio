@@ -26,6 +26,7 @@ OBJECTS	=	algorithm.o \
 			array_list.o \
 			assert.o \
 			buffer.o \
+			dispatch_event_manager.o \
 			fasta_reader.o \
 			fasta_reader_arbitrary.o \
 			file_handle_buffered_writer.o \
