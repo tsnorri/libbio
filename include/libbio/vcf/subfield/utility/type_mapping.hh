@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2020 Tuukka Norri
+ * Copyright (c) 2020-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_VCF_SUBFIELD_TYPE_MAPPING_HH
 #define LIBBIO_VCF_SUBFIELD_TYPE_MAPPING_HH
 
-#include <libbio/types.hh>
+#include <libbio/vcf/constants.hh>
 #include <vector>
 
 

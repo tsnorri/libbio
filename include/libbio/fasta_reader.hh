@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019 Tuukka Norri
+ * Copyright (c) 2016-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -8,7 +8,6 @@
 
 #include <filesystem>
 #include <iostream>
-#include <libbio/cxxcompat.hh>
 #include <libbio/file_handle.hh>
 #include <string_view>
 #include <vector>

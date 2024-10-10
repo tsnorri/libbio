@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Tuukka Norri
+ * Copyright (c) 2020-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,7 +7,7 @@
 #define LIBBIO_VCF_SUBFIELD_VALUE_ACCESS_HH
 
 #include <libbio/assert.hh>
-#include <libbio/types.hh>
+#include <libbio/vcf/constants.hh>
 #include <libbio/vcf/subfield/utility/type_mapping.hh>
 #include <libbio/vcf/subfield/utility/vector_value_helper.hh>
 #include <libbio/vcf/metadata.hh>

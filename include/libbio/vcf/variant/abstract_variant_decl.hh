@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Tuukka Norri
+ * Copyright (c) 2020-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,7 +7,7 @@
 #define LIBBIO_VCF_VARIANT_ABSTRACT_VARIANT_DECL_HH
 
 #include <libbio/buffer.hh>
-#include <libbio/types.hh>
+#include <libbio/vcf/constants.hh>
 #include <vector>
 
 

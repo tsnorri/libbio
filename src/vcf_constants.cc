@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2017 Tuukka Norri
+ * Copyright (c) 2017-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#include <libbio/types.hh>
+#include <libbio/vcf/constants.hh>
 
 namespace libbio {
 	

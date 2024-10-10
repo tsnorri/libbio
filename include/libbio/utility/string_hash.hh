@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,7 +7,6 @@
 #define LIBBIO_UTILITY_STRING_HASH_HH
 
 #include <cstring>
-#include <libbio/cxxcompat.hh>
 #include <string>
 #include <type_traits>
 

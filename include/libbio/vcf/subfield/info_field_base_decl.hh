@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2019-2022 Tuukka Norri
+ * Copyright (c) 2019-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_VCF_SUBFIELD_INFO_FIELD_BASE_DECL_HH
 #define LIBBIO_VCF_SUBFIELD_INFO_FIELD_BASE_DECL_HH
 
-#include <libbio/cxxcompat.hh>
 #include <libbio/vcf/metadata.hh>
 #include <libbio/vcf/subfield/base.hh>
 #include <libbio/vcf/variant/abstract_variant_decl.hh>

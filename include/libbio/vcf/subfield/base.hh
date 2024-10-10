@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2019-2022 Tuukka Norri
+ * Copyright (c) 2019-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_VCF_SUBFIELD_BASE_HH
 #define LIBBIO_VCF_SUBFIELD_BASE_HH
 
-#include <libbio/types.hh>
+#include <libbio/vcf/constants.hh>
 #include <libbio/vcf/subfield/utility/type_mapping.hh>
 #include <libbio/vcf/variant/fwd.hh>
 #include <ostream>

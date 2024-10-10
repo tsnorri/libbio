@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -11,7 +11,6 @@
 #include <boost/format.hpp>
 #include <charconv>
 #include <cstring>
-#include <libbio/cxxcompat.hh>
 #include <ostream>
 #include <string>
 #include <type_traits>	// std::integral_constant
@@ -25,7 +24,7 @@ namespace libbio {
 	
 	
 	template <typename t_type, std::size_t t_size>
-	LIBBIO_CONSTEVAL std::size_t array_size(t_type const (&array)[t_size]) { return t_size; }
+	consteval std::size_t array_size(t_type const (&array)[t_size]) { return t_size; }
 	
 	
 	template <typename... t_args>

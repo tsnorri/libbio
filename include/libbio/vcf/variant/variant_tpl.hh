@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2020 Tuukka Norri
+ * Copyright (c) 2020-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_VCF_VARIANT_VARIANT_TPL_HH
 #define LIBBIO_VCF_VARIANT_VARIANT_TPL_HH
 
-#include <libbio/cxxcompat.hh>
 #include <libbio/vcf/variant/abstract_variant_decl.hh>
 #include <libbio/vcf/variant/alt.hh>
 #include <libbio/vcf/variant/sample.hh>

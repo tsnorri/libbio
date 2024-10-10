@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2017-2019 Tuukka Norri
+ * Copyright (c) 2017-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_VARIANT_FWD_HH
 #define LIBBIO_VARIANT_FWD_HH
 
-#include <libbio/cxxcompat.hh>
 #include <string>
 #include <type_traits>
 

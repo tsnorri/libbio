@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2017-2022 Tuukka Norri
+ * Copyright (c) 2017-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_TYPES_HH
-#define LIBBIO_TYPES_HH
+#ifndef LIBBIO_VCF_CONSTANTS_HH
+#define LIBBIO_VCF_CONSTANTS_HH
 
 #include <cstdint>
 #include <limits>

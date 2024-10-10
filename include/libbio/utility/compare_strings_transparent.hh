@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022 Tuukka Norri
+ * Copyright (c) 2019-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -8,7 +8,7 @@
 
 #include <cstring>
 #include <functional>			// std::less, std::equal_to
-#include <libbio/cxxcompat.hh>
+#include <span>
 #include <string>
 #include <type_traits>
 

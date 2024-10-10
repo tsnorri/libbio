@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023 Tuukka Norri
+ * Copyright (c) 2017-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -9,7 +9,6 @@
 #include <fcntl.h>
 #include <iostream>
 #include <libbio/assert.hh>
-#include <libbio/cxxcompat.hh>
 #include <libbio/file_handle.hh>
 #include <stdexcept>
 #include <string>

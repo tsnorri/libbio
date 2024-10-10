@@ -6,9 +6,8 @@
 #ifndef LIBBIO_VCF_METADATA_HH
 #define LIBBIO_VCF_METADATA_HH
 
-#include <libbio/cxxcompat.hh>
-#include <libbio/types.hh>
 #include <libbio/utility/compare_strings_transparent.hh>
+#include <libbio/vcf/constants.hh>
 #include <map>
 #include <ostream>
 #include <range/v3/view/transform.hpp>

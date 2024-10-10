@@ -5,8 +5,6 @@ include ../common.mk
 
 OBJECTS		=	bed_reader.o \
 				buffered_writer_base.o \
-				dispatch_io_channel_buffered_writer.o \
-				dispatch_utility.o \
 				fasta_reader.o \
 				file_handle.o \
 				file_handle_buffered_writer.o \
@@ -18,13 +16,11 @@ OBJECTS		=	bed_reader.o \
 				sam_reader_header_parser.o \
 				sam_reader_input_range.o \
 				sam_reader_optional_field_parser.o \
-				sequence_container.o \
-				sequence_reader.o \
 				size_calculator.o \
 				subprocess.o \
 				subprocess_argument_parser.o \
-				types.o \
 				utility.o \
+				vcf_constants.o \
 				vcf_genotype_field_gt_parser.o \
 				vcf_input.o \
 				vcf_metadata.o \

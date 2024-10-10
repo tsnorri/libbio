@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2019-2020 Tuukka Norri
+ * Copyright (c) 2019-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_VCF_SUBFIELD_DECL_HH
 #define LIBBIO_VCF_SUBFIELD_DECL_HH
 
-#include <libbio/types.hh>
+#include <libbio/vcf/constants.hh>
 #include <type_traits> // std::integral_constant
 
 
