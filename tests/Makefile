@@ -29,7 +29,6 @@ OBJECTS	=	algorithm.o \
 			atomic_int_vector.o \
 			bit_rle_codec.o \
 			buffer.o \
-			dispatch_io_channel_buffered_writer.o \
 			fasta_reader.o \
 			fasta_reader_arbitrary.o \
 			file_handle_buffered_writer.o \
