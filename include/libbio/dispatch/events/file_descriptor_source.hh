@@ -53,7 +53,7 @@ namespace libbio::dispatch::events {
 }
 
 
-namespace libbio3::dispatch::detail {
+namespace libbio::dispatch::detail {
 	
 	template <>
 	struct member_callable_target <events::file_descriptor_source>
