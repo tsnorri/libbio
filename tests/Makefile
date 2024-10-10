@@ -25,9 +25,6 @@ CXXFLAGS +=	-ftemplate-backtrace-limit=0
 OBJECTS	=	algorithm.o \
 			array_list.o \
 			assert.o \
-			atomic_int_matrix.o \
-			atomic_int_vector.o \
-			bit_rle_codec.o \
 			buffer.o \
 			fasta_reader.o \
 			fasta_reader_arbitrary.o \
@@ -44,7 +41,6 @@ OBJECTS	=	algorithm.o \
 			power_of_two_arbitrary.o \
 			radix_sort.o \
 			reverse_word.o \
-			rle_bit_vector.o \
 			sam_reader_arbitrary.o \
 			set_difference_inplace_arbitrary.o \
 			sorted_set_union.o \
