@@ -3,8 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_RAPIDCHECK_ADDITIONS_HH
-#define LIBBIO_RAPIDCHECK_ADDITIONS_HH
+#ifndef LIBBIO_RAPIDCHECK_CLOSED_RANGE_HH
+#define LIBBIO_RAPIDCHECK_CLOSED_RANGE_HH
 
 #include <rapidcheck.h>
 
