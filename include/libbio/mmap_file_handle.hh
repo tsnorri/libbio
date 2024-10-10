@@ -3,8 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_MMAP_HANDLE_HH
-#define LIBBIO_MMAP_HANDLE_HH
+#ifndef LIBBIO_MMAP_FILE_HANDLE_HH
+#define LIBBIO_MMAP_FILE_HANDLE_HH
 
 #include <fcntl.h>
 #include <iostream>
@@ -23,10 +23,10 @@ namespace libbio {
 	// Manage a memory-mapped file.
 	// Ragel works with pointer ranges rather than streams, so using Boost's mapped_file_sink would add complexity.
 	template <typename t_type>
-	class mmap_handle
+	class mmap_file_handle
 	{
 		template <typename T>
-		friend std::ostream &operator<<(std::ostream &, mmap_handle <T> const &);
+		friend std::ostream &operator<<(std::ostream &, mmap_file_handle <T> const &);
 		
 	protected:
 		std::string	m_path;
@@ -35,11 +35,11 @@ namespace libbio {
 		bool		m_should_close{};
 		
 	public:
-		mmap_handle() = default;
-		mmap_handle(mmap_handle const &) = delete;
-		~mmap_handle();
+		mmap_file_handle() = default;
+		mmap_file_handle(mmap_file_handle const &) = delete;
+		~mmap_file_handle();
 		
-		mmap_handle(mmap_handle &&other):
+		mmap_file_handle(mmap_file_handle &&other):
 			m_path(std::move(other.m_path)),
 			m_content(other.m_content),
 			m_mapped_size(other.m_mapped_size)
@@ -48,7 +48,7 @@ namespace libbio {
 			other.m_mapped_size = 0;
 		}
 		
-		static mmap_handle mmap(file_handle const &handle);
+		static mmap_file_handle mmap(file_handle const &handle);
 		
 		void open(int fd, bool should_close = true);
 		void open(std::string const &path);
@@ -60,8 +60,8 @@ namespace libbio {
 		std::size_t size() const { return m_mapped_size; }
 		std::size_t byte_size() const { return m_mapped_size * sizeof(t_type); }
 		
-		mmap_handle &operator=(mmap_handle const &) = delete;
-		inline mmap_handle &operator=(mmap_handle &&other) &;
+		mmap_file_handle &operator=(mmap_file_handle const &) = delete;
+		inline mmap_file_handle &operator=(mmap_file_handle &&other) &;
 		
 		std::basic_string_view <t_type> const to_string_view() const { return std::basic_string_view <t_type>(m_content, m_mapped_size); }
 		std::span <t_type> const to_span() const { return std::span(m_content, m_mapped_size); }
@@ -72,7 +72,7 @@ namespace libbio {
 	
 	
 	template <typename t_type>
-	std::ostream &operator<<(std::ostream &stream, mmap_handle <t_type> const &handle)
+	std::ostream &operator<<(std::ostream &stream, mmap_file_handle <t_type> const &handle)
 	{
 		std::string_view const sv(handle.m_content, std::min(16UL, handle.m_mapped_size));
 		stream << "path: '" << handle.m_path << "' mapped size: " << handle.m_mapped_size << " content: '" << sv;
@@ -84,16 +84,16 @@ namespace libbio {
 	
 	
 	template <typename t_type>
-	auto mmap_handle <t_type>::mmap(file_handle const &handle) -> mmap_handle <t_type>
+	auto mmap_file_handle <t_type>::mmap(file_handle const &handle) -> mmap_file_handle <t_type>
 	{
-		mmap_handle <t_type> retval;
+		mmap_file_handle <t_type> retval;
 		retval.open(handle.get(), false); // handle still owns the file descriptor.
 		return retval;
 	}
 	
 	
 	template <typename t_type>
-	auto mmap_handle <t_type>::operator=(mmap_handle <t_type> &&other) & -> mmap_handle &
+	auto mmap_file_handle <t_type>::operator=(mmap_file_handle <t_type> &&other) & -> mmap_file_handle &
 	{
 		m_path = std::move(other.m_path);
 		m_content = other.m_content;
@@ -105,7 +105,7 @@ namespace libbio {
 	
 	
 	template <typename t_type>
-	mmap_handle <t_type>::~mmap_handle()
+	mmap_file_handle <t_type>::~mmap_file_handle()
 	{
 		if (m_mapped_size)
 		{
@@ -117,7 +117,7 @@ namespace libbio {
 	
 	
 	template <typename t_type>
-	void mmap_handle <t_type>::close()
+	void mmap_file_handle <t_type>::close()
 	{
 		if (m_mapped_size)
 		{
@@ -131,7 +131,7 @@ namespace libbio {
 	
 	
 	template <typename t_type>
-	void mmap_handle <t_type>::open(int fd, bool should_close)
+	void mmap_file_handle <t_type>::open(int fd, bool should_close)
 	{
 		struct stat sb{};
 		if (-1 == fstat(fd, &sb))
@@ -157,7 +157,7 @@ namespace libbio {
 	
 	
 	template <typename t_type>
-	void mmap_handle <t_type>::open(std::string const &path)
+	void mmap_file_handle <t_type>::open(std::string const &path)
 	{
 		char const *c_str(path.c_str());
 		int fd(::open(c_str, O_RDONLY));

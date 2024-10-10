@@ -7,7 +7,7 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <libbio/fasta_reader.hh>
 #include <libbio/file_handling.hh>
-#include <libbio/mmap_handle.hh>
+#include <libbio/mmap_file_handle.hh>
 #include <sstream>
 
 namespace gen	= Catch::Generators;
@@ -76,7 +76,7 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 	GIVEN("A test file")
 	{
 		lb::file_handle handle(lb::open_file_for_reading("test-files/test.fa"));
-		auto handle_(lb::mmap_handle <char>::mmap(handle));
+		auto handle_(lb::mmap_file_handle <char>::mmap(handle));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;
@@ -95,7 +95,7 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 	GIVEN("A test file without a terminating newline")
 	{
 		lb::file_handle handle(lb::open_file_for_reading("test-files/test-noeol.fa"));
-		auto handle_(lb::mmap_handle <char>::mmap(handle));
+		auto handle_(lb::mmap_file_handle <char>::mmap(handle));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;
@@ -115,7 +115,7 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 	GIVEN("A test file with a comment in the end without a terminating newline")
 	{
 		lb::file_handle handle(lb::open_file_for_reading("test-files/test-noeol-2.fa"));
-		auto handle_(lb::mmap_handle <char>::mmap(handle));
+		auto handle_(lb::mmap_file_handle <char>::mmap(handle));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;
@@ -135,7 +135,7 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 	GIVEN("A test file with a sequence without a header")
 	{
 		lb::file_handle handle(lb::open_file_for_reading("test-files/test-2.fa"));
-		auto handle_(lb::mmap_handle <char>::mmap(handle));
+		auto handle_(lb::mmap_file_handle <char>::mmap(handle));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;
@@ -154,7 +154,7 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 	GIVEN("A test file with a sequence without a header and a terminating newline")
 	{
 		lb::file_handle handle(lb::open_file_for_reading("test-files/test-noeol-3.fa"));
-		auto handle_(lb::mmap_handle <char>::mmap(handle));
+		auto handle_(lb::mmap_file_handle <char>::mmap(handle));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;
@@ -174,7 +174,7 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 	GIVEN("A test file with extra header fields")
 	{
 		lb::file_handle handle(lb::open_file_for_reading("test-files/extra-fields.fa"));
-		auto handle_(lb::mmap_handle <char>::mmap(handle));
+		auto handle_(lb::mmap_file_handle <char>::mmap(handle));
 		WHEN("the file is parsed")
 		{
 			lb::fasta_reader reader;

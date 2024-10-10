@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018 Tuukka Norri
+ * Copyright (c) 2017-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,7 +7,7 @@
 #define LIBBIO_VCF_INPUT_HH
 
 #include <libbio/file_handling.hh>
-#include <libbio/mmap_handle.hh>
+#include <libbio/mmap_file_handle.hh>
 
 
 namespace libbio::vcf {
@@ -125,7 +125,7 @@ namespace libbio::vcf {
 	class mmap_input final : public seekable_input_base
 	{
 	public:
-		typedef mmap_handle <char> handle_type;
+		typedef mmap_file_handle <char> handle_type;
 		
 	protected:
 		handle_type					m_handle{};
