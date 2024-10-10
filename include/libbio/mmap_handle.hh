@@ -10,6 +10,7 @@
 #include <iostream>
 #include <libbio/assert.hh>
 #include <libbio/file_handle.hh>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <sys/mman.h>
