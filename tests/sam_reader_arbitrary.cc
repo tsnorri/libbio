@@ -447,6 +447,13 @@ namespace rc {
 		{
 			return gen::mapcat(gen::arbitrary <sam::optional_field::value_tuple_type>(), [](auto &&value_tuple){
 				
+				// Fix std::uint32_t values so that they can be output as SAM.
+				for (auto &val : std::get <sam::optional_field::container_of_t <std::uint32_t>>(value_tuple))
+				{
+					if (INT32_MAX < val)
+						val = INT32_MAX;
+				}
+				
 				// Count the generated values.
 				std::size_t value_count{};
 				tuples::visit_parameters <sam::optional_field::value_tuple_type>([&value_count, &value_tuple]<typename t_type>(){
@@ -552,8 +559,8 @@ namespace rc {
 					gen::set(&sam::record::seq, gen::just(std::move(seq))),
 					gen::set(&sam::record::qual, make_quality(seq_len)),
 					gen::set(&sam::record::optional_fields, gen::arbitrary <sam::optional_field>()),
-					gen::set(&sam::record::pos, gen::arbitrary <sam::position_type>()),
-					gen::set(&sam::record::pnext, gen::arbitrary <sam::position_type>()),
+					gen::set(&sam::record::pos, gen::inRange <sam::position_type>(0, INT32_MAX)),
+					gen::set(&sam::record::pnext, gen::inRange <sam::position_type>(0, INT32_MAX)),
 					gen::set(&sam::record::tlen, gen::arbitrary <std::int32_t>()),
 					gen::set(&sam::record::flag, gen::arbitrary <std::uint16_t>()),
 					gen::set(&sam::record::mapq, gen::arbitrary <sam::mapping_quality_type>())
@@ -623,14 +630,14 @@ TEST_CASE(
 				});
 				
 				RC_LOG() << "Actual:\n" << record_set(input, parsed_records) << '\n';
-
+ 
 				// TODO: Compare the headers?
 				RC_ASSERT(input.records.size() == parsed_records.size());
 				std::vector <std::size_t> non_matching;
 				for (auto const &[idx, tup] : rsv::zip(input.records, parsed_records) | rsv::enumerate)
 				{
 					auto const &[input_rec, parsed_rec] = tup;
-					if (!sam::is_equal(input.header, parsed_header, input_rec, parsed_rec))
+					if (!sam::is_equal_(input.header, parsed_header, input_rec, parsed_rec))
 						non_matching.emplace_back(idx);
 				}
 				
