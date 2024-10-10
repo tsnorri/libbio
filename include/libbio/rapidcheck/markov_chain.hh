@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2022-2023 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_MARKOV_CHAIN_RAPIDCHECK_HH
-#define LIBBIO_MARKOV_CHAIN_RAPIDCHECK_HH
+#ifndef LIBBIO_RAPIDCHECK_MARKOV_CHAIN_HH
+#define LIBBIO_RAPIDCHECK_MARKOV_CHAIN_HH
 
 #include <memory>					// std::make_unique
 #include <libbio/markov_chain.hh>
