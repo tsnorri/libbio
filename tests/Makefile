@@ -12,11 +12,11 @@ CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
 			-I../lib/rapidcheck/extras/catch/include \
 
 ifeq ($(origin NO_COVERAGE_CHECK),undefined)
-TEST_LDFLAGS = $(BOOST_LIBS) $(LDFLAGS)
-LIBBIO_PATH ?= ../src/libbio.a
-else
 TEST_LDFLAGS = -lgcov $(BOOST_LIBS) $(LDFLAGS)
 LIBBIO_PATH ?= ../src/libbio.coverage.a
+else
+TEST_LDFLAGS = $(BOOST_LIBS) $(LDFLAGS)
+LIBBIO_PATH ?= ../src/libbio.a
 endif
 
 CXXFLAGS +=	-ftemplate-backtrace-limit=0
