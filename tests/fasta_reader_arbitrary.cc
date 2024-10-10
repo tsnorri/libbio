@@ -5,8 +5,7 @@
 
 #include <libbio/fasta_reader.hh>
 #include <libbio/file_handling.hh>
-#include <libbio/markov_chain.hh>
-#include <libbio/markov_chain_rapidcheck.hh>
+#include <libbio/rapidcheck/markov_chain.hh>
 #include <range/v3/view/reverse.hpp>
 #include <range/v3/view/transform.hpp>
 #include <thread>
