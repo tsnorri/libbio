@@ -340,7 +340,7 @@ namespace {
 
 
 TEST_CASE(
-	"fasta_reader with arbitrary input",
+	"fasta_reader works with arbitrary input",
 	"[fasta_reader]"
 )
 {
