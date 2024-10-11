@@ -10,6 +10,7 @@
 #include <libbio/bits.hh>	// libbio::bits::gte_power_of_2
 #include <limits>			// std::numeric_limits
 #include <numeric>			// std::iota
+#include <semaphore>
 #include <vector>
 
 
@@ -43,8 +44,8 @@ namespace libbio {
 		typedef std::counting_semaphore <MAX_SIZE>			semaphore_type;
 		
 	protected:
-		size_type alignas(std::hardware_destructive_interference_size)	m_read_idx{};		// Used by thread 1.
-		size_type alignas(std::hardware_destructive_interference_size)	m_write_idx{};		// Used by thread 2.
+		alignas(std::hardware_destructive_interference_size) size_type	m_read_idx{};		// Used by thread 1.
+		alignas(std::hardware_destructive_interference_size) size_type	m_write_idx{};		// Used by thread 2.
 		semaphore_type													m_semaphore;
 		index_array														m_indices;
 		value_array														m_values;
