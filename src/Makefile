@@ -3,8 +3,18 @@ include ../common.mk
 
 .PRECIOUS: fasta_reader.cc subprocess_argument_parser.cc vcf_reader_parser.cc vcf_reader_header_parser.cc vcf_genotype_field_gt_parser.cc
 
-OBJECTS		=	bed_reader.o \
+
+OBJECTS		=	bam_fields.o \
+				bam_header_parser.o \
+				bam_in_order_streaming_reader.o \
+				bam_record_parser.o \
+				bam_unordered_streaming_reader.o \
+				bed_reader.o \
+				bgzf_deflate_decompressor.o \
+				bgzf_parser.o \
+				bgzf_streaming_reader.o \
 				buffered_writer_base.o \
+				circular_buffer.o \
 				dispatch_event.o \
 				dispatch_group.o \
 				dispatch_parallel_queue.o \
@@ -16,6 +26,7 @@ OBJECTS		=	bed_reader.o \
 				file_handle_buffered_writer.o \
 				file_handling.o \
 				log_memory_usage_support.o \
+				memfd_handle.o \
 				progress_bar.o \
 				progress_indicator.o \
 				sam_reader.o \
