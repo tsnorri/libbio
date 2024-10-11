@@ -30,6 +30,7 @@ namespace libbio {
 	
 	
 	// Display a counter or a progress bar (for now), use libdispatch’s run loop to update.
+	// FIXME: use libbio::dispatch instead.
 	class progress_indicator
 	{
 	public:
