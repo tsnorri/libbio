@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -18,7 +18,7 @@ namespace libbio { namespace detail {
 		{
 			map(first, [&map, &fn, &args...](auto &&mapped){
 				map_on_stack <t_count - 1> ctx;
-				ctx.template call(map, fn, args..., mapped);
+				ctx.call(map, fn, args..., mapped);
 			});
 		}
 	};
@@ -46,7 +46,7 @@ namespace libbio {
 	{
 		t_map map;
 		detail::map_on_stack <sizeof...(t_args)> ctx;
-		ctx.template call(map, fn, args...);
+		ctx.call(map, fn, args...);
 	}
 	
 	
