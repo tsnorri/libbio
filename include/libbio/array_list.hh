@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -24,7 +24,7 @@ namespace libbio {
 
 // Forward declaration needed for template friends.
 #ifdef LIBBIO_BOOST_SERIALIZATION
-namespace boost { namespace serialization {
+namespace boost::serialization {
 	
 	template <typename t_archive, typename t_value>
 	void load(t_archive &, libbio::array_list <t_value> &, unsigned int const);
@@ -35,7 +35,7 @@ namespace boost { namespace serialization {
 #endif
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_value> class array_list_item_iterator;
 	template <typename t_value> class array_list_pair_iterator;
@@ -270,7 +270,7 @@ namespace libbio { namespace detail {
 		const_iterator begin() const	{ return m_array_list->begin_pairs(); }
 		const_iterator end() const		{ return m_array_list->end_pairs(); }
 	};
-}}
+}
 
 
 namespace libbio {
@@ -632,7 +632,7 @@ namespace libbio {
 
 
 #ifdef LIBBIO_BOOST_SERIALIZATION
-namespace boost { namespace serialization {
+namespace boost::serialization {
 	
 	template <typename t_archive, typename t_value>
 	void load(t_archive &ar, libbio::array_list <t_value> &array_list, unsigned int const version)
@@ -655,7 +655,7 @@ namespace boost { namespace serialization {
 		// is essentially the same as this function.
 		split_free(ar, array_list, version);
 	}
-}}
+}
 #endif
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -9,7 +9,7 @@
 #include <libbio/utility.hh>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	// Traits / mixins.
 	template <typename t_int_vector>
@@ -99,6 +99,6 @@ namespace libbio { namespace detail {
 		libbio_assert(size <= this->element_count_in_word());
 		return fill_bit_pattern(mask, this->element_bits()) >> ((this->element_count_in_word() - size) * this->element_bits());
 	}
-}}
+}
 
 #endif

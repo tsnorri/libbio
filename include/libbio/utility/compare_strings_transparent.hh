@@ -13,7 +13,7 @@
 #include <type_traits>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_cmp>
 	struct compare_char_span
@@ -32,7 +32,7 @@ namespace libbio { namespace detail {
 			return cmp(std::string_view(lhs.data(), lhs.size()), std::string_view(rhs));
 		}
 	};
-}}
+}
 
 
 namespace libbio {

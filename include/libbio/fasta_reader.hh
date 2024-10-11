@@ -13,10 +13,6 @@
 #include <vector>
 
 
-namespace libbio { namespace detail {
-}}
-
-
 namespace libbio {
 	
 	class fasta_reader_base;

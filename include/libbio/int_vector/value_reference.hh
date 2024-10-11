@@ -9,7 +9,7 @@
 #include <cstddef>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_vector>
 	class int_vector_value_reference
@@ -39,6 +39,6 @@ namespace libbio { namespace detail {
 		operator word_type() const { return load(); }
 		int_vector_value_reference &operator|=(word_type val) { assign_or(val); return *this; }
 	};
-}}
+}
 
 #endif

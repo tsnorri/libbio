@@ -151,7 +151,7 @@ namespace {
 }
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	subprocess_status
 	open_subprocess(
@@ -297,7 +297,7 @@ namespace libbio { namespace detail {
 		// Fork failed.
 		return res_.error();
 	}
-}}
+}
 
 
 namespace libbio {

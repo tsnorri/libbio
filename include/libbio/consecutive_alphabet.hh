@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -23,13 +23,13 @@ namespace libbio {
 }
 
 // Forward declaration needed for template friends.
-namespace boost { namespace serialization {
+namespace boost::serialization {
 	template <typename t_archive, typename t_char, template <typename> typename t_map>
 	void serialize(t_archive &, libbio::consecutive_alphabet_mt <t_char, t_map> &, unsigned int const);
-}}
+}
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 
 	// Map characters to consecutive integers using arrays.
 	struct consecutive_alphabet_as_helper
@@ -80,7 +80,7 @@ namespace libbio { namespace detail {
 		template <typename t_builder, typename t_forward_iterable>
 		void prepare(t_builder &builder, t_forward_iterable const &text);
 	};
-}}
+}
 
 
 namespace libbio {
@@ -364,7 +364,7 @@ namespace libbio {
 }
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <bool t_parallel>
 	template <typename t_iterator>
@@ -414,16 +414,16 @@ namespace libbio { namespace detail {
 			}
 		}
 	}
-}}
+}
 
 
-namespace boost { namespace serialization {
+namespace boost::serialization {
 	
 	template <typename t_archive, typename t_char, template <typename> typename t_map>
 	void serialize(t_archive &ar, libbio::consecutive_alphabet_mt <t_char, t_map> &alphabet, unsigned int const version)
 	{
 		alphabet.boost_serialize(ar, version);
 	}
-}}
+}
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -10,7 +10,7 @@
 #include <libbio/assert.hh>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	// Determine the minimum and maximum value of an identifier accessed with the given functor.
 	template <typename t_vector, typename t_identifier, typename t_access>
@@ -82,7 +82,7 @@ namespace libbio { namespace detail {
 			++counts[identifier];
 		}
 	}
-}}
+}
 
 
 namespace libbio {

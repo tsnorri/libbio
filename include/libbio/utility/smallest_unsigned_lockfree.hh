@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -9,7 +9,7 @@
 #include <atomic>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_type, typename t_candidate, typename t_other>
 	using smallest_unsigned_lockfree_type_gte_check_t = std::conditional_t <
@@ -42,7 +42,7 @@ namespace libbio { namespace detail {
 	template <typename t_first, typename... t_types>
 	using smallest_unsigned_lockfree_type_gte_helper_t =
 	typename smallest_unsigned_lockfree_type_gte_helper <sizeof...(t_types)>::template type <t_first, t_types...>;
-}}
+}
 
 
 namespace libbio {

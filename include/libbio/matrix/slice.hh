@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -14,7 +14,7 @@
 #include <valarray>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_matrix>
 	class matrix_slice
@@ -72,6 +72,6 @@ namespace libbio { namespace detail {
 		ranges::copy(slice | ranges::views::transform([](auto val){ return +val; }), ranges::make_ostream_joiner(os, "\t"));
 		return os;
 	}
-}}
+}
 
 #endif

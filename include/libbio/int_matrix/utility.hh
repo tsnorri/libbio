@@ -11,7 +11,7 @@
 #include <libbio/utility.hh>
 
 
-namespace libbio { namespace matrices {
+namespace libbio::matrices {
 	
 	template <typename t_matrix>
 	void copy_to_word_aligned(
@@ -110,6 +110,6 @@ namespace libbio { namespace matrices {
 	{
 		fill_column_with_bit_pattern <t_pattern_length>(column, pattern);
 	}
-}}
+}
 
 #endif

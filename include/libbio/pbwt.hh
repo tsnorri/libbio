@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -12,7 +12,7 @@
 #include <range/v3/all.hpp>
 
 
-namespace libbio { namespace pbwt {
+namespace libbio::pbwt {
 	
 	template <typename t_permutation_vector, typename t_divergence_vector>
 	class dynamic_pbwt_rmq
@@ -315,6 +315,6 @@ namespace libbio { namespace pbwt {
 		
 		std::fill(output_indices.begin() + run_start, output_indices.end() + run_end, current_run_idx);
 	}
-}}
+}
 
 #endif

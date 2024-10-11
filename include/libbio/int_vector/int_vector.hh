@@ -32,7 +32,7 @@ namespace libbio::size_calculation {
 }
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	// Traits / mixins.
 	
@@ -100,7 +100,7 @@ namespace libbio { namespace detail {
 	
 	template <unsigned int t_bits, typename t_word, template <typename, unsigned int, typename> typename t_trait>
 	using int_vector_base = t_trait <int_vector_tpl <t_bits, t_word, t_trait>, t_bits, t_word>;
-}}
+}
 
 
 namespace libbio {
@@ -241,7 +241,7 @@ namespace libbio {
 }
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_vector, unsigned int t_bits, typename t_word>
 	auto int_vector_trait <t_vector, t_bits, t_word>::load(std::size_t const idx) const -> word_type
@@ -431,7 +431,7 @@ namespace libbio { namespace detail {
 		}
 		*self.m_values.rbegin() >>= shift_right;
 	}
-}}
+}
 
 
 namespace libbio {

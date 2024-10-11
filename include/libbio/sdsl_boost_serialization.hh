@@ -1,14 +1,11 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_SDSL_BOOST_SERIALIZATION_HH
 #	define LIBBIO_SDSL_BOOST_SERIALIZATION_HH
-
 #	ifdef LIBBIO_HAVE_SDSL
-
-
 #		include <boost/serialization/binary_object.hpp>
 #		include <climits>
 #		include <sdsl/int_vector.hpp>
@@ -16,7 +13,7 @@
 
 // Boost.Serialize requirements for sdsl::int_vector.
 
-namespace boost { namespace serialization {
+namespace boost::serialization {
 	
 	template <typename t_archive, std::uint8_t t_width>
 	void save(t_archive &ar, sdsl::int_vector <t_width> const &vector, unsigned int const version)
@@ -62,7 +59,7 @@ namespace boost { namespace serialization {
 		// is essentially the same as this function.
 		split_free(ar, vector, version);
 	}
-}}
+}
 
 #	endif
 #endif

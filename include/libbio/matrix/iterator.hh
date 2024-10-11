@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -12,7 +12,7 @@
 #include <libbio/assert.hh>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_iterator>
 	class matrix_iterator : public boost::iterator_facade <
@@ -71,6 +71,6 @@ namespace libbio { namespace detail {
 	
 	template <typename t_iterator>
 	std::ostream &operator<<(std::ostream &stream, matrix_iterator <t_iterator> const &it) { stream << "(matrix iterator)"; return stream; }
-}}
+}
 
 #endif

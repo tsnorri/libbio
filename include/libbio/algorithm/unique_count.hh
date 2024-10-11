@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -12,7 +12,7 @@
 #include <utility>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	struct default_increment
 	{
@@ -22,7 +22,7 @@ namespace libbio { namespace detail {
 			++item.count;
 		}
 	};
-}}
+}
 
 
 namespace libbio {

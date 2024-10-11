@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -28,7 +28,7 @@ namespace {
 }
 
 
-namespace libbio { namespace sam {
+namespace libbio::sam {
 	
 	bool file_handle_input_range::update()
 	{
@@ -40,4 +40,4 @@ namespace libbio { namespace sam {
 	{
 		return do_update(*this, buffer, fh);
 	}
-}}
+}

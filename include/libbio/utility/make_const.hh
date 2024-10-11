@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,7 +7,7 @@
 #define LIBBIO_UTILITY_MAKE_CONST_HH
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	// Make a type const conditionally.
 	template <typename t_type, bool t_make_const>
@@ -21,7 +21,7 @@ namespace libbio { namespace detail {
 	{
 		typedef t_type const type;
 	};
-}}
+}
 
 
 namespace libbio {

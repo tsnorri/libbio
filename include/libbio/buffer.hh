@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -12,7 +12,7 @@
 #include <memory>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	// Forward declarations.
 	
@@ -27,7 +27,7 @@ namespace libbio { namespace detail {
 	
 	template <typename t_type>
 	t_type *aligned_alloc(std::size_t const size, std::size_t const alignment);
-}}
+}
 
 
 namespace libbio {
@@ -281,7 +281,7 @@ namespace libbio {
 }
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_type>
 	struct malloc_deleter
@@ -366,6 +366,6 @@ namespace libbio { namespace detail {
 			copy_to_buffer(src.get(), src.size(), dst);
 		}
 	};
-}}
+}
 
 #endif

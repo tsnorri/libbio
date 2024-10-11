@@ -64,7 +64,7 @@ namespace libbio {
 }
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	[[nodiscard]] subprocess_status
 	open_subprocess(process_handle &ph, char const * const args[], subprocess_handle_spec const handle_spec, libbio::file_handle *dst_handles); // nullptr-terminated list of arguments.
@@ -110,7 +110,7 @@ namespace libbio { namespace detail {
 	[[nodiscard]] constexpr inline decltype(auto) argument_data(t_type const &arg) { return std::data(arg); }
 	
 	[[nodiscard]] constexpr inline auto argument_data(char const *arg) { return arg; }
-}}
+}
 
 
 namespace libbio {

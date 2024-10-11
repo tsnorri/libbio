@@ -10,7 +10,7 @@
 #include <type_traits>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_lhs, typename t_rhs, bool t_lhs_signed = is_signed_rr_v <t_lhs>, bool t_rhs_signed = is_signed_rr_v <t_rhs>>
 	struct lte_integral // Both signed or unsigned b.c. of the specializations below.
@@ -60,7 +60,7 @@ namespace libbio { namespace detail {
 			return check(std::forward <t_lhs>(lhs), std::forward <t_rhs>(rhs));
 		}
 	};
-}}
+}
 
 
 namespace libbio {

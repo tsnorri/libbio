@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2019 Tuukka Norri
+ * Copyright (c) 2018–2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -10,7 +10,7 @@
 #include <libbio/int_vector/iterator.hh>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_vector>
 	class int_vector_word_iterator_proxy_base
@@ -47,6 +47,6 @@ namespace libbio { namespace detail {
 		word_iterator begin() const { return this->m_vector->word_rbegin(); }
 		word_iterator end() const { return this->m_vector->word_rend(); }
 	};
-}}
+}
 
 #endif

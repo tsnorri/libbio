@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2019 Tuukka Norri
+ * Copyright (c) 2018–2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -11,7 +11,7 @@
 #include <libbio/int_vector/int_vector.hh>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_vector>
 	class int_vector_word_range : public t_vector::width_type
@@ -173,6 +173,6 @@ namespace libbio { namespace detail {
 			}
 		}
 	}
-}}
+}
 
 #endif

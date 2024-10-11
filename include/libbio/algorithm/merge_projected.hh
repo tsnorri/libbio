@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -11,7 +11,7 @@
 #include <type_traits>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_lhs_proj_type, typename t_rhs_proj_type>
 	class merge_projected_helper
@@ -105,7 +105,7 @@ namespace libbio { namespace detail {
 			}
 		}
 	};
-}}
+}
 
 
 namespace libbio {

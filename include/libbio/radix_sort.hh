@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -12,7 +12,7 @@
 #include <type_traits>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_value>
 	struct identity_access
@@ -35,7 +35,7 @@ namespace libbio { namespace detail {
 	{
 		static constexpr bool should_push_back(bool const is_one) { return !is_one; }
 	};
-}}
+}
 
 
 namespace libbio {

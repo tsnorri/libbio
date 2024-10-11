@@ -12,7 +12,7 @@
 #include <stdexcept>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_vector, bool t_is_const = std::is_const_v <t_vector>>
 	struct int_vector_iterator_traits
@@ -119,6 +119,6 @@ namespace libbio { namespace detail {
 		virtual void advance(std::ptrdiff_t const diff) override { this->m_idx += diff; }
 		std::ptrdiff_t distance_to(int_vector_iterator const &other) const { return iterator_base::distance_to(other); }
 	};
-}}
+}
 
 #endif

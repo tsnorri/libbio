@@ -7,7 +7,7 @@
 #define LIBBIO_MAP_ON_STACK_HH
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <int t_count>
 	struct map_on_stack
@@ -34,7 +34,7 @@ namespace libbio { namespace detail {
 			fn(args...);
 		}
 	};
-}}
+}
 
 
 namespace libbio {

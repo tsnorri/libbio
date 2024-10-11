@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -10,7 +10,7 @@
 #include <valarray>
 
 
-namespace libbio { namespace matrices {
+namespace libbio::matrices {
 	
 #if 0
 	template <typename t_matrix> typename t_matrix::slice_type row(t_matrix &matrix, std::size_t const row, std::size_t const first, std::size_t const limit);
@@ -54,6 +54,6 @@ namespace libbio { namespace matrices {
 		std::slice const slice(matrix.idx(first, column), limit - first, 1);
 		return typename t_matrix::const_slice_type(matrix, slice);
 	}
-}}
+}
 
 #endif

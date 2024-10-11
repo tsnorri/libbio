@@ -112,7 +112,7 @@
 #endif
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 
 	template <typename t_type>
 	struct has_formatted_output_function_helper
@@ -271,7 +271,7 @@ namespace libbio { namespace detail {
 		if (!test(lhs, rhs))
 			assertion_failure <t_requires_formatted_output_fn>(file, line, lhs, rhs, message);
 	}
-}}
+}
 
 
 namespace libbio {

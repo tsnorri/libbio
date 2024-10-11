@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -11,7 +11,7 @@
 #include <libbio/utility/misc.hh>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <unsigned int t_length_diff>
 	struct fill_bit_pattern_helper
@@ -35,7 +35,7 @@ namespace libbio { namespace detail {
 			return pattern;
 		}
 	};
-}}
+}
 
 
 namespace libbio {

@@ -20,7 +20,7 @@ namespace libbio {
 }
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	// Traits / mixins.
 	
@@ -71,7 +71,7 @@ namespace libbio { namespace detail {
 
 	template <unsigned int t_bits, typename t_word, template <typename, unsigned int, typename> typename t_trait>
 	using int_matrix_width_t = int_matrix_width <int_matrix_tpl <t_bits, t_word, t_trait>, t_bits, t_word>;
-}}
+}
 
 
 namespace libbio {

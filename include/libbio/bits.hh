@@ -12,7 +12,7 @@
 #include <optional>
 
 
-namespace libbio { namespace bits { namespace detail {
+namespace libbio::bits::detail {
 	
 	template <typename t_integer>
 	constexpr inline std::uint8_t count_bits_set_(t_integer val)
@@ -111,10 +111,10 @@ namespace libbio { namespace bits { namespace detail {
 		if (0 == ii) return (CHAR_BIT * sizeof(unsigned short));
 		return __builtin_clz(ii) - (CHAR_BIT * (sizeof(unsigned int) - sizeof(unsigned short)));
 	}
-}}}
+}
 
 
-namespace libbio { namespace bits {
+namespace libbio::bits {
 	
 #if defined(__clang__)
 #	pragma clang diagnostic push
@@ -214,6 +214,6 @@ namespace libbio { namespace bits {
 			return {power << 1};
 		return {power};
 	}
-}}
+}
 
 #endif

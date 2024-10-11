@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2023 Tuukka Norri
+ * Copyright (c) 2018–2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -9,7 +9,7 @@
 #include <libbio/assert.hh>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	inline std::size_t matrix_index(std::size_t const y, std::size_t const x, std::size_t const stride)
 	{
@@ -28,6 +28,6 @@ namespace libbio { namespace detail {
 		libbio_assert_lt(retval, matrix.m_data.size());
 		return retval;
 	}
-}}
+}
 
 #endif

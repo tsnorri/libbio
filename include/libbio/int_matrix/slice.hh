@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2019 Tuukka Norri
+ * Copyright (c) 2018–2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -10,7 +10,7 @@
 #include <libbio/int_vector/word_range.hh>
 
 
-namespace libbio { namespace detail {
+namespace libbio::detail {
 	
 	template <typename t_matrix>
 	class int_matrix_slice final : public matrix_slice <t_matrix>
@@ -88,6 +88,6 @@ namespace libbio { namespace detail {
 		libbio_assert(1 == caller.m_slice.stride());
 		return t_span(convert_to_word_iterator(caller.begin()), convert_to_word_iterator(caller.end()));
 	}
-}}
+}
 
 #endif
