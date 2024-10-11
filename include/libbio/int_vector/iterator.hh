@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2019 Tuukka Norri
+ * Copyright (c) 2018–2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,6 +7,7 @@
 #define LIBBIO_INT_VECTOR_ITERATOR_HH
 
 #include <boost/iterator/iterator_facade.hpp>
+#include <libbio/assert.hh>
 #include <limits>
 #include <stdexcept>
 

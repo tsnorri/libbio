@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,6 +7,7 @@
 #define LIBBIO_TUPLE_RANK_HH
 
 #include <libbio/tuple/filter.hh>
+#include <libbio/tuple/find.hh>
 #include <libbio/tuple/slice.hh>
 
 

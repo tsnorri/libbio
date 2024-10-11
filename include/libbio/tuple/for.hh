@@ -1,13 +1,14 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_TUPLE_FOR_HH
 #define LIBBIO_TUPLE_FOR_HH
 
+#include <libbio/utility/misc.hh>	// size_constant
 #include <tuple>
-#include <type_traits>	// std::integral_constant
+#include <type_traits>				// std::integral_constant
 
 
 namespace libbio::tuples {

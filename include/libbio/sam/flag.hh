@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,6 +7,8 @@
 #define LIBBIO_SAM_FLAG_HH
 
 #include <cstdint>
+#include <type_traits>
+#include <utility>		// std::to_underlying
 
 
 namespace libbio::sam {

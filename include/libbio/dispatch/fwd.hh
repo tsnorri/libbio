@@ -6,6 +6,9 @@
 #ifndef LIBBIO_DISPATCH_FWD_HH
 #define LIBBIO_DISPATCH_FWD_HH
 
+#include <cstdint>	// std::uintptr_t
+
+
 namespace libbio::dispatch {
 	
 	// Fwd.

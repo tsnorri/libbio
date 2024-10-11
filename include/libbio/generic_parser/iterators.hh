@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -9,6 +9,7 @@
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <iterator>								// std::distance, std::contiguous_iterator
 #include <libbio/generic_parser/fwd.hh>
+#include <tuple>								// std::tie
 
 
 namespace libbio::parsing {

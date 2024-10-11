@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_TUPLE_UTILITY_HH
 #define LIBBIO_TUPLE_UTILITY_HH
 
+#include <tuple>
 #include <type_traits> // std::bool_constnat, std::false_type, std::integral_constant, std::true_type
 
 

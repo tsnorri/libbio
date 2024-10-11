@@ -7,6 +7,7 @@
 #define LIBBIO_UTILITY_STRING_HASH_HH
 
 #include <cstring>
+#include <span>
 #include <string>
 #include <type_traits>
 

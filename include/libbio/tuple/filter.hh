@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_TUPLE_FILTER_HH
 #define LIBBIO_TUPLE_FILTER_HH
 
+#include <libbio/tuple/cat.hh>
 #include <libbio/tuple/fold.hh>
 
 
