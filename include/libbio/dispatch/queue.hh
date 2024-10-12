@@ -94,7 +94,10 @@ namespace libbio::dispatch {
 	};
 	
 	
-	class serial_queue final : public queue
+	class serial_queue_base : public queue {};
+	
+	
+	class serial_queue final : public serial_queue_base
 	{
 		friend struct detail::serial_queue_executor_callable;
 		
@@ -144,7 +147,7 @@ namespace libbio::dispatch {
 	
 	
 	// Implementation of queue’s interface for running tasks on a given thread.
-	class thread_local_queue final : public queue
+	class thread_local_queue final : public serial_queue_base
 	{
 	private:
 		struct queue_item
