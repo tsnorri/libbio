@@ -15,7 +15,7 @@ namespace chrono	= std::chrono;
 namespace libbio::dispatch {
 	
 	thread_pool::thread_count_type const thread_pool::default_max_worker_threads = thread_pool::thread_count_type(
-		std::floor(1.5 * std::thread::hardware_concurrency())
+		std::floor(1.5 * (std::thread::hardware_concurrency() ?: 2))
 	);
 
 
@@ -303,7 +303,7 @@ namespace libbio::dispatch {
 				goto do_notify;
 			}
 			
-			if (m_max_workers <= m_current_workers)
+			if (m_max_workers <= m_current_workers && m_min_workers <= m_current_workers)
 				return;
 			
 			// Can start a new thread.

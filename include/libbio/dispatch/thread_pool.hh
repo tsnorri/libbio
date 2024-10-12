@@ -38,6 +38,7 @@ namespace libbio::dispatch {
 		std::int64_t					m_waiting_tasks{};
 		duration_type					m_max_idle_time{default_max_idle_time};
 		thread_count_type				m_max_workers{default_max_worker_threads};
+		thread_count_type				m_min_workers{};							// Overrides m_max_workers if greater.
 		thread_count_type				m_current_workers{};
 		thread_count_type				m_idle_workers{};
 		thread_count_type				m_notified_workers{};						// For detecting spurious wake-ups.
@@ -58,6 +59,9 @@ namespace libbio::dispatch {
 		void remove_queue(parallel_queue const &queue);	// Thread-safe.
 		void stop(bool should_wait = true);				// Thread-safe.
 
+		thread_count_type min_workers() const { return m_min_workers; }
+		thread_count_type max_workers() const { return m_max_workers; }
+		void set_min_workers(thread_count_type const count) { m_min_workers = count; }
 		void set_max_workers(thread_count_type const count) { m_max_workers = count; }
 		
 		void notify();									// Task was added to an observed queue. Thread-safe.
