@@ -26,7 +26,7 @@ namespace libbio::bam {
 	{
 		virtual ~in_order_streaming_reader_delegate() {}
 		virtual void streaming_reader_did_parse_header(in_order_streaming_reader &reader, header &&hh, sam::header &&hh_) = 0;
-		virtual void streaming_reader_did_parse_records(in_order_streaming_reader &reader, record_buffer const &records) = 0;
+		virtual void streaming_reader_did_parse_records(in_order_streaming_reader &reader, record_buffer &records) = 0;
 	};
 	
 	
@@ -63,7 +63,7 @@ namespace libbio::bam {
 		record_buffer_vector												m_record_buffers;
 		record_block_vector													m_pending_blocks;
 		std::size_t															m_next_block_index{};			// Accessed only from m_queue.
-		dispatch::queue														*m_queue{};						// Needs to be serial.
+		dispatch::serial_queue_base											*m_queue{};
 		dispatch::group														*m_group{};
 		delegate_type														*m_delegate{};
 		
@@ -74,7 +74,7 @@ namespace libbio::bam {
 	public:
 		in_order_streaming_reader(
 			std::size_t buffer_count,
-			dispatch::queue &queue,
+			dispatch::serial_queue_base &queue,
 			dispatch::group &group,
 			delegate_type &delegate
 		):
@@ -82,6 +82,20 @@ namespace libbio::bam {
 			m_queue(&queue),
 			m_group(&group),
 			m_delegate(&delegate)
+		{
+		}
+		
+		in_order_streaming_reader(
+			dispatch::serial_queue_base &queue,
+			dispatch::group &group,
+			delegate_type &delegate
+		):
+			in_order_streaming_reader(
+				std::thread::hardware_concurrency() ?: 1,
+				queue,
+				group,
+				delegate
+			)
 		{
 		}
 		
