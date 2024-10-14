@@ -28,8 +28,8 @@ namespace libbio {
 		memfd_handle(memfd_handle const &) = delete;
 		memfd_handle &operator=(memfd_handle const &) = delete;
 		
-		memfd_handle(memfd_handle &&other);
-		memfd_handle &operator=(memfd_handle &&other) &;
+		inline memfd_handle(memfd_handle &&other);
+		inline memfd_handle &operator=(memfd_handle &&other) &;
 	};
 	
 	
