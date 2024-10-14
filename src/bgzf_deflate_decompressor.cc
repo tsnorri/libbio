@@ -4,6 +4,7 @@
  */
 
 #include <libbio/bgzf/deflate_decompressor.hh>
+#include <stdexcept>
 
 
 namespace libbio::bgzf::detail {
