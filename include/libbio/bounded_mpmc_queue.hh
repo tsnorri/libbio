@@ -53,6 +53,13 @@ namespace libbio {
 				value(si.value)
 			{
 			}
+			
+			// FIXME: Remove when libstdc++ has support for std::vector’s std::from_range_t constructor.
+			/* implicit */ stored_index(stored_index const &other):
+				turn(other.turn.load(std::memory_order_relaxed)),
+				value(other.value.load(std::memory_order_relaxed))
+			{
+			}
 		};
 		
 		typedef std::vector <value_type>					value_vector;
@@ -72,6 +79,7 @@ namespace libbio {
 		static inline void wait_for_turn(std::atomic <ticket_type> &turn, ticket_type expected);
 
 	public:
+#if 0
 		bounded_mpmc_queue(size_type const size_, std::size_t const queue_size_, bool is_readers_turn):
 			m_writer_ticket(is_readers_turn ? queue_size_ : 0),
 			m_indices(
@@ -84,6 +92,21 @@ namespace libbio {
 			m_index_bits(libbio::bits::highest_bit_set(m_index_mask))
 		{
 			libbio_assert_lt(0, size());
+		}
+#endif
+
+		// FIXME: Replace with the above when libstdc++ has support for std::vector’s std::from_range_t constructor.
+		bounded_mpmc_queue(size_type const size_, std::size_t const queue_size_, bool is_readers_turn):
+			m_writer_ticket(is_readers_turn ? queue_size_ : 0),
+			m_values(queue_size_),
+			m_index_mask(queue_size_ - 1),
+			m_index_bits(libbio::bits::highest_bit_set(m_index_mask))
+		{
+			libbio_assert_lt(0, size());
+			
+			m_indices.reserve(queue_size_);
+			for (std::size_t i(0); i < queue_size_; ++i)
+				m_indices.emplace_back(stored_index_{is_readers_turn, size_type(i)});
 		}
 		
 		explicit bounded_mpmc_queue(size_type const size_):
