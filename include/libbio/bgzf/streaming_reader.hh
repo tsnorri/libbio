@@ -13,6 +13,7 @@
 #include <libbio/dispatch.hh>
 #include <libbio/file_handle.hh>
 #include <mutex>
+#include <thread>								// std::thread::hardware_concurrency()
 #include <vector>
 
 
@@ -104,12 +105,12 @@ namespace libbio::bgzf {
 	public:
 		streaming_reader(
 			file_handle &handle,
-			std::size_t const task_count,
+			std::size_t const task_count,							// (Likely) need to be less than the maximum number of threads to avoid deadlocks.
 			std::size_t const buffer_count,
 			dispatch::group &group,
 			streaming_reader_delegate &delegate
 		):
-			m_input_buffer(2 * page_count_for_buffer(task_count)),
+			m_input_buffer(2 * page_count_for_buffer(task_count)),	// Make sure that we don’t run out of space while reading.
 			m_task_queue(task_count, task_queue_type::start_from_reading{true}),
 			m_buffer_queue(buffer_count, buffer_queue_type::start_from_reading{true}),
 			m_handle(&handle),
@@ -133,7 +134,16 @@ namespace libbio::bgzf {
 		{
 		}
 		
-		void run();
+		streaming_reader(
+			file_handle &handle,
+			dispatch::group &group,
+			streaming_reader_delegate &delegate
+		):
+			streaming_reader(handle, std::thread::hardware_concurrency() ?: 1, group, delegate)
+		{
+		}
+		
+		void run(dispatch::queue &queue = dispatch::parallel_queue::shared_queue());
 		void return_output_buffer(output_buffer_type &buffer);
 	};
 }
