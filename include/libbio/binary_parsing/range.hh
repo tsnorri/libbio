@@ -36,7 +36,7 @@ namespace libbio::binary_parsing {
 		operator bool() const { return !empty(); }
 	};
 	
-	range to_range(std::span <std::byte const> span) { return range{span.data(), span.size()}; }	
+	inline range to_range(std::span <std::byte const> span) { return range{span.data(), span.size()}; }
 }
 
 #endif
