@@ -4,6 +4,7 @@
  */
 
 #include <atomic>
+#include <cstring>
 #include <fcntl.h>					// O_RDWR etc.
 #include <format>
 #include <libbio/memfd_handle.hh>
