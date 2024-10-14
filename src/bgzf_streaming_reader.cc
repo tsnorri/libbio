@@ -49,7 +49,7 @@ namespace libbio::bgzf {
 	}
 	
 	
-	void streaming_reader::run()
+	void streaming_reader::run(dispatch::queue &dispatch_queue)
 	{
 		// To process the file, we first fill m_input_buffer with its contents.
 		// We then process the buffer contents until there are less than block_size bytes left or, in
@@ -60,8 +60,6 @@ namespace libbio::bgzf {
 		// task is done, we remove said offset, adjust the beginning of the circular buffer to the
 		// next smallest offset and fill the buffer again.
 		
-		auto &parallel_queue(dispatch::parallel_queue::shared_queue());
-		
 		m_input_buffer.clear();
 		m_active_offsets.clear();
 		m_released_offsets.clear();
@@ -70,11 +68,11 @@ namespace libbio::bgzf {
 		
 		circular_buffer::const_range reading_range{};
 		
-		auto const decompress_block([this, &block_index, &parallel_queue](block &bb){
-			auto &task(m_task_queue.pop());
+		auto const decompress_block([this, &block_index, &dispatch_queue](block &bb){
+			auto &task(m_task_queue.pop()); // Blocks when no more tasks are available.
 			task.block = bb;
 			task.block_index = block_index++;
-			parallel_queue.group_async(*m_group, &task);
+			dispatch_queue.group_async(*m_group, &task);
 		});
 		
 		while (true)
@@ -84,6 +82,7 @@ namespace libbio::bgzf {
 			
 			{
 				auto writing_range(m_input_buffer.writing_range());
+				libbio_always_assert_lt(0, writing_range.size());
 				bytes_read = m_handle->read(writing_range.size(), writing_range.it);
 				if (0 == bytes_read)
 					break;
