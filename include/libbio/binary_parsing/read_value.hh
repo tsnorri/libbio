@@ -157,7 +157,7 @@ namespace libbio::binary_parsing {
 	}
 	
 	
-	std::span <char const> take_bytes(range &rr, std::size_t const size) { return take_bytes <char>(rr, size); }
+	inline std::span <char const> take_bytes(range &rr, std::size_t const size) { return take_bytes <char>(rr, size); }
 }
 
 #endif
