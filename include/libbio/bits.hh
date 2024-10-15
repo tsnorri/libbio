@@ -214,6 +214,15 @@ namespace libbio::bits {
 			return {power << 1};
 		return {power};
 	}
+
+	template <std::unsigned_integral t_value>
+	constexpr t_value gte_power_of_2_(t_value const val)
+	{
+		auto const retval(gte_power_of_2(val));
+		if (!retval)
+			throw std::runtime_error("Unable to calculate the power of two");
+		return *retval;
+	}
 }
 
 #endif
