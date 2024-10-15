@@ -37,7 +37,7 @@ namespace libbio {
 		m_size = size;
 		m_mask = size - 1;
 		m_base = region;
-		m_begin = 0;
-		m_end = 0;
+		m_lb = 0;
+		m_rb = 0;
 	}
 }

@@ -50,8 +50,8 @@ namespace libbio {
 		mmap_handle		m_handle;
 		std::size_t		m_size{};	// Could get this from m_handle with one right shift
 		std::uintptr_t	m_mask{};	// Could get this from m_size with one subtraction.
-		std::uintptr_t	m_begin{};
-		std::uintptr_t	m_end{};
+		std::uintptr_t	m_lb{};
+		std::uintptr_t	m_rb{};
 		std::byte		*m_base{};
 		
 	public:
@@ -62,23 +62,27 @@ namespace libbio {
 		static int page_size() { return s_page_size; }
 		
 		std::size_t size() const { return m_size; }
-		std::size_t size_occupied() const { return m_end - m_begin; }
-		std::size_t size_available() const { return m_size - (m_end - m_begin); }
+		std::size_t size_occupied() const { return m_rb - m_lb; }
+		std::size_t size_available() const { return m_size - (m_rb - m_lb); }
 		
-		void add_to_occupied(std::size_t size) { libbio_assert_lte(size, size_available()); m_end += size; }
-		void add_to_available(std::size_t size) { libbio_assert_lte(size, size_occupied()); m_begin += size; }
+		std::uintptr_t lb() const { return m_lb; }
+		std::uintptr_t rb() const { return m_rb; }
+
+		void add_to_occupied(std::size_t size) { libbio_assert_lte(size, size_available()); m_rb += size; }
+		void add_to_available(std::size_t size) { libbio_assert_lte(size, size_occupied()); m_lb += size; }
 		
-		void clear() { m_begin = m_end; }
+		void clear() { m_lb = m_rb; }
 		
 		std::uintptr_t linearise_(std::uintptr_t pos) const { return pos & m_mask; }
 		std::byte *linearise(std::uintptr_t pos) { return m_base + linearise_(pos); }
 		std::byte const *linearise(std::uintptr_t pos) const { return m_base + linearise_(pos); }
 		
-		void set_begin(std::byte const *it) { auto const pos(linearise_(it - m_base)); m_begin = pos; }
+		std::byte *base() { return m_base; }
+		std::byte const *base() const { return m_base; }
 		
 		void allocate(std::size_t page_count);
-		const_range reading_range() const { return const_range{linearise(m_begin), size_occupied()}; }
-		range writing_range() { return range{linearise(m_end), size_available()}; }
+		const_range reading_range() const { return const_range{linearise(m_lb), size_occupied()}; }
+		range writing_range() { return range{linearise(m_rb), size_available()}; }
 	};
 }
 
