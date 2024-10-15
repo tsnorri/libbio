@@ -137,11 +137,10 @@ namespace libbio {
 		if (!power)
 			throw std::range_error("Unable to construct a queue of the given size");
 		
-		auto const retval(*power);
-		if (MAX_SIZE < retval - 1)
+		if (MAX_SIZE < power - 1)
 			throw std::range_error("Unable to construct a queue of the given size");
 		
-		return retval;
+		return power;
 	}
 	
 	

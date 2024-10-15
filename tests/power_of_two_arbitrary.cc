@@ -78,9 +78,8 @@ TEMPLATE_TEST_CASE(
 			auto const value_(value.get());
 			auto const power(lb::bits::gte_power_of_2(value_));
 			RC_ASSERT(power);
-			auto const power_(*power);
-			RC_ASSERT(value_ <= power_);
-			RC_ASSERT(lb::bits::is_power_of_2(power_));
+			RC_ASSERT(value_ <= power);
+			RC_ASSERT(lb::bits::is_power_of_2(power));
 			RC_CLASSIFY(lb::bits::is_power_of_2(value_));
 			return true;
 		}
