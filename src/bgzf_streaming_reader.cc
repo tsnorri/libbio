@@ -33,7 +33,7 @@ namespace libbio::bgzf {
 	{
 		{
 			std::lock_guard const lock{m_released_offsets_mutex};
-			m_released_offsets.push_back(task.block.compressed_data);
+			m_released_offsets.push_back(task.block.offset);
 		}
 		
 		auto const block_index(task.block_index);
@@ -69,12 +69,15 @@ namespace libbio::bgzf {
 		circular_buffer::const_range reading_range{};
 		
 		auto const decompress_block([this, &block_index, &dispatch_queue](block &bb){
+			if (m_semaphore)
+				m_semaphore->acquire();
 			auto &task(m_task_queue.pop()); // Blocks when no more tasks are available.
 			task.block = bb;
 			task.block_index = block_index++;
 			dispatch_queue.group_async(*m_group, &task);
 		});
 		
+		std::size_t current_offset{};
 		while (true)
 		{
 			// Update the buffer.
@@ -91,6 +94,11 @@ namespace libbio::bgzf {
 			}
 			
 			reading_range = m_input_buffer.reading_range();
+			auto const base_address(reading_range.it);
+			auto const range_left_bound(m_input_buffer.lb());
+			libbio_assert_lt(current_offset, reading_range.size());
+			reading_range.it += current_offset;
+			
 			binary_parsing::range reading_range_(reading_range);
 			
 			// Read until at most block_size bytes left.
@@ -100,13 +108,16 @@ namespace libbio::bgzf {
 				block bb;
 				parser pp(reading_range_, bb);
 				pp.parse();
-				reading_range.it = reading_range_.it;
 				
 				// Store the offset of the compressed stream.
-				m_active_offsets.push_back(bb.compressed_data);
+				auto const compressed_data_offset(m_input_buffer.lb() + (bb.compressed_data - base_address));
+				bb.offset = compressed_data_offset;
+				m_active_offsets.push_back(compressed_data_offset);
 				
 				// Start a decompression task.
 				decompress_block(bb);
+				
+				reading_range.it = reading_range_.it;
 			}
 			
 			// Update the offsets.
@@ -131,9 +142,21 @@ namespace libbio::bgzf {
 			
 			// Update the position.
 			if (m_active_offsets.empty())
-				m_input_buffer.clear();
+			{
+				libbio_assert_lte(base_address, reading_range.it);
+				m_input_buffer.add_to_available(reading_range.it - base_address);
+				current_offset = 0;
+			}
 			else
-				m_input_buffer.set_begin(m_active_offsets.front());
+			{
+				auto const first_active_offset(m_active_offsets.front());
+				libbio_assert_lte(range_left_bound, first_active_offset);
+				auto const available_space(first_active_offset - range_left_bound);
+				auto const prev_block_length(m_input_buffer.linearise_(reading_range.it - base_address)); // Block as in returned by ::read
+				m_input_buffer.add_to_available(available_space);
+				libbio_assert_lte(available_space, prev_block_length);
+				current_offset = prev_block_length - available_space;
+			}
 		}
 		
 		// EOF found. Read until the end of the input.

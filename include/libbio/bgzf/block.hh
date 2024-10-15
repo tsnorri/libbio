@@ -15,6 +15,7 @@ namespace libbio::bgzf {
 	struct block
 	{
 		std::byte const	*compressed_data{};
+		std::uintptr_t	offset{};				// Helper
 		std::size_t		compressed_data_size{};
 		std::uint32_t	crc32{};
 		std::uint32_t	isize{};
