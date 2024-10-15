@@ -9,7 +9,7 @@
 #include <climits>
 #include <concepts>
 #include <cstdint>
-#include <optional>
+#include <stdexcept>	// std::range_error
 
 
 namespace libbio::bits::detail {
@@ -197,22 +197,22 @@ namespace libbio::bits {
 
 
 	template <std::unsigned_integral t_value>
-	constexpr std::optional <t_value> gte_power_of_2(t_value const val)
+	constexpr t_value gte_power_of_2(t_value const val)
 	{
 		if (0 == val)
-			return {1};
+			return 1;
 		
 		constexpr static t_value const highest_mask{t_value(1) << (sizeof(t_value) * CHAR_BIT - 1)};
 		constexpr static t_value const lower_mask{highest_mask - 1};
 		if (val & highest_mask && val & lower_mask)
-			return {};
+			return 0;
 	
 		auto const hbs(highest_bit_set(val));
 		auto const power(t_value(1) << (hbs - 1));
 		auto const mask(power - 1);
 		if (val & mask)
-			return {power << 1};
-		return {power};
+			return power << 1;
+		return power;
 	}
 
 	template <std::unsigned_integral t_value>
@@ -220,8 +220,8 @@ namespace libbio::bits {
 	{
 		auto const retval(gte_power_of_2(val));
 		if (!retval)
-			throw std::runtime_error("Unable to calculate the power of two");
-		return *retval;
+			throw std::range_error("Unable to calculate the power of two");
+		return retval;
 	}
 }
 
