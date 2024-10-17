@@ -10,5 +10,7 @@
 #include <libbio/vcf/variant/abstract_variant_def.hh>	// IWYU pragma: export
 #include <libbio/vcf/variant/formatted_variant_def.hh>	// IWYU pragma: export
 #include <libbio/vcf/variant/variant_def.hh>			// IWYU pragma: export
+#include <libbio/vcf/variant/alt.hh>					// IWYU pragma: export
+#include <libbio/vcf/variant/sample.hh>					// IWYU pragma: export
 
 #endif
