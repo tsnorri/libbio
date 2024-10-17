@@ -16,10 +16,11 @@
 // ================================
 // – A barrier is guaranteed to stop a queue cleanly if it calls thread_pool::stop() synchronously on the thread in which its task is executed.
 
-#include <libbio/dispatch/barrier.hh>
-#include <libbio/dispatch/group.hh>
-#include <libbio/dispatch/queue.hh>
-#include <libbio/dispatch/task_decl.hh>
-#include <libbio/dispatch/task_def.hh>
+#include <libbio/dispatch/barrier.hh>		// IWYU pragma: export
+#include <libbio/dispatch/group.hh>			// IWYU pragma: export
+#include <libbio/dispatch/queue.hh>			// IWYU pragma: export
+#include <libbio/dispatch/task_decl.hh>		// IWYU pragma: export
+#include <libbio/dispatch/task_def.hh>		// IWYU pragma: export
+#include <libbio/dispatch/thread_pool.hh>	// IWYU pragma: export
 
 #endif
