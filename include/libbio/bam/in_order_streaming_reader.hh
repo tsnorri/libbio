@@ -66,6 +66,7 @@ namespace libbio::bam {
 		dispatch::serial_queue_base											*m_queue{};
 		dispatch::group														*m_group{};
 		delegate_type														*m_delegate{};
+		bool																m_parses_alignments{true};
 		
 	private:
 		void assign_record_buffer_or_wait(record_block &block);
@@ -98,6 +99,9 @@ namespace libbio::bam {
 			)
 		{
 		}
+		
+		bool parses_alignments() const { return m_parses_alignments; }
+		void set_parses_alignments(bool flag) { m_parses_alignments = flag; }
 		
 		void streaming_reader_did_decompress_block(
 			bgzf::streaming_reader &reader,

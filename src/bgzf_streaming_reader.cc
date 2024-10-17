@@ -49,6 +49,33 @@ namespace libbio::bgzf {
 	}
 	
 	
+	void streaming_reader::read_first_block(dispatch::queue &dispatch_queue)
+	{
+		// For reading the BAM header.
+		m_input_buffer.clear();
+		
+		auto writing_range(m_input_buffer.writing_range());
+		libbio_always_assert_lt(0, writing_range.size());
+		std::size_t const bytes_read{m_handle->read(writing_range.size(), writing_range.it)};
+		m_input_buffer.add_to_occupied(bytes_read);
+		
+		auto reading_range(m_input_buffer.reading_range());
+		binary_parsing::range reading_range_(reading_range);
+		
+		// Parse the first BGZF block.
+		block bb;
+		parser pp(reading_range_, bb);
+		pp.parse();
+		
+		// Start a decompression task.
+		auto &task(m_task_queue.pop()); // Blocks when no more tasks are available.
+		task.block = bb;
+		dispatch_queue.group_async(*m_group, &task);
+		
+		// To be able to continue, we could update reading_range here and pass it to the caller.
+	}
+	
+	
 	void streaming_reader::run(dispatch::queue &dispatch_queue)
 	{
 		// To process the file, we first fill m_input_buffer with its contents.

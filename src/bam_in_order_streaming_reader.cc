@@ -54,10 +54,7 @@ namespace libbio::bam {
 		bgzf_buffer_type &buffer
 	)
 	{
-		record_block block(block_index);
 		binary_parsing::range range{buffer.data(), buffer.size()};
-		
-		assign_record_buffer_or_wait(block);
 		
 		if (0 == block_index)
 		{
@@ -66,44 +63,50 @@ namespace libbio::bam {
 			
 			detail::read_header(range, hh, hh_);
 			
-			// Should be enough for streaming_reader_did_parse_header() to get called first.
+			// m_queue is serial; therefore this should be enough for streaming_reader_did_parse_header() to get called first.
 			m_queue->group_async(*m_group, [hh = std::move(hh), hh_ = std::move(hh_), this] mutable {
 				m_delegate->streaming_reader_did_parse_header(*this, std::move(hh), std::move(hh_));
 			});
 		}
 		
-		block.records.clear();
-		while (range)
+		if (m_parses_alignments)
 		{
-			auto &record(block.records.next_record());
-			record_parser parser(range, record);
-			parser.parse();
-		}
-		
-		reader.return_output_buffer(buffer);
-		// buffer is now invalid.
-		
-		// Pass the parsed records to the delegate.
-		m_queue->group_async(*m_group, [block = std::move(block), this] mutable {
-			if (m_next_block_index == block.index)
-			{
-				m_delegate->streaming_reader_did_parse_records(*this, block.records);
-				prepare_for_next_block_and_return_record_buffer(std::move(block.records));
-			}
-			else
-			{
-				m_pending_blocks.emplace_back(std::move(block));
-				std::push_heap(m_pending_blocks.begin(), m_pending_blocks.end(), std::greater <>{});
-			}
+			record_block block(block_index);
+			assign_record_buffer_or_wait(block);
+			block.records.clear();
 			
-			while (!m_pending_blocks.empty() && m_next_block_index == m_pending_blocks.front().index)
+			while (range)
 			{
-				std::pop_heap(m_pending_blocks.begin(), m_pending_blocks.end(), std::greater <>{});
-				auto block_(std::move(m_pending_blocks.back()));
-				m_pending_blocks.pop_back();
-				m_delegate->streaming_reader_did_parse_records(*this, block_.records);
-				prepare_for_next_block_and_return_record_buffer(std::move(block_.records));
+				auto &record(block.records.next_record());
+				record_parser parser(range, record);
+				parser.parse();
 			}
-		});
+		
+			reader.return_output_buffer(buffer);
+			// buffer is now invalid.
+		
+			// Pass the parsed records to the delegate.
+			m_queue->group_async(*m_group, [block = std::move(block), this] mutable {
+				if (m_next_block_index == block.index)
+				{
+					m_delegate->streaming_reader_did_parse_records(*this, block.records);
+					prepare_for_next_block_and_return_record_buffer(std::move(block.records));
+				}
+				else
+				{
+					m_pending_blocks.emplace_back(std::move(block));
+					std::push_heap(m_pending_blocks.begin(), m_pending_blocks.end(), std::greater <>{});
+				}
+			
+				while (!m_pending_blocks.empty() && m_next_block_index == m_pending_blocks.front().index)
+				{
+					std::pop_heap(m_pending_blocks.begin(), m_pending_blocks.end(), std::greater <>{});
+					auto block_(std::move(m_pending_blocks.back()));
+					m_pending_blocks.pop_back();
+					m_delegate->streaming_reader_did_parse_records(*this, block_.records);
+					prepare_for_next_block_and_return_record_buffer(std::move(block_.records));
+				}
+			});
+		}
 	}
 }

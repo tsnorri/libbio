@@ -153,6 +153,7 @@ namespace libbio::bgzf {
 		}
 		
 		void run(dispatch::queue &queue = dispatch::parallel_queue::shared_queue());
+		void read_first_block(dispatch::queue &queue = dispatch::parallel_queue::shared_queue());
 		void return_output_buffer(output_buffer_type &buffer);
 	};
 }
