@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Tuukka Norri
+ * Copyright (c) 2019-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -9,11 +9,10 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
 #include <libbio/int_vector/int_vector.hh>
-#include <type_traits>
 
 
 namespace libbio {
-	
+
 	template <typename t_archive, unsigned int t_bits, typename t_word, template <typename, unsigned int, typename> typename t_trait>
 	inline void serialize(t_archive &archive, int_vector_tpl <t_bits, t_word, t_trait> &vec)
 	{

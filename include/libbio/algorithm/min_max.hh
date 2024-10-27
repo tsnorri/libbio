@@ -9,8 +9,10 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <limits>
 #include <libbio/assert.hh>
+#include <type_traits>
 
 
 namespace libbio {

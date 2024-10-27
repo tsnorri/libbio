@@ -23,6 +23,7 @@
 #include <ostream>
 #include <range/v3/view/subrange.hpp>
 #include <range/v3/view/take_exactly.hpp>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <type_traits>

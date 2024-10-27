@@ -6,6 +6,7 @@
 #ifndef LIBBIO_GENERIC_PARSER_FIELDS_HH
 #define LIBBIO_GENERIC_PARSER_FIELDS_HH
 
+#include <algorithm>
 #include <boost/spirit/home/x3.hpp>
 #include <cstddef>
 #include <libbio/generic_parser/delimiter.hh>
