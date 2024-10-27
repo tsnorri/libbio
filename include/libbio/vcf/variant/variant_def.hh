@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Tuukka Norri
+ * Copyright (c) 2020-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -8,20 +8,22 @@
 
 #include <libbio/vcf/variant/abstract_variant_def.hh>
 #include <libbio/vcf/variant/variant_decl.hh>
+#include <libbio/vcf/variant/variant_tpl.hh>
+#include <string_view>
 
 
 namespace libbio::vcf {
-	
+
 	void transient_variant::reset()
 	{
 		variant_tpl <std::string_view>::reset();
-		
+
 		// Try to avoid deallocating the samples.
 		m_id.clear();
 		m_alts.clear();
 	}
-	
-	
+
+
 	variant &variant::operator=(transient_variant const &other) &
 	{
 		variant_formatted_base::operator=(other);

@@ -6,12 +6,38 @@
 #if !(defined(LIBBIO_NO_SAM_READER) && LIBBIO_NO_SAM_READER)
 
 #include <algorithm>					// std::sort
+#include <array>
 #include <boost/io/ios_state.hpp>		// boost::io::ios_all_saver
+#include <cstddef>
+#include <cstdint>
+#include <iomanip>
+#include <iterator>
+#include <libbio/assert.hh>
+#include <libbio/sam/cigar.hh>
+#include <libbio/sam/header.hh>
+#include <libbio/sam/optional_field.hh>
 #include <libbio/sam/reader.hh>
+#include <libbio/sam/record.hh>
+#include <libbio/utility.hh>
+#include <limits>
+#include <numeric>
+#include <optional>
 #include <ostream>
 #include <range/v3/view/enumerate.hpp>
+#include <range/v3/view/subrange.hpp>
+#include <range/v3/view/transform.hpp>
 #include <range/v3/view/zip.hpp>
+#include <stdexcept>
+#include <string_view>
+#include <tuple>
+#include <vector>
 #include <version>
+
+namespace io	= boost::io;
+namespace lb	= libbio;
+namespace sam	= libbio::sam;
+namespace rsv	= ranges::views;
+
 
 #if defined(__cpp_lib_format) && 201907L <= __cpp_lib_format
 #	include <format>
@@ -35,11 +61,6 @@ namespace {
 }
 #endif
 
-namespace io	= boost::io;
-namespace lb	= libbio;
-namespace sam	= libbio::sam;
-namespace rsv	= ranges::views;
-
 
 namespace {
 	enum
@@ -57,18 +78,18 @@ namespace {
 		QUAL,
 		OPTIONAL
 	};
-	
-	
+
+
 	constexpr static std::array optional_field_type_codes_for_output{'A', 'i', 'i', 'i', 'i', 'i', 'i', 'f', 'Z', 'H', 'B', 'B', 'B', 'B', 'B', 'B', 'B'};
-	
-	
+
+
 	template <std::size_t t_n>
 	constexpr bool is_in(char const cc, std::array <char, t_n> const &arr)
 	{
 		return arr.end() != std::find(arr.begin(), arr.end(), cc);
 	}
 
-	
+
 	inline bool check_reference_ids(
 		sam::reference_id_type const lhs,
 		sam::reference_id_type const rhs,
@@ -78,7 +99,7 @@ namespace {
 	{
 		if (sam::INVALID_REFERENCE_ID == lhs || sam::INVALID_REFERENCE_ID == rhs)
 			return lhs == rhs;
-		
+
 		libbio_assert_lt(lhs, lhsr.size());
 		libbio_assert_lt(rhs, rhsr.size());
 		return lhsr[lhs] == rhsr[rhs];
@@ -103,8 +124,8 @@ namespace {
 		auto const max(std::max(lhsa, rhsa));
 		return diff <= max * multiplier * std::numeric_limits <t_type>::epsilon();
 	}
-	
-	
+
+
 	void output_record_(std::ostream &os, sam::header const &header_, sam::record const &rec)
 	{
 		// QNAME
@@ -113,28 +134,28 @@ namespace {
 		else
 			os	<< rec.qname;
 		os << '\t';
-		
+
 		// FLAG
 		os << rec.flag << '\t';
-		
+
 		// RNAME
 		if (sam::INVALID_REFERENCE_ID == rec.rname_id)
 			os << '*';
 		else
 			os << header_.reference_sequences[rec.rname_id].name;
 		os << '\t';
-		
+
 		// POS, MAPQ
 		os	<< (1 + rec.pos) << '\t'
 			<< +rec.mapq << '\t';
-		
+
 		// CIGAR
 		if (rec.cigar.empty())
 			os << '*';
 		else
 			std::copy(rec.cigar.begin(), rec.cigar.end(), std::ostream_iterator <sam::cigar_run>(os));
 		os << '\t';
-		
+
 		// RNEXT
 		if (sam::INVALID_REFERENCE_ID == rec.rnext_id)
 			os << '*';
@@ -143,32 +164,32 @@ namespace {
 		else
 			os << header_.reference_sequences[rec.rnext_id].name;
 		os << '\t';
-		
+
 		// PNEXT, TLEN
 		os	<< (1 + rec.pnext) << '\t'
 			<< rec.tlen << '\t';
-		
+
 		// SEQ
 		if (rec.seq.empty())
 			os << '*';
 		else
 			std::copy(rec.seq.begin(), rec.seq.end(), std::ostream_iterator <char>(os));
 		os << '\t';
-		
+
 		// QUAL
 		if (rec.qual.empty())
 			os << '*';
 		else
 			std::copy(rec.qual.begin(), rec.qual.end(), std::ostream_iterator <char>(os));
 	}
-	
-	
+
+
 	template <typename t_range>
 	void output_optional_field(std::ostream &os, sam::optional_field const &of, t_range &&range)
 	{
 		io::ios_all_saver guard(os);
 		os << std::setprecision(std::numeric_limits <sam::optional_field::floating_point_type>::digits10 + 1);
-		
+
 		auto visitor(lb::aggregate{
 			[&os]<std::size_t t_idx, char t_type_code>(auto const &val) requires (is_in(t_type_code, std::array{'c', 'C', 's', 'S', 'i', 'I'})) { os << +val; }, // Not array.
 			[&os]<std::size_t t_idx, char t_type_code>(auto const &val) requires ('A' == t_type_code) { os << char(val); },
@@ -184,7 +205,7 @@ namespace {
 					os << ',' << +val;
 			}
 		});
-		
+
 		bool is_first{true};
 		for (auto const &tr : range)
 		{
@@ -192,7 +213,7 @@ namespace {
 				is_first = false;
 			else
 				os << '\t';
-			
+
 			// Output integral types as signed 32-bit integer (SAMv1 § 4.2.4).
 			os << char(tr.tag_id >> 8) << char(tr.tag_id & 0xff) << ':' << optional_field_type_codes_for_output[tr.type_index] << ':';
 			of.visit <void>(tr, visitor);
@@ -223,58 +244,58 @@ namespace {
 		auto const directly_comparable_to_tuple([](sam::record const &rec){
 			return std::tie(rec.qname, rec.cigar, rec.seq, rec.qual, rec.pos, rec.pnext, rec.tlen, rec.flag, rec.mapq);
 		});
-		
+
 		if (SIZE_MAX != compare_tuples(directly_comparable_to_tuple(lhsr), directly_comparable_to_tuple(rhsr)))
 			return false;
-		
+
 		if (!check_reference_ids(lhsr.rname_id, rhsr.rname_id, lhsh.reference_sequences, rhsh.reference_sequences))
 			return false;
-		
+
 		if (!check_reference_ids(lhsr.rnext_id, rhsr.rnext_id, lhsh.reference_sequences, rhsh.reference_sequences))
 			return false;
-		
+
 		return true;
 	}
 }
 
 
 namespace libbio::sam::detail {
-	
+
 	void prepare_record(header const &header_, parser_type::record_type &src, record &dst)
 	{
 		using std::swap;
-		
+
 		swap(std::get <QNAME>(src), dst.qname);
 		swap(std::get <CIGAR>(src), dst.cigar);
 		swap(std::get <SEQ>(src), dst.seq);
 		swap(std::get <QUAL>(src), dst.qual);
 		swap(std::get <OPTIONAL>(src), dst.optional_fields);
-		
+
 		if ("*" == dst.qname) dst.qname.clear();
 		if ("*" == std::string_view(dst.seq.begin(), dst.seq.end())) dst.seq.clear();
 		if ("*" == std::string_view(dst.qual.begin(), dst.qual.end())) dst.qual.clear();
-		
+
 		dst.rname_id = header_.find_reference(std::get <RNAME>(src));
 		if ("=" == std::get <RNEXT>(src))
 			dst.rnext_id = dst.rname_id;
 		else
 			dst.rnext_id = header_.find_reference(std::get <RNEXT>(src));
-		
+
 		dst.pos = std::get <POS>(src);
 		dst.pnext = std::get <PNEXT>(src);
 		dst.tlen = std::get <TLEN>(src);
 		dst.flag = std::get <FLAG>(src);
 		dst.mapq = std::get <MAPQ>(src);
-		
+
 		--dst.pos; // In input 1-based, 0 for invalid.
 		--dst.pnext;
 	}
-	
-	
+
+
 	void prepare_parser_record(record &src, parser_type::record_type &dst)
 	{
 		using std::swap;
-		
+
 		swap(std::get <QNAME>(dst), src.qname);
 		swap(std::get <CIGAR>(dst), src.cigar);
 		swap(std::get <SEQ>(dst), src.seq);
@@ -285,7 +306,7 @@ namespace libbio::sam::detail {
 
 
 namespace libbio::sam {
-	
+
 	char const *to_chars(sort_order_type const so)
 	{
 		switch (so)
@@ -299,11 +320,11 @@ namespace libbio::sam {
 			case sort_order_type::coordinate:
 				return "coordinate";
 		}
-		
+
 		return "unknown";
 	}
-	
-	
+
+
 	char const *to_chars(grouping_type const go)
 	{
 		switch (go)
@@ -315,11 +336,11 @@ namespace libbio::sam {
 			case grouping_type::reference:
 				return "reference";
 		}
-		
+
 		return "none";
 	}
-	
-	
+
+
 	std::ostream &operator<<(std::ostream &os, reference_sequence_entry const &rs)
 	{
 		os << "@SQ\tSN:" << rs.name << "\tLN:" << rs.length;
@@ -336,8 +357,8 @@ namespace libbio::sam {
 		}
 		return os;
 	}
-	
-	
+
+
 	std::ostream &operator<<(std::ostream &os, read_group_entry const &rg)
 	{
 		os << "@RG\tID:" << rg.id;
@@ -345,8 +366,8 @@ namespace libbio::sam {
 			os << "\tDS:" << rg.description;
 		return os;
 	}
-	
-	
+
+
 	std::ostream &operator<<(std::ostream &os, program_entry const &pg)
 	{
 		os << "@PG\tID:" << pg.id;
@@ -357,45 +378,45 @@ namespace libbio::sam {
 		if (!pg.version.empty()) os << "\tVN:" << pg.version;
 		return os;
 	}
-	
-	
+
+
 	std::ostream &operator<<(std::ostream &os, header const &hh)
 	{
 		os	<< "@HD"
 			<< "\tVN:" << hh.version_major << '.' << hh.version_minor
 			<< "\tSO:" << hh.sort_order
 			<< "\tGO:" << hh.grouping << '\n';
-		
+
 		for (auto const &ref_seq : hh.reference_sequences)
 			os << ref_seq << '\n';
-		
+
 		for (auto const &read_group : hh.read_groups)
 			os << read_group << '\n';
-		
+
 		for (auto const &program : hh.programs)
 			os << program << '\n';
-		
+
 		for (auto const &comment : hh.comments)
 			os << "@CO\t" << comment << '\n';
-		
+
 		return os;
 	}
-	
-	
+
+
 	void output_record(std::ostream &os, header const &header_, record const &rec)
 	{
 		output_record_(os, header_, rec);
-		
+
 		// Optional fields
 		if (!rec.optional_fields.empty())
 			os << '\t' << rec.optional_fields;
 	}
-	
-	
+
+
 	void output_record_in_parsed_order(std::ostream &os, header const &header_, record const &rec, std::vector <std::size_t> &buffer)
 	{
 		output_record_(os, header_, rec);
-		
+
 		// Optional fields
 		if (!rec.optional_fields.empty())
 		{
@@ -403,8 +424,8 @@ namespace libbio::sam {
 			output_optional_field_in_parsed_order(os, rec.optional_fields, buffer);
 		}
 	}
-	
-	
+
+
 	std::ostream &operator<<(std::ostream &os, optional_field const &of)
 	{
 		output_optional_field(os, of, of.m_tag_ranks);
@@ -417,8 +438,8 @@ namespace libbio::sam {
 		os << "tag_id: " << tr.tag_id << " type_index: " << tr.type_index << " rank: " << tr.rank << " parsed_rank: " << tr.parsed_rank;
 		return os;
 	}
-	
-	
+
+
 	void output_optional_field_in_parsed_order(std::ostream &os, optional_field const &of, std::vector <std::size_t> &buffer)
 	{
 		buffer.resize(of.m_tag_ranks.size());
@@ -428,8 +449,8 @@ namespace libbio::sam {
 		});
 		output_optional_field(os, of, buffer | rsv::transform([&of](auto const idx){ return of.m_tag_ranks[idx]; }));
 	}
-	
-	
+
+
 	void header::assign_reference_sequence_identifiers()
 	{
 		reference_sequence_identifiers.clear();
@@ -437,8 +458,8 @@ namespace libbio::sam {
 		std::iota(reference_sequence_identifiers.begin(), reference_sequence_identifiers.end(), reference_sequence_identifier_type{});
 		std::sort(reference_sequence_identifiers.begin(), reference_sequence_identifiers.end(), reference_sequence_identifier_cmp{reference_sequences});
 	}
-	
-	
+
+
 	bool is_equal(header const &lhsh, header const &rhsh, record const &lhsr, record const &rhsr)
 	{
 		if (!is_equal__(lhsh, rhsh, lhsr, rhsr))
@@ -481,7 +502,7 @@ namespace libbio::sam {
 				}
 			}(lhs_val, rhs_val);
 		});
-		
+
 		return visit <bool>(lhsr, do_cmp);
 	}
 
@@ -490,7 +511,7 @@ namespace libbio::sam {
 	{
 		if (m_tag_ranks.size() != other.m_tag_ranks.size())
 			return false;
-		
+
 		typedef std::optional <std::int32_t> common_type;
 		auto const to_common_type(lb::aggregate{
 			[]<std::size_t t_idx, char t_type_code>(std::uint32_t const val) -> common_type requires ('I' == t_type_code){
@@ -506,7 +527,7 @@ namespace libbio::sam {
 		{
 			if (lhsr.tag_id != rhsr.tag_id)
 				return false;
-			
+
 			if (lhsr.type_index == rhsr.type_index)
 			{
 				if (!compare_values_strict(other, lhsr, rhsr))
@@ -516,42 +537,42 @@ namespace libbio::sam {
 			{
 				if (! (lhsr.type_index < type_codes.size() && rhsr.type_index < type_codes.size()))
 					throw std::invalid_argument("Invalid type code");
-				
+
 				if ('i' == optional_field_type_codes_for_output[lhsr.type_index] && 'i' == optional_field_type_codes_for_output[rhsr.type_index])
 				{
 					auto const lhs(visit <common_type>(lhsr, to_common_type));
 					auto const rhs(other.visit <common_type>(rhsr, to_common_type));
 					if (! (lhs && rhs))
 						return false;
-					
+
 					if (*lhs == *rhs)
 						continue;
 				}
-				
+
 				return false;
 			}
 		}
-		
+
 		return true;
 	}
-	
-	
+
+
 	bool optional_field::operator==(optional_field const &other) const
 	{
 		if (m_tag_ranks.size() != other.m_tag_ranks.size())
 			return false;
-		
+
 		for (auto const &[lhsr, rhsr] : rsv::zip(m_tag_ranks, other.m_tag_ranks))
 		{
 			if (lhsr.tag_id != rhsr.tag_id) return false;
 			if (lhsr.type_index != rhsr.type_index) return false;
 			if (!compare_values_strict(other, lhsr, rhsr)) return false;
 		}
-		
+
 		return true;
 	}
-	
-	
+
+
 	void optional_field::erase_values_in_range(tag_rank_vector::const_iterator rank_it, tag_rank_vector::const_iterator const rank_end)
 	{
 		// Precondition: the items in [rank_it, rank_end) refer to the same type.
@@ -568,7 +589,7 @@ namespace libbio::sam {
 				auto const new_size(std::distance(begin, mid));
 				for (auto &val : ranges::subrange(mid, end))
 					val.clear();
-				
+
 				vc.size_ = new_size;
 			}
 		});

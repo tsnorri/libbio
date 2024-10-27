@@ -6,20 +6,29 @@
 #ifndef LIBBIO_SAM_READER_HH
 #define LIBBIO_SAM_READER_HH
 
+#include <concepts>
+#include <cstdint>
+#include <libbio/file_handle.hh>
+#include <libbio/generic_parser/delimiter.hh>
+#include <libbio/generic_parser/fields.hh>
+#include <libbio/generic_parser/parser.hh>
+#include <libbio/generic_parser/traits.hh>
+#include <libbio/sam/record.hh>
 #include <libbio/sam/cigar_field_parser.hh>
 #include <libbio/sam/header.hh>
 #include <libbio/sam/input_range.hh>
 #include <libbio/sam/optional_field_parser.hh>
 #include <libbio/sam/parse_error.hh>
+#include <type_traits>
 
 
 namespace libbio::sam::detail {
-	
+
 	typedef parsing::traits::delimited <
 		parsing::delimiter <'\t'>,
 		parsing::delimiter <'\n'>
 	> parser_trait_type;
-	
+
 	typedef parsing::parser <
 		parser_trait_type,
 		parsing::fields::text <>,						//  0: QNAME, may be *
@@ -35,14 +44,14 @@ namespace libbio::sam::detail {
 		parsing::fields::character_sequence <char>,		// 10: QUAL, may be *
 		fields::optional_field							// 11: Optional fields
 	> parser_type;
-	
+
 	void prepare_record(header const &header_, parser_type::record_type &src, record &dst);
 	void prepare_parser_record(record &src, parser_type::record_type &dst);
 }
 
 
 namespace libbio::sam {
-	
+
 	template <typename t_record>
 	requires std::derived_from <t_record, record>
 	class record_reader
@@ -51,17 +60,17 @@ namespace libbio::sam {
 		typedef detail::parser_trait_type	parser_trait_type;
 		typedef detail::parser_type			parser_type;
 		typedef t_record					record_type;
-		
+
 	private:
 		parser_type					m_parser;
 		parser_type::record_type	m_parser_record;
 		record_type					m_record;
-		
+
 	public:
 		// Valid after calling prepare_one().
 		record_type &record() { return m_record; }
 		record_type const &record() const { return m_record; }
-		
+
 		template <typename t_range>
 		bool prepare_one(header const &header_, t_range &&range)
 		requires std::derived_from <std::remove_cvref_t <t_range>, input_range_base>
@@ -69,11 +78,11 @@ namespace libbio::sam {
 			detail::prepare_parser_record(m_record, m_parser_record);
 			if (!m_parser.parse(range, m_parser_record))
 				return false;
-		
+
 			detail::prepare_record(header_, m_parser_record, m_record);
 			return true;
 		}
-		
+
 		template <typename t_range, typename t_cb>
 		void read_all(header const &header_, t_range &&range, t_cb &&cb)
 		requires std::derived_from <std::remove_cvref_t <t_range>, input_range_base>
@@ -86,27 +95,27 @@ namespace libbio::sam {
 			}
 		}
 	};
-	
-	
+
+
 	class reader
 	{
 	public:
 		typedef record_reader <record>		record_reader_type;
 		typedef detail::parser_trait_type	parser_trait_type;
 		typedef detail::parser_type			parser_type;
-		
+
 	public:
 		void read_header(header &, input_range_base &) const;
-		
+
 		template <typename t_range, typename t_cb>
 		void read_records(header const &, t_range &&, t_cb &&) const
 		requires std::derived_from <std::remove_cvref_t <t_range>, input_range_base>;
-		
+
 		template <typename t_cb>
 		inline void read_records(header const &header_, file_handle &fh, t_cb &&cb) const;
 	};
-	
-	
+
+
 	template <typename t_range, typename t_cb>
 	void reader::read_records(header const &header_, t_range &&range, t_cb &&cb) const
 	requires std::derived_from <std::remove_cvref_t <t_range>, input_range_base>
@@ -114,8 +123,8 @@ namespace libbio::sam {
 		record_reader_type reader;
 		reader.read_all(header_, std::forward <t_range>(range), std::forward <t_cb>(cb));
 	}
-	
-	
+
+
 	template <typename t_cb>
 	void reader::read_records(header const &header_, file_handle &fh, t_cb &&cb) const
 	{

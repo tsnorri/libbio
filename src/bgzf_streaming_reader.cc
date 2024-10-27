@@ -3,12 +3,23 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <libbio/assert.hh>
+#include <libbio/bgzf/block.hh>
 #include <libbio/bgzf/parser.hh>
 #include <libbio/bgzf/streaming_reader.hh>
+#include <libbio/binary_parsing/range.hh>
+#include <libbio/circular_buffer.hh>
+#include <libbio/dispatch/queue.hh>
+#include <mutex>
+#include <span>
+#include <stdexcept>
 
 
 namespace libbio::bgzf::detail {
-	
+
 	void streaming_reader_decompression_task::run()
 	{
 		auto &dst(reader->m_buffer_queue.pop());
@@ -17,10 +28,10 @@ namespace libbio::bgzf::detail {
 			std::span{block.compressed_data, block.compressed_data_size},
 			std::span{dst.data(), dst.size()}
 		));
-		
+
 		if (res.size() != block.isize)
 			throw std::runtime_error("Unexpected number of bytes decompressed from a BGZF block");
-		
+
 		libbio_assert(reader);
 		reader->decompression_task_did_finish(*this, dst);
 	}
@@ -28,54 +39,54 @@ namespace libbio::bgzf::detail {
 
 
 namespace libbio::bgzf {
-	
+
 	void streaming_reader::decompression_task_did_finish(decompression_task &task, output_buffer_type &buffer)
 	{
 		{
 			std::lock_guard const lock{m_released_offsets_mutex};
 			m_released_offsets.push_back(task.block.offset);
 		}
-		
+
 		auto const block_index(task.block_index);
 		m_task_queue.push(task);
 		// Task no longer valid.
 		m_delegate->streaming_reader_did_decompress_block(*this, block_index, buffer);
 	}
-	
-	
+
+
 	void streaming_reader::return_output_buffer(output_buffer_type &buffer)
 	{
 		m_buffer_queue.push(buffer);
 	}
-	
-	
+
+
 	void streaming_reader::read_first_block(dispatch::queue &dispatch_queue)
 	{
 		// For reading the BAM header.
 		m_input_buffer.clear();
-		
+
 		auto writing_range(m_input_buffer.writing_range());
 		libbio_always_assert_lt(0, writing_range.size());
 		std::size_t const bytes_read{m_handle->read(writing_range.size(), writing_range.it)};
 		m_input_buffer.add_to_occupied(bytes_read);
-		
+
 		auto reading_range(m_input_buffer.reading_range());
 		binary_parsing::range reading_range_(reading_range);
-		
+
 		// Parse the first BGZF block.
 		block bb;
 		parser pp(reading_range_, bb);
 		pp.parse();
-		
+
 		// Start a decompression task.
 		auto &task(m_task_queue.pop()); // Blocks when no more tasks are available.
 		task.block = bb;
 		dispatch_queue.group_async(*m_group, &task);
-		
+
 		// To be able to continue, we could update reading_range here and pass it to the caller.
 	}
-	
-	
+
+
 	void streaming_reader::run(dispatch::queue &dispatch_queue)
 	{
 		// To process the file, we first fill m_input_buffer with its contents.
@@ -86,15 +97,15 @@ namespace libbio::bgzf {
 		// possibly mediated by a semaphore. When starting a block, we call add_buffer_offset. When a
 		// task is done, we remove said offset, adjust the beginning of the circular buffer to the
 		// next smallest offset and fill the buffer again.
-		
+
 		m_input_buffer.clear();
 		m_active_offsets.clear();
 		m_released_offsets.clear();
 		m_offset_buffer.clear();
 		std::size_t block_index{};
-		
+
 		circular_buffer::const_range reading_range{};
-		
+
 		auto const decompress_block([this, &block_index, &dispatch_queue](block &bb){
 			if (m_semaphore)
 				m_semaphore->acquire();
@@ -103,31 +114,31 @@ namespace libbio::bgzf {
 			task.block_index = block_index++;
 			dispatch_queue.group_async(*m_group, &task);
 		});
-		
+
 		std::size_t current_offset{};
 		while (true)
 		{
 			// Update the buffer.
 			std::size_t bytes_read{};
-			
+
 			{
 				auto writing_range(m_input_buffer.writing_range());
 				libbio_always_assert_lt(0, writing_range.size());
 				bytes_read = m_handle->read(writing_range.size(), writing_range.it);
 				if (0 == bytes_read)
 					break;
-				
+
 				m_input_buffer.add_to_occupied(bytes_read);
 			}
-			
+
 			reading_range = m_input_buffer.reading_range();
 			auto const base_address(reading_range.it);
 			auto const range_left_bound(m_input_buffer.lb());
 			libbio_assert_lt(current_offset, reading_range.size());
 			reading_range.it += current_offset;
-			
+
 			binary_parsing::range reading_range_(reading_range);
-			
+
 			// Read until at most block_size bytes left.
 			while (block_size < reading_range.size())
 			{
@@ -135,21 +146,21 @@ namespace libbio::bgzf {
 				block bb;
 				parser pp(reading_range_, bb);
 				pp.parse();
-				
+
 				// Store the offset of the compressed stream.
 				auto const compressed_data_offset(m_input_buffer.lb() + (bb.compressed_data - base_address));
 				bb.offset = compressed_data_offset;
 				m_active_offsets.push_back(compressed_data_offset);
-				
+
 				// Start a decompression task.
 				decompress_block(bb);
-				
+
 				reading_range.it = reading_range_.it;
 			}
-			
+
 			// Update the offsets.
 			m_offset_buffer.clear();
-			
+
 			{
 				std::lock_guard const lock{m_released_offsets_mutex};
 				std::sort(m_released_offsets.begin(), m_released_offsets.end());
@@ -161,12 +172,12 @@ namespace libbio::bgzf {
 				);
 				m_released_offsets.clear();
 			}
-			
+
 			{
 				using std::swap;
 				swap(m_active_offsets, m_offset_buffer);
 			}
-			
+
 			// Update the position.
 			if (m_active_offsets.empty())
 			{
@@ -185,7 +196,7 @@ namespace libbio::bgzf {
 				current_offset = prev_block_length - available_space;
 			}
 		}
-		
+
 		// EOF found. Read until the end of the input.
 		{
 			binary_parsing::range reading_range_(reading_range);
@@ -196,7 +207,7 @@ namespace libbio::bgzf {
 				parser pp(reading_range_, bb);
 				pp.parse();
 				reading_range.it = reading_range_.it;
-			
+
 				// Start a decompression task.
 				decompress_block(bb);
 			}

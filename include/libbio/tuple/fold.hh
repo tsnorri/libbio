@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -8,10 +8,12 @@
 
 #include <libbio/tuple/slice.hh>
 #include <libbio/tuple/utility.hh>	// libbio::is_tuple_v
+#include <tuple>
+#include <type_traits>
 
 
 namespace libbio::tuples::detail {
-	
+
 	// By wrapping t_type we can use std::invoke_result_t on a helper function without accidentally
 	// evaluating the (possibly missing or not accessible) constructor of t_type.
 	template <typename t_type>
@@ -23,15 +25,15 @@ namespace libbio::tuples::detail {
 
 
 namespace libbio::tuples {
-	
+
 	// Left fold for tuples, i.e.
 	// Tuple f => (X -> b -> Y) -> a -> f b -> c
 	// s.t. X = a on the first iteration and Y = c on the last.
 	template <template <typename...> typename, typename, typename t_tuple>
 	requires is_tuple_v <t_tuple>
 	struct foldl {};
-	
-	
+
+
 	template <template <typename...> typename t_fn, typename t_acc, typename... t_args>
 	struct foldl <t_fn, t_acc, std::tuple <t_args...>>
 	{
@@ -48,11 +50,11 @@ namespace libbio::tuples {
 				return foldl <t_fn, result_type, tail_type>::helper();
 			}
 		}
-		
+
 		typedef typename std::invoke_result_t <decltype(&foldl::helper)>::wrapped_type type;
 	};
-	
-	
+
+
 	template <template <typename...> typename t_fn, typename t_acc, typename t_tuple>
 	using foldl_t = typename foldl <t_fn, t_acc, t_tuple>::type;
 }

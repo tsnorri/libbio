@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Tuukka Norri
+ * Copyright (c) 2021-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -8,32 +8,33 @@
 
 #include <libbio/buffered_writer/buffered_writer_base.hh>
 #include <libbio/dispatch.hh>
+#include <stdexcept>
 
 
 namespace libbio {
-	
+
 	enum class dispatch_io_channel_flags : std::uint8_t
 	{
 		NONE					= 0x0,
 		HAS_RANDOM_ACCESS		= 0x1,
 		OWNS_FILE_DESCRIPTOR	= 0x2
 	};
-	
-	
+
+
 	constexpr inline dispatch_io_channel_flags
 	operator|(dispatch_io_channel_flags const ll, dispatch_io_channel_flags const rr)
 	{
 		return static_cast <dispatch_io_channel_flags>(libbio::to_underlying(ll) | libbio::to_underlying(rr));
 	}
-	
-	
+
+
 	constexpr inline dispatch_io_channel_flags
 	operator&(dispatch_io_channel_flags const ll, dispatch_io_channel_flags const rr)
 	{
 		return static_cast <dispatch_io_channel_flags>(libbio::to_underlying(ll) & libbio::to_underlying(rr));
 	}
-	
-	
+
+
 	class dispatch_io_channel_buffered_writer final : public buffered_writer_base
 	{
 	protected:
@@ -42,10 +43,10 @@ namespace libbio {
 		dispatch_semaphore_lock			m_writing_lock;
 		buffer_type						m_writing_buffer;
 		bool							m_owns_file_descriptor{};
-		
+
 	public:
 		dispatch_io_channel_buffered_writer() = default;
-		
+
 		// FIXME: error handling could be done in some other way than throwing.
 		dispatch_io_channel_buffered_writer(dispatch_fd_t fd, std::size_t buffer_size, dispatch_queue_t reporting_queue, dispatch_io_channel_flags const ff = dispatch_io_channel_flags::HAS_RANDOM_ACCESS):
 			buffered_writer_base(buffer_size),
@@ -65,7 +66,7 @@ namespace libbio {
 			if (!m_io_channel)
 				throw std::runtime_error("Unable to create IO channel");
 		}
-		
+
 		// FIXME: same as above.
 		dispatch_io_channel_buffered_writer(char const *path, int oflag, mode_t mode, std::size_t buffer_size, dispatch_queue_t reporting_queue):
 			buffered_writer_base(buffer_size),
@@ -77,16 +78,16 @@ namespace libbio {
 			if (!m_io_channel)
 				throw std::runtime_error("Unable to create IO channel");
 		}
-			
+
 		~dispatch_io_channel_buffered_writer() { if (m_io_channel) close(); }
-		
+
 		dispatch_io_channel_buffered_writer(dispatch_io_channel_buffered_writer &&) = default;
 		dispatch_io_channel_buffered_writer &operator=(dispatch_io_channel_buffered_writer &&) & = default;
-		
+
 		// Copying not allowed.
 		dispatch_io_channel_buffered_writer(dispatch_io_channel_buffered_writer const &) = delete;
 		dispatch_io_channel_buffered_writer &operator=(dispatch_io_channel_buffered_writer const &) = delete;
-		
+
 		void close();
 		void flush() override;
 	};

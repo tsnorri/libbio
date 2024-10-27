@@ -6,13 +6,14 @@
 #ifndef LIBBIO_TUPLE_FOR_HH
 #define LIBBIO_TUPLE_FOR_HH
 
+#include <cstddef>
 #include <libbio/utility/misc.hh>	// size_constant
 #include <tuple>
 #include <type_traits>				// std::integral_constant
 
 
 namespace libbio::tuples {
-	
+
 	// Loop with an index.
 	template <std::size_t t_limit, std::size_t t_idx = 0, typename t_fn>
 	constexpr static inline void for_(t_fn &&fn)
@@ -23,8 +24,8 @@ namespace libbio::tuples {
 			for_ <t_limit, 1 + t_idx>(fn);
 		}
 	}
-	
-	
+
+
 	// Apply a function to each of the tuple elements.
 	template <typename t_tuple, std::size_t t_i = 0, typename t_fn>
 	constexpr static inline void for_each(t_fn &&fn)
@@ -36,7 +37,7 @@ namespace libbio::tuples {
 			for_each <t_tuple, 1 + t_i>(fn);
 		}
 	}
-	
+
 	template <std::size_t t_i = 0, typename t_tuple, typename t_fn>
 	constexpr static inline void for_each(t_tuple &&tuple, t_fn &&fn)
 	{

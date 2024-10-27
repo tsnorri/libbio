@@ -9,10 +9,11 @@
 #include <climits>
 #include <cstdint>
 #include <libbio/utility/misc.hh>
+#include <stdexcept>
 
 
 namespace libbio::detail {
-	
+
 	template <unsigned int t_length_diff>
 	struct fill_bit_pattern_helper
 	{
@@ -20,12 +21,12 @@ namespace libbio::detail {
 		static constexpr t_word fill_bit_pattern(t_word pattern)
 		{
 			pattern |= pattern << t_pattern_length;
-		
+
 			typedef fill_bit_pattern_helper <CHAR_BIT * sizeof(t_word) - 2 * t_pattern_length> helper;
 			return helper::template fill_bit_pattern <2 * t_pattern_length>(pattern);
 		}
 	};
-	
+
 	template <>
 	struct fill_bit_pattern_helper <0>
 	{
@@ -46,8 +47,8 @@ namespace libbio {
 		typedef detail::fill_bit_pattern_helper <CHAR_BIT * sizeof(t_word) - t_pattern_length> helper;
 		return helper::template fill_bit_pattern <t_pattern_length>(pattern);
 	}
-	
-	
+
+
 	template <typename t_word>
 	inline t_word fill_bit_pattern(t_word pattern, std::uint8_t const pattern_length)
 	{

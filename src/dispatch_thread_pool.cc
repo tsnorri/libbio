@@ -3,17 +3,28 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <algorithm>
+#include <atomic>
+#include <condition_variable>
+#include <cerrno>
+#include <chrono>
 #include <cmath>				// std::floor
+#include <cstdint>
+#include <cstring>
 #include <libbio/assert.hh>
 #include <libbio/dispatch.hh>
+#include <mutex>
+#include <shared_mutex>
 #include <signal.h>				// sigfillset, ::pthread_sigmask
+#include <stdexcept>
+#include <sys/signal.h>
 #include <thread>
 
 namespace chrono	= std::chrono;
 
 
 namespace libbio::dispatch {
-	
+
 	thread_pool::thread_count_type const thread_pool::default_max_worker_threads = thread_pool::thread_count_type(
 		std::floor(1.5 * (std::thread::hardware_concurrency() ?: 2))
 	);
@@ -28,66 +39,66 @@ namespace libbio::dispatch {
 		if (-1 == ::pthread_sigmask(SIG_SETMASK, &mask, nullptr))
 			throw std::runtime_error(::strerror(errno));
 	}
-	
-	
+
+
 	class worker_thread_runner
 	{
 	private:
 		typedef	chrono::steady_clock	clock_type;
 		typedef clock_type::time_point	time_point_type;
 		typedef clock_type::duration	duration_type;
-		
+
 	private:
 		thread_pool		*m_thread_pool{};
 		duration_type	m_max_idle_time{};
-		
+
 	public:
 		worker_thread_runner(thread_pool &pool, duration_type const max_idle_time):
 			m_thread_pool(&pool),
 			m_max_idle_time(max_idle_time)
 		{
 		}
-		
+
 		void run();
 		void operator()() { run(); }
-		
+
 		void remove_from_pool(std::int64_t const executed_tasks);
 		void begin_idle(std::int64_t const executed_tasks);
 	};
-	
-	
+
+
 	void worker_thread_runner::remove_from_pool(std::int64_t const executed_tasks)
 	{
 		auto &pool(*m_thread_pool);
 		pool.m_waiting_tasks -= executed_tasks;
 		pool.remove_worker();
 	}
-	
-	
+
+
 	void worker_thread_runner::begin_idle(std::int64_t const executed_tasks)
 	{
 		auto &pool(*m_thread_pool);
 		pool.m_waiting_tasks -= executed_tasks;
 		++pool.m_idle_workers;
 	}
-	
-	
+
+
 	void worker_thread_runner::run()
 	{
 		block_signals();
 
 		libbio_assert(m_thread_pool);
 		auto &pool(*m_thread_pool);
-		
+
 		auto last_wake_up_time{clock_type::now()};
 		parallel_queue::queue_item queue_item{}; // Initialise just once to save a bit of time.
-		
+
 		{
 			std::unique_lock lock(pool.m_mutex, std::defer_lock_t{});
 			while (true)
 			{
 				std::int64_t executed_tasks{}; // Total over the iterations of the loop below (but not the enclosing loop).
-			
+
 				{
 					// Critical section 1.
 					// We need the queues to persist while tasks are being executed.
@@ -102,7 +113,7 @@ namespace libbio::dispatch {
 							if (queue->m_task_queue.try_dequeue(queue_item))
 							{
 								++executed_tasks;
-						
+
 #if LIBBIO_ENABLE_DISPATCH_BARRIER
 								{
 									libbio_assert(queue_item.barrier_);
@@ -112,19 +123,19 @@ namespace libbio::dispatch {
 									{
 										// Wait for the previous tasks and the previous barrier to complete.
 										bb.m_previous_has_finished.wait(false, std::memory_order_acquire);
-								
+
 										bb.m_task();
 										bb.m_task = task{}; // Deallocate memory.
-								
+
 										bool should_continue{};
-										
+
 										{
 											std::lock_guard const lock_{lock};
 											should_continue = pool.m_should_continue;
 											if (!should_continue)
 												remove_from_pool(executed_tasks);
 										}
-								
+
 										if (should_continue)
 										{
 											bb.m_state.store(barrier::DONE, std::memory_order_release);
@@ -152,13 +163,13 @@ namespace libbio::dispatch {
 													remove_from_pool(executed_tasks);
 													return;
 												}
-										
+
 												break;
 											}
-									
+
 											case barrier::DONE:
 												break;
-									
+
 											// Stop if the barrier’s task called m_pool.stop().
 											case barrier::DO_STOP:
 											{
@@ -166,7 +177,7 @@ namespace libbio::dispatch {
 												remove_from_pool(executed_tasks);
 												return;
 											}
-										
+
 											case barrier::NOT_EXECUTED:
 												// Unexpected.
 												std::abort();
@@ -174,18 +185,18 @@ namespace libbio::dispatch {
 									}
 								}
 #endif
-						
+
 								queue_item.task_();
 								if (queue_item.group_)
 									queue_item.group_->exit(); // Important to do only after executing the task, since it can add new tasks to the group.
 							}
 						} // Queue loop
-					
+
 						if (executed_tasks == prev_executed_tasks)
 							break;
 					} // Inner while (true)
 				} // Critical section 1
-			
+
 				{
 					// Check the last wake-up time.
 					auto const now{clock_type::now()};
@@ -197,15 +208,15 @@ namespace libbio::dispatch {
 						remove_from_pool(executed_tasks); // zero but does not matter.
 						return;
 					}
-				
+
 					last_wake_up_time = now;
 				}
-			
+
 				// Critical section 2.
 				{
 					lock.lock();
 					begin_idle(executed_tasks);
-				
+
 					// Handle spurious wake-ups by repeatedly calling wait_for().
 					while (true)
 					{
@@ -214,67 +225,67 @@ namespace libbio::dispatch {
 						{
 							case std::cv_status::no_timeout:
 								break;
-					
+
 							case std::cv_status::timeout:
 								// Still marked idle.
 								pool.remove_idle_worker();
 								return;
 						}
-						
+
 						if (!pool.m_should_continue)
 						{
 							pool.remove_idle_worker();
 							return;
 						}
-						
+
 						if (pool.m_notified_workers)
 						{
 							--pool.m_notified_workers;
 							break;
 						}
 					}
-					
+
 					lock.unlock();
 				}
 			} // Outer while (true)
 		}
 	}
-	
-	
+
+
 	void thread_pool::add_queue(parallel_queue &queue)
 	{
 		std::lock_guard const lock{m_queue_mutex}; // Exclusive
 		m_queues.push_back(&queue);
 	}
-	
-	
+
+
 	void thread_pool::remove_queue(parallel_queue const &queue)
 	{
 		std::lock_guard const lock{m_queue_mutex}; // Exclusive
 		auto const it(std::find(m_queues.begin(), m_queues.end(), &queue));
 		if (it == m_queues.end())
 			return;
-		
+
 		m_queues.erase(it);
 	}
-	
-	
+
+
 	void thread_pool::start_worker_()
 	{
 		++m_current_workers;
 		std::thread thread(worker_thread_runner{*this, m_max_idle_time});
 		thread.detach();
 	}
-	
-	
+
+
 	void thread_pool::remove_worker()
 	{
 		libbio_assert_lt(0, m_current_workers);
 		if (0 == --m_current_workers)
 			m_stop_cv.notify_one();
 	}
-	
-	
+
+
 	void thread_pool::remove_idle_worker()
 	{
 		// Worker still marked idle.
@@ -282,15 +293,15 @@ namespace libbio::dispatch {
 		if (0 == --m_current_workers)
 			m_stop_cv.notify_one();
 	}
-	
-	
+
+
 	void thread_pool::start_worker()
 	{
 		std::lock_guard const lock{m_mutex};
 		start_worker_();
 	}
-	
-	
+
+
 	void thread_pool::notify()
 	{
 		{
@@ -302,33 +313,33 @@ namespace libbio::dispatch {
 				++m_notified_workers;
 				goto do_notify;
 			}
-			
+
 			if (m_max_workers <= m_current_workers && m_min_workers <= m_current_workers)
 				return;
-			
+
 			// Can start a new thread.
 			start_worker_();
 		}
-		
+
 	do_notify:
 		m_cv.notify_one();
 	}
-	
-	
+
+
 	void thread_pool::stop(bool should_wait)
 	{
 		{
 			std::lock_guard lock(m_mutex);
 			m_should_continue = false;
 		}
-		
+
 		m_cv.notify_all();
-		
+
 		if (should_wait)
 			wait();
 	}
-	
-	
+
+
 	void thread_pool::wait()
 	{
 		std::unique_lock lock{m_mutex};

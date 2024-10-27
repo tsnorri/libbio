@@ -7,25 +7,26 @@
 #define LIBBIO_VCF_VARIANT_ALT_HH
 
 #include <libbio/vcf/constants.hh>
+#include <string_view>
 
 
 namespace libbio::vcf {
-	
+
 	struct variant_alt_base
 	{
 		sv_type		alt_sv_type{};
 	};
-	
-	
+
+
 	template <typename t_string>
 	struct variant_alt : public variant_alt_base
 	{
 		t_string	alt{};
-		
+
 		variant_alt() = default;
 		variant_alt(variant_alt const &) = default;
 		variant_alt(variant_alt &&) = default;
-		
+
 		variant_alt &operator=(variant_alt const &) & = default;
 		variant_alt &operator=(variant_alt &&) & = default;
 
@@ -45,11 +46,11 @@ namespace libbio::vcf {
 				alt = other.alt;
 			return this;
 		}
-		
+
 		void set_alt(std::string_view const &alt_) { alt = alt_; }
 	};
-	
-	
+
+
 	template <typename t_lhs_string, typename t_rhs_string>
 	bool operator==(variant_alt <t_lhs_string> const &lhs, variant_alt <t_rhs_string> const &rhs)
 	{

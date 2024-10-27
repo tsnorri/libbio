@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2021 Tuukka Norri
+ * Copyright (c) 2021-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <cerrno>
 #include <cstring>
 #include <libbio/buffered_writer/file_handle_buffered_writer.hh>
 #include <stdexcept>
@@ -11,7 +12,7 @@
 
 
 namespace libbio {
-	
+
 	void file_handle_buffered_writer::flush()
 	{
 		auto const byte_count(this->m_position);

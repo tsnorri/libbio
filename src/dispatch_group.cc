@@ -3,34 +3,37 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <atomic>
 #include <libbio/assert.hh>
 #include <libbio/dispatch.hh>
+#include <mutex>
+#include <utility>
 
 
 namespace libbio::dispatch {
-	
+
 	void group::wait()
 	{
 		exit();
-		
+
 		std::unique_lock lock(m_mutex);
 		m_cv.wait(lock, [this]{ return m_should_stop_waiting; });
 		m_should_stop_waiting = false;
 		m_count.fetch_add(1, std::memory_order_relaxed); // Restore the group’s initial state.
 	}
-	
-	
+
+
 	void group::notify(struct queue &queue, task tt)
 	{
 		m_queue = &queue;
 		m_task = std::move(tt);
 		// Relaxed should be enough b.c. exit() uses std::memory_order_acq_rel.
 		m_count.fetch_or(NOTIFY_MASK, std::memory_order_relaxed);
-		
+
 		exit();
 	}
-	
-	
+
+
 	void group::exit()
 	{
 		auto const res(m_count.fetch_sub(1, std::memory_order_acq_rel));
@@ -48,7 +51,7 @@ namespace libbio::dispatch {
 				std::lock_guard lock(m_mutex);
 				m_should_stop_waiting = true;
 			}
-			
+
 			m_cv.notify_all();
 		}
 	}

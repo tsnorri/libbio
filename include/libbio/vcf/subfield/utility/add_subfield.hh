@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -8,24 +8,25 @@
 
 #include <functional>
 #include <libbio/vcf/subfield/base.hh>
-#include <type_traits> // std::false_type, std::true_type
+#include <string>
+#include <type_traits>					// std::false_type, std::true_type
 
 
 namespace libbio::vcf::detail {
-	
+
 	template <typename t_type>
 	struct is_std_function : public std::false_type {};
-	
+
 	template <typename t_type>
 	struct is_std_function <std::function <t_type>> : public std::true_type {};
-	
+
 	template <typename t_ret, typename ... t_args>
 	struct is_std_function <std::function <t_ret(t_args...)>> : public std::true_type {};
-	
+
 	template <typename t_type>
 	constexpr inline auto const is_std_function_v{is_std_function <t_type>::value};
-	
-	
+
+
 	template <typename t_fn>
 	constexpr inline bool is_callable_or_valid_std_function(t_fn &&fn)
 	{
@@ -36,8 +37,8 @@ namespace libbio::vcf::detail {
 		else
 			return true;
 	}
-	
-	
+
+
 	constexpr inline bool compare_subfields(vcf::subfield_base const &lhs, vcf::subfield_base const &rhs)
 	{
 		return (
@@ -50,7 +51,7 @@ namespace libbio::vcf::detail {
 
 
 namespace libbio::vcf {
-	
+
 	template <
 		typename t_field_type,
 		typename t_map,
@@ -61,7 +62,7 @@ namespace libbio::vcf {
 	void add_subfield(t_map &map, t_key const &key, t_cb &&cb)
 	{
 		// t_cb could be replaced with std::function <bool(std::string const &, t_field_base const &, t_field_base const &)>.
-		
+
 		auto const res(map.try_emplace(key));
 		if (res.second)
 		{
@@ -78,8 +79,8 @@ namespace libbio::vcf {
 				ft_ptr.reset(new t_field_type());
 		}
 	}
-	
-	
+
+
 	template <typename t_field_type, typename t_map, typename t_key>
 	void add_subfield(t_map &map, t_key const &key)
 	{

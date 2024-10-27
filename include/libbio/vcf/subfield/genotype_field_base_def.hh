@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Tuukka Norri
+ * Copyright (c) 2019-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -8,17 +8,19 @@
 
 #include <libbio/assert.hh>
 #include <libbio/vcf/subfield/genotype_field_base_decl.hh>
+#include <libbio/vcf/variant/fwd.hh>
 #include <libbio/vcf/variant/sample.hh>
+#include <string_view>
 
 
 namespace libbio::vcf {
-	
+
 	void genotype_field_base::prepare(transient_variant_sample &dst) const
 	{
 		this->reset(dst, dst.m_sample_data.get());
 	}
-	
-	
+
+
 	void genotype_field_base::parse_and_assign(std::string_view const &sv, transient_variant const &var, transient_variant_sample &dst) const
 	{
 		// May be called multiple times for a vector subfield.
@@ -27,8 +29,8 @@ namespace libbio::vcf {
 		if (this->parse_and_assign(sv, var, dst, dst.m_sample_data.get()))
 			dst.m_assigned_genotype_fields[this->get_index()] = true;
 	}
-	
-	
+
+
 	constexpr bool genotype_field_base::has_value(variant_sample_base const &sample) const
 	{
 		libbio_assert_neq(this->get_index(), INVALID_INDEX);

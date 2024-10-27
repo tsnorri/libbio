@@ -4,10 +4,12 @@
  */
 
 #include <libbio/dispatch.hh>
+#include <mutex>
+#include <utility>
 
 
 namespace libbio::dispatch {
-	
+
 	void thread_local_queue::async_(task &&tt)
 	{
 		{
@@ -17,8 +19,8 @@ namespace libbio::dispatch {
 
 		m_cv.notify_one();
 	}
-	
-	
+
+
 	void thread_local_queue::group_async(group &gg, task tt)
 	{
 		gg.enter();
@@ -30,26 +32,26 @@ namespace libbio::dispatch {
 
 		m_cv.notify_one();
 	}
-	
-	
+
+
 	void thread_local_queue::clear()
 	{
 		std::lock_guard lock(m_mutex);
 		m_task_queue.clear();
 	}
-	
-	
+
+
 	void thread_local_queue::stop()
 	{
 		{
 			std::lock_guard lock(m_mutex);
 			m_should_continue = false;
 		}
-		
+
 		m_cv.notify_one();
 	}
-	
-	
+
+
 	bool thread_local_queue::run()
 	{
 		std::unique_lock lock(m_mutex);
@@ -58,7 +60,7 @@ namespace libbio::dispatch {
 			// Critical section; we now have the lock.
 			if (!m_should_continue)
 				return m_task_queue.empty(); // std::unique_lock unlocks automatically.
-			
+
 			if (m_task_queue.empty())
 			{
 				// Task queue is empty and we still hold the lock.
@@ -69,26 +71,26 @@ namespace libbio::dispatch {
 			{
 				// Get the next item from the queue.
 				queue_item item;
-				
+
 				{
 					using std::swap;
 					swap(item, m_task_queue.front());
 					m_task_queue.pop_front();
 				}
-				
+
 				lock.unlock();
-				
+
 				// Non-critical section; execute the task.
 				item.task_();
 				if (item.group_)
 					item.group_->exit();
-				
+
 				lock.lock();
 			}
 		}
 	}
-	
-	
+
+
 	thread_local_queue &main_queue()
 	{
 		static thread_local_queue main_queue;

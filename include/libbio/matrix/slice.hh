@@ -7,6 +7,7 @@
 #define LIBBIO_MATRIX_SLICE_HH
 
 #include <boost/range.hpp>
+#include <cstddef>
 #include <iostream>
 #include <range/v3/algorithm/copy.hpp>
 #include <range/v3/iterator/stream_iterators.hpp>
@@ -15,7 +16,7 @@
 
 
 namespace libbio::detail {
-	
+
 	template <typename t_matrix>
 	class matrix_slice
 	{
@@ -31,11 +32,11 @@ namespace libbio::detail {
 		typedef boost::iterator_range <const_iterator>			const_iterator_range;
 		typedef boost::iterator_range <matrix_iterator>			matrix_iterator_range;
 		typedef boost::iterator_range <const_matrix_iterator>	const_matrix_iterator_range;
-		
+
 	protected:
 		t_matrix	*m_matrix{nullptr};
 		std::slice	m_slice{};
-		
+
 	public:
 		matrix_slice() = default;
 		matrix_slice(t_matrix &matrix, std::slice const &slice):
@@ -43,15 +44,15 @@ namespace libbio::detail {
 			m_slice(slice)
 		{
 		}
-		
+
 		matrix_type &matrix() { return *m_matrix; }
 		matrix_type const &matrix() const { return *m_matrix; }
-		
+
 		std::size_t size() const { return m_slice.size(); }
-		
+
 		reference operator[](std::size_t const idx) { libbio_assert(idx < size()); return *(begin() + idx); }
 		const_reference operator[](std::size_t const idx) const { libbio_assert(idx < size()); return *(begin() + idx); }
-		
+
 		matrix_iterator begin() { return matrix_iterator(*m_matrix, m_slice.start(), m_slice.stride()); }
 		matrix_iterator end() { return matrix_iterator(*m_matrix, m_slice.start() + m_slice.size() * m_slice.stride(), m_slice.stride()); }
 		matrix_iterator_range range() { return boost::make_iterator_range(begin(), end()); }
@@ -61,11 +62,11 @@ namespace libbio::detail {
 		const_matrix_iterator cbegin() const { return const_matrix_iterator(*m_matrix, m_slice.start(), m_slice.stride()); }
 		const_matrix_iterator cend() const { return const_matrix_iterator(*m_matrix, m_slice.start() + m_slice.size() * m_slice.stride(), m_slice.stride()); }
 		const_matrix_iterator_range const_range() const { return boost::make_iterator_range(cbegin(), cend()); }
-		
+
 		void output_to_stderr() { std::cerr << *this << std::endl; } // For debugging.
 	};
-	
-	
+
+
 	template <typename t_matrix>
 	std::ostream &operator<<(std::ostream &os, matrix_slice <t_matrix> const &slice)
 	{

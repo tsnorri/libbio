@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2017-2018 Tuukka Norri
+ * Copyright (c) 2017-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_PROGRESS_BAR_HH
 #define LIBBIO_PROGRESS_BAR_HH
 
+#include <cstddef>
 #include <chrono>
 #include <ostream>
 #include <string>

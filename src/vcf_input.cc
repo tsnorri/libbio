@@ -1,11 +1,17 @@
 /*
- * Copyright (c) 2017-2018 Tuukka Norri
+ * Copyright (c) 2017-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <algorithm>
+#include <cstddef>
+#include <ios>
+#include <istream>
+#include <libbio/assert.hh>
 #include <libbio/vcf/variant.hh>
 #include <libbio/vcf/vcf_input.hh>
 #include <libbio/vcf/vcf_reader.hh>
+#include <string_view>
 
 
 namespace {
@@ -26,22 +32,22 @@ namespace {
 
 
 namespace libbio::vcf {
-	
+
 	void empty_input::fill_buffer(reader &vcf_reader)
 	{
 		vcf_reader.set_buffer_start(nullptr);
 		vcf_reader.set_buffer_end(nullptr);
 		vcf_reader.set_eof(nullptr);
 	}
-	
-	
+
+
 	void stream_input_base::reader_will_take_input()
 	{
 		if (0 == m_buffer.size())
 			m_buffer.resize(65536);
 	}
-	
-	
+
+
 	void stream_input_base::fill_buffer(reader &vcf_reader)
 	{
 		auto &is(stream());
@@ -58,18 +64,18 @@ namespace libbio::vcf {
 		{
 			m_len = 0;
 		}
-		
+
 		// Read until there's at least one newline in the buffer.
 		while (true)
 		{
 			char *data_start(m_buffer.data());
 			char *data(data_start + m_len);
-		
+
 			std::size_t space(m_buffer.size() - m_len);
 			stream_read(is, data, space);
 			std::size_t const read_len(is.gcount());
 			m_len += read_len;
-		
+
 			if (is.eof())
 			{
 				m_pos = m_len;
@@ -79,7 +85,7 @@ namespace libbio::vcf {
 				vcf_reader.set_eof(end);
 				return;
 			}
-		
+
 			// Try to find the last newline in the new part.
 			std::string_view sv(data, read_len);
 			m_pos = sv.rfind('\n');
@@ -91,18 +97,18 @@ namespace libbio::vcf {
 				vcf_reader.set_eof(nullptr);
 				return;
 			}
-			
+
 			libbio_assert_lt(0, m_buffer.size());
 			m_buffer.resize(2 * m_buffer.size());
 		}
 	}
-	
-	
+
+
 	void mmap_input::fill_buffer(reader &vcf_reader)
 	{
 		auto const begin(m_handle.data());
 		auto const end(begin + m_handle.size());
-		
+
 		vcf_reader.set_buffer_start(begin);
 		vcf_reader.set_buffer_end(end);
 		vcf_reader.set_eof(end);

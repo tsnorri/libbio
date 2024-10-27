@@ -6,34 +6,47 @@
 #ifndef LIBBIO_DISPATCH_EVENTS_PLATFORM_MANAGER_LINUX_HH
 #define LIBBIO_DISPATCH_EVENTS_PLATFORM_MANAGER_LINUX_HH
 
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
+#include <functional>
+#include <libbio/dispatch/events/file_descriptor_source.hh>
 #include <libbio/dispatch/events/manager.hh>
+#include <libbio/dispatch/events/signal_source.hh>
+#include <libbio/dispatch/events/source.hh>
+#include <libbio/dispatch/queue.hh>
+#include <memory>
+#include <mutex>
 #include <signal.h>
-#include <sys/signalfd.h>	// struct signalfd_siginfo
+#include <sys/signalfd.h>										// struct signalfd_siginfo
+#include <unordered_map>
+#include <vector>
 
 
 namespace libbio::dispatch::events::platform::linux {
-	
+
 	struct source_key
 	{
 		struct fd_tag {};
 		struct signal_tag {};
-		
+
 		int value{}; // Both signals and file descriptors have type int in POSIX.
 		bool is_signal{};
-		
+
 		source_key() = default;
-		
+
 		constexpr source_key(file_descriptor_type const fd, fd_tag):
 			value(fd)
 		{
 		}
-		
+
 		constexpr source_key(signal_type const sig, signal_tag):
 			value(sig),
 			is_signal(true)
 		{
 		}
-		
+
 		constexpr inline bool operator==(source_key const other) const;
 	};
 }
@@ -56,8 +69,8 @@ struct std::hash <libbio::dispatch::events::platform::linux::source_key>
 namespace libbio::dispatch::events::platform::linux {
 
 	typedef events::detail::file_handle	file_handle;
-	
-	
+
+
 	class signal_mask
 	{
 		sigset_t	m_mask{};
@@ -70,24 +83,24 @@ namespace libbio::dispatch::events::platform::linux {
 		{
 			sigemptyset(&m_mask);
 		}
-	
+
 		~signal_mask() { remove_all_(); }
-	
+
 		void add(int sig);
 		void remove(int sig);
 		void remove_all();
 	};
-	
-	
+
+
 	struct fd_counter
 	{
 		std::uint8_t	reader_count{};
 		std::uint8_t	writer_count{};
-		
+
 		constexpr operator bool() const { return reader_count || writer_count; }
 	};
-	
-	
+
+
 	struct timer
 	{
 		file_handle	handle;
@@ -102,13 +115,13 @@ namespace libbio::dispatch::events::platform::linux {
 	{
 		file_handle									m_handle;
 		sigset_t									m_mask{};
-		
+
 	public:
 		signal_monitor()
 		{
 			sigemptyset(&m_mask);
 		}
-		
+
 		int file_descriptor() const { return m_handle.fd; }
 		bool listen(int sig);
 		int unlisten(int sig); // Returns the old file descriptor.
@@ -134,8 +147,8 @@ namespace libbio::dispatch::events::platform::linux {
 		std::vector <event_type> const &events() const { return m_events; }
 		void clear();
 	};
-	
-	
+
+
 	class manager final : public events::manager_base
 	{
 	private:
@@ -143,63 +156,63 @@ namespace libbio::dispatch::events::platform::linux {
 			source_key,
 			std::shared_ptr <events::source>
 		>										source_map;
-		
+
 		typedef std::unordered_map <
 			file_descriptor_type,
 			fd_counter
 		>										counter_map;
-		
+
 	private:
 		file_handle								m_epoll_handle;
-		
+
 		source_map								m_sources;
 		counter_map								m_reader_writer_counts;
-		
+
 		signal_monitor							m_signal_monitor;
 		event_monitor							m_event_monitor;
 		timer									m_timer;
-		
+
 		std::mutex								m_mutex{};
-		
+
 	public:
 		~manager() { stop_and_wait(); } // Calls a virtual member function.
 		void setup() override;
 		void trigger_event(event_type const evt) override { m_event_monitor.post(evt); }
-		
+
 		file_descriptor_source &add_file_descriptor_read_event_source(
 			file_descriptor_type const fd,
 			queue &qq,
 			file_descriptor_source::task_type tt
 		) override;									// Thread-safe.
-		
+
 		file_descriptor_source &add_file_descriptor_write_event_source(
 			file_descriptor_type const fd,
 			queue &qq,
 			file_descriptor_source::task_type tt
 		) override;									// Thread-safe.
-		
+
 		signal_source &add_signal_event_source(
 			signal_type const sig,
 			queue &qq,
 			signal_source::task_type tt
 		) override;									// Thread-safe.
-		
+
 		void remove_file_descriptor_event_source(
 			file_descriptor_source &es
 		) override;									// Thread-safe.
-		
+
 		void remove_signal_event_source(
 			signal_source &es
 		) override;									// Thread-safe.
-		
+
 	private:
 		void run_() override;
 		void listen_for_fd_events(int fd, bool for_read, bool for_write);
 		inline void listen_for_fd_events(file_descriptor_source const &source);
 		void schedule_kernel_timer(duration_type const dur);
 	};
-	
-	
+
+
 	void manager::listen_for_fd_events(file_descriptor_source const &source)
 	{
 		listen_for_fd_events(
@@ -208,13 +221,13 @@ namespace libbio::dispatch::events::platform::linux {
 			source.is_write_event_source()
 		);
 	}
-	
-	
+
+
 	constexpr bool source_key::operator==(source_key const other) const
 	{
 		if (is_signal != other.is_signal)
 			return false;
-		
+
 		return value == other.value;
 	}
 }

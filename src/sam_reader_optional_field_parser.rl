@@ -1,27 +1,32 @@
 /*
- * Copyright (c) 2023 Tuukka Norri
+ * Copyright (c) 2023-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #include <boost/spirit/home/x3.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <libbio/generic_parser/errors.hh>
+#include <libbio/sam/input_range.hh>
+#include <libbio/sam/optional_field.hh>
 #include <libbio/sam/optional_field_parser.hh>
 #include <libbio/sam/parse_error.hh>
 #include <libbio/sam/reader.hh>
+#include <libbio/sam/tag.hh>
+#include <string>
+
+namespace x3 = boost::spirit::x3;
 
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-
-
-namespace x3 = boost::spirit::x3;
-
 
 %% machine sam_optional_field_parser;
 %% write data;
 
 
 namespace libbio::sam {
-	
+
 	void read_optional_fields(input_range_base &fsm, optional_field &dst)
 	{
 		typedef sam::optional_field::floating_point_type fp_type;
@@ -31,34 +36,34 @@ namespace libbio::sam {
 		std::string					fp_buffer{};
 		fp_type						fp{};
 		std::byte					byte{};
-		
+
 		char const					*eof{};
 		int							cs{};
-		
+
 		%%{
 			machine sam_optional_field_parser;
-			
+
 			variable p		fsm.it;
 			variable pe		fsm.sentinel;
 			variable eof	eof;
-			
+
 			action tag_id_first {
 				tag_id = fc;
 				tag_id <<= 8U;
 			}
-			
+
 			action tag_id_second {
 				tag_id |= fc;
 			}
-			
+
 			action optional_start {
 				tag_id = 0;
 			}
-			
+
 			action handle_character {
 				dst.add_value <char>(tag_id, fc);
 			}
-			
+
 			action integer_is_negative { integer_is_negative = true; }
 			action start_integer { integer = 0; }
 			action update_integer {
@@ -73,7 +78,7 @@ namespace libbio::sam {
 			action finish_integer {
 				dst.add_value <std::int32_t>(tag_id, integer);
 			}
-			
+
 			action start_float { fp_buffer.clear(); }
 			action update_float { fp_buffer.push_back(fc); }
 			action finish_float_ {
@@ -84,14 +89,14 @@ namespace libbio::sam {
 			action finish_float {
 				dst.add_value <fp_type>(tag_id, fp);
 			}
-			
+
 			action start_string {
 				dst.start_string(tag_id);
 			}
 			action update_string {
 				dst.current_string_value().push_back(fc);
 			}
-			
+
 			action start_byte { byte = std::byte{}; }
 			action byte_n { byte |= std::byte(fc - '0'); }
 			action byte_a { byte |= std::byte(fc - 'A' + 0xA); }
@@ -102,7 +107,7 @@ namespace libbio::sam {
 			action update_byte_array {
 				dst.add_array_value <std::byte>(byte);
 			}
-			
+
 			sign				= '+' | '-';
 			integer_			= ('+' | '-' %(integer_is_negative))? ([0-9]+) >(start_integer) $(update_integer) %(finish_integer_);
 			float_				= (sign? [0-9]* [.]? [0-9]+ ([eE] sign? [0-9]+)?) >(start_float) $(update_float) %(finish_float_);
@@ -120,26 +125,26 @@ namespace libbio::sam {
 			integer_array_I		= [I] >{ dst.start_array <std::uint32_t>(tag_id); } ([,] integer_ %{ dst.add_array_value <std::uint32_t>(integer); })*;
 			integer_array		= integer_array_c | integer_array_C | integer_array_s | integer_array_S | integer_array_i | integer_array_I;
 			float_array			= [f] >{ dst.start_array <fp_type>(tag_id); } ([,] float_ %{ dst.add_array_value <fp_type>(fp); })*;
-			
+
 			value_character		= "A:" [!-~] @(handle_character);
 			value_integer		= "i:" integer;
 			value_float			= "f:" float;
 			value_string		= "Z:" string;
 			value_byte_array	= "H:" byte_array;
 			value_numeric_array	= "B:" (integer_array | float_array);
-			
+
 			tag					= [A-Za-z] @(tag_id_first) [A-Za-z0-9] @(tag_id_second);
 			typed_value			= value_character | value_integer | value_float | value_string | value_byte_array | value_numeric_array;
 			optional_field		= (tag ':' typed_value) >(optional_start);
-			
+
 			action finish_loop { ++fsm.it; dst.update_tag_order(); return; }
 			action error { throw parsing::parse_error_tpl(parsing::errors::unexpected_character(fc)); }
 			action unexpected_eof { throw parsing::parse_error_tpl(parsing::errors::unexpected_eof{}); }
 			main := ((optional_field ('\t' optional_field)*)? '\n' >(finish_loop)) $err(error) @eof(unexpected_eof);
-			
+
 			write init;
 		}%%
-		
+
 		while (true)
 		{
 			%% write exec;

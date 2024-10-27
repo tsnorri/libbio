@@ -9,27 +9,26 @@
 #include <libbio/dispatch/fwd.hh>
 #include <libbio/dispatch/events/source.hh>
 #include <libbio/dispatch/task_decl.hh>
-#include <memory>							// std::make_shared, std::shared_ptr
 #include <utility>							// std::forward
 
 
 namespace libbio::dispatch::events {
-	
+
 	class file_descriptor_source final : public source_tpl <file_descriptor_source>
 	{
 	public:
 		typedef task_t <file_descriptor_source &>	task_type;
-		
+
 		enum class type
 		{
 			read_source,
 			write_source
 		};
-	
+
 	private:
 		file_descriptor_type			m_fd{-1};
 		type							m_source_type;
-	
+
 	public:
 		file_descriptor_source(
 			queue &qq,
@@ -42,19 +41,19 @@ namespace libbio::dispatch::events {
 			m_source_type(st)
 		{
 		}
-		
+
 		file_descriptor_type file_descriptor() const { return m_fd; }
 		type file_descriptor_source_type() const { return m_source_type; }
 		bool is_read_event_source() const override { return type::read_source == m_source_type; }
 		bool is_write_event_source() const override { return type::write_source == m_source_type; }
 	};
-	
+
 	typedef file_descriptor_source::task_type file_descriptor_task;
 }
 
 
 namespace libbio::dispatch::detail {
-	
+
 	template <>
 	struct member_callable_target <events::file_descriptor_source>
 	{

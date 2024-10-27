@@ -1,20 +1,21 @@
 /*
- * Copyright (c) 2020 Tuukka Norri
+ * Copyright (c) 2020-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_VCF_SUBFIELD_COPY_VALUE_HH
 #define LIBBIO_VCF_SUBFIELD_COPY_VALUE_HH
 
+#include <cstddef>
 #include <vector>
 
 
 namespace libbio::vcf::detail {
-	
+
 	template <typename t_src, typename t_dst>
 	void copy_vector(std::vector <t_src> const &src, std::vector <t_dst> &dst);
-	
-	
+
+
 	template <typename t_src, typename t_dst>
 	struct copy_value
 	{
@@ -23,8 +24,8 @@ namespace libbio::vcf::detail {
 			dst = src;
 		}
 	};
-	
-	
+
+
 	template <typename t_value>
 	struct copy_value <std::vector <t_value>, std::vector <t_value>>
 	{
@@ -33,8 +34,8 @@ namespace libbio::vcf::detail {
 			dst = src;
 		}
 	};
-	
-	
+
+
 	template <typename t_src, typename t_dst>
 	struct copy_value <std::vector <t_src>, std::vector <t_dst>>
 	{
@@ -43,8 +44,8 @@ namespace libbio::vcf::detail {
 			copy_vector(src, dst);
 		}
 	};
-	
-	
+
+
 	template <typename t_src, typename t_dst>
 	void copy_vector(std::vector <t_src> const &src, std::vector <t_dst> &dst)
 	{

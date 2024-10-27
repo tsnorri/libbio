@@ -3,47 +3,50 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+ #include <cstdint>
 #include <libbio/vcf/constants.hh>
+#include <ostream>
+
 
 namespace libbio {
-	
+
 	char const *to_string(vcf::sv_type const svt)
 	{
 		switch (svt)
 		{
 			case vcf::sv_type::NONE:
 				return "(none)";
-			
+
 			case vcf::sv_type::DEL:
 				return "DEL";
-			
+
 			case vcf::sv_type::INS:
 				return "INS";
-			
+
 			case vcf::sv_type::DUP:
 				return "DUP";
-			
+
 			case vcf::sv_type::INV:
 				return "INV";
-			
+
 			case vcf::sv_type::CNV:
 				return "CNV";
-			
+
 			case vcf::sv_type::DUP_TANDEM:
 				return "DUP:TANDEM";
-				
+
 			case vcf::sv_type::DEL_ME:
 				return "DEL:ME";
-				
+
 			case vcf::sv_type::INS_ME:
 				return "INS:ME";
-				
+
 			case vcf::sv_type::UNKNOWN_SV:
 				return "(unknown structural variant)";
-			
+
 			case vcf::sv_type::UNKNOWN:
 				return "(unknown ALT)";
-			
+
 			default:
 				return "(unexpected value)";
 		}
@@ -52,7 +55,7 @@ namespace libbio {
 
 
 namespace libbio::vcf {
-	
+
 	void output_vcf_value(std::ostream &stream, std::int32_t const value)
 	{
 		switch (value)
@@ -74,8 +77,8 @@ namespace libbio::vcf {
 				break;
 		}
 	}
-	
-	
+
+
 	void output_vcf_value(std::ostream &os, metadata_value_type const vt)
 	{
 		switch (vt)

@@ -1,42 +1,47 @@
 /*
- * Copyright (c) 2022-2023 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_GENERIC_PARSER_PARSER_HH
 #define LIBBIO_GENERIC_PARSER_PARSER_HH
 
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <libbio/assert.hh>
+#include <libbio/generic_parser/errors.hh>
+#include <libbio/generic_parser/field_position.hh>
 #include <libbio/generic_parser/fields.hh>
 #include <libbio/generic_parser/iterators.hh>
 #include <libbio/tuple.hh>
 #include <tuple>
 #include <type_traits>							// std::integral_constant, std::is_same_v
-#include <variant>
 
 
 namespace libbio::parsing::detail {
-	
+
 	template <typename t_type>
 	struct make_tuple
 	{
 		typedef std::tuple <t_type> type;
 	};
-	
+
 	template <typename t_type>
 	using make_tuple_t = typename make_tuple <t_type>::type;
-	
-	
+
+
 	template <typename t_lhs, typename t_rhs>
 	using tuple_cat_2_t = tuples::cat_t <t_lhs, t_rhs>;
-	
-	
+
+
 	template <typename t_tuple, bool t_should_copy>
 	struct included_parser_field_indices
 	{
 		template <std::size_t t_i>
 		using size_constant = std::integral_constant <std::size_t, t_i>;
-		
-		
+
+
 		template <std::size_t t_i>
 		constexpr static auto filter_parsers()
 		{
@@ -51,22 +56,22 @@ namespace libbio::parsing::detail {
 					return std::tuple_cat(std::make_tuple(size_constant <t_i>()), filter_parsers <1 + t_i>());
 			}
 		}
-		
+
 		using type = std::invoke_result_t <decltype(&included_parser_field_indices::filter_parsers <0>)>;
 	};
-	
-	
+
+
 	// Predicate for buffer usage.
 	template <typename t_value>
 	struct uses_buffer : public std::bool_constant <!std::is_trivially_copyable_v <t_value>> {};
-	
+
 	template <typename t_value>
 	constexpr inline auto const uses_buffer_v{uses_buffer <t_value>::value};
-	
-	
+
+
 	template <typename, bool, typename>
 	struct parsed_type {};
-	
+
 	template <typename t_field_tuple, bool t_should_copy, typename... t_indices>
 	struct parsed_type <t_field_tuple, t_should_copy, std::tuple <t_indices...>>
 	{
@@ -76,10 +81,10 @@ namespace libbio::parsing::detail {
 		consteval static auto helper()
 		{
 			static_assert(1 <= std::tuple_size_v <t_acc>);
-			
+
 			typedef std::tuple <t_indices...> index_tuple;
 			constexpr auto const index_count{std::tuple_size_v <index_tuple>};
-			
+
 			if constexpr (t_i == index_count)
 			{
 				if constexpr (1 < std::tuple_size_v <t_acc>)
@@ -91,10 +96,10 @@ namespace libbio::parsing::detail {
 			{
 				typedef std::tuple_element_t <t_i, index_tuple> idx_type;						// Current index.
 				constexpr auto const idx{idx_type::value};
-				
+
 				typedef std::tuple_element_t <idx, t_field_tuple> field_type;					// Current field
 				typedef typename field_type::template value_type <t_should_copy> value_type;	// value type
-				
+
 				if constexpr (is_alternative_v <value_type>)
 				{
 					typedef typename value_type::tuple_type	value_tuple_type_;
@@ -120,53 +125,53 @@ namespace libbio::parsing::detail {
 				}
 			}
 		}
-		
+
 		typedef std::invoke_result_t <decltype(&parsed_type::helper <>)> type;
 	};
-	
-	
+
+
 	// Helper for counting the occurrences of each type.
 	template <typename t_type, std::size_t t_count = 0>
 	struct counter
 	{
 		typedef t_type type;
 		constexpr static inline auto const count{t_count};
-		
+
 		typedef counter <t_type, 1 + count>	add_one_type;
 		typedef std::array <t_type, count>	array_type;
-		
+
 		template <typename t_other_type>
 		constexpr static inline auto const eq_v{std::is_same_v <t_type, t_other_type>};
-		
+
 		template <typename t_other_counter>
 		struct max
 		{
 			typedef counter type;
 		};
-		
+
 		template <typename t_other_type, std::size_t t_other_count>
 		struct max <counter <t_other_type, t_other_count>>
 		{
 			static_assert(0 == t_other_count, "This template should only be used for overriding t_count");
 			typedef counter type;
 		};
-		
+
 		template <std::size_t t_other_count>
 		struct max <counter <t_type, t_other_count>>
 		{
 			typedef counter <t_type, (t_other_count < t_count ? t_count : t_other_count)> type;
 		};
-		
+
 		template <typename t_counter>
 		using max_t = typename max <t_counter>::type;
 	};
-	
+
 	template <typename t_counter>
 	using counter_type_t = typename t_counter::type;
-	
+
 	template <typename t_counter, typename t_other_counter>
 	using counter_max_t = typename t_other_counter::template max_t <t_counter>; // t_other_counter is always non-void when using foldl_t.
-	
+
 	// Helper for using counter::eq_v s.t. counter may be varied.
 	template <typename t_type>
 	struct counter_eq
@@ -174,16 +179,16 @@ namespace libbio::parsing::detail {
 		template <typename t_counter>
 		struct with : public std::bool_constant <t_counter::template eq_v <t_type>> {};
 	};
-	
-	
+
+
 	template <typename>
 	struct buffer_type
 	{
 		// Define a dummy type to make the compiler happy.
 		typedef struct {} type;
 	};
-	
-	
+
+
 	template <typename... t_tuples>
 	struct buffer_type <alternative <t_tuples...>>
 	{
@@ -201,23 +206,23 @@ namespace libbio::parsing::detail {
 			typename t_find_result::first_match_type::add_one_type,
 			typename t_find_result::mismatches_type
 		>;
-		
+
 		template <typename t_tuple>
 		using map_filter_t = tuples::filter_t <t_tuple, uses_buffer>;
-		
+
 		template <typename t_tuple>
 		using map_count_t = tuples::foldl_t <
 			count_callback_t,
 			tuples::empty,
 			t_tuple
 		>;
-		
+
 		template <typename t_tuple>
 		using map_max_t = tuples::foldl_t <counter_max_t, void, t_tuple>;
-		
+
 		template <typename t_counter>
 		using to_array_t = typename t_counter::array_type;
-		
+
 		// We only consider non-trivially copyable types.
 		typedef std::tuple <t_tuples...>														tuple_type;
 		static_assert(!tuples::find <tuple_type, std::tuple <>>::found, "The alternative should not contain std::tuple <>.");
@@ -227,14 +232,14 @@ namespace libbio::parsing::detail {
 		typedef tuples::map_t <counts_by_type, map_max_t>										max_counts;					// Max. counts.
 		typedef tuples::map_t <max_counts, to_array_t>											type;						// The complete buffer type.
 	};
-	
-	
+
+
 	template <bool t_parsed_type_is_alternative, typename t_parsed_type>
 	struct record_type
 	{
 		typedef t_parsed_type	type;
 	};
-	
+
 	template <typename t_parsed_type>
 	struct record_type <true, t_parsed_type>
 	{
@@ -243,36 +248,36 @@ namespace libbio::parsing::detail {
 			t_parsed_type::max_alignment
 		> type;
 	};
-	
-	
+
+
 	// Predicate for comparing a type to the type of an std::array.
 	template <typename t_type>
 	struct matches_array
 	{
 		template <typename>
 		struct with {};
-		
+
 		template <typename t_other_type, std::size_t t_size>
 		struct with <std::array <t_other_type, t_size>> : public std::bool_constant <std::is_same_v <t_type, t_other_type>> {};
 	};
-	
-	
+
+
 	template <typename t_tuple, bool t_should_copy>
 	using included_parser_field_indices_t = typename included_parser_field_indices <t_tuple, t_should_copy>::type;
-	
+
 	template <typename t_field_tuple, bool t_should_copy, typename t_indices>
 	using parsed_type_t = typename parsed_type <t_field_tuple, t_should_copy, t_indices>::type;
-	
+
 	template <typename t_type>
 	using buffer_type_t = typename buffer_type <t_type>::type;
-	
+
 	template <bool t_parsed_type_is_alternative, typename t_parsed_type>
 	using record_type_t = typename record_type <t_parsed_type_is_alternative, t_parsed_type>::type;
 }
 
 
 namespace libbio::parsing {
-	
+
 	template <typename t_iterator, typename t_sentinel>
 	auto make_range(t_iterator &&it, t_sentinel &&sentinel)
 	requires std::contiguous_iterator <std::remove_cvref_t <t_iterator>>
@@ -282,7 +287,7 @@ namespace libbio::parsing {
 			std::forward <t_sentinel>(sentinel)
 		};
 	}
-	
+
 	template <typename t_iterator, typename t_sentinel, typename t_callback>
 	auto make_range(t_iterator &&it, t_sentinel &&sentinel, t_callback &&callback)
 	requires std::contiguous_iterator <std::remove_cvref_t <t_iterator>>
@@ -293,11 +298,11 @@ namespace libbio::parsing {
 			std::forward <t_callback>(callback)
 		};
 	}
-	
+
 	// If t_iterator is contiguous, we can determine the character position in O(1) time, but otherwise
 	// we want to maintain the numeric character position. This is especially useful in case the iterator
 	// is single pass.
-	
+
 	template <typename t_iterator, typename t_sentinel>
 	auto make_range(t_iterator &&it, t_sentinel &&sentinel)
 	requires (!std::contiguous_iterator <std::remove_cvref_t <t_iterator>>)
@@ -307,8 +312,8 @@ namespace libbio::parsing {
 			detail::counting_iterator(std::forward <t_sentinel>(sentinel))
 		};
 	}
-	
-	
+
+
 	template <typename t_iterator, typename t_sentinel, typename t_callback>
 	auto make_range(t_iterator &&it, t_sentinel &&sentinel, t_callback &&cb)
 	requires (!std::contiguous_iterator <std::remove_cvref_t <t_iterator>>)
@@ -322,17 +327,17 @@ namespace libbio::parsing {
 			}
 		};
 	}
-	
-	
+
+
 	template <typename t_traits, bool t_should_copy, typename... t_args>
 	class parser_tpl
 	{
 		template <typename, bool, typename...>
 		friend class parser_tpl;
-		
+
 		template <typename, typename...>
 		friend struct fields::conditional;
-		
+
 	public:
 		typedef std::tuple <t_args...>									field_tuple;
 		typedef detail::included_parser_field_indices_t <
@@ -345,17 +350,17 @@ namespace libbio::parsing {
 			included_field_indices
 		>																parsed_type;
 		typedef detail::buffer_type_t <parsed_type>						buffer_type;
-		
+
 		constexpr static inline auto const								parsed_type_is_alternative{is_alternative_v <parsed_type>};
 		constexpr static inline auto const								field_count{std::tuple_size_v <field_tuple>};
-		
+
 		typedef typename t_traits::template trait <field_count>			trait_type;
-		
+
 		typedef typename detail::record_type_t <
 			parsed_type_is_alternative,
 			parsed_type
 		>																record_type;
-		
+
 	protected:
 		template <std::size_t t_idx>
 		using index_type = std::integral_constant <std::size_t, t_idx>;
@@ -367,8 +372,8 @@ namespace libbio::parsing {
 			typedef t_parser	parser_type;
 			constexpr static inline auto const field_index{t_field_idx};
 		};
-		
-		
+
+
 		template <std::size_t t_field_idx, typename t_delimiter, field_position t_field_position, typename... t_args_>
 		struct field_helper
 		{
@@ -388,23 +393,23 @@ namespace libbio::parsing {
 				}
 			}
 		};
-		
-		
+
+
 		template <std::size_t t_idx, typename t_value, typename t_buffer>
 		static void swap_buffers(t_value &value, t_buffer &buffer)
 		{
 			typedef tuples::find_if <t_buffer, detail::matches_array <t_value>::template with>	find_result_type;
 			static_assert(find_result_type::found);
 			typedef typename find_result_type::first_match_type									buffer_array_type;
-			
+
 			auto &buffer_array(std::get <buffer_array_type>(buffer));	// Get the array for t_value.
 			auto &buffer_item(std::get <t_idx>(buffer_array));			// Get the element that corresponds to the current tuple element.
-			
+
 			using std::swap;
 			swap(value, buffer_item);
 		}
-		
-		
+
+
 		// Static b.c. it is easier to call from conditional_field’s callback_target.
 		template <std::size_t t_field_idx = 0, typename t_stack = std::tuple <>, typename t_range, typename t_dst, typename t_buffer, typename t_parse_cb>
 		static bool parse_alternatives(t_range &range, t_dst &dst, t_buffer &buffer, t_parse_cb &parse_cb, bool const did_repeat = false)
@@ -416,7 +421,7 @@ namespace libbio::parsing {
 				{
 					// Nothing more to parse.
 					parse_cb(dst);
-					
+
 					// Save the buffers if needed.
 					tuples::for_ <t_dst::tuple_size>([&dst, &buffer]<typename t_idx>(){
 						constexpr auto const idx{t_idx::value};
@@ -428,10 +433,10 @@ namespace libbio::parsing {
 							swap_buffers <rank>(value, buffer);
 						}
 					});
-					
+
 					// Empty here since the exact type is known and we don’t need to go through the function pointer.
 					dst.clear();
-					
+
 					return true;
 				}
 				else
@@ -453,7 +458,7 @@ namespace libbio::parsing {
 				constexpr auto const field_position{trait_type::template field_position <t_field_idx, next_field_type>};
 
 				field_type field;
-				
+
 				// Check if the value of the current field (1) is a variant, or (2) void, i.e. not saved.
 				// FIXME: come up with a way to set the field index to the parse_error in the alternative parser.
 				if constexpr (is_alternative_v <value_type>)
@@ -466,7 +471,7 @@ namespace libbio::parsing {
 				{
 					auto do_continue([&](auto &dst, parsing_result const &res){
 						// FIXME: Handle optional fields. (The approach in the non-alternative parser does not work b.c. a field before the alternative part may be marked final.)
-						
+
 						if constexpr (is_repeating_v <field_type>)
 						{
 							if (res)
@@ -477,16 +482,16 @@ namespace libbio::parsing {
 									return parse_alternatives <1 + t_field_idx, t_stack>(range, dst, buffer, parse_cb);
 							}
 						}
-						
+
 						if constexpr (any(field_position & field_position::initial_))
 						{
 							if (!res)
 								return false;
 						}
-						
+
 						return parse_alternatives <1 + t_field_idx, t_stack>(range, dst, buffer, parse_cb);
 					});
-					
+
 					if constexpr (std::is_same_v <void, value_type>)
 					{
 						// Parse but do not save.
@@ -501,7 +506,7 @@ namespace libbio::parsing {
 							auto const res(field.template parse <delimiter, field_position>(range, value));
 							return do_continue(dst, res);
 						});
-						
+
 						// Check if we are currently parsing a repeating field.
 						if constexpr (is_repeating_v <field_type>)
 						{
@@ -512,11 +517,11 @@ namespace libbio::parsing {
 								return do_continue_(dst, value);
 							}
 						}
-						
+
 						// Instantiate a new value.
 						auto &dst_(dst.template append <value_type>()); // Returns dst cast to a new type.
 						auto &value(dst_.back());
-						
+
 						// Swap the buffers if needed.
 						if constexpr (detail::uses_buffer_v <value_type>)
 						{
@@ -526,14 +531,14 @@ namespace libbio::parsing {
 							constexpr auto const rank{tuples::rank_v <dst_tuple_type, std::tuple_size_v <dst_tuple_type> - 1>};
 							swap_buffers <rank>(value, buffer);
 						}
-						
+
 						return do_continue_(dst_, value);
 					}
 				}
 			}
 		}
-		
-		
+
+
 		template <std::size_t t_field_idx = 0, std::size_t t_value_idx = 0, typename t_range>
 		bool parse___(t_range &range, record_type &dst)
 		{
@@ -544,13 +549,13 @@ namespace libbio::parsing {
 				typedef std::tuple_element_t <t_field_idx, field_tuple>										field_type;
 				typedef tuples::conditional_element_t <1 + t_field_idx, field_tuple>						next_field_type;
 				typedef typename trait_type::template delimiter <field_type, next_field_type, t_field_idx>	delimiter;
-				
+
 				constexpr auto const field_position{trait_type::template field_position <t_field_idx, next_field_type>};
 				field_type field;
-				
+
 				constexpr bool const should_skip_field{std::is_same_v <void, typename field_type::template value_type <t_should_copy>>};
 				constexpr auto const next_value_idx{(should_skip_field ? 0 : 1) + t_value_idx};
-				
+
 				auto do_continue([&](parsing_result const &res) mutable {
 					// FIXME: This may not handle all possible combinations of repeating and optional fields. (Esp. multiple optional with different separators.)
 					if constexpr (any(field_position & field_position::final_))
@@ -558,7 +563,7 @@ namespace libbio::parsing {
 						if (res && delimiter::last_index() == res.matched_delimiter_index)
 							return true;
 					}
-					
+
 					if constexpr (is_repeating_v <field_type>)
 					{
 						if (res)
@@ -569,17 +574,17 @@ namespace libbio::parsing {
 								return parse___ <1 + t_field_idx, next_value_idx>(range, dst);
 						}
 					}
-					
+
 					if constexpr (any(field_position & field_position::initial_))
 					{
 						if (!res)
 							return false;
 					}
-					
+
 					libbio_assert_msg(res, "Expected field ", t_field_idx, " to have completed parsing");
 					return parse___ <1 + t_field_idx, next_value_idx>(range, dst);
 				});
-				
+
 				// Check if the value of the current field should be saved.
 				if constexpr (should_skip_field)
 				{
@@ -593,8 +598,8 @@ namespace libbio::parsing {
 				}
 			}
 		}
-		
-		
+
+
 		template <std::size_t t_field_idx = 0, std::size_t t_value_idx = 0>
 		void clear_values(record_type &dst)
 		{
@@ -604,7 +609,7 @@ namespace libbio::parsing {
 			{
 				typedef std::tuple_element_t <t_field_idx, field_tuple>	field_type;
 				field_type field;
-				
+
 				constexpr bool const should_skip_field{std::is_same_v <void, typename field_type::template value_type <t_should_copy>>};
 				if constexpr (should_skip_field)
 					clear_values <1 + t_field_idx, t_value_idx>(dst);
@@ -615,8 +620,8 @@ namespace libbio::parsing {
 				}
 			}
 		}
-		
-		
+
+
 		template <typename t_range, typename t_dst, typename t_parse_cb>
 		bool parse__(t_range &range, t_dst &dst, buffer_type &buffer, t_parse_cb &parse_cb)
 		requires parsed_type_is_alternative
@@ -624,8 +629,8 @@ namespace libbio::parsing {
 			// Recurse to build the tuple for the current record.
 			return parse_alternatives(range, dst, buffer, parse_cb);
 		}
-		
-		
+
+
 		template <typename t_range, typename t_dst>
 		bool parse__(t_range &range, t_dst &dst)
 		requires (!parsed_type_is_alternative)
@@ -633,8 +638,8 @@ namespace libbio::parsing {
 			clear_values(dst);
 			return parse___(range, dst);
 		}
-		
-		
+
+
 		template <typename t_range, typename... t_args_>
 		bool parse_(t_range &range, t_args_ && ... args)
 		{
@@ -648,8 +653,8 @@ namespace libbio::parsing {
 				throw;
 			}
 		}
-		
-		
+
+
 	public:
 		// User supplies the range.
 		// FIXME: require that the range is one of detail::range, detail::updatable_range.
@@ -659,8 +664,8 @@ namespace libbio::parsing {
 		{
 			return parse_(range, dst);
 		}
-		
-		
+
+
 		template <typename t_range, std::size_t t_max_size, std::size_t t_alignment, typename... t_args_, typename t_parse_cb>
 		bool parse(
 			t_range &range,
@@ -675,8 +680,8 @@ namespace libbio::parsing {
 		{
 			return parse_(range, dst, buffer, parse_cb);
 		}
-		
-		
+
+
 		// Non-updatable range, e.g. std::istream_iterator, memory mapped file.
 		template <typename t_iterator, typename t_sentinel>
 		bool parse(t_iterator &&it, t_sentinel &&sentinel, record_type &dst)
@@ -688,8 +693,8 @@ namespace libbio::parsing {
 			));
 			return parse_(range, dst);
 		}
-		
-		
+
+
 		template <
 			typename t_iterator,
 			typename t_sentinel,
@@ -716,8 +721,8 @@ namespace libbio::parsing {
 			));
 			return parse_(range, dst, buffer, parse_cb);
 		}
-		
-		
+
+
 		// Updatable range, e.g. input read in blocks.
 		template <typename t_iterator, typename t_sentinel>
 		bool parse(updatable_range_base <t_iterator, t_sentinel> &range, record_type &dst)
@@ -725,8 +730,8 @@ namespace libbio::parsing {
 		{
 			return parse_(range, dst);
 		}
-		
-		
+
+
 		template <typename t_iterator, typename t_sentinel, typename t_update_cb>
 		bool parse(t_iterator &&it, t_sentinel &&sentinel, record_type &dst, t_update_cb &&cb)
 		requires (!parsed_type_is_alternative)
@@ -738,8 +743,8 @@ namespace libbio::parsing {
 			));
 			return parse_(range, dst);
 		}
-		
-		
+
+
 		template <
 			typename t_iterator,
 			typename t_sentinel,
@@ -761,8 +766,8 @@ namespace libbio::parsing {
 		{
 			return parse_(range, dst, buffer, parse_cb);
 		}
-		
-		
+
+
 		template <
 			typename t_iterator,
 			typename t_sentinel,
@@ -792,8 +797,8 @@ namespace libbio::parsing {
 			));
 			return parse_(range, dst, buffer, parse_cb);
 		}
-		
-		
+
+
 		template <typename... t_args_>
 		void parse_all(t_args_ && ... args)
 		requires parsed_type_is_alternative
@@ -805,26 +810,26 @@ namespace libbio::parsing {
 			} while (status);
 		}
 	};
-	
-	
+
+
 	template <typename t_traits, typename... t_args>
 	using parser = parser_tpl <t_traits, true, t_args...>;
-	
+
 	template <typename t_traits, typename... t_args>
 	using transient_parser = parser_tpl <t_traits, false, t_args...>;
 }
 
 
 namespace libbio::parsing::fields {
-	
+
 	template <typename t_tag, typename... t_fields>
 	struct option
 	{
 		template <typename t_traits>
 		using tagged_parser_t = tagged_parser <t_tag, parser <t_traits, t_fields...>>;
 	};
-	
-	
+
+
 	template <typename t_base, typename t_traits, typename... t_options>
 	using make_conditional = conditional <t_base, typename t_options::template tagged_parser_t <t_traits>...>;
 }

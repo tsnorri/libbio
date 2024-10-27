@@ -1,18 +1,21 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_FMAP_HH
 #define LIBBIO_FMAP_HH
 
+#include <array>
+#include <cstddef>
 #include <libbio/tuple/utility.hh> // tuples::is_tuple_v
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 
 namespace libbio::detail {
-	
+
 	template <std::size_t... t_indices, typename... t_args, typename t_fn>
 	constexpr auto fmap_tuple(std::index_sequence <t_indices...> const &&, std::tuple <t_args...> &&args, t_fn &&fn)
 	{
@@ -28,7 +31,7 @@ namespace libbio::detail {
 
 
 namespace libbio {
-	
+
 	// Functional mapping for tuples, i.e. Functor f => f a -> (a -> b) -> f b
 	// where f is std::tuple.
 	template <typename t_type, typename t_fn>
@@ -41,14 +44,14 @@ namespace libbio {
 			fn
 		);
 	}
-	
+
 	// Map an std::integer_sequence to an std::tuple.
 	template <typename t_integer, std::size_t... t_indices, typename t_fn>
 	constexpr auto map_to_tuple(std::integer_sequence <t_integer, t_indices...> &&indices, t_fn &&fn)
 	{
 		return std::make_tuple(fn(std::integral_constant <t_integer, t_indices>{})...);
 	}
-	
+
 	// Return std::array instead.
 	template <typename t_integer, std::size_t... t_indices, typename t_fn>
 	constexpr auto map_to_array(std::integer_sequence <t_integer, t_indices...> &&indices, t_fn &&fn)

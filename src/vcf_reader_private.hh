@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019 Tuukka Norri
+ * Copyright (c) 2017-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <libbio/utility.hh>
 #include <libbio/vcf/vcf_reader.hh>
+#include <string_view>
 
 
 // We would like to post-process strings that have been read and then pass
@@ -28,7 +29,7 @@
 
 
 namespace libbio::vcf {
-	
+
 	template <typename t_fnt>
 	struct reader::caller
 	{
@@ -38,7 +39,7 @@ namespace libbio::vcf {
 			std::string_view sv(start, length);
 			(dst.*(t_fn))(sv, std::forward <t_args>(args)...);
 		}
-		
+
 		template <t_fnt t_fn, typename t_dst, typename ... t_args>
 		static void handle_integer_end(std::int64_t integer, bool const integer_is_negative, t_dst &dst, t_args ... args)
 		{

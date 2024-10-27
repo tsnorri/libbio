@@ -3,12 +3,15 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <cstddef>
 #include <libbio/bgzf/deflate_decompressor.hh>
+#include <libdeflate.h>
+#include <span>
 #include <stdexcept>
 
 
 namespace libbio::bgzf::detail {
-	
+
 	std::span <std::byte> deflate_decompressor::decompress(std::span <std::byte const> in, std::span <std::byte> out)
 	{
 		std::size_t bytes_written{};
@@ -23,7 +26,7 @@ namespace libbio::bgzf::detail {
 			case LIBDEFLATE_INSUFFICIENT_SPACE:
 				throw std::runtime_error("Ran out of space while decompressing");
 		}
-	
+
 		return std::span(out.data(), bytes_written);
 	}
 }

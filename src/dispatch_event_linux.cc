@@ -3,14 +3,33 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <array>
+#include <cerrno>
 #include <chrono>
+#include <cstdint>
+#include <cstring>
+#include <ctime>
+#include <libbio/assert.hh>
+#include <libbio/dispatch/events/file_descriptor_source.hh>
 #include <libbio/dispatch/events/platform/manager_linux.hh>
+#include <libbio/dispatch/events/signal_source.hh>
+#include <libbio/dispatch/events/source.hh>
+#include <libbio/dispatch/events/synchronous_source.hh>
+#include <libbio/dispatch/events/timer.hh>
+#include <libbio/dispatch/queue.hh>
 #include <libbio/dispatch/task_def.hh>
+#include <memory>
+#include <mutex>
 #include <range/v3/view/take_exactly.hpp>
 #include <signal.h>
+#include <stdexcept>
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
+#include <sys/signal.h>
 #include <sys/timerfd.h>
+#include <tuple>
+#include <unistd.h>
+#include <utility>
 
 namespace chrono	= std::chrono;
 namespace rsv		= ranges::views;
@@ -27,8 +46,8 @@ namespace {
 		if (-1 == ::epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &ev))
 			throw std::runtime_error(::strerror(errno));
 	}
-	
-	
+
+
 	void remove_fd_event_listener(int const epoll_fd, int const fd)
 	{
 		if (-1 == ::epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr))
@@ -38,58 +57,58 @@ namespace {
 
 
 namespace libbio::dispatch::events::platform::linux {
-	
+
 	void signal_mask::add(int const sig)
 	{
 		sigaddset(&m_mask, sig);
 		if (-1 == ::pthread_sigmask(SIG_BLOCK, &m_mask, nullptr))
 			throw std::runtime_error(::strerror(errno));
 	}
-	
-	
+
+
 	void signal_mask::remove(int sig)
 	{
 		sigdelset(&m_mask, sig);
-		
+
 		sigset_t mask{};
 		sigemptyset(&mask);
 		sigaddset(&mask, sig);
 		if (-1 == ::pthread_sigmask(SIG_UNBLOCK, &mask, nullptr))
 			throw std::runtime_error(::strerror(errno));
 	}
-	
-	
+
+
 	bool signal_mask::remove_all_()
 	{
 		return (-1 != ::pthread_sigmask(SIG_UNBLOCK, &m_mask, nullptr));
 	}
-	
-	
+
+
 	void signal_mask::remove_all()
 	{
 		if (!remove_all_())
 			throw std::runtime_error(::strerror(errno));
 	}
-	
-	
+
+
 	void manager::setup()
 	{
 		libbio_assert(!m_epoll_handle);
-		
+
 		m_epoll_handle.fd = ::epoll_create1(EPOLL_CLOEXEC);
 		if (!m_epoll_handle)
 			throw std::runtime_error(::strerror(errno));
-		
+
 		// Timers
 		m_timer.prepare();
 		add_read_event_listener(m_epoll_handle.fd, m_timer.handle.fd, -1);
-		
+
 		// User events
 		m_event_monitor.prepare();
 		add_read_event_listener(m_epoll_handle.fd, m_event_monitor.file_descriptor(), -1);
 	}
-	
-	
+
+
 	void manager::run_()
 	{
 		std::array <struct epoll_event, 16> events;
@@ -98,7 +117,7 @@ namespace libbio::dispatch::events::platform::linux {
 			auto const count(::epoll_wait(m_epoll_handle.fd, events.data(), events.size(), -1));
 			if (-1 == count)
 				throw std::runtime_error(::strerror(errno));
-			
+
 			// User events
 			{
 				auto const lock(m_event_monitor.lock());
@@ -108,15 +127,15 @@ namespace libbio::dispatch::events::platform::linux {
 					{
 						case event_type::stop:
 							return;
-						
+
 						case event_type::wake_up:
 							continue;
 					}
 				}
-				
+
 				m_event_monitor.clear();
 			}
-			
+
 			// File descriptors
 			{
 				std::lock_guard const lock{m_mutex};
@@ -126,35 +145,35 @@ namespace libbio::dispatch::events::platform::linux {
 					auto const it(m_sources.find(source_key{event.data.fd, source_key::fd_tag{}}));
 					if (m_sources.end() == it)
 						continue;
-					
+
 					auto &source(*it->second);
 					if ((EPOLLIN & event.events) && source.is_read_event_source())
 						source.fire_if_enabled();
-					
+
 					if ((EPOLLOUT & event.events) && source.is_write_event_source())
 						source.fire_if_enabled();
 				}
 			}
-			
+
 			// Timers
 			auto const next_firing_time(check_timers());
 			if (events::timer::DURATION_MAX != next_firing_time)
 				schedule_kernel_timer(next_firing_time);
 		}
 	}
-	
-	
+
+
 	void manager::schedule_kernel_timer(duration_type dur)
 	{
 		auto const seconds(chrono::duration_cast <chrono::seconds>(dur));
 		dur -= seconds;
 		auto const nanoseconds(chrono::duration_cast <chrono::nanoseconds>(dur));
-		
+
 		struct timespec const ts{.tv_sec = seconds.count(), .tv_nsec = nanoseconds.count()};
 		m_timer.start(ts);
 	}
-	
-	
+
+
 	auto manager::add_file_descriptor_read_event_source(
 		file_descriptor_type const fd,
 		queue &qq,
@@ -170,12 +189,12 @@ namespace libbio::dispatch::events::platform::linux {
 			std::forward_as_tuple(fd, source_key::fd_tag{}),
 			std::forward_as_tuple(std::move(ptr))
 		));
-		
+
 		listen_for_fd_events(ref);
 		return ref;
 	}
-	
-	
+
+
 	auto manager::add_file_descriptor_write_event_source(
 		file_descriptor_type const fd,
 		queue &qq,
@@ -191,12 +210,12 @@ namespace libbio::dispatch::events::platform::linux {
 			std::forward_as_tuple(fd, source_key::fd_tag{}),
 			std::forward_as_tuple(std::move(ptr))
 		));
-		
+
 		listen_for_fd_events(ref);
 		return ref;
 	}
-	
-	
+
+
 	void manager::remove_file_descriptor_event_source(
 		file_descriptor_source &es
 	)											// Thread-safe.
@@ -210,39 +229,39 @@ namespace libbio::dispatch::events::platform::linux {
 			if (&*range.first->second == &es)
 			{
 				es.disable();
-				
+
 				auto it(m_reader_writer_counts.find(fd));
 				auto &count(it->second);
 				libbio_assert_neq(m_reader_writer_counts.end(), it);
-				
+
 				if (es.is_read_event_source())
 				{
 					libbio_assert_lt(0, count.reader_count);
 					--count.reader_count;
 				}
-				
+
 				if (es.is_write_event_source())
 				{
 					libbio_assert_lt(0, count.writer_count);
 					--count.writer_count;
 				}
-				
+
 				if (!count)
 				{
 					// No listeners left for fd.
 					m_reader_writer_counts.erase(fd);
 					remove_fd_event_listener(m_epoll_handle.fd, fd);
 				}
-				
+
 				m_sources.erase(range.first);
 				break;
 			}
-			
+
 			++range.first;
 		}
 	}
-	
-	
+
+
 	auto manager::add_signal_event_source(
 		signal_type const sig,
 		queue &qq,
@@ -260,7 +279,7 @@ namespace libbio::dispatch::events::platform::linux {
 			std::forward_as_tuple(key),
 			std::forward_as_tuple(std::move(ptr))
 		));
-		
+
 		if (m_signal_monitor.listen(sig))
 		{
 			auto const sig_fd(m_signal_monitor.file_descriptor());
@@ -282,14 +301,14 @@ namespace libbio::dispatch::events::platform::linux {
 					}
 				}))
 			));
-			
+
 			listen_for_fd_events(sig_fd, true, false);
 		}
 
 		return ref;
 	}
-	
-	
+
+
 	void manager::remove_signal_event_source(
 		signal_source &es
 	)											// Thread-safe.
@@ -312,46 +331,46 @@ namespace libbio::dispatch::events::platform::linux {
 						range_.first->second->disable();
 						m_sources.erase(range_.first);
 					}
-					
+
 					// Since unlisten() called ::close(), epoll_ctl need not be called to delete the entry.
 					// (We have not copied the file descriptor; it has close-on-exec and we don’t use ::dup() etc.)
 				}
-				
+
 				es.disable();
 				m_sources.erase(range.first);
 				break;
 			}
-			
+
 			++range.first;
 		}
 	}
-	
-	
+
+
 	void manager::listen_for_fd_events(int const fd, bool const for_read, bool const for_write)
 	{
 		// Caller needs to acquire m_mutex.
-		
+
 		auto &counts(m_reader_writer_counts[fd]);
 		auto counts_(counts);
 		bool should_modify{};
-		
+
 		struct epoll_event ev{};
 		ev.data.fd = fd;
-		
+
 		if (for_read)
 		{
 			++counts_.reader_count;
 			ev.events |= EPOLLIN;
 			should_modify = true;
 		}
-		
+
 		if (for_write)
 		{
 			++counts_.writer_count;
 			ev.events |= EPOLLOUT;
 			should_modify = true;
 		}
-		
+
 		if (counts) // Check the old counts.
 		{
 			// Modify an existing listener.
@@ -364,47 +383,47 @@ namespace libbio::dispatch::events::platform::linux {
 			if (-1 == ::epoll_ctl(m_epoll_handle.fd, EPOLL_CTL_ADD, fd, &ev))
 				throw std::runtime_error(::strerror(errno));
 		}
-		
+
 		counts = counts_;
 	}
-	
-	
+
+
 	void timer::prepare()
 	{
 		if (!handle)
 			handle.fd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
 	}
-	
-	
+
+
 	void timer::start(struct timespec const ts)
 	{
 		struct itimerspec const its{ .it_interval = { .tv_sec = 0, .tv_nsec = 0 }, .it_value = ts};
 		if (0 != timerfd_settime(handle.fd, 0, &its, nullptr))
 			throw std::runtime_error(::strerror(errno));
 	}
-	
-	
+
+
 	bool signal_monitor::listen(int const sig)
 	{
 		sigaddset(&m_mask, sig);
 		auto const res(::signalfd(m_handle.fd, &m_mask, SFD_NONBLOCK | SFD_CLOEXEC));
 		if (-1 == res)
 			throw std::runtime_error(::strerror(errno));
-		
+
 		if (-1 == m_handle.fd)
 		{
 			m_handle.fd = res;
 			return true;
 		}
-		
+
 		return false;
 	}
-	
-	
+
+
 	int signal_monitor::unlisten(int sig)
 	{
 		int retval{-1};
-		
+
 		// Check if we still have signals to monitor.
 		sigdelset(&m_mask, sig);
 		if (sigisemptyset(&m_mask))
@@ -416,11 +435,11 @@ namespace libbio::dispatch::events::platform::linux {
 		{
 			throw std::runtime_error(::strerror(errno));
 		}
-		
+
 		return retval;
 	}
-	
-	
+
+
 	void signal_monitor::release()
 	{
 		m_handle.release();
@@ -488,12 +507,12 @@ namespace libbio::dispatch::events::platform::linux {
 			};
 		}
 	}
-	
-	
+
+
 	void event_monitor::clear()
 	{
 		m_events.clear();
-		
+
 		// Clear the fd.
 		std::uint64_t buffer{};
 		if (-1 == ::read(m_handle.fd, &buffer, sizeof(std::uint64_t)))

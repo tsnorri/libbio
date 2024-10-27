@@ -6,6 +6,9 @@
 #ifndef LIBBIO_RADIX_SORT_HH
 #define LIBBIO_RADIX_SORT_HH
 
+#include <climits>
+#include <cstddef>
+#include <cstdint>
 #include <libbio/assert.hh>
 #include <libbio/algorithm.hh>
 #include <libbio/bits.hh>
@@ -13,23 +16,23 @@
 
 
 namespace libbio::detail {
-	
+
 	template <typename t_value>
 	struct identity_access
 	{
 		t_value operator()(t_value value) { return value; }
 	};
-	
+
 	template <typename t_fn, typename t_arg>
 	constexpr std::size_t return_type_size() { return sizeof(std::invoke_result_t <t_fn, t_arg>); }
 
-	
+
 	template <bool t_reverse>
 	struct radix_sort_reverse
 	{
 		static constexpr bool should_push_back(bool const is_one) { return is_one; }
 	};
-	
+
 	template <>
 	struct radix_sort_reverse <true>
 	{
@@ -39,7 +42,7 @@ namespace libbio::detail {
 
 
 namespace libbio {
-	
+
 	template <bool t_reverse = false>
 	struct radix_sort
 	{
@@ -53,21 +56,21 @@ namespace libbio {
 		)
 		{
 			auto const size(container.size());
-			
+
 			if (0 == size)
 				return;
-			
+
 			buffer.clear();
 			buffer.resize(container.size());
-			
+
 			using std::swap;
-			
+
 			std::size_t shift_amt(0);
 			while (shift_amt < bit_limit)
 			{
 				std::size_t fidx(0);
 				std::size_t ridx_1(size);
-				
+
 				for (auto it(container.cbegin()), end(container.cend()); it != end; ++it)
 				{
 					auto const val(access(*it));
@@ -76,15 +79,15 @@ namespace libbio {
 					else
 						buffer[fidx++] = std::move(*it);
 				}
-				
+
 				libbio_assert(fidx == ridx_1);
 				std::reverse(buffer.begin() + ridx_1, buffer.end());
 				swap(container, buffer);
 				++shift_amt;
 			}
 		}
-		
-		
+
+
 		template <typename t_container>
 		static void sort(
 			t_container &container,
@@ -95,8 +98,8 @@ namespace libbio {
 			detail::identity_access <typename t_container::value_type> access;
 			radix_sort::sort(container, buffer, access, bit_limit);
 		}
-		
-		
+
+
 		// Iterate one time to determine the highest bit set.
 		template <typename t_container, typename t_access>
 		static void sort_check_bits_set(
@@ -108,11 +111,11 @@ namespace libbio {
 			std::uint8_t lz_count(sizeof(typename t_container::value_type) * CHAR_BIT);
 			for (auto it(container.cbegin()), end(container.cend()); it != end; ++it)
 				lz_count = std::min(lz_count, bits::leading_zeros(access(*it)));
-			
+
 			radix_sort::sort(container, buffer, std::forward <t_access>(access), (sizeof(typename t_container::value_type) * CHAR_BIT) - lz_count);
 		}
-		
-		
+
+
 		template <typename t_container>
 		static void sort_check_bits_set(
 			t_container &container,

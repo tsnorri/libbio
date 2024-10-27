@@ -1,11 +1,16 @@
 /*
- * Copyright (c) 2019-2022 Tuukka Norri
+ * Copyright (c) 2019-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_VARIANT_PRINTER_HH
 #define LIBBIO_VARIANT_PRINTER_HH
 
+#include <cstddef>
+#include <libbio/assert.hh>
+#include <libbio/vcf/constants.hh>
+#include <libbio/vcf/variant/abstract_variant_decl.hh>
+#include <libbio/vcf/variant/formatted_variant_decl.hh>
 #include <libbio/vcf/variant/variant_decl.hh>
 #include <ostream>
 #include <range/v3/algorithm/copy.hpp>
@@ -13,22 +18,24 @@
 #include <range/v3/view/indirect.hpp>
 #include <range/v3/view/map.hpp>
 #include <range/v3/view/remove_if.hpp>
+#include <range/v3/view/transform.hpp>
+#include <string>
 
 
 namespace libbio::vcf {
-	
+
 	template <typename t_variant>
 	class variant_printer_base
 	{
 	public:
 		typedef t_variant						variant_type;
 		typedef typename t_variant::sample_type	variant_sample_type;
-		
+
 	public:
 		virtual ~variant_printer_base() {}
-		
+
 		virtual bool should_print() const { return true; }
-		
+
 		virtual inline void output_chrom(std::ostream &os, variant_type const &var) const;
 		virtual inline void output_pos(std::ostream &os, variant_type const &var) const;
 		virtual inline void output_id(std::ostream &os, variant_type const &var) const;
@@ -38,64 +45,64 @@ namespace libbio::vcf {
 		virtual inline void output_filter(std::ostream &os, variant_type const &var) const;
 		virtual inline void output_info(std::ostream &os, variant_type const &var) const;
 		virtual inline void output_format(std::ostream &os, variant_type const &var) const;
-		
+
 		virtual inline void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const;
 		virtual inline void output_samples(std::ostream &os, variant_type const &var) const;
-		
+
 		// Templates so that a view may be passed as info_fields or genotype_fields.
 		// Note that t_fields may not be const in this case, since e.g. filtering view’s empty() is non-const.
 		template <typename t_fields>
 		inline void output_info(std::ostream &os, variant_type const &var, t_fields &&info_fields) const;
-		
+
 		template <typename t_fields>
 		inline void output_format(std::ostream &os, variant_type const &var, t_fields &&genotype_fields) const;
-		
+
 		template <typename t_fields>
 		inline void output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample, t_fields &&genotype_fields) const;
-		
+
 		// Convenience function.
 		void output_variant(std::ostream &os, variant_type const &var) const;
 	};
-	
-	
+
+
 	template <typename t_variant>
 	class variant_printer final : public variant_printer_base <t_variant>
 	{
 	};
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_chrom(std::ostream &os, variant_type const &var) const
 	{
 		// CHROM
 		os << var.chrom_id();
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_pos(std::ostream &os, variant_type const &var) const
 	{
 		// POS
 		os << var.pos();
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_id(std::ostream &os, variant_type const &var) const
 	{
 		// ID
 		ranges::copy(var.id(), ranges::make_ostream_joiner(os, ","));
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_ref(std::ostream &os, variant_type const &var) const
 	{
 		// REF
 		os << var.ref();
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_alt(std::ostream &os, variant_type const &var) const
 	{
@@ -111,8 +118,8 @@ namespace libbio::vcf {
 			);
 		}
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_qual(std::ostream &os, variant_type const &var) const
 	{
@@ -123,8 +130,8 @@ namespace libbio::vcf {
 		else
 			os << var.qual();
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_filter(std::ostream &os, variant_type const &var) const
 	{
@@ -163,8 +170,8 @@ namespace libbio::vcf {
 				is_first = false;
 		}
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_info(std::ostream &os, variant_type const &var) const
 	{
@@ -191,8 +198,8 @@ namespace libbio::vcf {
 			ranges::make_ostream_joiner(os, ":")
 		);
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_format(std::ostream &os, variant_type const &var) const
 	{
@@ -200,8 +207,8 @@ namespace libbio::vcf {
 		auto const &fields(var.get_format().fields_by_identifier());
 		output_format(os, var, fields | ranges::views::values | ranges::views::indirect);
 	}
-	
-	
+
+
 	template <typename t_variant>
 	template <typename t_fields>
 	void variant_printer_base <t_variant>::output_sample(
@@ -218,25 +225,25 @@ namespace libbio::vcf {
 		{
 			if (idx)
 				os << ':';
-			
+
 			if (assigned_fields[idx])
 				field.output_vcf_value(os, sample);
 			else
 				os << '.';
-			
+
 			++idx;
 		}
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_sample(std::ostream &os, variant_type const &var, variant_sample_type const &sample) const
 	{
 		auto const &fields(var.get_format().fields_by_identifier());
 		output_sample(os, var, sample, fields | ranges::views::values | ranges::views::indirect);
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_samples(std::ostream &os, variant_type const &var) const
 	{
@@ -247,12 +254,12 @@ namespace libbio::vcf {
 			if (!is_first_sample)
 				os << '\t';
 			is_first_sample = false;
-			
+
 			this->output_sample(os, var, sample);
 		}
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void variant_printer_base <t_variant>::output_variant(std::ostream &os, variant_type const &var) const
 	{
@@ -262,7 +269,7 @@ namespace libbio::vcf {
 			os << "# Empty variant\n";
 			return;
 		}
-		
+
 		this->output_chrom(os, var); os << '\t';
 		this->output_pos(os, var); os << '\t';
 		this->output_id(os, var); os << '\t';
@@ -274,8 +281,8 @@ namespace libbio::vcf {
 		this->output_format(os, var); os << '\t';
 		this->output_samples(os, var); os << '\n';
 	}
-	
-	
+
+
 	template <typename t_variant>
 	void output_vcf(
 		variant_printer_base <t_variant> const &printer,
@@ -285,8 +292,8 @@ namespace libbio::vcf {
 	{
 		printer.output_variant(os, var);
 	}
-	
-	
+
+
 	// Using formatted_variant is the easiest way to check that the given parameter is
 	// a variant, and the extra functionality in variant and transient_variant is not needed here.
 	template <template <typename> typename t_printer, typename t_string, typename t_format_access>
@@ -295,8 +302,8 @@ namespace libbio::vcf {
 		t_printer <formatted_variant <t_string, t_format_access>> printer;
 		output_vcf(printer, os, var);
 	}
-	
-	
+
+
 	template <typename t_string, typename t_format_access>
 	void output_vcf(std::ostream &os, formatted_variant <t_string, t_format_access> const &var)
 	{

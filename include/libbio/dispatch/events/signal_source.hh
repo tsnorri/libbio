@@ -9,21 +9,21 @@
 #include <libbio/dispatch/fwd.hh>
 #include <libbio/dispatch/events/source.hh>
 #include <libbio/dispatch/task_decl.hh>
-#include <memory>							// std::make_shared, std::shared_ptr
 #include <sys/event.h>						// EVFILT_SIGNAL
+#include <sys/types.h>
 #include <utility>							// std::forward
 
 
 namespace libbio::dispatch::events {
-	
+
 	class signal_source final : public source_tpl <signal_source>
 	{
 	public:
 		typedef task_t <signal_source &>	task_type;
-	
+
 	private:
 		signal_type	m_signal{-1};
-	
+
 	public:
 		signal_source(
 			queue &qq,
@@ -34,13 +34,13 @@ namespace libbio::dispatch::events {
 			m_signal(sig)
 		{
 		}
-		
+
 		signal_type signal() const { return m_signal; }
 	};
-	
+
 	typedef signal_source::task_type signal_task;
-	
-	
+
+
 	struct sigchld_handler
 	{
 		virtual ~sigchld_handler() {}
@@ -52,7 +52,7 @@ namespace libbio::dispatch::events {
 
 
 namespace libbio::dispatch::detail {
-	
+
 	template <>
 	struct member_callable_target <events::signal_source>
 	{

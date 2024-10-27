@@ -6,13 +6,14 @@
 #ifndef LIBBIO_INT_MATRIX_UTILITY_HH
 #define LIBBIO_INT_MATRIX_UTILITY_HH
 
+#include <cstddef>
 #include <libbio/assert.hh>
 #include <libbio/int_matrix/slice.hh>
 #include <libbio/utility.hh>
 
 
 namespace libbio::matrices {
-	
+
 	template <typename t_matrix>
 	void copy_to_word_aligned(
 		::libbio::detail::int_matrix_slice <t_matrix> const &src,
@@ -27,8 +28,8 @@ namespace libbio::matrices {
 			++dst_it;
 		});
 	}
-	
-	
+
+
 	template <typename t_matrix>
 	void copy_to_word_aligned(
 		::libbio::detail::int_matrix_slice <t_matrix> const &src,
@@ -37,8 +38,8 @@ namespace libbio::matrices {
 	{
 		copy_to_word_aligned(src, dst);
 	}
-	
-	
+
+
 	template <typename t_src_matrix, typename t_dst_matrix>
 	void transpose_column_to_row(
 		::libbio::detail::int_matrix_slice <t_src_matrix> const &src,
@@ -47,7 +48,7 @@ namespace libbio::matrices {
 	{
 		libbio_assert(src.size() <= dst.size());
 		auto dst_it(dst.begin());
-		
+
 		auto const &src_range(src.to_word_range());
 		src_range.apply_aligned(
 			[
@@ -69,8 +70,8 @@ namespace libbio::matrices {
 			}
 		);
 	}
-	
-	
+
+
 	template <typename t_src_matrix, typename t_dst_matrix>
 	void transpose_column_to_row(
 		::libbio::detail::int_matrix_slice <t_src_matrix> const &src,
@@ -80,7 +81,7 @@ namespace libbio::matrices {
 		transpose_column_to_row(src, dst);
 	}
 
-	
+
 	template <unsigned int t_pattern_length, typename t_matrix>
 	void fill_column_with_bit_pattern(
 		::libbio::detail::int_matrix_slice <t_matrix> &column,
@@ -100,8 +101,8 @@ namespace libbio::matrices {
 			}
 		);
 	}
-	
-	
+
+
 	template <unsigned int t_pattern_length, typename t_matrix>
 	void fill_column_with_bit_pattern(
 		::libbio::detail::int_matrix_slice <t_matrix> &&column,	// Proxy, allow moving.

@@ -6,6 +6,7 @@
 #ifndef LIBBIO_INT_MATRIX_SIZE_CALCULATION_HH
 #define LIBBIO_INT_MATRIX_SIZE_CALCULATION_HH
 
+#include <cstddef>
 #include <libbio/int_matrix/int_matrix.hh>
 #include <libbio/int_vector/size_calculation.hh>
 #include <libbio/size_calculator.hh>

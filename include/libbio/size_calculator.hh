@@ -6,6 +6,7 @@
 #ifndef LIBBIO_SIZE_CALCULATOR_HH
 #define LIBBIO_SIZE_CALCULATOR_HH
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <ostream>
@@ -58,7 +59,7 @@ namespace libbio {
 	{
 		typedef size_calculator_entry	entry;
 		typedef entry::index_type		entry_index_type;
-		
+
 		struct add_entry_return_type
 		{
 			size_calculator_entry		&entry;

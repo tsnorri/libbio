@@ -8,6 +8,8 @@
 
 #include <boost/stacktrace.hpp>
 #include <boost/exception/all.hpp>
+#include <boost/foreach.hpp>
+#include <exception>
 #include <iostream>
 #include <libbio/buffer.hh>
 #include <libbio/utility/is_equal.hh>
@@ -15,7 +17,9 @@
 #include <libbio/utility/is_lte.hh>
 #include <libbio/utility/misc.hh>
 #include <sstream>
-#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <utility>
 
 
 #define libbio_stringify(X) (#X)
@@ -101,7 +105,7 @@
 #	define libbio_assert_neq_(X, Y)			libbio_always_assert_neq_((X), (Y))
 
 #	define libbio_do_and_assert_eq(X, Y)	libbio_always_assert_eq((X), (Y))
-		
+
 #	define libbio_assert_msg(X, ...)		libbio_always_assert_msg((X), __VA_ARGS__)
 #	define libbio_assert_lt_msg(X, Y, ...)	libbio_always_assert_lt_msg((X), (Y), __VA_ARGS__)
 #	define libbio_assert_lte_msg(X, Y, ...)	libbio_always_assert_lte_msg((X), (Y), __VA_ARGS__)
@@ -119,27 +123,27 @@ namespace libbio::detail {
 	{
 		template <typename T>
 		static decltype(std::declval <std::ostream>() << std::declval <T>()) test(T const *);
-		
+
 		template <typename>
 		static std::false_type test(...);
-		
+
 		constexpr static inline bool value{std::is_same_v <std::ostream &, decltype(test <t_type>(nullptr))>};
 	};
 
 	template <typename t_type>
 	constexpr inline bool has_formatted_output_function_v = has_formatted_output_function_helper <t_type>::value;
-	
-	
+
+
 	static_assert(has_formatted_output_function_v <long const>);
 	static_assert(has_formatted_output_function_v <long>);
 
-	
+
 	// Copying a standard library class derived from std::exception
 	// is not permitted to throw exceptions, so try to avoid it here, too.
 	struct assertion_failure_cause
 	{
 		typedef buffer <char>	buffer_type;
-		
+
 		std::string		reason;
 		std::string		file;
 		buffer_type		what;
@@ -186,7 +190,7 @@ namespace libbio::detail {
 		auto const &string(stream.str()); // Keep the result of str() here to prevent a dangling pointer.
 		assertion_failure(file, line, string.c_str()); // Copies the result of c_str().
 	}
-	
+
 
 	// Concatenate the arguments and call assertion_failure.
 	template <typename t_arg, typename ... t_rest>
@@ -195,8 +199,8 @@ namespace libbio::detail {
 		stream << first;
 		assertion_failure__(file, line, stream, rest...);
 	}
-	
-	
+
+
 	// Concatenate the arguments and call assertion_failure.
 	template <typename ... t_args>
 	[[noreturn]] void assertion_failure_(char const *file, long const line, t_args && ... args)
@@ -206,8 +210,8 @@ namespace libbio::detail {
 		std::stringstream stream;
 		assertion_failure__(file, line, stream, std::forward <t_args>(args)...);
 	}
-	
-	
+
+
 	template <typename ... t_args>
 	[[noreturn]] constexpr void assertion_failure(char const *file, long const line, t_args && ... args)
 	{
@@ -281,7 +285,7 @@ namespace libbio {
 
 	constexpr extern inline void assertion_failure() {} // For debugging.
 
-	
+
 	class assertion_failure_exception : public std::exception
 	{
 	protected:
@@ -316,7 +320,7 @@ namespace libbio::detail {
 		throw boost::enable_error_info(t_exception(args...)) << traced(boost::stacktrace::stacktrace());
 	}
 
-	
+
 	[[noreturn]] constexpr inline void assertion_failure(char const *file, long const line)
 	{
 		libbio::assertion_failure();

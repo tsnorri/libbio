@@ -6,6 +6,7 @@
 #ifndef LIBBIO_GENERIC_PARSER_TRAITS_HH
 #define LIBBIO_GENERIC_PARSER_TRAITS_HH
 
+#include <cstddef>
 #include <libbio/generic_parser/delimiter.hh>
 #include <libbio/generic_parser/field_position.hh>
 #include <libbio/generic_parser/fields.hh>
@@ -13,7 +14,7 @@
 
 
 namespace libbio::parsing::traits {
-	
+
 	// Not sure if there are any other kinds of input than delimited that we can parse but we’ll see.
 	template <typename t_field_sep, typename t_line_sep = t_field_sep>
 	struct delimited
@@ -23,7 +24,7 @@ namespace libbio::parsing::traits {
 		{
 			typedef t_field_sep	field_separator_type;
 			typedef t_line_sep	line_separator_type;
-			
+
 			template <std::size_t t_i, typename t_next_field>
 			constexpr static inline enum field_position const field_position_()
 			{
@@ -46,18 +47,18 @@ namespace libbio::parsing::traits {
 							retval = field_position::middle_;
 							break;
 					}
-					
+
 					if constexpr (is_optional_v <t_next_field>)
 						retval |= field_position::final_;
-					
+
 					return retval;
 				}
 			}
-			
+
 			template <std::size_t t_i, typename t_next_field>
 			constexpr static inline enum field_position const field_position{field_position_ <t_i, t_next_field>()};
-			
-			
+
+
 			template <typename t_field, typename t_next_field, std::size_t t_i>
 			struct delimiter_
 			{
@@ -68,7 +69,7 @@ namespace libbio::parsing::traits {
 					std::conditional_t <t_i == t_field_count - 1, line_separator_type, field_separator_type>
 				> type;
 			};
-			
+
 			template <typename t_field, typename t_next_field, std::size_t t_i>
 			using delimiter = delimiter_ <t_field, t_next_field, t_i>::type;
 		};

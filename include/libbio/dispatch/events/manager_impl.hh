@@ -6,6 +6,9 @@
 #ifndef LIBBIO_DISPATCH_EVENTS_MANAGER_IMPL_HH
 #define LIBBIO_DISPATCH_EVENTS_MANAGER_IMPL_HH
 
+#include <libbio/dispatch/events/signal_source.hh>
+#include <libbio/dispatch/queue.hh>
+
 #	ifdef __linux__
 #		include <libbio/dispatch/events/platform/manager_linux.hh>
 namespace libbio::dispatch::events {
@@ -22,7 +25,7 @@ namespace libbio::dispatch::events {
 
 
 namespace libbio::dispatch::events {
-	
+
 	void install_sigchld_handler(manager &mgr, queue &qq, sigchld_handler &handler);
 }
 

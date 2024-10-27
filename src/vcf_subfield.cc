@@ -1,20 +1,21 @@
 /*
- * Copyright (c) 2019-2022 Tuukka Norri
+ * Copyright (c) 2019-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #include <boost/spirit/include/qi.hpp>
 #include <charconv>
+#include <libbio/vcf/constants.hh>
+#include <libbio/vcf/metadata.hh>
 #include <libbio/vcf/parse_error.hh>
 #include <libbio/vcf/subfield.hh>
-
-
-namespace lb	= libbio;
-namespace vcf	= libbio::vcf;
+#include <libbio/vcf/subfield/utility/parser.hh>
+#include <string_view>
+#include <system_error>
 
 
 namespace libbio::vcf {
-	
+
 	bool subfield_parser <metadata_value_type::INTEGER>::parse(std::string_view const &sv, value_type &dst, metadata_formatted_field const *field_ptr)
 	{
 		auto const *start(sv.data());
@@ -25,13 +26,13 @@ namespace libbio::vcf {
 			// Check for MISSING.
 			if ("." == sv)
 				return false;
-			
+
 			throw parse_error("Unable to parse the given value as an integer", sv, field_ptr);
 		}
 		return true;
 	}
-	
-	
+
+
 	bool subfield_parser <metadata_value_type::FLOAT>::parse(std::string_view const &sv, value_type &dst, metadata_formatted_field const *field_ptr)
 	{
 		// libc++ does not yet have from_chars for float.
@@ -44,23 +45,23 @@ namespace libbio::vcf {
 			// Check for MISSING.
 			if ("." == sv)
 				return false;
-			
+
 			throw parse_error("Unable to parse the given value as floating point", sv);
 		}
 #endif
-		
+
 		if (!boost::spirit::qi::parse(sv.begin(), sv.end(), boost::spirit::qi::float_, dst))
 		{
 			// Check for MISSING.
 			if ("." == sv)
 				return false;
-			
+
 			throw parse_error("Unable to parse the given value as floating point", sv, field_ptr);
 		}
 		return true;
 	}
-	
-	
+
+
 	void add_reserved_info_keys(info_field_map &dst)
 	{
 		add_subfield <info_field_aa>			(dst, "AA");
@@ -85,8 +86,8 @@ namespace libbio::vcf {
 		add_subfield <info_field_validated>		(dst, "VALIDATED");
 		add_subfield <info_field_1000g>			(dst, "1000G");
 	}
-	
-	
+
+
 	void add_reserved_genotype_keys(genotype_field_map &dst)
 	{
 		add_subfield <genotype_field_ad>	(dst, "AD");

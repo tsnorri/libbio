@@ -6,12 +6,14 @@
 #ifndef LIBBIO_VCF_SUBFIELD_VECTOR_VALUE_HELPER_HH
 #define LIBBIO_VCF_SUBFIELD_VECTOR_VALUE_HELPER_HH
 
+#include <cstddef>
+#include <cstdint>
 #include <libbio/vcf/constants.hh>
 #include <libbio/vcf/metadata.hh>
 
 
 namespace libbio::vcf {
-	
+
 	// Helper for constructing a vector.
 	// Placement new is needed, so std::make_from_tuple cannot be used.
 	// Default implementation for various values including VCF_NUMBER_DETERMINED_AT_RUNTIME.
@@ -34,7 +36,7 @@ namespace libbio::vcf {
 			}
 		}
 	};
-	
+
 	// Special cases.
 	template <>
 	struct vector_value_helper <VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE>
@@ -45,7 +47,7 @@ namespace libbio::vcf {
 			new (mem) t_vector(alt_count);
 		}
 	};
-	
+
 	template <>
 	struct vector_value_helper <VCF_NUMBER_ONE_PER_ALLELE>
 	{

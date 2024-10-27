@@ -5,6 +5,7 @@
 
 #include <libbio/assert.hh>
 #include <libbio/size_calculator.hh>
+#include <ostream>
 #include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/reverse.hpp>
 

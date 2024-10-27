@@ -1,80 +1,84 @@
 /*
- * Copyright (c) 2018–2023 Tuukka Norri
+ * Copyright (c) 2018–2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_MATRIX_MATRIX_HH
 #define LIBBIO_MATRIX_MATRIX_HH
 
+#include <cstddef>
 #include <libbio/assert.hh>
 #include <libbio/matrix/indexing.hh>
 #include <libbio/matrix/iterator.hh>
 #include <libbio/matrix/slice.hh>
 #include <libbio/matrix/utility.hh>
-#include <type_traits>
+#include <ostream>
+#include <range/v3/algorithm/copy.hpp>
+#include <range/v3/iterator/stream_iterators.hpp>
+#include <range/v3/view/transform.hpp>
 #include <vector>
 
 
 namespace libbio {
-	
+
 	// Wrap an std::vector so that parts of it that correspond to matrix rows and columns may be used with
 	// std and Boost Range algorithms. Said parts may be obtained with row() and column().
 	template <typename t_value>
 	class matrix
 	{
 		friend class detail::matrix_slice <matrix>;
-		
+
 		template <typename t_matrix>
 		friend std::size_t detail::matrix_index(t_matrix const &, std::size_t const, std::size_t const);
-		
+
 	public:
 		typedef t_value											value_type;
-		
+
 	protected:
 		typedef std::vector <value_type>						vector_type;
-		
+
 	public:
 		typedef typename vector_type::reference					reference;
 		typedef typename vector_type::const_reference			const_reference;
-		
+
 		typedef typename vector_type::iterator					iterator;
 		typedef typename vector_type::const_iterator			const_iterator;
-		
+
 		typedef detail::matrix_iterator <iterator>				matrix_iterator;
 		typedef detail::matrix_iterator <const_iterator>		const_matrix_iterator;
-		
+
 		typedef detail::matrix_slice <matrix>					slice_type;
 		typedef detail::matrix_slice <matrix const>				const_slice_type;
-		
+
 	protected:
 		std::vector <value_type>	m_data;
 		std::size_t					m_stride{1};
-		
+
 	protected:
 		void resize_if_needed(std::size_t const rows, std::size_t const cols);
-		
+
 	public:
 		constexpr matrix() = default;
-		
+
 		constexpr matrix(std::size_t const rows, std::size_t const columns):
 			m_data(columns * rows, 0),
 			m_stride(rows)
 		{
 			libbio_assert(m_stride);
 		}
-		
+
 		constexpr matrix(std::initializer_list <value_type> init, std::size_t const rows):
 			m_data(std::move(init)),
 			m_stride(rows)
 		{
 			libbio_assert_eq(0, init.size() % rows);
 		}
-		
+
 		inline std::size_t idx(std::size_t const y, std::size_t const x) const { return detail::matrix_index(*this, y, x); }
-		
+
 		value_type &operator()(std::size_t const y, std::size_t const x) { return m_data[idx(y, x)]; }
 		value_type const &operator()(std::size_t const y, std::size_t const x) const { return m_data[idx(y, x)]; }
-		
+
 		std::size_t const size() const { return m_data.size(); }
 		std::size_t const number_of_columns() const { return m_data.size() / m_stride; }
 		std::size_t const number_of_rows() const { return m_stride; }
@@ -83,14 +87,14 @@ namespace libbio {
 		void resize(std::size_t const size) { m_data.resize(size); }
 		void set_stride(std::size_t const stride) { libbio_always_assert(0 == m_data.size() % m_stride); m_stride = stride; }
 		void clear() { m_data.clear(); }
-		
+
 		template <typename t_fn>
 		void apply(t_fn &&fn);
-		
+
 		void swap(matrix &rhs);
-		
+
 		bool operator==(matrix const &other) const { return m_data == other.m_data && m_stride == other.m_stride; }
-		
+
 		// Iterators.
 		iterator begin() { return m_data.begin(); }
 		iterator end() { return m_data.end(); }
@@ -98,7 +102,7 @@ namespace libbio {
 		const_iterator end() const { return m_data.cend(); }
 		const_iterator cbegin() const { return m_data.cbegin(); }
 		const_iterator cend() const { return m_data.cend(); }
-		
+
 		// Slices.
 		slice_type row(std::size_t const row, std::size_t const first = 0)												{ return matrices::row(*this, row, first, this->number_of_columns()); }
 		slice_type column(std::size_t const column, std::size_t const first = 0)										{ return matrices::column(*this, column, first, this->number_of_rows()); }
@@ -113,15 +117,15 @@ namespace libbio {
 		const_slice_type const_row(std::size_t const row, std::size_t const first, std::size_t const limit) const		{ return matrices::const_row(*this, row, first, limit); }
 		const_slice_type const_column(std::size_t const column, std::size_t const first, std::size_t const limit) const	{ return matrices::const_column(*this, column, first, limit); }
 	};
-	
-	
+
+
 	template <typename t_value>
 	void swap(matrix <t_value> &lhs, matrix <t_value> &rhs)
 	{
 		lhs.swap(rhs);
 	}
-	
-	
+
+
 	template <typename t_value>
 	std::ostream &operator<<(std::ostream &os, matrix <t_value> const &matrix)
 	{
@@ -134,8 +138,8 @@ namespace libbio {
 		}
 		return os;
 	}
-	
-	
+
+
 	template <typename t_value>
 	void matrix <t_value>::resize_if_needed(std::size_t const rows, std::size_t const columns)
 	{
@@ -143,12 +147,12 @@ namespace libbio {
 		{
 			if (size() < rows * columns)
 				resize(rows * columns);
-			
+
 			set_stride(rows);
 		}
 	}
-	
-	
+
+
 	template <typename t_value>
 	void matrix <t_value>::swap(matrix <t_value> &rhs)
 	{
@@ -156,8 +160,8 @@ namespace libbio {
 		swap(m_data, rhs.m_data);
 		swap(m_stride, rhs.m_stride);
 	}
-	
-	
+
+
 	template <typename t_value>
 	template <typename t_fn>
 	void matrix <t_value>::apply(t_fn &&value_type)

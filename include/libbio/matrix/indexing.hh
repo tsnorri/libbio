@@ -6,17 +6,18 @@
 #ifndef LIBBIO_MATRIX_INDEXING_HH
 #define LIBBIO_MATRIX_INDEXING_HH
 
+#include <cstddef>
 #include <libbio/assert.hh>
 
 
 namespace libbio::detail {
-	
+
 	inline std::size_t matrix_index(std::size_t const y, std::size_t const x, std::size_t const stride)
 	{
 		return x * stride + y;
 	}
-	
-	
+
+
 	template <typename t_matrix>
 	inline std::size_t matrix_index(t_matrix const &matrix, std::size_t const y, std::size_t const x)
 	{

@@ -1,19 +1,22 @@
 /*
- * Copyright (c) 2022 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <iostream>
+#include <libbio/vcf/constants.hh>
+#include <libbio/vcf/subfield/base.hh>
 #include <libbio/vcf/vcf_reader.hh>
+#include <string>
 
-namespace lb	= libbio;
 namespace vcf	= libbio::vcf;
 
 
 namespace {
-	
+
 	void report_error(char const *field_type, std::string const &key, vcf::subfield_base const &field, vcf::metadata_formatted_field const &meta)
 	{
-		std::cerr 
+		std::cerr
 			<< "WARNING: The definition of the "
 			<< field_type
 			<< " field “"
@@ -42,7 +45,7 @@ namespace libbio::vcf {
 		report_error("info", key, field, meta);
 		return true;
 	}
-	
+
 	bool reader_default_delegate::vcf_reader_should_replace_non_matching_subfield(
 		std::string const &key,
 		genotype_field_base const &field,

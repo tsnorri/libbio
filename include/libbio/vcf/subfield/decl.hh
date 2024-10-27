@@ -6,6 +6,7 @@
 #ifndef LIBBIO_VCF_SUBFIELD_DECL_HH
 #define LIBBIO_VCF_SUBFIELD_DECL_HH
 
+#include <cstdint>
 #include <libbio/vcf/constants.hh>
 #include <type_traits> // std::integral_constant
 
@@ -24,23 +25,23 @@ namespace libbio::vcf::detail {
 
 
 namespace libbio::vcf {
-	
+
 	// Fwd.
 	template <typename t_base>
 	class generic_field;
-	
+
 	template <metadata_value_type t_metadata_value_type, std::int32_t t_number>
 	class generic_info_field_base;
-	
+
 	template <metadata_value_type t_metadata_value_type, std::int32_t t_number>
 	class generic_genotype_field_base;
-	
+
 	template <metadata_value_type t_metadata_value_type, std::int32_t t_number = detail::field_default_count_v <t_metadata_value_type>>
 	using info_field = generic_field <generic_info_field_base <t_metadata_value_type, t_number>>;
 
 	template <metadata_value_type t_metadata_value_type, std::int32_t t_number = detail::field_default_count_v <t_metadata_value_type>>
 	using genotype_field = generic_field <generic_genotype_field_base <t_metadata_value_type, t_number>>;
-	
+
 	// Info fields.
 	using info_field_aa			= info_field <metadata_value_type::STRING>;
 	using info_field_ac			= info_field <metadata_value_type::INTEGER,		VCF_NUMBER_ONE_PER_ALTERNATE_ALLELE>;
@@ -63,7 +64,7 @@ namespace libbio::vcf {
 	using info_field_somatic	= info_field <metadata_value_type::FLAG>;
 	using info_field_validated	= info_field <metadata_value_type::FLAG>;
 	using info_field_1000g		= info_field <metadata_value_type::FLAG>;
-	
+
 	// Genotype fields.
 	using genotype_field_ad		= genotype_field <metadata_value_type::INTEGER,	VCF_NUMBER_ONE_PER_ALLELE>;
 	using genotype_field_adf	= genotype_field <metadata_value_type::INTEGER,	VCF_NUMBER_ONE_PER_ALLELE>;

@@ -6,6 +6,7 @@
 #ifndef LIBBIO_RAPIDCHECK_MARKOV_CHAIN_HH
 #define LIBBIO_RAPIDCHECK_MARKOV_CHAIN_HH
 
+#include <cstdint>
 #include <memory>					// std::make_unique
 #include <libbio/markov_chain.hh>
 #include <rapidcheck.h>
@@ -14,12 +15,12 @@
 
 
 namespace rc {
-	
+
 	template <typename t_base, typename t_initial_state, typename t_transitions>
 	struct Arbitrary <libbio::markov_chains::chain <t_base, t_initial_state, t_transitions>>
 	{
 		typedef libbio::markov_chains::chain <t_base, t_initial_state, t_transitions>	chain_type;
-		
+
 		static Gen <chain_type> arbitrary()
 		{
 			return gen::withSize([](int const size){
@@ -42,7 +43,7 @@ namespace rc {
 								)
 							)
 						);
-						
+
 						chain_type retval;
 						retval.values.reserve(1 + size);
 						chain_type::visit_node_types(probabilities, [&retval]<typename t_type> {
@@ -59,7 +60,7 @@ namespace rc {
 							{
 								retval.values.emplace_back(*gen::arbitrary <t_type>()); // Needs a converting constructor.
 							}
-							
+
 							return true;
 						});
 						return retval;

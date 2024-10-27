@@ -6,8 +6,12 @@
 #ifndef LIBBIO_BGZF_STREAMING_READER_HH
 #define LIBBIO_BGZF_STREAMING_READER_HH
 
+#include <cstddef>
+#include <cstdint>
+#include <libbio/assert.hh>
 #include <libbio/bgzf/block.hh>
 #include <libbio/bgzf/deflate_decompressor.hh>
+#include <libbio/bits.hh>
 #include <libbio/bounded_mpmc_queue.hh>
 #include <libbio/circular_buffer.hh>
 #include <libbio/dispatch.hh>
@@ -22,14 +26,14 @@ namespace libbio::bgzf {
 
 	class streaming_reader;
 	typedef std::vector <std::byte> streaming_reader_output_buffer_type;
-	
-	
+
+
 	struct streaming_reader_delegate
 	{
 		typedef streaming_reader_output_buffer_type output_buffer_type;
-		
+
 		virtual ~streaming_reader_delegate() {}
-		
+
 		// Will be called from worker threads.
 		virtual void streaming_reader_did_decompress_block(
 			streaming_reader &reader,
@@ -41,16 +45,16 @@ namespace libbio::bgzf {
 
 
 namespace libbio::bgzf::detail {
-	
+
 	struct streaming_reader_decompression_task
 	{
 		typedef streaming_reader_output_buffer_type	output_buffer_type;
-		
+
 		deflate_decompressor	decompressor;
 		struct block			block;
 		streaming_reader		*reader{};
 		std::size_t				block_index{};
-		
+
 		void prepare() { decompressor.prepare(); }
 		void run();
 		void operator()() { run(); }
@@ -59,7 +63,7 @@ namespace libbio::bgzf::detail {
 
 
 namespace libbio::bgzf {
-	
+
 	/*
 	 * Read a BGZF blocks as a stream but not necessarily in-order (as opposed to random access).
 	 *
@@ -73,21 +77,21 @@ namespace libbio::bgzf {
 	class streaming_reader
 	{
 		typedef detail::streaming_reader_decompression_task	decompression_task;
-		
+
 		friend decompression_task;
-		
+
 	public:
 		typedef streaming_reader_output_buffer_type		output_buffer_type;
-	
+
 	private:
 		typedef std::counting_semaphore <UINT16_MAX>	semaphore_type;
 		typedef bounded_mpmc_queue <decompression_task>	task_queue_type; // Actually only MPSC needed.
 		typedef bounded_mpmc_queue <output_buffer_type>	buffer_queue_type;
 		typedef std::vector <std::uintptr_t>			offset_vector;
-		
+
 	public:
 		constexpr static std::size_t const block_size{65536};
-		
+
 	private:
 		circular_buffer									m_input_buffer;
 		task_queue_type									m_task_queue;
@@ -100,11 +104,11 @@ namespace libbio::bgzf {
 		dispatch::group									*m_group{};
 		streaming_reader_delegate						*m_delegate{};
 		std::mutex										m_released_offsets_mutex{};
-	
+
 	private:
 		static std::size_t page_count_for_buffer(std::size_t task_count) { return bits::gte_power_of_2_((task_count * block_size / circular_buffer::page_size()) ?: 1); }
 		void decompression_task_did_finish(decompression_task &task, output_buffer_type &decompressed_data);
-	
+
 	public:
 		streaming_reader(
 			file_handle &handle,
@@ -130,7 +134,7 @@ namespace libbio::bgzf {
 				task.prepare();
 			}
 		}
-		
+
 		streaming_reader(
 			file_handle &handle,
 			std::size_t const task_count,
@@ -141,7 +145,7 @@ namespace libbio::bgzf {
 			streaming_reader(handle, task_count, 2 * task_count, group, semaphore, delegate)
 		{
 		}
-		
+
 		streaming_reader(
 			file_handle &handle,
 			dispatch::group &group,
@@ -151,7 +155,7 @@ namespace libbio::bgzf {
 			streaming_reader(handle, std::thread::hardware_concurrency() ?: 1, group, semaphore, delegate)
 		{
 		}
-		
+
 		void run(dispatch::queue &queue = dispatch::parallel_queue::shared_queue());
 		void read_first_block(dispatch::queue &queue = dispatch::parallel_queue::shared_queue());
 		void return_output_buffer(output_buffer_type &buffer);

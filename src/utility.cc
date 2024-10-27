@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Tuukka Norri
+ * Copyright (c) 2018-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,37 +7,39 @@
 #include <ctime>
 #include <iomanip>
 #include <libbio/utility.hh>
+#include <ostream>
 #include <sstream>
+#include <string>
 
 
 namespace libbio {
-	
+
 	std::ostream &log_time(std::ostream &stream)
 	{
 		auto const time(std::chrono::system_clock::now());
 		auto const ct(std::chrono::system_clock::to_time_t(time));
 		struct tm ctm;
 		localtime_r(&ct, &ctm);
-		
+
 		stream
 		<< '['
 		<< std::setw(2) << std::setfill('0') << ctm.tm_hour << ':'
 		<< std::setw(2) << std::setfill('0') << ctm.tm_min << ':'
 		<< std::setw(2) << std::setfill('0') << ctm.tm_sec
 		<< "] ";
-		
+
 		return stream;
 	}
-	
-	
+
+
 	std::string copy_time()
 	{
 		std::stringstream sstream;
 		log_time(sstream);
 		return sstream.str();
 	}
-	
-	
+
+
 	std::size_t strlen_utf8(std::string const &str)
 	{
 		std::size_t retval(0);
@@ -49,7 +51,7 @@ namespace libbio {
 			if (0x80 != (0xc0 & c))
 				++retval;
 		}
-		
+
 		return retval;
 	}
 }

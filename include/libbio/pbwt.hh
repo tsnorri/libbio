@@ -9,21 +9,22 @@
 #include <algorithm>
 #include <cstddef>
 #include <libbio/array_list.hh>
-#include <range/v3/all.hpp>
+#include <range/v3/view/drop.hpp>
+#include <range/v3/view/zip.hpp>
 
 
 namespace libbio::pbwt {
-	
+
 	template <typename t_permutation_vector, typename t_divergence_vector>
 	class dynamic_pbwt_rmq
 	{
 	public:
 		typedef typename t_divergence_vector::size_type	size_type;
-		
+
 	protected:
 		t_permutation_vector	*m_permutation{};
 		t_divergence_vector		*m_divergence{};
-		
+
 	public:
 		dynamic_pbwt_rmq() = default;
 		dynamic_pbwt_rmq(t_permutation_vector &input_permutation, t_divergence_vector &input_divergence):
@@ -35,7 +36,7 @@ namespace libbio::pbwt {
 		size_type size() const { return m_divergence->size(); }
 		void update(std::size_t i) { (*m_permutation)[i] = i + 1; }
 		size_type operator()(size_type j, size_type i) { return maxd(j, i); }
-		
+
 	protected:
 		size_type maxd(size_type j, size_type i)
 		{
@@ -47,12 +48,12 @@ namespace libbio::pbwt {
 				(*m_divergence)[j] = max_ct(lhs, rhs);
 				(*m_permutation)[j] = i + 1;
 			}
-			
+
 			return (*m_divergence)[j];
 		}
 	};
-	
-	
+
+
 	// Build prefix and divergence arrays for PBWT.
 	template <
 		typename t_input_vector,
@@ -78,14 +79,14 @@ namespace libbio::pbwt {
 	{
 		auto const input_count(inputs.size());
 		auto const sigma(alphabet.sigma());
-		
+
 		// Sanity checks.
 		libbio_assert(input_count == input_permutation.size());
 		libbio_assert(input_count == input_divergence.size());
 		libbio_assert(input_count == input_divergence_rmq.size());
 		libbio_assert(sigma <= previous_positions.size());
 		libbio_assert(sigma <= counts.size());
-		
+
 		// Count the instances of each character after zero-filling the count array.
 		std::fill(counts.begin(), sigma + counts.begin(), 0);
 		for (auto const vec_idx : input_permutation)
@@ -95,19 +96,19 @@ namespace libbio::pbwt {
 			auto const comp(alphabet.char_to_comp(c));
 			++counts[comp];
 		}
-		
+
 		// Calculate the cumulative sum.
 		{
 			typename t_count_vector::value_type sum(0);
 			for (auto &c : counts)
 			{
 				c += sum;
-				
+
 				using std::swap;
 				swap(c, sum);
 			}
 		}
-		
+
 		// Sort the strings by the k-th column and build the arrays.
 		if (previous_positions.size() < 1 + sigma)
 			previous_positions.resize(1 + sigma);
@@ -124,7 +125,7 @@ namespace libbio::pbwt {
 
 				// Update the RMQ data structure if needed.
 				input_divergence_rmq.update(i);
-			
+
 				// Next value for d_{k + 1}.
 				auto const prev_idx(previous_positions[comp]);	// i in Algorithm 2.1.
 				libbio_assert(prev_idx <= i);
@@ -140,8 +141,8 @@ namespace libbio::pbwt {
 			}
 		}
 	}
-	
-	
+
+
 	template <typename t_string_index_vector>
 	void update_inverse_input_permutation(
 		t_string_index_vector const &input_permutation,
@@ -152,8 +153,8 @@ namespace libbio::pbwt {
 		for (auto const val : input_permutation)
 			inverse_input_permutation[val] = idx++;
 	}
-	
-	
+
+
 	template <
 		typename t_character_index_vector,
 		typename t_divergence_count_type
@@ -167,7 +168,7 @@ namespace libbio::pbwt {
 		for (auto const output_val : output_divergence)
 		{
 			libbio_assert(output_val < count_list.size());
-			
+
 			// Add the new value. If the value did not occur in the list before,
 			// it comes from the current column.
 			auto const last_idx_1(count_list.last_index_1());
@@ -183,11 +184,11 @@ namespace libbio::pbwt {
 				++count;
 			}
 		}
-		
+
 		for (auto const input_val : input_divergence)
 		{
 			libbio_assert(input_val < count_list.size());
-			
+
 			// Decrement the old value and remove if necessary.
 			auto input_it(count_list.find(input_val));
 			libbio_assert(count_list.end() != input_it);
@@ -197,8 +198,8 @@ namespace libbio::pbwt {
 				count_list.erase(input_it, false);
 		}
 	}
-	
-	
+
+
 	template <
 		typename t_position,
 		typename t_divergence
@@ -211,11 +212,11 @@ namespace libbio::pbwt {
 			if (lb < dd)
 				++retval;
 		}
-	
+
 		return retval;
 	}
-	
-	
+
+
 	// Index by occurrence (0, 1, 2, …) in PBWT order.
 	template <
 		typename t_position,
@@ -225,7 +226,7 @@ namespace libbio::pbwt {
 	std::size_t unique_substring_count(t_position const lb, t_divergence const &divergence, t_counts &substring_copy_numbers)
 	{
 		substring_copy_numbers.clear();
-		
+
 		std::size_t run_cn(1);
 		std::size_t idx(0);
 		for (auto const dd : divergence | ranges::view::drop(1))
@@ -241,8 +242,8 @@ namespace libbio::pbwt {
 		substring_copy_numbers.emplace_back(idx++, run_cn);
 		return idx;
 	}
-	
-	
+
+
 	// Index by string number in PBWT order.
 	template <
 		typename t_position,
@@ -253,7 +254,7 @@ namespace libbio::pbwt {
 	std::size_t unique_substring_count_idxs(t_position const lb, t_string_indices const &permutation, t_divergence const &divergence, t_counts &substring_copy_numbers)
 	{
 		substring_copy_numbers.clear();
-		
+
 		std::size_t retval(1);
 		std::size_t idx(1);
 		std::size_t run_start_idx(0);
@@ -270,16 +271,16 @@ namespace libbio::pbwt {
 				run_cn = 1;
 				++retval;
 			}
-			
+
 			++idx;
 		}
-		
+
 		auto const string_idx(permutation[run_start_idx]);
 		substring_copy_numbers.emplace_back(string_idx, run_cn);
 		return retval;
 	}
 
-	
+
 	template <
 		typename t_position,
 		typename t_string_positions,
@@ -312,7 +313,7 @@ namespace libbio::pbwt {
 				current_run_idx = std::min(idx, current_run_idx);
 			}
 		}
-		
+
 		std::fill(output_indices.begin() + run_start, output_indices.end() + run_end, current_run_idx);
 	}
 }

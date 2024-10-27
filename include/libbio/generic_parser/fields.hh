@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Tuukka Norri
+ * Copyright (c) 2022-2024 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,20 +7,18 @@
 #define LIBBIO_GENERIC_PARSER_FIELDS_HH
 
 #include <boost/spirit/home/x3.hpp>
+#include <cstddef>
 #include <libbio/generic_parser/delimiter.hh>
 #include <libbio/generic_parser/errors.hh>
 #include <libbio/generic_parser/field_position.hh>
 #include <libbio/generic_parser/filters.hh>
 #include <libbio/generic_parser/iterators.hh>
-#include <libbio/tuple/cat.hh>
-#include <libbio/tuple/find.hh>
-#include <libbio/tuple/map.hh>
-#include <libbio/tuple/reusable_tuple.hh>
-#include <libbio/tuple/unique.hh>
-#include <libbio/tuple/utility.hh>
+#include <libbio/tuple.hh>
 #include <string>
 #include <string_view>
-#include <type_traits>							// std::bool_constant, std::is_signed_v
+#include <tuple>
+#include <type_traits>								// std::bool_constant, std::is_signed_v
+#include <vector>
 
 
 // Clang 14 follows the standard in the sense that goto is not allowed in constexpr functions
@@ -33,17 +31,17 @@
 
 
 namespace libbio::parsing {
-	
+
 	template <typename t_tag, typename t_parser>
 	struct tagged_parser
 	{
 		typedef t_parser	parser_type;
 		typedef t_tag		tag_type;
 	};
-	
-	
+
+
 	struct empty_tag {};
-	
+
 	template <typename t_lhs, typename t_rhs>
 	constexpr bool operator==(t_lhs const, t_rhs const)
 	requires (std::is_base_of_v <empty_tag, t_lhs> && std::is_base_of_v <empty_tag, t_rhs>)
@@ -54,13 +52,13 @@ namespace libbio::parsing {
 
 	template <typename t_type, typename = void>
 	struct is_optional_repeating : public std::false_type {};
-	
+
 	template <typename t_type>
 	struct is_optional_repeating <t_type, decltype(void(t_type::is_optional_repeating))> : public std::bool_constant <t_type::is_optional_repeating> {};
-	
+
 	template <typename t_type>
 	constexpr static inline bool is_optional_repeating_v{is_optional_repeating <t_type>::value};
-	
+
 
 	template <typename t_type, typename = void>
 	struct is_optional : public std::bool_constant <is_optional_repeating_v <t_type>> {};
@@ -71,36 +69,36 @@ namespace libbio::parsing {
 	template <typename t_type>
 	constexpr static inline bool is_optional_v{is_optional <t_type>::value};
 
-	
+
 	template <typename t_type, typename = void>
 	struct is_repeating : public std::bool_constant <is_optional_repeating_v <t_type>> {};
-	
+
 	template <typename t_type>
 	struct is_repeating <t_type, decltype(void(t_type::is_repeating))> : public std::bool_constant <t_type::is_repeating> {};
-	
+
 	template <typename t_type>
 	constexpr static inline bool is_repeating_v{is_repeating <t_type>::value};
-	
-	
+
+
 	template <typename t_type>
 	struct is_alternative : public std::false_type {};
-	
+
 	template <typename... t_args>
 	constexpr static inline auto const is_alternative_v{is_alternative <t_args...>::value};
-	
-	
+
+
 	// Indicates multiple output options.
 	template <typename... t_type>
 	struct alternative
 	{
 		typedef std::tuple <t_type...>	tuple_type;
-		
+
 		constexpr static auto const max_size{[]() consteval -> std::size_t {
 			static_assert(!(is_alternative_v <t_type> || ...));
 			std::size_t retval{};
 			return ((retval = std::max(retval, tuples::reusable_tuple_size_v <t_type>)), ...);
 		}()};
-		
+
 		constexpr static auto const max_alignment{[]() consteval -> std::size_t {
 			return tuples::visit_all_parameters <tuple_type>([]<typename... t_tuples>() consteval -> std::size_t {
 				if constexpr (0 == sizeof...(t_tuples))
@@ -123,31 +121,31 @@ namespace libbio::parsing {
 			});
 		}()};
 	};
-	
-	
+
+
 	template <typename... t_args>
 	struct is_alternative <alternative <t_args...>> : public std::true_type {};
-	
-	
+
+
 	template <typename t_type>
 	struct to_alternative {};
-	
+
 	template <typename... t_args>
 	struct to_alternative <std::tuple <t_args...>>
 	{
 		typedef alternative <t_args...>	type;
 	};
-	
+
 	template <typename t_type>
 	using to_alternative_t = typename to_alternative <t_type>::type;
-	
-	
+
+
 	struct boolean_wrapper
 	{
 		bool value{};
-		
+
 		constexpr /* implicit */ operator bool() const noexcept { return value; }
-		
+
 		constexpr boolean_wrapper &operator=(char const cc)
 		{
 			// Handle parsing here to keep fields::character_like relatively simple.
@@ -157,16 +155,16 @@ namespace libbio::parsing {
 				case 'Y':
 					value = true;
 					break;
-				
+
 				case 'F':
 				case 'N':
 					value = false;
 					break;
-				
+
 				default:
 					throw parse_error_tpl(errors::unexpected_character(cc));
 			}
-			
+
 			return *this;
 		}
 	};
@@ -196,36 +194,36 @@ namespace libbio::parsing {
 
 
 namespace libbio::parsing::detail {
-	
+
 	template <typename t_tag_>
 	struct matches_tag
 	{
 		template <typename>
 		struct with {};
-		
+
 		template <typename t_other_tag, typename t_parser>
 		struct with <tagged_parser <t_other_tag, t_parser>> :
 			public std::bool_constant <std::is_same_v <t_tag_, t_other_tag>> {};
 	};
-	
-	
+
+
 	template <typename t_type, typename t_value_type, t_value_type t_default, bool t_is_void = std::is_void_v <t_type>>
 	struct value_if_not_void
 	{
 		constexpr static inline t_value_type const value{t_default};
 	};
-	
+
 	template <typename t_type, typename t_value_type, t_value_type t_default>
 	struct value_if_not_void <t_type, t_value_type, t_default, false>
 	{
 		constexpr static inline t_value_type const value{t_type::value};
 	};
-	
+
 }
 
 
 namespace libbio::parsing::fields::detail {
-	
+
 	template <bool t_should_copy>
 	struct text_value_type_tpl
 	{
@@ -257,10 +255,10 @@ namespace libbio::parsing::fields {
 			{
 				if (range.is_at_end())
 					return {};
-				
+
 				goto continue_parsing;
 			}
-	
+
 			while (!range.is_at_end())
 			{
 			continue_parsing:
@@ -269,10 +267,10 @@ namespace libbio::parsing::fields {
 					++range.it;
 					return {idx};
 				}
-				
+
 				++range.it;
 			}
-		
+
 			// t_delimiter not matched.
 			if constexpr (any(field_position::final_ & t_field_position))
 				return {INVALID_DELIMITER_INDEX};
@@ -280,8 +278,8 @@ namespace libbio::parsing::fields {
 				throw parse_error_tpl(errors::unexpected_eof());
 		}
 	};
-	
-	
+
+
 	template <
 		typename t_delimiter,
 		typename t_character_filter,
@@ -313,19 +311,19 @@ namespace libbio::parsing::fields {
 			{
 				throw parse_error_tpl(errors::unexpected_character(cc));
 			}
-	
+
 			dst.handle_character(cc);
 			++range.it;
 		}
-		
+
 		// t_delimiter not matched.
 		if constexpr (any(field_position::final_ & t_field_position))
 			return {INVALID_DELIMITER_INDEX};
 		else
 			throw parse_error_tpl(errors::unexpected_eof());
 	}
-	
-	
+
+
 	template <
 		typename t_delimiter,
 		typename t_character_filter,
@@ -360,10 +358,10 @@ namespace libbio::parsing::fields {
 			{
 				throw parse_error_tpl(errors::unexpected_character(cc));
 			}
-		
+
 			++range.it;
 		}
-		
+
 		// t_delimiter not matched.
 		if constexpr (any(field_position::final_ & t_field_position))
 		{
@@ -384,8 +382,8 @@ namespace libbio::parsing::fields {
 		using value_type = typename detail::text_value_type_tpl <
 			parsing::detail::value_if_not_void <t_should_always_copy, bool, t_should_copy>::value
 		>::type;
-		
-		
+
+
 		template <typename t_dst>
 		constexpr void clear_value(t_dst &dst) const { dst.clear(); }
 
@@ -398,26 +396,26 @@ namespace libbio::parsing::fields {
 				t_dst &dst;
 				void handle_character(char const cc) { dst.push_back(cc); }
 			};
-			
+
 			helper hh{dst};
 			return parse_sequential <t_delimiter, t_character_filter, t_field_position, std::string_view>(range, hh);
 		}
 	};
-	
-	
+
+
 	template <bool t_should_always_copy, typename t_character_filter = filters::no_op>
 	using text_ = text <t_character_filter, std::bool_constant <t_should_always_copy>>;
-	
-	
+
+
 	template <typename t_char, typename t_value = std::vector <t_char>, typename t_character_filter = filters::no_op>
 	struct character_sequence
 	{
 		template <bool t_should_copy>
 		using value_type = t_value;
-		
+
 		template <typename t_dst>
 		constexpr void clear_value(t_dst &dst) const { dst.clear(); }
-		
+
 		template <typename t_delimiter, field_position t_field_position, typename t_range, typename t_dst>
 		constexpr parsing_result parse(t_range &range, t_dst &dst) const
 		{
@@ -426,21 +424,21 @@ namespace libbio::parsing::fields {
 				t_dst &dst;
 				void handle_character(char const cc) { dst.emplace_back(cc); }
 			};
-			
+
 			helper hh{dst};
 			return parse_sequential <t_delimiter, t_character_filter, t_field_position, t_value>(range, hh); // FIXME: replace t_value with some other parameter?
 		}
 	};
-	
-	
+
+
 	template <typename t_value_type>
 	struct character_like
 	{
 		template <bool t_should_copy>
 		using value_type = t_value_type;
-		
+
 		constexpr void clear_value(t_value_type &dst) const { dst = t_value_type{}; }
-		
+
 		template <field_position t_field_position, typename t_range>
 		constexpr bool parse_value(t_range &range, t_value_type &val) const
 		{
@@ -454,18 +452,18 @@ namespace libbio::parsing::fields {
 				if (range.is_at_end())
 					throw parse_error_tpl(errors::unexpected_eof());
 			}
-			
+
 			val = *range.it;
 			++range.it;
 			return true;
 		}
-		
+
 		template <typename t_delimiter, field_position t_field_position, typename t_range>
 		constexpr parsing_result parse(t_range &range, t_value_type &val) const
 		{
 			if (!parse_value <t_field_position>(range, val))
 				return {};
-			
+
 			if constexpr (any(field_position::final_ & t_field_position))
 			{
 				if (range.is_at_end())
@@ -476,49 +474,49 @@ namespace libbio::parsing::fields {
 				if (range.is_at_end())
 					throw parse_error_tpl(errors::unexpected_eof());
 			}
-			
+
 			auto const cc(*range.it);
 			if (auto const idx{t_delimiter::matching_index(cc)}; t_delimiter::size() != idx)
 			{
 				++range.it;
 				return {idx};
 			}
-				
+
 			// Characters left but t_delimiter not matched.
 			throw parse_error_tpl(errors::unexpected_character(cc));
 		}
 	};
-	
-	
+
+
 	typedef character_like <char>				character;
 	typedef character_like <boolean_wrapper>	boolean;
-	
-	
+
+
 	template <typename t_integer, bool t_is_signed = std::is_signed_v <t_integer>>
 	struct integer
 	{
 		template <bool t_should_copy>
 		using value_type = t_integer;
-		
+
 		constexpr void clear_value(t_integer &dst) const { dst = t_integer{}; }
-		
+
 		template <field_position t_field_position, typename t_range>
 		LIBBIO_CONSTEXPR_WITH_GOTO bool parse_value(t_range &range, t_integer &val) const
 		{
 			bool did_parse{};
 			bool is_negative{};
-			
+
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
 					return false;
-			
+
 				if constexpr (t_is_signed)
 					goto continue_parsing_1;
 				else
 					goto continue_parsing_2;
 			}
-			
+
 			if (t_is_signed) // Can’t make this if constexpr b.c. we would like to jump to continue_parsing_1.
 			{
 				if (!range.is_at_end())
@@ -530,26 +528,26 @@ namespace libbio::parsing::fields {
 						case '-':
 							if constexpr (!std::is_signed_v <t_integer>)
 								throw parse_error_tpl(errors::unexpected_character('-'));
-				
+
 							is_negative = true;
 							++range.it;
 							break;
-				
+
 						case '+':
 							++range.it;
 							break;
-				
+
 						default:
 							goto continue_parsing_2;
 					}
 				}
 			}
-			
+
 			while (!range.is_at_end())
 			{
 			continue_parsing_2:
 				auto const cc(*range.it);
-				
+
 				if ('0' <= cc && cc <= '9')
 				{
 					did_parse = true;
@@ -565,10 +563,10 @@ namespace libbio::parsing::fields {
 					}
 					break;
 				}
-				
+
 				++range.it;
 			}
-			
+
 			if (!did_parse)
 			{
 				if (range.is_at_end())
@@ -576,27 +574,27 @@ namespace libbio::parsing::fields {
 				else
 					throw parse_error_tpl(errors::unexpected_character(*range.it));
 			}
-			
+
 			return true;
 		}
-		
+
 		template <typename t_delimiter, field_position t_field_position, typename t_range>
 		LIBBIO_CONSTEXPR_WITH_GOTO parsing_result parse(t_range &range, t_integer &val) const
 		{
 			bool is_negative{};
 			delimiter_index_type delimiter_index{INVALID_DELIMITER_INDEX};
-		
+
 			if constexpr (any(field_position::initial_ & t_field_position))
 			{
 				if (range.is_at_end())
 					return {};
-			
+
 				if constexpr (t_is_signed)
 					goto continue_parsing_1;
 				else
 					goto continue_parsing_2;
 			}
-	
+
 			if (t_is_signed) // Can’t make this if constexpr b.c. we would like to jump to continue_parsing_1.
 			{
 				if (!range.is_at_end())
@@ -608,15 +606,15 @@ namespace libbio::parsing::fields {
 						case '-':
 							if constexpr (!std::is_signed_v <t_integer>)
 								throw parse_error_tpl(errors::unexpected_character('-'));
-				
+
 							is_negative = true;
 							++range.it;
 							break;
-				
+
 						case '+':
 							++range.it;
 							break;
-				
+
 						default:
 							if (t_delimiter::matches(cc))
 								throw parse_error_tpl(errors::unexpected_character(cc));
@@ -641,7 +639,7 @@ namespace libbio::parsing::fields {
 				val += cc - '0';
 				++range.it;
 			}
-			
+
 			if constexpr (!any(field_position::final_ & t_field_position))
 				throw parse_error_tpl(errors::unexpected_eof());
 
@@ -651,21 +649,21 @@ namespace libbio::parsing::fields {
 				if (is_negative)
 					val *= -1;
 			}
-			
+
 			++range.it;
 			return {delimiter_index};
 		}
 	};
-	
-	
+
+
 	template <typename t_floating_point>
 	struct floating_point
 	{
 		template <bool t_should_copy>
 		using value_type = t_floating_point;
-		
+
 		constexpr void clear_value(t_floating_point &dst) const { dst = t_floating_point{}; }
-		
+
 		template <typename t_delimiter, field_position t_field_position, typename t_range>
 		constexpr parsing_result parse(t_range &range, t_floating_point &val) const
 		{
@@ -674,7 +672,7 @@ namespace libbio::parsing::fields {
 				if (range.is_at_end())
 					return {};
 			}
-			
+
 			namespace x3 = boost::spirit::x3;
 			auto ip(range.joining_iterator_pair());
 			if (x3::parse(std::get <0>(ip), std::get <1>(ip), x3::real_parser <t_floating_point>{}, val))
@@ -701,7 +699,7 @@ namespace libbio::parsing::fields {
 					delimiter_index_type const idx{t_delimiter::matching_index(*range.it)};
 					if (t_delimiter::size() == idx)
 						throw parse_error_tpl(errors::unexpected_character(*range.it));
-				
+
 					// *it matches t_delimiter.
 					++range.it;
 					return {idx};
@@ -720,29 +718,29 @@ namespace libbio::parsing::fields {
 				{
 					if (range.is_at_end())
 						throw parse_error_tpl(errors::unexpected_eof());
-					else 
+					else
 						throw parse_error_tpl(errors::unexpected_character(*range.it));
 				}
 			}
-	
+
 		}
 	};
-	
-	
+
+
 	template <typename t_numeric>
 	using numeric = std::conditional_t <
 		std::is_floating_point_v <t_numeric>,
 		floating_point <t_numeric>,
 		integer <t_numeric>
 	>;
-	
-	
+
+
 	template <typename t_base, typename... t_tagged_parser>
 	struct conditional : public t_base
 	{
 	public:
 		typedef std::tuple <t_tagged_parser...> tagged_parsers_type;
-		
+
 	private:
 		// Each parser may have either std::tuple <...> or alternative <std::tuple <...>, ...> as its record type.
 		template <
@@ -754,27 +752,27 @@ namespace libbio::parsing::fields {
 		{
 			// t_parsed_type_is_alternative == false.
 			// Append the tuple to t_acc.
-			
+
 			typedef typename t_tagged_parser_::tag_type		tag_type;
 			typedef typename t_tagged_parser_::parser_type	parser_type;
 			typedef typename parser_type::record_type		record_type; // std::tuple
-			
+
 			typedef tuples::append_t <
 				t_acc,
 				typename tuples::prepend_t <tag_type, record_type>
 			> type;
 		};
-		
+
 		template <typename t_acc, typename t_tagged_parser_>
 		struct cat <t_acc, t_tagged_parser_, true>
 		{
 			typedef typename t_tagged_parser_::tag_type		tag_type;
 			typedef typename t_tagged_parser_::parser_type	parser_type;
 			typedef typename parser_type::record_type		record_type; // alternative
-			
+
 			template <typename t_tuple>
 			using prepend_t = tuples::prepend_t <tag_type, t_tuple>;
-			
+
 			typedef tuples::cat_t <
 				t_acc,
 				tuples::map_t <
@@ -783,10 +781,10 @@ namespace libbio::parsing::fields {
 				>
 			> type;
 		};
-		
+
 		template <typename t_acc, typename t_item>
 		using cat_t = typename cat <t_acc, t_item>::type;
-		
+
 		typedef tuples::unique_t <
 			tuples::foldl_t <
 				cat_t,	// Handle alternative.
@@ -794,8 +792,8 @@ namespace libbio::parsing::fields {
 				tagged_parsers_type
 			>
 		> all_record_types;
-		
-		
+
+
 		template <
 			typename t_delimiter,
 			field_position t_field_position,
@@ -808,12 +806,12 @@ namespace libbio::parsing::fields {
 		class callback_target
 		{
 			friend struct conditional;
-			
+
 			t_range		&m_range;
 			t_dst		&m_dst;
 			t_buffer	&m_buffer;
 			t_parse_cb	&m_parse_cb;
-			
+
 			callback_target(t_range &range, t_dst &dst, t_buffer &buffer, t_parse_cb &parse_cb):
 				m_range(range),
 				m_dst(dst),
@@ -821,22 +819,22 @@ namespace libbio::parsing::fields {
 				m_parse_cb(parse_cb)
 			{
 			}
-			
+
 		public:
 			constexpr t_range &range() { return m_range; }
-			
+
 			constexpr void read_delimiter()
 			{
 				++m_range.it;
 				if (m_range.is_at_end())
 					throw parse_error_tpl(errors::unexpected_eof());
-			
+
 				if (t_delimiter::matches(*m_range.it))
 					++m_range.it;
 				else
 					throw parse_error_tpl(errors::unexpected_character(*m_range.it));
 			}
-			
+
 			template <typename t_tag>
 			constexpr bool continue_parsing(t_tag &&tag)
 			{
@@ -848,12 +846,12 @@ namespace libbio::parsing::fields {
 				typedef typename find_result_type::first_match_type				tagged_parser_type;
 				static_assert(!std::is_same_v <tuples::not_found, tagged_parser_type>, "Parser not found for the given tag");
 				typedef typename tagged_parser_type::parser_type				parser_type;
-			
+
 				auto &dst(m_dst.template append <std::remove_cvref_t <t_tag>>(std::forward <t_tag>(tag)));
 				return parser_type::template parse_alternatives <0, t_stack>(m_range, dst, m_buffer, m_parse_cb);
 			}
 		};
-		
+
 	public:
 		template <bool t_should_copy>
 		using value_type = std::conditional_t <
@@ -861,7 +859,7 @@ namespace libbio::parsing::fields {
 			std::tuple_element_t <1, all_record_types>,
 			to_alternative_t <all_record_types>
 		>;
-	
+
 		template <
 			typename t_delimiter,
 			field_position t_field_position,
@@ -883,11 +881,11 @@ namespace libbio::parsing::fields {
 				if (range.is_at_end())
 					throw parse_error_tpl(errors::unexpected_eof());
 			}
-			
+
 			typedef callback_target <t_delimiter, t_field_position, t_stack, t_range, t_dst, t_buffer, t_parse_cb> target_type;
 			return t_base::parse(target_type(range, dst, buffer, parse_cb));
 		}
 	};
-} 
+}
 
 #endif
