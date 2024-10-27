@@ -3,31 +3,33 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <climits>
+#include <cstdint>
 #include <libbio/bits.hh>
 #include "rapidcheck_test_driver.hh"
 
 namespace lb		= libbio;
 
 namespace {
-	
+
 	template <typename t_type>
 	struct input
 	{
 		typedef t_type type;
 		t_type value{};
-		
+
 		constexpr t_type get() const { return value; }
 		constexpr operator t_type() const { return value; }
 	};
-	
-	
+
+
 	template <typename t_type>
 	struct valid_input : public input <t_type> {};
-	
+
 	template <typename t_type>
 	struct invalid_input : public input <t_type> {};
-	
-	
+
+
 	template <typename t_type>
 	constexpr t_type highest_bit_set()
 	{
@@ -37,7 +39,7 @@ namespace {
 
 
 namespace rc {
-	
+
 	template <typename t_type>
 	struct Arbitrary <valid_input <t_type>>
 	{
@@ -48,8 +50,8 @@ namespace rc {
 			);
 		}
 	};
-	
-	
+
+
 	template <typename t_type>
 	struct Arbitrary <invalid_input <t_type>>
 	{

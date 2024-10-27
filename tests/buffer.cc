@@ -6,10 +6,14 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <cstdint>
 #include <libbio/buffer.hh>
-#include <numeric> // std::iota
+#include <limits>
+#include <numeric>									// std::iota
+#include <string>
+#include <string_view>
+#include <vector>
 
-namespace gen	= Catch::Generators;
 namespace lb	= libbio;
 
 
@@ -25,25 +29,25 @@ namespace lb	= libbio;
 
 
 namespace {
-	
+
 	template <template <typename, typename> typename t_buffer>
 	struct buffer_type
 	{
 		template <typename t_type>
 		using buffer_with_copy_contents = t_buffer <t_type, lb::buffer_base::copy_tag>;
-		
+
 		template <typename t_type>
 		using buffer_with_zero_on_copy = t_buffer <t_type, lb::buffer_base::zero_tag>;
 	};
-	
-	
+
+
 	template <typename t_buffer, typename t_tested_type>
 	struct test_type
 	{
 		typedef t_buffer		buffer_type;
 		typedef t_tested_type	tested_type;
 	};
-	
+
 	template <typename t_buffer>
 	struct buffer_test_type
 	{
@@ -80,7 +84,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(buffer.get() == nullptr);
 				}
 			}
-			
+
 			WHEN("constructed with a size")
 			{
 				TestType buffer(5);
@@ -117,14 +121,14 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			typedef typename TestType::tested_type	tested_type;
 			constexpr auto const expected_size(sizeof(tested_type));
 			constexpr auto const expected_alignment(alignof(tested_type));
-			
+
 			static_assert(1 != expected_size);
 			static_assert(1 != expected_alignment);
-			
+
 			WHEN("constructed with a size and an alignment")
 			{
 				buffer_type buffer(sizeof(tested_type), alignof(tested_type));
-				
+
 				THEN("the buffer is correctly constructed")
 				{
 					REQUIRE(buffer.size() == expected_size);
@@ -157,22 +161,22 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			constexpr auto const count(5);
 			static_assert(count <= std::numeric_limits <value_type>::max());
 			TestType src(count);
-			
+
 			auto *begin(src.get());
 			auto *end(begin + count);
 			std::iota(begin, end, value_type(1));
-			
+
 			WHEN("a buffer is copied using operator=")
 			{
 				TestType dst;
 				dst = src;
-				
+
 				THEN("its contents are copied")
 				{
 					REQUIRE(src.get() != nullptr);
 					REQUIRE(dst.get() != nullptr);
 					REQUIRE(dst.size() == count);
-					
+
 					for (value_type i(0); i < count; ++i)
 					{
 						REQUIRE((*src)[i] == (i + 1));
@@ -180,17 +184,17 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					}
 				}
 			}
-			
+
 			WHEN("a buffer is copied using copy constructor")
 			{
 				TestType dst(src);
-				
+
 				THEN("its contents are copied")
 				{
 					REQUIRE(src.get() != nullptr);
 					REQUIRE(dst.get() != nullptr);
 					REQUIRE(dst.size() == count);
-					
+
 					for (value_type i(0); i < count; ++i)
 					{
 						REQUIRE((*src)[i] == (i + 1));
@@ -223,22 +227,22 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			constexpr auto const count(5);
 			static_assert(count <= std::numeric_limits <value_type>::max());
 			TestType src(count);
-			
+
 			auto *begin(src.get());
 			auto *end(begin + count);
 			std::iota(begin, end, value_type(1));
-			
+
 			WHEN("a buffer is copied using operator=")
 			{
 				TestType dst;
 				dst = src;
-				
+
 				THEN("the destination is zeroed")
 				{
 					REQUIRE(src.get() != nullptr);
 					REQUIRE(dst.get() != nullptr);
 					REQUIRE(dst.size() == count);
-					
+
 					for (value_type i(0); i < count; ++i)
 					{
 						REQUIRE((*src)[i] == (i + 1));
@@ -246,17 +250,17 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					}
 				}
 			}
-			
+
 			WHEN("a buffer is copied using copy constructor")
 			{
 				TestType dst(src);
-				
+
 				THEN("the destination is zeroed")
 				{
 					REQUIRE(src.get() != nullptr);
 					REQUIRE(dst.get() != nullptr);
 					REQUIRE(dst.size() == count);
-					
+
 					for (value_type i(0); i < count; ++i)
 					{
 						REQUIRE((*src)[i] == (i + 1));
@@ -291,40 +295,40 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			constexpr auto const count(5);
 			static_assert(count <= std::numeric_limits <value_type>::max());
 			TestType src(count);
-			
+
 			auto *begin(src.get());
 			auto *end(begin + count);
 			std::iota(begin, end, value_type(1));
 			auto const *expected_address(src.get());
-			
+
 			WHEN("a buffer is moved using operator=")
 			{
 				TestType dst;
 				dst = std::move(src);
-				
+
 				THEN("the underlying buffer is moved")
 				{
 					REQUIRE(src.get() == nullptr);
 					REQUIRE(src.size() == 0);
 					REQUIRE(dst.get() == expected_address);
 					REQUIRE(dst.size() == count);
-					
+
 					for (value_type i(0); i < count; ++i)
 						REQUIRE((*dst)[i] == (i + 1));
 				}
 			}
-			
+
 			WHEN("a buffer is moved using a move constructor")
 			{
 				TestType dst(std::move(src));
-				
+
 				THEN("the underlying buffer is moved")
 				{
 					REQUIRE(src.get() == nullptr);
 					REQUIRE(src.size() == 0);
 					REQUIRE(dst.get() == expected_address);
 					REQUIRE(dst.size() == count);
-					
+
 					for (value_type i(0); i < count; ++i)
 						REQUIRE((*dst)[i] == (i + 1));
 				}

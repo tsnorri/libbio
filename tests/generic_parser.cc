@@ -5,63 +5,70 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_template_test_macros.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
 #include <libbio/file_handling.hh>
 #include <libbio/fmap.hh>
 #include <libbio/generic_parser.hh>
+#include <ostream>
 #include <rapidcheck.h>
-#include <rapidcheck/catch.h>		// rc::prop
+#include <rapidcheck/catch.h>						// rc::prop
+#include <sstream>
 #include <string>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 namespace lb	= libbio;
 namespace lbp	= libbio::parsing;
 
 
 namespace {
-	
+
 	// For filtering characters in generated strings.
 	struct string
 	{
 		std::string	value;
 	};
-	
-	
+
+
 	std::ostream &operator<<(std::ostream &os, string const &str)
 	{
 		os << str.value;
 		return os;
 	}
-	
-	
+
+
 	template <typename t_type>
 	struct type_mapping
 	{
 		typedef t_type type;
 	};
-	
+
 	template <>
 	struct type_mapping <std::string>
 	{
 		typedef string type; // Refers to struct string declared above.
 	};
-	
+
 	template <typename t_type>
 	using mapped_type = typename type_mapping <t_type>::type;
-	
-	
+
+
 	template <typename t_type>
 	auto const &input_value(t_type const &value)
 	{
 		return value;
 	}
-	
+
 	template <>
 	auto const &input_value(string const &str)
 	{
 		return str.value;
 	}
-	
-	
+
+
 	template <typename t_fields>
 	struct generated_input_types
 	{
@@ -80,13 +87,13 @@ namespace {
 					return std::tuple_cat(std::tuple <mapped_type <value_type>>{}, helper_ <1 + t_i>());
 			}
 		}
-		
+
 		static auto helper() { return helper_ <0>(); }
-		
+
 		typedef std::invoke_result_t <decltype(&helper)> type;
 	};
-	
-	
+
+
 	template <typename... t_args>
 	struct parser_type
 	{
@@ -95,8 +102,8 @@ namespace {
 			t_args...
 		> type;
 	};
-	
-	
+
+
 	template <typename... t_fields>
 	struct test_case
 	{
@@ -105,8 +112,8 @@ namespace {
 		typedef typename parser_type <t_fields...>::type			parser_type;
 		typedef typename parser_type::record_type					record_type;
 	};
-	
-	
+
+
 	template <char t_sep, std::size_t t_i = 0, typename t_tuple>
 	void output_tuple_as_delimited(std::ostream &os, t_tuple const &tup)
 	{
@@ -130,7 +137,7 @@ namespace {
 
 
 namespace rc {
-	
+
 	template <>
 	struct Arbitrary <string>
 	{
@@ -180,13 +187,13 @@ TEMPLATE_TEST_CASE(
 	typedef typename TestType::input_tuple input_tuple;
 	typedef typename TestType::parser_type parser_type;
 	typedef typename TestType::record_type record_type;
-	
+
 	rc::prop(
 		"generic_parser can parse valid inputs",
 		[](std::vector <input_tuple> const &input){
 			std::stringstream stream;
 			std::vector <record_type> expected_results;
-			
+
 			for (auto const &tup : input)
 			{
 				output_tuple_as_delimited <'\t'>(stream, tup);
@@ -198,23 +205,23 @@ TEMPLATE_TEST_CASE(
 					})
 				);
 			}
-			
+
 			stream.seekg(0);
-			
+
 			parser_type parser;
 			std::istreambuf_iterator it(stream.rdbuf());
 			std::istreambuf_iterator <typename decltype(it)::value_type> const sentinel;
-			
+
 			std::vector <record_type> actual_results;
 			while (true)
 			{
 				record_type rec;
 				if (!parser.parse(it, sentinel, rec))
 					break;
-				
+
 				actual_results.emplace_back(std::move(rec));
 			}
-			
+
 			if (expected_results != actual_results)
 			{
 				std::stringstream os;
@@ -236,7 +243,7 @@ TEMPLATE_TEST_CASE(
 				os << "Stream: “" << stream.str() << "”\n";
 				RC_FAIL(os.str());
 			}
-			
+
 			return true;
 		}
 	);
@@ -244,13 +251,13 @@ TEMPLATE_TEST_CASE(
 
 
 namespace {
-	
+
 	struct text_tag : public lbp::empty_tag {};
 	struct integer_tag : public lbp::empty_tag {};
-	
+
 	std::ostream &operator<<(std::ostream &os, text_tag const) { os << "(text_tag)"; return os; }
 	std::ostream &operator<<(std::ostream &os, integer_tag const) { os << "(integer_tag)"; return os; }
-	
+
 	struct conditional_field
 	{
 		template <typename t_caller>
@@ -262,11 +269,11 @@ namespace {
 				case 'C':
 					caller.read_delimiter();
 					return caller.continue_parsing(text_tag{});
-					
+
 				case 'I':
 					caller.read_delimiter();
 					return caller.continue_parsing(integer_tag{});
-					
+
 				default:
 					throw lbp::parse_error_tpl(lbp::errors::unexpected_character(*range.it));
 			}
@@ -281,7 +288,7 @@ SCENARIO("libbio::parser::conditional_field works with simple input")
 	{
 		lb::file_istream stream;
 		lb::open_file_for_reading("test-files/simple.tsv", stream);
-		
+
 		WHEN("the file is parsed")
 		{
 			typedef lbp::traits::delimited <lbp::delimiter <'\t'>>							parser_traits;
@@ -296,15 +303,15 @@ SCENARIO("libbio::parser::conditional_field works with simple input")
 					lbp::fields::option <integer_tag, lbp::fields::integer <std::int32_t>>
 				>
 			> parser_type;
-			
+
 			std::istreambuf_iterator it(stream);
 			std::istreambuf_iterator <char> const sentinel;
 			auto range(lbp::make_range(it, sentinel));
-			
+
 			parser_type parser;
 			parser_type::record_type rec;
 			parser_type::buffer_type buffer;
-			
+
 			std::size_t row_idx{};
 			while (true)
 			{
@@ -314,19 +321,19 @@ SCENARIO("libbio::parser::conditional_field works with simple input")
 						case 0:
 							CHECK(rec == std::make_tuple('a', text_tag{}, std::string("asdf")));
 							break;
-							
+
 						case 1:
 							CHECK(rec == std::make_tuple('b', integer_tag{}, 123));
 							break;
-						
+
 						default:
 							FAIL_CHECK("Parsed more rows than expected.");
 							break;
 					}
-					
+
 					++row_idx;
 				}));
-				
+
 				if (!res)
 					break;
 			}

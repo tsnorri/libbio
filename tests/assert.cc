@@ -3,12 +3,13 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <libbio/assert.hh>
+#include <libbio/utility.hh>
 #include <tuple>
 
-namespace gen	= Catch::Generators;
 namespace lb	= libbio;
 
 
@@ -40,24 +41,24 @@ namespace lb	= libbio;
 
 
 namespace {
-	
+
 	void wrapped_fail()
 	{
 		libbio_fail("Test message");
 	}
-	
+
 	template <typename t_val>
 	void wrapped_assert(t_val const &val)
 	{
 		libbio_always_assert(val);
 	}
-	
+
 	template <typename t_val>
 	void wrapped_assert_msg(t_val const &val)
 	{
 		libbio_always_assert_msg(val, "Test message");
 	}
-	
+
 	// ; not strictly required but makes the text editor happy.
 	libbio_wrap_assertion(wrapped_lt,	libbio_always_assert_lt);
 	libbio_wrap_assertion(wrapped_lte,	libbio_always_assert_lte);
@@ -65,8 +66,8 @@ namespace {
 	libbio_wrap_assertion(wrapped_gte,	libbio_always_assert_gte);
 	libbio_wrap_assertion(wrapped_eq,	libbio_always_assert_eq);
 	libbio_wrap_assertion(wrapped_neq,	libbio_always_assert_neq);
-	
-	
+
+
 	template <typename t_lhs, typename t_rhs>
 	void test_assertion_macros(t_lhs const &lhs, t_rhs const &rhs, std::array <bool, 6> const &expected_results)
 	{
@@ -78,7 +79,7 @@ namespace {
 			auto const gte_res(std::get <3>(expected_results));
 			auto const eq_res(std::get <4>(expected_results));
 			auto const neq_res(std::get <5>(expected_results));
-			
+
 			THEN("the assertion macro performs the check correctly")
 			{
 				libbio_test_assertion(lt_res, lhs, rhs, wrapped_lt);
@@ -105,7 +106,7 @@ SCENARIO("Assertion macros throw on failure", "[assert]")
 			}
 		}
 	}
-	
+
 	GIVEN("One value")
 	{
 		WHEN("the value is tested with the assertion macro")
@@ -119,7 +120,7 @@ SCENARIO("Assertion macros throw on failure", "[assert]")
 			}
 		}
 	}
-	
+
 	GIVEN("Two values of the same type")
 	{
 		// Order should be: lt, lte, gt, gte, eq, neq
@@ -130,10 +131,10 @@ SCENARIO("Assertion macros throw on failure", "[assert]")
 			tuple_type{6,	5,	lb::make_array <bool>(false, false, true, true, false, true)},
 			tuple_type{-5,	5,	lb::make_array <bool>(true, true, false, false, false, true)}
 		}));
-		
+
 		std::apply(test_assertion_macros <int, int>, tup);
 	}
-	
+
 	GIVEN("Two values of different types")
 	{
 		test_assertion_macros(-5, 5U, lb::make_array <bool>(true, true, false, false, false, true));

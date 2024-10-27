@@ -13,7 +13,7 @@
 #include <iostream>
 #include <libbio/tuple/map.hh>
 #include <libbio/utility/compare_strings_transparent.hh>
-#include <rapidcheck.h>
+#include <rapidcheck.h>										// IWYU pragma: export
 #include <set>
 #include <string>
 #include <utility>											// std::forward
@@ -26,8 +26,8 @@ namespace libbio::tests {
 
 	struct test_case;
 	struct template_test_case;
-	
-	
+
+
 	class test_driver
 	{
 	public:
@@ -39,44 +39,44 @@ namespace libbio::tests {
 	private:
 		std::vector <test_case *>			m_test_cases;
 		std::vector <template_test_case *>	m_template_test_cases;
-		
+
 	public:
 		static test_driver &shared()
 		{
 			static test_driver retval{};
 			return retval;
 		}
-		
+
 		std::size_t add_test_case(test_case &tc)
 		{
 			m_test_cases.emplace_back(&tc);
 			return m_test_cases.size() - 1;
 		}
-		
+
 		std::size_t add_template_test_case(template_test_case &tc)
 		{
 			m_template_test_cases.emplace_back(&tc);
 			return m_template_test_cases.size() - 1;
 		}
-		
+
 		void list_tests();
 		void list_template_tests();
 		std::size_t run_all_tests();
 		std::size_t run_given_tests(test_name_set const &names);
 		std::size_t run_given_template_tests(test_name_set const &names);
 	};
-	
-	
+
+
 	struct test_case_base
 	{
 		std::size_t	identifier{};
-		
+
 		virtual ~test_case_base() {}
 		virtual char const *message() const = 0;
 		virtual bool run_test() = 0;
 	};
-	
-	
+
+
 	struct test_case : public test_case_base
 	{
 		test_case()
@@ -84,8 +84,8 @@ namespace libbio::tests {
 			identifier = test_driver::shared().add_test_case(*this);
 		}
 	};
-	
-	
+
+
 	struct template_test_case : public test_case_base
 	{
 		template_test_case()
@@ -94,10 +94,10 @@ namespace libbio::tests {
 		}
 	};
 }
-	
+
 
 namespace libbio {
-	
+
 	template <typename... t_args>
 	auto rc_check(t_args && ... args)
 	{

@@ -7,11 +7,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <libbio/matrix.hh>
-#include <type_traits>
-#include <vector>
 
-namespace gen	= Catch::Generators;
 namespace lb	= libbio;
 
 
@@ -21,7 +20,7 @@ namespace {
 	{
 		std::size_t const rows(3);
 		std::size_t const columns(4);
-	
+
 		lb::matrix <t_value> temp(rows, columns);
 		t_value val{};
 		for (std::size_t i(0); i < columns; ++i)
@@ -32,7 +31,7 @@ namespace {
 				ref = val++;
 			}
 		}
-	
+
 		using std::swap;
 		swap(temp, dst);
 	}
@@ -53,7 +52,7 @@ TEMPLATE_TEST_CASE(
 	float,
 	double
 ) {
-	
+
 	SECTION("Matrices may be created")
 	{
 		GIVEN("an empty matrix")
@@ -69,7 +68,7 @@ TEMPLATE_TEST_CASE(
 				}
 			}
 		}
-	
+
 		GIVEN("a non-empty matrix")
 		{
 			lb::matrix <TestType> matrix(3, 4);
@@ -84,7 +83,7 @@ TEMPLATE_TEST_CASE(
 			}
 		}
 	}
-	
+
 	SECTION("Matrices can store values")
 	{
 		GIVEN("a filled matrix")
@@ -101,10 +100,10 @@ TEMPLATE_TEST_CASE(
 						for (std::size_t j(0), rows(matrix.number_of_rows()); j < rows; ++j)
 							REQUIRE(matrix(j, i) == val++);
 					}
-				
+
 				}
 			}
-			
+
 			WHEN("cell is assigned a new value")
 			{
 				REQUIRE(matrix(1, 3) == 10);
@@ -116,14 +115,14 @@ TEMPLATE_TEST_CASE(
 			}
 		}
 	}
-	
+
 	SECTION("Matrix slices may be used to access the matrix")
 	{
 		GIVEN("a filled matrix")
 		{
 			lb::matrix <TestType> matrix;
 			create_matrix_12(matrix);
-			
+
 			WHEN("the rows are queried")
 			{
 				THEN("the correct values are returned")
@@ -133,21 +132,21 @@ TEMPLATE_TEST_CASE(
 					{
 						auto const slice(matrix.row(i));
 						REQUIRE(4 == std::distance(slice.begin(), slice.end()));
-					
+
 						auto it(slice.begin());
 						auto end(slice.end());
-					
+
 						for (std::size_t j(0); j < 4; ++j)
 						{
 							auto const expected(j * 3 + i);
 							REQUIRE(lb::is_equal(expected, *it++));
 						}
-					
+
 						REQUIRE(it == end);
 					}
 				}
 			}
-			
+
 			WHEN("the columns are queried")
 			{
 				THEN("the correct values are returned")
@@ -158,22 +157,22 @@ TEMPLATE_TEST_CASE(
 					{
 						auto const slice(matrix.column(i));
 						REQUIRE(3 == std::distance(slice.begin(), slice.end()));
-						
+
 						auto it(slice.begin());
 						auto end(slice.end());
-						
+
 						for (std::size_t j(0); j < 3; ++j)
 							REQUIRE(*it++ == val++);
-						
+
 						REQUIRE(it == end);
 					}
 				}
 			}
-			
+
 			WHEN("a cell is assigned a new value using a row")
 			{
 				auto slice(matrix.row(1));
-	
+
 				REQUIRE(slice[3] == 10);
 				slice[3] = 9;
 				THEN("the new value will be returned when accessing")
@@ -182,11 +181,11 @@ TEMPLATE_TEST_CASE(
 					REQUIRE(matrix(1, 3) == 9);
 				}
 			}
-			
+
 			WHEN("a cell is assigned a new value using a column")
 			{
 				auto slice(matrix.column(3));
-	
+
 				REQUIRE(slice[1] == 10);
 				slice[1] = 9;
 				THEN("the new value will be returned when accessing")
@@ -195,7 +194,7 @@ TEMPLATE_TEST_CASE(
 					REQUIRE(matrix(1, 3) == 9);
 				}
 			}
-			
+
 			WHEN("a row is accessed using iterators and std::min_element")
 			{
 				auto const slice(matrix.row(1));
@@ -205,7 +204,7 @@ TEMPLATE_TEST_CASE(
 					REQUIRE(*it == 1);
 				}
 			}
-			
+
 			WHEN("a column is accessed using iterators and std::min_element")
 			{
 				auto const slice(matrix.column(3));

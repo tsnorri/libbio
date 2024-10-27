@@ -6,23 +6,25 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <cstdint>
 #include <libbio/utility/is_lt.hh>
 #include <libbio/utility/misc.hh>
+#include <limits>
 
 namespace gen	= Catch::Generators;
 namespace lb	= libbio;
 
 
 namespace {
-	
+
 	template <typename t_lhs, typename t_rhs>
 	struct type_pair
 	{
 		typedef t_lhs left_type;
 		typedef t_rhs right_type;
 	};
-	
-	
+
+
 	template <typename t_lhs>
 	struct tpg
 	{
@@ -59,7 +61,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 {
 	typedef typename TestType::left_type left_type;
 	typedef typename TestType::right_type right_type;
-	
+
 	SECTION("Test zero")
 	{
 		left_type const left(0);
@@ -74,7 +76,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(false == res);
 				}
 			}
-			
+
 			WHEN("the values are swapped")
 			{
 				auto const res(lb::is_lt(right, left));
@@ -85,12 +87,12 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			}
 		}
 	}
-	
+
 	SECTION("Test comparison (left non-negative)")
 	{
 		typedef typename TestType::left_type left_type;
 		typedef typename TestType::right_type right_type;
-		
+
 		auto const left = GENERATE(gen::values <left_type>({0, 5, 7, 10}));
 		INFO("left type: " << lb::type_name <left_type>());
 		INFO("right type: " << lb::type_name <right_type>());
@@ -107,7 +109,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(true == res);
 				}
 			}
-			
+
 			WHEN("the values are swapped")
 			{
 				auto const res(lb::is_lt(right, left));
@@ -117,7 +119,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 				}
 			}
 		}
-		
+
 		GIVEN("a non-negative left value, same right value")
 		{
 			auto const right(left);
@@ -130,7 +132,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(false == res);
 				}
 			}
-			
+
 			WHEN("the values are swapped")
 			{
 				auto const res(lb::is_lt(right, left));
@@ -167,7 +169,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 {
 	typedef typename TestType::left_type left_type;
 	typedef typename TestType::right_type right_type;
-	
+
 	SECTION("Test negative left")
 	{
 		auto const left = GENERATE(gen::values <left_type>({-5, -10, -20, -40, std::numeric_limits <left_type>::min()}));
@@ -186,7 +188,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(true == res);
 				}
 			}
-			
+
 			WHEN("the values are swapped")
 			{
 				auto const res(lb::is_lt(right, left));
@@ -197,7 +199,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			}
 		}
 	}
-	
+
 	SECTION("Test non-negative left")
 	{
 		auto const left = GENERATE(gen::values <left_type>({0, 1, 5, 10, 15}));
@@ -216,7 +218,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(true == res);
 				}
 			}
-			
+
 			WHEN("the values are swapped")
 			{
 				auto const res(lb::is_lt(right, left));
@@ -226,7 +228,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 				}
 			}
 		}
-		
+
 		GIVEN("a non-negative left value, same right value")
 		{
 			auto const right(left);
@@ -239,7 +241,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(false == res);
 				}
 			}
-			
+
 			WHEN("the values are swapped")
 			{
 				auto const res(lb::is_lt(right, left));
@@ -274,7 +276,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 	{
 		typedef typename TestType::left_type left_type;
 		typedef typename TestType::right_type right_type;
-		
+
 		auto const left = GENERATE(gen::values <left_type>({-5, -10, -20, -100, std::numeric_limits <left_type>::min()}));
 		INFO("left type: " << lb::type_name <left_type>());
 		INFO("right type: " << lb::type_name <right_type>());
@@ -291,7 +293,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(true == res);
 				}
 			}
-			
+
 			WHEN("the values are swapped")
 			{
 				auto const res(lb::is_lt(right, left));
@@ -302,11 +304,11 @@ TEMPLATE_PRODUCT_TEST_CASE(
 			}
 		}
 	}
-	
+
 	SECTION("Test comparison (left negative without min.)")
 	{
 		typedef typename TestType::left_type left_type;
-		
+
 		auto const left = GENERATE(gen::values <left_type>({-5, -10, -20, -100}));
 		INFO("left type: " << lb::type_name <left_type>());
 		INFO("left: " << +left);
@@ -322,7 +324,7 @@ TEMPLATE_PRODUCT_TEST_CASE(
 					REQUIRE(false == res);
 				}
 			}
-			
+
 			WHEN("the values are swapped")
 			{
 				auto const res(lb::is_lt(right, left));

@@ -6,8 +6,10 @@
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <cstddef>
 #include <libbio/radix_sort.hh>
-#include <type_traits>
+#include <memory>
+#include <tuple>
 #include <vector>
 
 namespace gen	= Catch::Generators;
@@ -15,7 +17,7 @@ namespace lb	= libbio;
 
 
 namespace {
-	
+
 	struct test final
 	{
 		char c;
@@ -32,15 +34,15 @@ namespace {
 		virtual ~lambda_container_base() {}
 		virtual std::size_t return_type_size() const = 0;
 	};
-	
+
 	template <typename t_fn>
 	struct lambda_container final : public lambda_container_base
 	{
 		lambda_container(t_fn &&fn_) {} // Only the type is required, not the function.
 		std::size_t return_type_size() const override { return lb::detail::return_type_size <t_fn, test>(); }
 	};
-	
-	
+
+
 	template <typename t_fn>
 	std::shared_ptr <lambda_container_base> make_lambda_container(t_fn &&fn)
 	{
@@ -61,12 +63,12 @@ SCENARIO("return_type_size() can return the correct size", "[return_type_size]")
 			tuple_type{sizeof(unsigned long),	make_lambda_container([](test const &t) { return t.l; })},
 			tuple_type{sizeof(long long),		make_lambda_container([](test const &t) { return t.ll; })}
 		}));
-		
+
 		WHEN("the function is called")
 		{
 			auto const expected_size(std::get <0>(tuple));
 			auto const determined_size(std::get <1>(tuple)->return_type_size());
-			
+
 			THEN("the return type size matches the expected size")
 			{
 				REQUIRE(expected_size == determined_size);
@@ -86,12 +88,12 @@ SCENARIO("Radix sort can sort a sequence of numbers", "[radix_sort]")
 			vector_type({55, 12, 74878, 456, 24, 887, 56}),
 			vector_type({123, 3924, 23, 904324, 2320, 99})
 		}));
-		
+
 		WHEN("the sorting function is called")
 		{
 			vector_type buf;
 			lb::radix_sort <false>::sort_check_bits_set(vec, buf);
-			
+
 			THEN("the sequence is sorted")
 			{
 				REQUIRE(std::is_sorted(vec.begin(), vec.end()));

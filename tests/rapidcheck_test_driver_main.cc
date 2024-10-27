@@ -4,12 +4,11 @@
  */
 
 #include <cstdlib>
+#include <iostream>
 #include "rapidcheck_test_driver_cmdline.h"
 
 #define BUILD_RAPIDCHECK_TEST_DRIVER
 #include "rapidcheck_test_driver.hh"
-
-namespace lb	= libbio;
 
 
 namespace {
@@ -29,14 +28,14 @@ namespace libbio::tests {
 		for (auto ptr : m_test_cases)
 			std::cout << ptr->message() << '\n';
 	}
-	
-	
+
+
 	void test_driver::list_template_tests()
 	{
 		for (auto ptr : m_template_test_cases)
 			std::cout << ptr->message() << '\n';
 	}
-	
+
 	std::size_t test_driver::run_all_tests()
 	{
 		std::size_t retval{};
@@ -60,8 +59,8 @@ namespace libbio::tests {
 
 		return retval;
 	}
-	
-	
+
+
 	std::size_t test_driver::run_given_template_tests(test_name_set const &names)
 	{
 		std::size_t retval{};
@@ -89,7 +88,7 @@ int main(int argc, char **argv)
 		driver.list_tests();
 		return EXIT_SUCCESS;
 	}
-	
+
 	if (args_info.list_templates_given)
 	{
 		driver.list_template_tests();
@@ -97,7 +96,7 @@ int main(int argc, char **argv)
 	}
 
 	std::size_t status{};
-	
+
 	if (args_info.test_given)
 	{
 		::libbio::tests::test_driver::test_name_set const test_names(args_info.test_arg, args_info.test_arg + args_info.test_given);
@@ -105,7 +104,7 @@ int main(int argc, char **argv)
 		if (status)
 			goto bail;
 	}
-	
+
 	if (args_info.template_test_given)
 	{
 		::libbio::tests::test_driver::test_name_set const test_names(args_info.template_test_arg, args_info.template_test_arg + args_info.template_test_given);
@@ -113,7 +112,7 @@ int main(int argc, char **argv)
 		if (status)
 			goto bail;
 	}
-	
+
 	if (! (args_info.test_given || args_info.template_test_given))
 		status = driver.run_all_tests();
 

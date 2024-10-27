@@ -4,6 +4,7 @@
  */
 
 #include <catch2/catch_template_test_macros.hpp>
+#include <cstdint>
 #include <libbio/bits.hh>
 
 namespace lb		= libbio;

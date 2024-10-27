@@ -3,13 +3,13 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <cstdint>
 #include <libbio/algorithm.hh>
 #include <libbio/utility.hh>
-#include <ostream>
-#include <vector>
+#include <utility>
 
 namespace gen	= Catch::Generators;
 namespace lb	= libbio;
@@ -30,7 +30,7 @@ SCENARIO("64-bit words may be reversed", "[reverse_bits]")
 			{0xf0f0f0f0UL, 0x0f0f0f0f00000000},
 			{0xff7f3f1f0f070301UL, 0x80c0e0f0f8fcfeff}
 		}));
-		
+
 		WHEN("a value is reversed")
 		{
 			auto const val(pair.first);
@@ -53,7 +53,7 @@ SCENARIO("8-bit words can be reversed", "[reverse_bits]")
 		auto const &tuple = GENERATE(gen::values <std::array <std::uint8_t, 5>>({
 			lb::make_array <std::uint8_t>(uc(0xed), uc(0xb7), uc(0x7b), uc(0xde), uc(0xed))
 		}));
-		
+
 		WHEN("a value is reversed")
 		{
 			auto const val(std::get <0>(tuple));
@@ -61,7 +61,7 @@ SCENARIO("8-bit words can be reversed", "[reverse_bits]")
 			auto const rev2(std::get <2>(tuple));
 			auto const rev4(std::get <3>(tuple));
 			auto const rev8(std::get <4>(tuple));
-			
+
 			THEN("the reversed value has the bits in correct order")
 			{
 				REQUIRE(rev1 == lb::reverse_bits <1>(val));

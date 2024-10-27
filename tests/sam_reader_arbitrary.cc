@@ -3,11 +3,15 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <cstddef>
+#include <cstdint>
+#include <utility>
 #if !(defined(LIBBIO_NO_SAM_READER) && LIBBIO_NO_SAM_READER)
 
+#include <array>
 #include <libbio/markov_chain.hh>
-#include <libbio/sam/reader.hh>
-#include <libbio/sam/literals.hh>
+#include <libbio/sam.hh>
+#include <numeric>
 #include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/generate.hpp>
 #include <range/v3/view/iota.hpp>
@@ -25,85 +29,85 @@ namespace tuples	= libbio::tuples;
 
 
 namespace {
-	
+
 	std::string const reference_id_first_characters{"01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&+./:;?@^_|~-"};
 	std::string const reference_id_characters{"01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&*+./:;=?@^_|~-"};
 	std::string const sequence_characters{"ACGT"};
-	
+
 	constexpr std::array const sort_order_types{
 		sam::sort_order_type::unknown,
 		sam::sort_order_type::unsorted,
 		sam::sort_order_type::queryname,
 		sam::sort_order_type::coordinate
 	};
-	
+
 	constexpr std::array const grouping_types{
 		sam::grouping_type::none,
 		sam::grouping_type::query,
 		sam::grouping_type::reference
 	};
-	
+
 	constexpr std::array const molecule_topology_types{
 		sam::molecule_topology_type::unknown,
 		sam::molecule_topology_type::linear,
 		sam::molecule_topology_type::circular
 	};
-	
-	
+
+
 	struct identifier
 	{
 		std::string value;
 	};
-	
-	
+
+
 	// For setting up sam::header properly.
 	struct header_container
 	{
 		sam::header	header;
-		
+
 		header_container(sam::header &&header_, std::vector <std::string> &&program_ids):
 			header(std::move(header_))
 		{
 			header.reference_sequence_identifiers.resize(header.reference_sequences.size());
 			std::iota(header.reference_sequence_identifiers.begin(), header.reference_sequence_identifiers.end(), 0);
-			
+
 			for (auto &&[entry, id] : rsv::zip(header.programs, program_ids))
 				entry.id = std::move(id);
-			
+
 			for (std::size_t i{1}; i < header.programs.size(); ++i)
 				header.programs[i].prev_id = header.programs[i - 1].id;
 		}
 	};
-	
-	
+
+
 	struct empty_cigar
 	{
 		constexpr static inline bool const should_skip{true};
 	};
-	
+
 	template <sam::cigar_operation t_operation, bool t_consumes_query, bool t_is_final = false>
 	struct cigar
 	{
 		constexpr static inline auto const operation{t_operation};
 		constexpr static inline bool const should_skip{false};
 		constexpr static inline bool const is_final{t_is_final};
-		
+
 		sam::cigar_run::count_type count{};
-		
+
 		cigar(sam::cigar_run::count_type const count_):
 			count(count_)
 		{
 		}
-		
+
 		constexpr operator sam::cigar_run() const { return {t_operation, count}; }
 		constexpr sam::cigar_run::count_type query_consumed_count() const { return t_consumes_query ? count : 0; }
 	};
-	
+
 	using sam::operator ""_cigar_operation;
-	
+
 	template <typename t_base = cigar <'H'_cigar_operation, false, true>>
 	struct cigar_final_h_ : public t_base { using t_base::t_base; };
-	
+
 	typedef cigar <'M'_cigar_operation, true>	cigar_m;
 	typedef cigar <'I'_cigar_operation, true>	cigar_i;
 	typedef cigar <'D'_cigar_operation, false>	cigar_d;
@@ -117,10 +121,10 @@ namespace {
 	struct cigar_initial_s : public cigar_s { using cigar_s::cigar_s; };
 	typedef cigar_final_h_ <> cigar_final_h;
 	struct cigar_final_s : public cigar_s { using cigar_s::cigar_s; };
-	
-	
+
+
 	struct empty {}; // Not actually used since we don’t instantiate the chain.
-	
+
 	typedef mcs::chain <
 		empty,
 		empty_cigar,
@@ -145,40 +149,40 @@ namespace {
 			>
 		>
 	> cigar_chain_type;
-	
-	
+
+
 	struct tag_id
 	{
 		std::uint16_t value{};
 	};
-	
-	
+
+
 	typedef std::vector <sam::record> record_vector;
-	
-	
+
+
 	struct record_set
 	{
 		sam::header		header;
 		record_vector	records;
-		
+
 		explicit record_set(header_container &&hc):
 			header(std::move(hc.header))
 		{
 		}
-		
+
 		record_set(header_container &&hc, record_vector &&records_):
 			header(std::move(hc.header)),
 			records(std::move(records_))
 		{
 		}
-		
+
 		record_set(record_set const &other, record_vector const &records_):
 			header(other.header),
 			records(records_)
 		{
 		}
 	};
-	
+
 	std::ostream &operator<<(std::ostream &os, record_set const &rs)
 	{
 		os << rs.header;
@@ -192,7 +196,7 @@ namespace {
 }
 
 namespace rc {
-	
+
 	template <>
 	struct Arbitrary <std::byte>
 	{
@@ -203,8 +207,8 @@ namespace rc {
 			});
 		}
 	};
-	
-	
+
+
 	template <>
 	struct Arbitrary <identifier>
 	{
@@ -235,8 +239,8 @@ namespace {
 	{
 		return rc::gen::map(rc::gen::arbitrary <identifier>(), [](auto &&id){ return std::move(id.value); });
 	}
-	
-	
+
+
 	auto make_reference_id(sam::reference_id_type const ref_count)
 	{
 		return rc::gen::weightedOneOf <sam::reference_id_type>({
@@ -263,10 +267,10 @@ namespace {
 		});
 	}
 }
-	
-	
+
+
 namespace rc {
-	
+
 	template <>
 	struct Arbitrary <sam::sort_order_type>
 	{
@@ -275,8 +279,8 @@ namespace rc {
 			return gen::elementOf(sort_order_types);
 		}
 	};
-	
-	
+
+
 	template <>
 	struct Arbitrary <sam::grouping_type>
 	{
@@ -285,9 +289,9 @@ namespace rc {
 			return gen::elementOf(grouping_types);
 		}
 	};
-	
-	
-	
+
+
+
 	template <>
 	struct Arbitrary <sam::molecule_topology_type>
 	{
@@ -296,8 +300,8 @@ namespace rc {
 			return gen::elementOf(molecule_topology_types);
 		}
 	};
-	
-	
+
+
 	template <>
 	struct Arbitrary <sam::reference_sequence_entry>
 	{
@@ -318,8 +322,8 @@ namespace rc {
 			);
 		}
 	};
-	
-	
+
+
 	template <>
 	struct Arbitrary <sam::read_group_entry>
 	{
@@ -331,8 +335,8 @@ namespace rc {
 			);
 		}
 	};
-	
-	
+
+
 	template <>
 	struct Arbitrary <sam::program_entry>
 	{
@@ -348,8 +352,8 @@ namespace rc {
 			);
 		}
 	};
-	
-	
+
+
 	template <>
 	struct Arbitrary <sam::header>
 	{
@@ -376,8 +380,8 @@ namespace rc {
 			);
 		}
 	};
-	
-	
+
+
 	template <>
 	struct Arbitrary <header_container>
 	{
@@ -391,8 +395,8 @@ namespace rc {
 			});
 		}
 	};
-	
-	
+
+
 	template <>
 	struct Arbitrary <tag_id>
 	{
@@ -403,13 +407,13 @@ namespace rc {
 			return gen::apply(
 				[](char const v1, char const v2) -> tag_id {
 					std::uint16_t retval{};
-					
+
 					if (v1 < ac) retval = v1 + 'A';
 					else retval = v1 + 'a' - ac;
 					libbio_assert(('A' <= retval && retval <= 'Z') || ('a' <= retval && retval <= 'z'));
-					
+
 					retval <<= 8;
-					
+
 					if (v2 < nc) retval |= v2 + '0';
 					else if (v2 < nc + ac) retval |= v2 + 'A' - nc;
 					else retval |= v2 + 'a' - ac - nc;
@@ -424,8 +428,8 @@ namespace rc {
 			);
 		}
 	};
-	
-	
+
+
 	template <typename t_type, bool t_should_clear_elements>
 	struct Arbitrary <sam::detail::vector_container <t_type, t_should_clear_elements>>
 	{
@@ -438,48 +442,48 @@ namespace rc {
 			});
 		}
 	};
-	
-	
+
+
 	template <>
 	struct Arbitrary <sam::optional_field>
 	{
 		static Gen <sam::optional_field> arbitrary()
 		{
 			return gen::mapcat(gen::arbitrary <sam::optional_field::value_tuple_type>(), [](auto &&value_tuple){
-				
+
 				// Fix std::uint32_t values so that they can be output as SAM.
 				for (auto &val : std::get <sam::optional_field::container_of_t <std::uint32_t>>(value_tuple))
 				{
 					if (INT32_MAX < val)
 						val = INT32_MAX;
 				}
-				
+
 				// Count the generated values.
 				std::size_t value_count{};
 				tuples::visit_parameters <sam::optional_field::value_tuple_type>([&value_count, &value_tuple]<typename t_type>(){
 					value_count += std::get <t_type>(value_tuple).size();
 				});
-				
+
 				// Generate the tag ranks.
 				return gen::apply(
 					[value_count](auto &&value_tuple, auto const &tag_ids) -> sam::optional_field {
 						// Make sure that we have only valid characters.
 						auto const transform_1([](unsigned char const cc){ return cc % (127 - '!') + '!'; });
 						auto const transform_2([](unsigned char const cc){ return cc % (127 - ' ') + ' '; });
-				
+
 						for (auto &cc : std::get <sam::optional_field::container_of_t <char>>(value_tuple))
 							cc = transform_1(cc);
-				
+
 						for (auto &str : std::get <sam::optional_field::container_of_t <std::string>>(value_tuple).values)
 						{
 							for (auto &cc : str)
 								cc = transform_2(cc);
 						}
-						
+
 						// Ranks.
 						sam::optional_field::tag_rank_vector tag_ranks;
 						tag_ranks.reserve(value_count);
-						
+
 						// Fill the ranks.
 						std::size_t tag_idx{};
 						std::size_t type_idx{};
@@ -491,7 +495,7 @@ namespace rc {
 							}
 							++type_idx;
 						});
-						
+
 						return sam::optional_field(std::move(tag_ranks), std::move(value_tuple));
 					},
 					gen::just(std::move(value_tuple)),
@@ -504,8 +508,8 @@ namespace rc {
 			});
 		};
 	};
-	
-	
+
+
 	template <>
 	struct Arbitrary <sam::record>
 	{
@@ -529,7 +533,7 @@ namespace rc {
 							std::vector <sam::cigar_run> retval;
 							if (!remaining)
 								return retval;
-							
+
 							cigar_chain_type::visit_node_types(
 								rsv::generate([] -> double { return double(*gen::inRange <std::uint32_t>(0, UINT32_MAX)) / UINT32_MAX; }), // gen::inRange <double> does not seem to work.
 								[&retval, &remaining]<typename t_type> -> bool {
@@ -568,8 +572,8 @@ namespace rc {
 			});
 		}
 	};
-	
-	
+
+
 	template <>
 	struct Arbitrary <record_set>
 	{
@@ -579,7 +583,7 @@ namespace rc {
 				auto const ref_count(hc.header.reference_sequences.size());
 				if (0 == ref_count)
 					return gen::construct <record_set>(gen::just(std::move(hc)));
-				
+
 				return gen::construct <record_set>(
 					gen::just(std::move(hc)),
 					gen::container <record_vector>(
@@ -606,14 +610,14 @@ TEST_CASE(
 		"sam::reader works with arbitrary input",
 		[&iteration](record_set const &input){
 			RC_TAG(input.header.reference_sequences.size());
-			
+
 			++iteration;
 			RC_LOG() << "Iteration: " << iteration << '\n';
-			
+
 			// Output the header and the records.
 			std::stringstream stream;
 			stream << input;
-			
+
 			// Parse.
 			{
 				sam::header parsed_header;
@@ -621,16 +625,16 @@ TEST_CASE(
 				auto const input_view(stream.view());
 
 				RC_LOG() << "Expected (" << input_view.size() << " characters):\n" << input << '\n';
-			
+
 				sam::character_range input_range(stream.view());
 				sam::reader reader;
 				reader.read_header(parsed_header, input_range);
 				reader.read_records(parsed_header, input_range, [&parsed_records](auto const &rec){
 					parsed_records.emplace_back(rec);
 				});
-				
+
 				RC_LOG() << "Actual:\n" << record_set(input, parsed_records) << '\n';
- 
+
 				// TODO: Compare the headers?
 				RC_ASSERT(input.records.size() == parsed_records.size());
 				std::vector <std::size_t> non_matching;
@@ -640,7 +644,7 @@ TEST_CASE(
 					if (!sam::is_equal_(input.header, parsed_header, input_rec, parsed_rec))
 						non_matching.emplace_back(idx);
 				}
-				
+
 				if (!non_matching.empty())
 				{
 					RC_LOG() << "Non-matching record indices: ";
@@ -652,7 +656,7 @@ TEST_CASE(
 						RC_LOG() << idx;
 					}
 					RC_LOG() << '\n';
-					
+
 					for (auto const idx : non_matching)
 					{
 						RC_LOG() << '(' << idx << ") expected v. actual (QNAMEs: “" << input.records[idx].qname << "”, “" << parsed_records[idx].qname << "”):\n";
@@ -661,11 +665,11 @@ TEST_CASE(
 						sam::output_record(RC_LOG(), input.header, parsed_records[idx]);
 						RC_LOG() << '\n';
 					}
-					
+
 					RC_FAIL("Got non-matching records.");
 				}
 			}
-			
+
 			return true;
 		}
 	);

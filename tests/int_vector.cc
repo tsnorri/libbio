@@ -5,9 +5,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <cstddef>
 #include <libbio/int_vector.hh>
 
-namespace gen	= Catch::Generators;
 namespace lb	= libbio;
 
 
@@ -18,13 +18,13 @@ SCENARIO("int_vector can be initialized with the correct number of values", "[in
 		WHEN("the vector is initialized with a given number of values")
 		{
 			lb::int_vector <8> vec(9, 0x55);
-			
+
 			THEN("the vector shall contain the correct values")
 			{
 				for (std::size_t i(0); i < 9; ++i)
 					REQUIRE(0x55 == vec[i]);
 			}
-			
+
 			THEN("the last word of the vector will contain the correct number of copies of the value")
 			{
 				REQUIRE(0x55 == *vec.word_crbegin());
@@ -41,9 +41,9 @@ SCENARIO("Values can be added to an int_vector with push_back()", "[int_vector]"
 		lb::int_vector <8> vec;
 		for (std::size_t i(0); i < 10; ++i)
 			vec.push_back(i);
-		
+
 		REQUIRE(10 == vec.size());
-		
+
 		WHEN("the values are accessed with operator[]")
 		{
 			THEN("the correct value will be returned")
@@ -52,7 +52,7 @@ SCENARIO("Values can be added to an int_vector with push_back()", "[int_vector]"
 					REQUIRE(i == vec[i]);
 			}
 		}
-		
+
 		WHEN("the values are accessed with a range-based for loop")
 		{
 			THEN("the correct value will be returned")
@@ -71,17 +71,17 @@ SCENARIO("Multiple copies of a value may be added to an int_vector with push_bac
 	GIVEN("an int_vetor <8>")
 	{
 		lb::int_vector <8> vec;
-		
+
 		WHEN("values are added to the vector")
 		{
 			vec.push_back(0);
 			vec.push_back(88, 18);
-			
+
 			THEN("the vector will report its size correctly")
 			{
 				REQUIRE(19 == vec.size());
 			}
-			
+
 			THEN("the vector will contain the correct values")
 			{
 				REQUIRE(0 == vec[0]);
@@ -100,13 +100,13 @@ SCENARIO("An int_vector may be reversed using reverse()", "[int_vector]")
 		lb::int_vector <8> vec;
 		for (std::size_t i(0); i < 10; ++i)
 			vec.push_back(i);
-		
+
 		REQUIRE(10 == vec.size());
-		
+
 		WHEN("the vector is reversed")
 		{
 			vec.reverse();
-			
+
 			THEN("the vector will contain the values in the reversed order")
 			{
 				std::size_t i(0);
