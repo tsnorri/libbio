@@ -6,7 +6,7 @@
 #ifndef LIBBIO_INT_MATRIX_SLICE_HH
 #define LIBBIO_INT_MATRIX_SLICE_HH
 
-#include <boost/iterator.hpp>
+#include <boost/range/iterator_range.hpp>
 #include <libbio/assert.hh>
 #include <libbio/int_vector/word_range.hh>
 #include <libbio/matrix/slice.hh>
