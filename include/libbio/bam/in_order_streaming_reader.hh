@@ -59,6 +59,7 @@ namespace libbio::bam {
 		typedef std::vector <record_block>			record_block_vector;
 
 	private:
+		// FIXME: use a hardware-independent constant; we now compile with -Wno-interference-size.
 		alignas(std::hardware_destructive_interference_size) std::size_t	m_expected_block_index{};
 		std::condition_variable												m_arbitrary_block_reading_cv;
 		std::condition_variable												m_next_block_reading_cv;

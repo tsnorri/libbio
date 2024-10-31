@@ -30,6 +30,7 @@ namespace libbio {
 		constexpr static size_type const MAX_SIZE{std::numeric_limits <size_type>::max()};
 
 	protected:
+		// FIXME: use a hardware-independent constant; we now compile with -Wno-interference-size.
 		class alignas(std::hardware_destructive_interference_size) index
 		{
 		private:
@@ -48,6 +49,7 @@ namespace libbio {
 		typedef std::counting_semaphore <MAX_SIZE>			semaphore_type;
 
 	protected:
+		// FIXME: use a hardware-independent constant; we now compile with -Wno-interference-size.
 		alignas(std::hardware_destructive_interference_size) size_type	m_read_idx{};		// Used by thread 1.
 		alignas(std::hardware_destructive_interference_size) size_type	m_write_idx{};		// Used by thread 2.
 		semaphore_type													m_semaphore;
