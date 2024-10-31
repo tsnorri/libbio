@@ -14,12 +14,13 @@
 #include <string>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
-#include <sys/syslimits.h>
 #include <unistd.h>
 #include <utility>
 
 #ifdef __linux__
-#include <linux/limits.h>
+#	include <linux/limits.h>
+#else
+#	include <sys/syslimits.h>
 #endif
 
 
