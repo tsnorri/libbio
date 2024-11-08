@@ -46,6 +46,7 @@ namespace libbio {
 			size_type	value{};
 		};
 
+		// FIXME: use a hardware-independent constant; we now compile with -Wno-interference-size.
 		struct alignas(std::hardware_destructive_interference_size) stored_index
 		{
 			std::atomic <ticket_type>	turn{};
@@ -70,6 +71,7 @@ namespace libbio {
 		typedef std::counting_semaphore <MAX_SIZE>			semaphore_type;
 
 	protected:
+		// FIXME: use a hardware-independent constant; we now compile with -Wno-interference-size.
 		alignas(std::hardware_destructive_interference_size) std::atomic <ticket_type>	m_reader_ticket{};
 		alignas(std::hardware_destructive_interference_size) std::atomic <ticket_type>	m_writer_ticket{};
 		index_vector																	m_indices;

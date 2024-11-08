@@ -9,7 +9,6 @@
 #include <libbio/dispatch/fwd.hh>
 #include <libbio/dispatch/events/source.hh>
 #include <libbio/dispatch/task_decl.hh>
-#include <sys/event.h>						// EVFILT_SIGNAL
 #include <sys/types.h>
 #include <utility>							// std::forward
 
