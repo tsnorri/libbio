@@ -68,9 +68,9 @@ namespace libbio::detail {
 		word_iterator word_begin() { return convert_to_word_iterator(this->begin()); }
 		const_word_iterator word_begin() const { return convert_to_word_iterator(this->begin()); }
 		const_word_iterator word_cbegin() const { return convert_to_word_iterator(this->begin()); }
-		word_iterator word_end() { return convert_to_word_iterator(this->begin()); }
-		const_word_iterator word_end() const { return convert_to_word_iterator(this->begin()); }
-		const_word_iterator word_cend() const { return convert_to_word_iterator(this->begin()); }
+		word_iterator word_end() { return convert_to_word_iterator(this->end()); }
+		const_word_iterator word_end() const { return convert_to_word_iterator(this->end()); }
+		const_word_iterator word_cend() const { return convert_to_word_iterator(this->end()); }
 	};
 
 
