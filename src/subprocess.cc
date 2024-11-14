@@ -67,7 +67,7 @@ namespace {
 		{
 		}
 
-		void assign(int const fd) { m_fd = fd; }
+		void assign(int const fd) { m_fd = fd; m_should_close = true; }
 	};
 
 
