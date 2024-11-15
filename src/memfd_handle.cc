@@ -7,12 +7,15 @@
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>					// O_RDWR etc.
-#include <format>
 #include <libbio/memfd_handle.hh>
 #include <stdexcept>
 #include <sys/fcntl.h>
 #include <sys/mman.h>				// ::shm_open
 #include <unistd.h>
+
+#ifndef __linux__
+#	include <format>
+#endif
 
 
 namespace libbio {
