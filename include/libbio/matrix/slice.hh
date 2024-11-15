@@ -50,8 +50,8 @@ namespace libbio::detail {
 
 		std::size_t size() const { return m_slice.size(); }
 
-		reference operator[](std::size_t const idx) { libbio_assert(idx < size()); return *(begin() + idx); }
-		const_reference operator[](std::size_t const idx) const { libbio_assert(idx < size()); return *(begin() + idx); }
+		reference operator[](std::size_t const idx) { libbio_assert_lt(idx, size()); return *(begin() + idx); }
+		const_reference operator[](std::size_t const idx) const { libbio_assert_lt(idx, size()); return *(begin() + idx); }
 
 		matrix_iterator begin() { return matrix_iterator(*m_matrix, m_slice.start(), m_slice.stride()); }
 		matrix_iterator end() { return matrix_iterator(*m_matrix, m_slice.start() + m_slice.size() * m_slice.stride(), m_slice.stride()); }

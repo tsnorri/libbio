@@ -32,6 +32,7 @@ OBJECTS	=	algorithm.o \
 			file_handle_buffered_writer.o \
 			generic_parser.o \
 			generic_parser_traits.o \
+			int_matrix.o \
 			int_vector.o \
 			is_lt.o \
 			is_lte.o \
