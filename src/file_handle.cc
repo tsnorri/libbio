@@ -69,6 +69,24 @@ namespace libbio {
 	}
 
 
+	std::size_t file_handle::write(char const *data, std::size_t const len)
+	{
+		while (true)
+		{
+			auto const res(::write(m_fd, data, len));
+			if (-1 == res)
+			{
+				if (EINTR == errno)
+					continue;
+
+				throw std::runtime_error(std::strerror(errno));
+			}
+
+			return res;
+		}
+	}
+
+
 	void file_handle::truncate(std::size_t const len)
 	{
 		while (true)
