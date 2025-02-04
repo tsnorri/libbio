@@ -20,8 +20,8 @@ endif
 CXXFLAGS +=	-ftemplate-backtrace-limit=0
 
 
-OBJECTS	=	rapidcheck_test_driver_cmdline.o \
-			rapidcheck_test_driver_main.o
+OBJECTS	=	cmdline.o \
+			main.o
 
 TEST_DEPENDENCIES =	$(LIBBIO_PATH) \
 					../lib/rapidcheck/build/librapidcheck.a

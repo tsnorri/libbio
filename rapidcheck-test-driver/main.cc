@@ -5,7 +5,7 @@
 
 #include <cstdlib>
 #include <iostream>
-#include "rapidcheck_test_driver_cmdline.h"
+#include "cmdline.h"
 
 #define BUILD_RAPIDCHECK_TEST_DRIVER
 #include <libbio/rapidcheck_test_driver.hh>
