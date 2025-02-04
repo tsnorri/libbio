@@ -20,7 +20,8 @@ endif
 CXXFLAGS +=	-ftemplate-backtrace-limit=0
 
 
-OBJECTS	=	cmdline.o \
+OBJECTS	=	assert.o \
+			cmdline.o \
 			main.o
 
 TEST_DEPENDENCIES =	$(LIBBIO_PATH) \
