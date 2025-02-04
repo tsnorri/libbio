@@ -8,12 +8,12 @@
 #include <cstdint>
 #include <iterator>
 #include <libbio/algorithm/stable_partition_left.hh>
+#include <libbio/rapidcheck_test_driver.hh>
 #include <range/v3/algorithm/copy.hpp>
 #include <range/v3/iterator/stream_iterators.hpp>
 #include <range/v3/view/reverse.hpp>
 #include <set>
 #include <vector>
-#include "rapidcheck_test_driver.hh"
 
 namespace lb		= libbio;
 namespace rsv		= ranges::views;

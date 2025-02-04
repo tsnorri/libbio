@@ -9,12 +9,12 @@
 #include <functional>
 #include <iterator>
 #include <libbio/algorithm/set_difference_inplace.hh>
+#include <libbio/rapidcheck_test_driver.hh>
 #include <random>
 #include <range/v3/algorithm/copy.hpp>
 #include <range/v3/iterator/stream_iterators.hpp>
 #include <set>
 #include <vector>
-#include "rapidcheck_test_driver.hh"
 
 namespace lb		= libbio;
 

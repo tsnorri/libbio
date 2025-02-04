@@ -10,6 +10,7 @@ CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
 			-I../lib/Catch2/build/generated-includes \
 			-I../lib/rapidcheck/include \
 			-I../lib/rapidcheck/extras/catch/include \
+			-I../rapidcheck-test-driver/include
 
 ifeq ($(origin NO_COVERAGE_CHECK),undefined)
 TEST_LDFLAGS = -lgcov $(BOOST_LIBS) $(LDFLAGS)
@@ -54,9 +55,7 @@ OBJECTS_RC	=	fasta_reader_arbitrary.rc.o \
 				power_of_two_arbitrary.rc.o \
 				sam_reader_arbitrary.rc.o \
 				set_difference_inplace_arbitrary.rc.o \
-				stable_partition_left_arbitrary.rc.o \
-				rapidcheck_test_driver_cmdline.o \
-				rapidcheck_test_driver_main.o
+				stable_partition_left_arbitrary.rc.o
 
 GENERATED_TEST_FILES = 	test-files/test-data-types.vcf.gz \
 						test-files/test-simple.vcf.gz
@@ -85,7 +84,7 @@ tests: $(OBJECTS) $(GENERATED_TEST_FILES) $(TEST_DEPENDENCIES)
 	$(CXX) -o $@ $(OBJECTS) $(TEST_DEPENDENCIES) $(TEST_LDFLAGS)
 
 rc_tests: $(OBJECTS_RC)
-	$(CXX) -o $@ $(OBJECTS_RC) $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) $(TEST_LDFLAGS)
+	$(CXX) -o $@ $(OBJECTS_RC) ../rapidcheck-test-driver/libbio_rc_test_driver.a $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) $(TEST_LDFLAGS)
 
 clean:
 	$(RM) $(OBJECTS) $(OBJECTS_RC) $(OBJECTS_COVERAGE) $(GENERATED_TEST_FILES) tests rc_tests

@@ -6,7 +6,7 @@
 #include <climits>
 #include <cstdint>
 #include <libbio/bits.hh>
-#include "rapidcheck_test_driver.hh"
+#include <libbio/rapidcheck_test_driver.hh>
 
 namespace lb		= libbio;
 

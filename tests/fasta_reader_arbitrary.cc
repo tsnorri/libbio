@@ -8,6 +8,7 @@
 #include <libbio/file_handle.hh>
 #include <libbio/file_handling.hh>
 #include <libbio/markov_chain.hh>
+#include <libbio/rapidcheck_test_driver.hh>
 #include <libbio/rapidcheck/markov_chain.hh>
 #include <ostream>
 #include <range/v3/view/reverse.hpp>
@@ -19,7 +20,6 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
-#include "rapidcheck_test_driver.hh"
 
 namespace ios	= boost::iostreams;
 namespace lb	= libbio;

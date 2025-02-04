@@ -10,6 +10,7 @@
 
 #include <array>
 #include <libbio/markov_chain.hh>
+#include <libbio/rapidcheck_test_driver.hh>
 #include <libbio/sam.hh>
 #include <numeric>
 #include <range/v3/view/enumerate.hpp>
@@ -19,7 +20,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include "rapidcheck_test_driver.hh"
 
 namespace lb		= libbio;
 namespace mcs		= libbio::markov_chains;
