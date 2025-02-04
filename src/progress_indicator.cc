@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2017-2018 Tuukka Norri
+ * Copyright (c) 2017-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#if !(defined(LIBBIO_NO_DISPATCH) && LIBBIO_NO_DISPATCH)
+#if !((defined(LIBBIO_NO_DISPATCH) && LIBBIO_NO_DISPATCH) || (defined(LIBBIO_NO_PROGRESS_INDICATOR) && LIBBIO_NO_PROGRESS_INDICATOR))
 
 #include <algorithm>
 #include <boost/format.hpp>
