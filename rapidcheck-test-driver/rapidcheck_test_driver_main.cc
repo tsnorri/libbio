@@ -8,7 +8,7 @@
 #include "rapidcheck_test_driver_cmdline.h"
 
 #define BUILD_RAPIDCHECK_TEST_DRIVER
-#include "rapidcheck_test_driver.hh"
+#include <libbio/rapidcheck_test_driver.hh>
 
 
 namespace {
