@@ -13,7 +13,12 @@
 #include <iostream>
 #include <libbio/tuple/map.hh>
 #include <libbio/utility/compare_strings_transparent.hh>
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-braces"
 #include <rapidcheck.h>										// IWYU pragma: export
+#pragma clang diagnostic pop
+
 #include <set>
 #include <string>
 #include <utility>											// std::forward
