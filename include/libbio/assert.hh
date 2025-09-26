@@ -1,25 +1,25 @@
 /*
- * Copyright (c) 2017-2024 Tuukka Norri
+ * Copyright (c) 2017-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_ASSERT_HH
 #define LIBBIO_ASSERT_HH
 
-#include <boost/stacktrace.hpp>
-#include <boost/exception/all.hpp>
-#include <boost/foreach.hpp>
 #include <exception>
-#include <iostream>
-#include <libbio/buffer.hh>
+#include <format>
 #include <libbio/utility/is_equal.hh>
 #include <libbio/utility/is_lt.hh>
 #include <libbio/utility/is_lte.hh>
-#include <libbio/utility/misc.hh>
-#include <sstream>
+#include <memory>
+#include <ostream>
 #include <string>
-#include <type_traits>
 #include <utility>
+
+#ifdef LIBBIO_USE_BOOST_STACKTRACE
+#	include <boost/stacktrace.hpp>
+#	include <boost/exception/all.hpp>
+#endif
 
 
 #define libbio_stringify(X) (#X)
@@ -33,7 +33,7 @@
 
 // FIXME: Make this work when immediately evaluated.
 #define libbio_fail(...) do { \
-		::libbio::detail::assertion_failure(__FILE__, __LINE__, __VA_ARGS__); \
+		::libbio::detail::assertion_failure_(__FILE__, __LINE__, __VA_ARGS__); \
 	} while (false)
 
 #define libbio_always_assert(X)					libbio_assert_test((X),											#X)
@@ -119,19 +119,10 @@
 namespace libbio::detail {
 
 	template <typename t_type>
-	struct has_formatted_output_function_helper
+	concept has_formatted_output_function_v = requires(t_type tt, std::ostream &os)
 	{
-		template <typename T>
-		static decltype(std::declval <std::ostream>() << std::declval <T>()) test(T const *);
-
-		template <typename>
-		static std::false_type test(...);
-
-		constexpr static inline bool value{std::is_same_v <std::ostream &, decltype(test <t_type>(nullptr))>};
+		os << tt;
 	};
-
-	template <typename t_type>
-	constexpr inline bool has_formatted_output_function_v = has_formatted_output_function_helper <t_type>::value;
 
 
 	static_assert(has_formatted_output_function_v <long const>);
@@ -142,120 +133,57 @@ namespace libbio::detail {
 	// is not permitted to throw exceptions, so try to avoid it here, too.
 	struct assertion_failure_cause
 	{
-		typedef buffer <char>	buffer_type;
-
 		std::string		reason;
 		std::string		file;
-		buffer_type		what;
+		std::string		what;
 		long			line{};
 
 		assertion_failure_cause() = default;
 
 		assertion_failure_cause(char const *file_, long line_):
-			file(file_),
-			what(
-				buffer_type::buffer_with_allocated_buffer(
-					copy_format_cstr(boost::format("%s:%d") % file % line_)
-				)
-			),
-			line(line_)
+			file{file_},
+			what{std::format("{}:{}", file, line_)},
+			line{line_}
+		{
+		}
+
+		assertion_failure_cause(char const *file_, long line_, std::string const &reason_):
+			reason{reason_},
+			file{file_},
+			what{std::format("{}:{}: {}", file, line_, reason)},
+			line{line_}
 		{
 		}
 
 		assertion_failure_cause(char const *file_, long line_, std::string &&reason_):
-			reason(std::move(reason_)),
-			file(file_),
-			what(
-				buffer_type::buffer_with_allocated_buffer(
-					copy_format_cstr(boost::format("%s:%d: %s") % file % line_ % reason)
-				)
-			),
-			line(line_)
+			reason{std::move(reason_)},
+			file{file_},
+			what{std::format("{}:{}: {}", file, line_, reason)},
+			line{line_}
 		{
 		}
 	};
 
 
 	// Fwd.
-	[[noreturn]] constexpr inline void assertion_failure(char const *file, long const line);
-	[[noreturn]] constexpr inline void assertion_failure(char const *file, long const line, char const *assertion);
-	[[noreturn]] inline void assertion_failure(char const *file, long const line, std::string const &assertion);
-
-
-	// Concatenate the arguments and call assertion_failure.
-	template <typename t_arg>
-	[[noreturn]] void assertion_failure__(char const *file, long const line, std::stringstream &stream, t_arg const &arg)
-	{
-		stream << arg;
-		auto const &string(stream.str()); // Keep the result of str() here to prevent a dangling pointer.
-		assertion_failure(file, line, string.c_str()); // Copies the result of c_str().
-	}
-
-
-	// Concatenate the arguments and call assertion_failure.
-	template <typename t_arg, typename ... t_rest>
-	[[noreturn]] void assertion_failure__(char const *file, long const line, std::stringstream &stream, t_arg const &first, t_rest && ... rest)
-	{
-		stream << first;
-		assertion_failure__(file, line, stream, rest...);
-	}
-
-
-	// Concatenate the arguments and call assertion_failure.
-	template <typename ... t_args>
-	[[noreturn]] void assertion_failure_(char const *file, long const line, t_args && ... args)
-	{
-		// For some reason if std::stringstream is instantiated in the non-consteval branch of if consteval in a constexpr function, Clang++14 rejects the code.
-		// FIXME: use std::format.
-		std::stringstream stream;
-		assertion_failure__(file, line, stream, std::forward <t_args>(args)...);
-	}
-
-
-	template <typename ... t_args>
-	[[noreturn]] constexpr void assertion_failure(char const *file, long const line, t_args && ... args)
-	{
-		if consteval
-		{
-			assertion_failure(file, line, "(Formatted output for consteval assertion failure not implemented.)");
-		}
-		else
-		{
-			assertion_failure_(file, line, std::forward <t_args>(args)...);
-		}
-	}
+	[[noreturn]] constexpr inline void assertion_failure_(char const *file, long const line);
+	[[noreturn]] constexpr inline void assertion_failure_(char const *file, long const line, char const *assertion);
+	[[noreturn]] inline void assertion_failure_(char const *file, long const line, std::string const &assertion);
 
 
 	template <bool t_requires_formatted_output_fn, typename t_lhs, typename t_rhs>
-	[[noreturn]] void assertion_failure_(char const *file, long const line, t_lhs const &lhs, t_rhs const &rhs, char const *message)
+	[[noreturn]] constexpr void assertion_failure_(char const *file, long const line, t_lhs const &lhs, t_rhs const &rhs, char const *message)
 	requires (!t_requires_formatted_output_fn || (has_formatted_output_function_v <t_lhs> && has_formatted_output_function_v <t_rhs>))
 	{
 		// Clang++ 14 is not happy about the use of std::stringstream in a constexpr function even if in the false branch
 		// of if consteval, so we build the message here instead.
 		if constexpr (has_formatted_output_function_v <t_lhs> && has_formatted_output_function_v <t_rhs>)
 		{
-			// FIXME: use std::format.
-			std::stringstream stream;
-			stream << message << " (lhs: " << lhs << ", rhs: " << rhs << ')';
-			assertion_failure(file, line, stream.str());
+			assertion_failure_(file, line, std::format("{} (lhs: {}, rhs: {})", message, lhs, rhs));
 		}
 		else
 		{
-			assertion_failure(file, line, message);
-		}
-	}
-
-
-	template <bool t_requires_formatted_output_fn = false, typename t_lhs, typename t_rhs>
-	[[noreturn]] constexpr void assertion_failure(char const *file, long const line, t_lhs const &lhs, t_rhs const &rhs, char const *message)
-	{
-		if consteval
-		{
-			assertion_failure(file, line, message);
-		}
-		else
-		{
-			assertion_failure_ <t_requires_formatted_output_fn>(file, line, lhs, rhs, message);
+			assertion_failure_(file, line, message);
 		}
 	}
 
@@ -264,7 +192,7 @@ namespace libbio::detail {
 	constexpr inline void assert_test(bool const test, char const *file, t_line const line, t_args && ... args)
 	{
 		if (!test)
-			assertion_failure(file, line, std::forward <t_args>(args)...);
+			assertion_failure_(file, line, std::forward <t_args>(args)...);
 	}
 
 
@@ -273,15 +201,12 @@ namespace libbio::detail {
 	{
 		t_test test;
 		if (!test(lhs, rhs))
-			assertion_failure <t_requires_formatted_output_fn>(file, line, lhs, rhs, message);
+			assertion_failure_ <t_requires_formatted_output_fn>(file, line, lhs, rhs, message);
 	}
 }
 
 
 namespace libbio {
-
-	typedef boost::error_info <struct tag_stacktrace, boost::stacktrace::stacktrace> traced;
-
 
 	constexpr extern inline void assertion_failure() {} // For debugging.
 
@@ -294,6 +219,11 @@ namespace libbio {
 	public:
 		assertion_failure_exception() = default;
 
+		assertion_failure_exception(char const *file, long line, std::string const &reason):
+			m_cause(new detail::assertion_failure_cause(file, line, reason))
+		{
+		}
+
 		assertion_failure_exception(char const *file, long line, std::string &&reason):
 			m_cause(new detail::assertion_failure_cause(file, line, std::move(reason)))
 		{
@@ -304,7 +234,7 @@ namespace libbio {
 		{
 		}
 
-		virtual char const *what() const noexcept override { return m_cause->what.get(); }
+		virtual char const *what() const noexcept override { return m_cause->what.c_str(); }
 		std::string const &file() const noexcept { return m_cause->file; }
 		std::string const &reason() const noexcept { return m_cause->reason; }
 		long line() const noexcept { return m_cause->line; }
@@ -314,30 +244,41 @@ namespace libbio {
 
 namespace libbio::detail {
 
+#ifdef LIBBIO_USE_BOOST_STACKTRACE
+	typedef boost::error_info <struct tag_stacktrace, boost::stacktrace::stacktrace> traced;
+
 	template <typename t_exception, typename ... t_args>
-	[[noreturn]] constexpr void throw_with_trace(t_args ... args)
+	[[noreturn]] constexpr void do_throw(t_args && ... args)
 	{
-		throw boost::enable_error_info(t_exception(args...)) << traced(boost::stacktrace::stacktrace());
+		throw boost::enable_error_info(t_exception(std::forward <t_args>(args)...)) << traced(boost::stacktrace::stacktrace());
+	}
+#else
+	template <typename t_exception, typename ... t_args>
+	[[noreturn]] constexpr void do_throw(t_args && ... args)
+	{
+		throw t_exception(std::forward <t_args>(args)...);
+	}
+#endif
+
+
+	[[noreturn]] constexpr void assertion_failure_(char const *file, long const line)
+	{
+		::libbio::assertion_failure();
+		do_throw <assertion_failure_exception>(file, line);
 	}
 
 
-	[[noreturn]] constexpr inline void assertion_failure(char const *file, long const line)
+	[[noreturn]] constexpr void assertion_failure_(char const *file, long const line, char const *assertion)
 	{
-		libbio::assertion_failure();
-		throw_with_trace <assertion_failure_exception>(file, line);
+		::libbio::assertion_failure();
+		do_throw <assertion_failure_exception>(file, line, assertion);
 	}
 
 
-	[[noreturn]] constexpr inline void assertion_failure(char const *file, long const line, char const *assertion)
+	[[noreturn]] inline void assertion_failure_(char const *file, long const line, std::string const &assertion)
 	{
-		libbio::assertion_failure();
-		throw_with_trace <assertion_failure_exception> (file, line, assertion);
-	}
-
-
-	[[noreturn]] inline void assertion_failure(char const *file, long const line, std::string const &assertion)
-	{
-		assertion_failure(file, line, assertion.c_str());
+		::libbio::assertion_failure();
+		do_throw <assertion_failure_exception>(file, line, assertion);
 	}
 }
 
