@@ -16,6 +16,7 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-braces"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations" // std::aligned_storage is used but has been deprecated in C++23.
 #include <rapidcheck.h>										// IWYU pragma: export
 #pragma clang diagnostic pop
 
