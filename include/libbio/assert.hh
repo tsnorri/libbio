@@ -23,13 +23,15 @@
 
 
 #define libbio_stringify(X) (#X)
+#define libbio_append_to_first_str_literal(SUFFIX, STR, ...) (STR SUFFIX), __VA_ARGS__
 
 #define libbio_assert_test(TEST, MESSAGE)					do { ::libbio::detail::assert_test(bool(TEST), __FILE__, __LINE__, MESSAGE); } while (false)
 #define libbio_assert_test_bin(LHS, RHS, TEST, MESSAGE)		do { ::libbio::detail::assert_test_bin <TEST>(LHS, RHS, __FILE__, __LINE__, MESSAGE); } while (false)
 // Requires formatted output.
 #define libbio_assert_test_bin_(LHS, RHS, TEST, MESSAGE)	do { ::libbio::detail::assert_test_bin <TEST, true>(LHS, RHS, __FILE__, __LINE__, MESSAGE); } while (false)
+// Use std::format.
 #define libbio_assert_test_msg(TEST, ...)					do { ::libbio::detail::assert_test(bool(TEST), __FILE__, __LINE__, __VA_ARGS__); } while (false)
-#define libbio_assert_test_rel_msg(TEST, REL_EXPR, ...)		do { ::libbio::detail::assert_test(bool(TEST), __FILE__, __LINE__, __VA_ARGS__, ": ", (REL_EXPR), '.'); } while (false)
+#define libbio_assert_test_rel_msg(TEST, REL_EXPR, ...)		do { ::libbio::detail::assert_test(bool(TEST), __FILE__, __LINE__, libbio_append_to_first_str_literal(": {}.", __VA_ARGS__), (REL_EXPR)); } while (false)
 
 // FIXME: Make this work when immediately evaluated.
 #define libbio_fail(...) do { \
@@ -77,7 +79,7 @@
 #	define libbio_assert_eq_(X, Y)
 #	define libbio_assert_neq_(X, Y)
 
-#	define libbio_do_and_assert_eq(X, Y)	do { (X); } while (false) // FIXME: try to determine what this is supposed to do.
+#	define libbio_do_and_assert_eq(X, Y)	do { (X); } while (false)
 
 #	define libbio_assert_msg(X, ...)
 #	define libbio_assert_lt_msg(X, Y, ...)
@@ -168,7 +170,14 @@ namespace libbio::detail {
 	// Fwd.
 	[[noreturn]] constexpr inline void assertion_failure_(char const *file, long const line);
 	[[noreturn]] constexpr inline void assertion_failure_(char const *file, long const line, char const *assertion);
-	[[noreturn]] inline void assertion_failure_(char const *file, long const line, std::string const &assertion);
+	[[noreturn]] constexpr inline void assertion_failure_(char const *file, long const line, std::string const &assertion);
+
+
+	template <typename ... t_args>
+	[[noreturn]] constexpr inline void assertion_failure_fmt_(char const *file, long const line, std::format_string <t_args...> fmt, t_args && ... args)
+	{
+		assertion_failure_(file, line, std::format(fmt, std::forward <t_args>(args)...));
+	}
 
 
 	template <bool t_requires_formatted_output_fn, typename t_lhs, typename t_rhs>
@@ -179,7 +188,7 @@ namespace libbio::detail {
 		// of if consteval, so we build the message here instead.
 		if constexpr (has_formatted_output_function_v <t_lhs> && has_formatted_output_function_v <t_rhs>)
 		{
-			assertion_failure_(file, line, std::format("{} (lhs: {}, rhs: {})", message, lhs, rhs));
+			assertion_failure_fmt_(file, line, "{} (lhs: {}, rhs: {})", message, lhs, rhs);
 		}
 		else
 		{
@@ -189,10 +198,10 @@ namespace libbio::detail {
 
 
 	template <typename t_line, typename ... t_args>
-	constexpr inline void assert_test(bool const test, char const *file, t_line const line, t_args && ... args)
+	constexpr inline void assert_test(bool const test, char const *file, t_line const line, std::format_string <t_args...> fmt, t_args && ... args)
 	{
 		if (!test)
-			assertion_failure_(file, line, std::forward <t_args>(args)...);
+			assertion_failure_fmt_(file, line, fmt, std::forward <t_args>(args)...);
 	}
 
 
@@ -275,7 +284,7 @@ namespace libbio::detail {
 	}
 
 
-	[[noreturn]] inline void assertion_failure_(char const *file, long const line, std::string const &assertion)
+	[[noreturn]] constexpr void assertion_failure_(char const *file, long const line, std::string const &assertion)
 	{
 		::libbio::assertion_failure();
 		do_throw <assertion_failure_exception>(file, line, assertion);
