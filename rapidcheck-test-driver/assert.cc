@@ -28,7 +28,7 @@ extern "C" [[noreturn]] void __assert_rtn(const char *, const char *file, int li
 
 extern "C" [[noreturn]] void __assert_fail(char const *assertion, char const *file, unsigned int line, char const *function)
 {
-	std::cerr << "Assertion failure in " << file << ':' << line << ", function " << function << ": " << assertion ".\n";
+	std::cerr << "Assertion failure in " << file << ':' << line << ", function " << function << ": " << assertion << ".\n";
 	throw libbio::tests::assertion_failure("Assertion failure");
 }
 
