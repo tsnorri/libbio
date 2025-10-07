@@ -7,8 +7,8 @@
 #ifndef LIBBIO_RAPIDCHECK_TEST_DRIVER
 #define LIBBIO_RAPIDCHECK_TEST_DRIVER
 
-#include <boost/type_index.hpp>								// boost::typeindex::type_id <t_type>().pretty_name()
-#include <exception>										// Needed by RapidCheck
+#include <boost/type_index.hpp>									// boost::typeindex::type_id <t_type>().pretty_name()
+#include <exception>											// Needed by RapidCheck
 #include <format>
 #include <iostream>
 #include <libbio/tuple/map.hh>
@@ -16,13 +16,16 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-braces"
-#pragma clang diagnostic ignored "-Wdeprecated-declarations" // std::aligned_storage is used but has been deprecated in C++23.
-#include <rapidcheck.h>										// IWYU pragma: export
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"	// std::aligned_storage is used but has been deprecated in C++23.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"		// same for GCC
+#include <rapidcheck.h>											// IWYU pragma: export
 #pragma clang diagnostic pop
+#pragma GCC diagnostic pop
 
 #include <set>
 #include <string>
-#include <utility>											// std::forward
+#include <utility>												// std::forward
 #include <vector>
 
 
