@@ -217,6 +217,16 @@ namespace libbio::detail {
 
 namespace libbio {
 
+	constexpr inline bool all_assertions_enabled()
+	{
+#if defined(LIBBIO_NDEBUG) && LIBBIO_NDEBUG
+		return false;
+#else
+		return true;
+#endif
+	}
+
+
 	constexpr extern inline void assertion_failure() {} // For debugging.
 
 
