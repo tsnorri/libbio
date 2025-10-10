@@ -6,14 +6,19 @@
 #ifndef LIBBIO_ASSERT_HH
 #define LIBBIO_ASSERT_HH
 
+#include <cstddef>
 #include <exception>
 #include <format>
+#include <libbio/tuple/access.hh>
+#include <libbio/tuple/map.hh>
 #include <libbio/utility/is_equal.hh>
 #include <libbio/utility/is_lt.hh>
 #include <libbio/utility/is_lte.hh>
 #include <memory>
 #include <ostream>
 #include <string>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 
 #ifdef LIBBIO_USE_BOOST_STACKTRACE
@@ -23,7 +28,7 @@
 
 
 #define libbio_stringify(X) (#X)
-#define libbio_append_to_first_str_literal(SUFFIX, STR, ...) (STR SUFFIX), __VA_ARGS__
+#define libbio_append_to_first_str_literal(SUFFIX, STR, ...) (STR SUFFIX) ##__VA_ARGS__ // Remove the comma if there are no additional parameters after STR, consider using __VA_OPT__.
 
 #define libbio_assert_test(TEST, MESSAGE)					do { ::libbio::detail::assert_test(bool(TEST), __FILE__, __LINE__, MESSAGE); } while (false)
 #define libbio_assert_test_bin(LHS, RHS, TEST, MESSAGE)		do { ::libbio::detail::assert_test_bin <TEST>(LHS, RHS, __FILE__, __LINE__, MESSAGE); } while (false)
@@ -133,6 +138,7 @@ namespace libbio::detail {
 
 	// Copying a standard library class derived from std::exception
 	// is not permitted to throw exceptions, so try to avoid it here, too.
+	// (We do use std::format, though.)
 	struct assertion_failure_cause
 	{
 		std::string		reason;
@@ -167,6 +173,43 @@ namespace libbio::detail {
 	};
 
 
+	// For some reason outputting std::byte const * with std::format does not work.
+	// (Perhaps the rationale is that formatting library cannot know if it should
+	// apply string formatting or output the pointer value.) Hence we cast to a
+	// void * or void const * here.
+	template <typename t_type, typename t_type_ = std::remove_cvref_t <t_type>>
+	struct process_format_parameter_trait
+	{
+		typedef t_type type;
+	};
+
+	template <typename t_type>
+	struct process_format_parameter_trait <t_type, std::byte *>
+	{
+		typedef void const * type;
+	};
+
+	template <typename t_type>
+	struct process_format_parameter_trait <t_type, std::byte const *>
+	{
+		typedef void const * type;
+	};
+
+	template <typename t_type>
+	using process_format_parameter_t = process_format_parameter_trait <t_type>::type;
+
+
+	template <typename ... t_args>
+	using format_string_t = tuples::forward_to <std::format_string>::parameters_of_t <tuples::map_t <std::tuple <t_args...>, process_format_parameter_t>>;
+
+
+	template <typename t_type>
+	decltype(auto) process_for_format(t_type &&val)
+	requires (!std::is_same_v <std::remove_cvref_t <t_type>, std::byte *>) { return val; }
+
+	inline void const *process_for_format(std::byte const *ptr) { return ptr; }
+
+
 	// Fwd.
 	[[noreturn]] constexpr inline void assertion_failure_(char const *file, long const line);
 	[[noreturn]] constexpr inline void assertion_failure_(char const *file, long const line, char const *assertion);
@@ -174,9 +217,16 @@ namespace libbio::detail {
 
 
 	template <typename ... t_args>
-	[[noreturn]] constexpr inline void assertion_failure_fmt_(char const *file, long const line, std::format_string <t_args...> fmt, t_args && ... args)
+	[[noreturn]] constexpr inline void assertion_failure_fmt__(char const *file, long const line, std::format_string <t_args...> fmt, t_args && ... args)
 	{
 		assertion_failure_(file, line, std::format(fmt, std::forward <t_args>(args)...));
+	}
+
+
+	template <typename ... t_args>
+	[[noreturn]] constexpr inline void assertion_failure_fmt_(char const *file, long const line, format_string_t <t_args...> fmt, t_args && ... args)
+	{
+		assertion_failure_fmt__(file, line, fmt, process_for_format(std::forward <t_args>(args))...);
 	}
 
 
@@ -198,10 +248,10 @@ namespace libbio::detail {
 
 
 	template <typename t_line, typename ... t_args>
-	constexpr inline void assert_test(bool const test, char const *file, t_line const line, std::format_string <t_args...> fmt, t_args && ... args)
+	constexpr inline void assert_test(bool const test, char const *file, t_line const line, format_string_t <t_args...> fmt, t_args && ... args)
 	{
 		if (!test)
-			assertion_failure_fmt_(file, line, fmt, std::forward <t_args>(args)...);
+			assertion_failure_fmt__(file, line, fmt, process_for_format(std::forward <t_args>(args))...);
 	}
 
 
