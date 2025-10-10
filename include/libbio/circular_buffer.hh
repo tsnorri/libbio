@@ -84,6 +84,7 @@ namespace libbio {
 
 		void allocate(std::size_t page_count);
 		const_range reading_range() const { return const_range{linearise(m_lb), size_occupied()}; }
+		range reading_range_() { return range{linearise(m_lb), size_occupied()}; } // For cases where the reader expects a non-const pointer.
 		range writing_range() { return range{linearise(m_rb), size_available()}; }
 	};
 }
