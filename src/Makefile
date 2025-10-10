@@ -25,6 +25,7 @@ OBJECTS		=	bam_fields.o \
 				file_handle.o \
 				file_handle_buffered_writer.o \
 				file_handling.o \
+				gzip_read_handle.o \
 				log_memory_usage_support.o \
 				memfd_handle.o \
 				progress_bar.o \
