@@ -67,7 +67,7 @@ namespace libbio::vcf {
 		friend class metadata_formatted_field;
 
 	public:
-		enum { INVALID_OFFSET = UINT16_MAX };
+		constexpr static std::uint16_t INVALID_OFFSET{UINT16_MAX};
 
 	protected:
 		std::uint16_t		m_offset{INVALID_OFFSET};	// Offset of this field in the memory block.

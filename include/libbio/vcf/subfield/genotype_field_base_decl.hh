@@ -44,7 +44,7 @@ namespace libbio::vcf {
 		friend bool operator==(variant_format const &, variant_format const &);
 
 	public:
-		enum { INVALID_INDEX = UINT16_MAX };
+		constexpr static std::uint16_t INVALID_INDEX{UINT16_MAX};
 
 	protected:
 		template <bool B>
