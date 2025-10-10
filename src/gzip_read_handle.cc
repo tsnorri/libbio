@@ -66,16 +66,18 @@ namespace libbio {
 				{
 					case Z_OK:
 					{
-						// Check if we were able to read something over all iterations.
 						auto const read_amount{requested_length - m_stream.avail_out};
-						if (read_amount == prev_read_amount)
+						if (read_amount != prev_read_amount && m_stream.avail_out)
 						{
-							if (read_amount)
-								return read_amount;
-							throw std::runtime_error("Not enough memory in the provided buffer");
+							// We may have run out of compressed data.
+							prev_read_amount = read_amount;
+							break;
 						}
 
-						break;
+						if (read_amount)
+							return read_amount;
+
+						throw std::runtime_error("Not enough memory in the provided buffer");
 					}
 
 					case Z_STREAM_END:
