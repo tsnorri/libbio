@@ -10,6 +10,7 @@
 #include <cstring>
 #include <expected>
 #include <fcntl.h>
+#include <libbio/assert.hh>
 #include <libbio/file_handle.hh>
 #include <libbio/subprocess.hh>
 #include <libbio/utility.hh>
@@ -52,8 +53,6 @@ namespace {
 	protected:
 		file_handle_status_reporter	*m_sr{};
 
-		void handle_close_error() override { m_sr->handle_error(); }
-
 	public:
 		explicit file_handle(file_handle_status_reporter &sr):
 			lb::file_handle(),
@@ -67,7 +66,16 @@ namespace {
 		{
 		}
 
+		file_handle(file_handle &&) = default;
+
 		void assign(int const fd) { m_fd = fd; m_should_close = true; }
+
+		~file_handle()
+		{
+			if (-1 != m_fd && m_should_close && !close())
+				m_sr->handle_error();
+			libbio_assert_eq(-1, m_fd);
+		}
 	};
 
 
@@ -81,6 +89,8 @@ namespace {
 			status_handle(status_reporter)
 		{
 		}
+
+		fork_result(fork_result &&) = default;
 	};
 
 
