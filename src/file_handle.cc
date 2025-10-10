@@ -14,21 +14,28 @@
 #include <unistd.h>
 
 
+namespace {
+
+	constexpr inline bool should_output_error_in_destructor()
+	{
+#if defined(LIBBIO_NDEBUG) && LIBBIO_NDEBUG
+		return false;
+#else
+		return true;
+#endif
+	}
+}
+
+
 namespace libbio {
 
 	file_handle::~file_handle()
 	{
-		if (-1 != m_fd && m_should_close)
+		if (-1 != m_fd && m_should_close && !close())
 		{
-			if (0 != ::close(m_fd))
-				this->handle_close_error();
+			if constexpr (should_output_error_in_destructor())
+				std::cerr << "ERROR: unable to close file handle " << m_fd << ": " << std::strerror(errno) << '\n';
 		}
-	}
-
-
-	void file_handle::handle_close_error()
-	{
-		std::cerr << "ERROR: unable to close file handle " << m_fd << ": " << std::strerror(errno) << '\n';
 	}
 
 
