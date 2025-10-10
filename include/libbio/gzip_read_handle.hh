@@ -32,6 +32,7 @@ namespace libbio {
 		void set_gzip_input_handle(file_handle &handle); // Set the next file to be processed.
 		void finish(); // Call after processing the file.
 		std::size_t read(std::size_t const len, std::byte *dst) override; // Try to read some data.
+		std::size_t io_op_blocksize() const override { return block_size; }
 	};
 }
 

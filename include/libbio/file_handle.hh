@@ -20,6 +20,7 @@ namespace libbio {
 		virtual ~reading_handle() {}
 		std::size_t read(std::size_t const len, char *dst) { return read(len, reinterpret_cast <std::byte *>(dst)); }
 		virtual std::size_t read(std::size_t const len, std::byte *dst) = 0; // throws
+		virtual std::size_t io_op_blocksize() const = 0;
 	};
 
 
@@ -63,7 +64,7 @@ namespace libbio {
 		std::size_t write(char const *data, std::size_t const len);
 		void truncate(std::size_t const len); // throws
 		void stat(struct ::stat &sb) const; // throws
-		std::size_t io_op_blocksize() const; // throws
+		std::size_t io_op_blocksize() const override; // throws
 
 		bool close();
 	};
