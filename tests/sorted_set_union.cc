@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2023-2024 Tuukka Norri
+ * Copyright (c) 2023-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <libbio/algorithm/sorted_set_union.hh>
