@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2024 Tuukka Norri
+ * Copyright (c) 2017-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -116,7 +116,7 @@ namespace libbio::vcf {
 			action end_sample_name {
 				std::string_view const sample_name(start, fpc - start);
 				auto const res(m_sample_indices_by_name.emplace(sample_name, sample_name_idx));
-				libbio_always_assert_msg(res.second, "Duplicate sample name");
+				libbio_always_assert(res.second, "Duplicate sample name");
 				m_sample_names_by_index.emplace_back(sample_name);
 				++sample_name_idx;
 			}

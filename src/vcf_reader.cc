@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2024 Tuukka Norri
+ * Copyright (c) 2017-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -209,7 +209,7 @@ namespace libbio::vcf {
 	{
 		std::string_view sv(m_fsm.p, m_fsm.pe - m_fsm.p);
 		auto const pos(sv.find('\n'));
-		libbio_always_assert_msg(std::string_view::npos != pos, "Unable to find the next newline");
+		libbio_always_assert_neq(std::string_view::npos, pos, "Unable to find the next newline");
 		m_fsm.p += pos;
 	}
 

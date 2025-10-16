@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Tuukka Norri
+ * Copyright (c) 2022-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -581,7 +581,7 @@ namespace libbio::parsing {
 							return false;
 					}
 
-					libbio_assert_msg(res, "Expected field ", t_field_idx, " to have completed parsing");
+					libbio_assert(res, "Expected field {} to have completed parsing", t_field_idx);
 					return parse___ <1 + t_field_idx, next_value_idx>(range, dst);
 				});
 

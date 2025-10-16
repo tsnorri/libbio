@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Tuukka Norri
+ * Copyright (c) 2022-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -139,7 +139,7 @@ namespace libbio::tuples {
 	public:
 		constexpr empty_type &clear()
 		{
-			libbio_assert_eq_msg(m_clear_fn, detail::cast_and_clear_fn_v <reusable_tuple>, "clear() called for mismatching type");
+			libbio_assert_eq(m_clear_fn, detail::cast_and_clear_fn_v <reusable_tuple>, "clear() called for mismatching type");
 			for_ <tuple_size>([this]<typename t_idx>(){
 				constexpr auto const idx(t_idx::value);
 				typedef std::tuple_element_t <idx, tuple_type> current_type;

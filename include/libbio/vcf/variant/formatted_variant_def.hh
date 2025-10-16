@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Tuukka Norri
+ * Copyright (c) 2020-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -244,8 +244,8 @@ namespace libbio::vcf {
 		{
 			auto const *old_format(get_format_ptr().get());
 			auto const *new_format(other.get_format_ptr().get());
-			libbio_assert_msg(old_format, "Variant format should not be nullptr if m_reader is set.");
-			libbio_assert_msg(new_format, "Variant format should not be nullptr if m_reader is set.");
+			libbio_assert(old_format, "Variant format should not be nullptr if m_reader is set.");
+			libbio_assert(new_format, "Variant format should not be nullptr if m_reader is set.");
 
 			if (old_format == new_format || *old_format == *new_format)
 				return std::pair <bool, bool>(false, false);

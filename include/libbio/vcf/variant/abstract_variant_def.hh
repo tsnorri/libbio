@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Tuukka Norri
+ * Copyright (c) 2020-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -28,7 +28,7 @@ namespace libbio::vcf {
 
 	std::size_t abstract_variant::zero_based_pos() const
 	{
-		libbio_always_assert_msg(0 != m_pos, "Unexpected position");
+		libbio_always_assert_neq(0, m_pos, "Unexpected position");
 		return m_pos - 1;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018–2024 Tuukka Norri
+ * Copyright (c) 2018–2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -24,7 +24,7 @@ namespace libbio::detail {
 		/* Column major order. */
 		libbio_assert_lt(y, matrix.m_stride);
 		libbio_assert_lt(x, matrix.number_of_columns());
-		libbio_assert_lt_msg(x, matrix.m_data.size() / matrix.m_stride, "x: ", x, " matrix.m_data.size(): ", matrix.m_data.size(), " matrix.m_stride: ", matrix.m_stride);
+		libbio_assert_lt(x, matrix.m_data.size() / matrix.m_stride, "x: {} matrix.m_data.size(): {} matrix.m_stride: {}", x, matrix.m_data.size(), matrix.m_stride);
 		auto const retval(matrix_index(y, x, matrix.m_stride));
 		libbio_assert_lt(retval, matrix.m_data.size());
 		return retval;

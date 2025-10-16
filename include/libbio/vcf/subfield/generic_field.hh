@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Tuukka Norri
+ * Copyright (c) 2020-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -73,7 +73,7 @@ namespace libbio::vcf::detail {
 
 		static value_type const &access_ds(t_field const &field, container_type const &ct)
 		{
-			libbio_assert_msg(field.m_metadata, "No metadata associated with VCF field (may not be present in VCF headers)");
+			libbio_assert(field.m_metadata, "No metadata associated with VCF field (may not be present in VCF headers)");
 			auto const &val(access_type::access_ds(field.buffer_start(ct) + field.m_offset));
 			return val;
 		}

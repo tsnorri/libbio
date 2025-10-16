@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 Tuukka Norri
+ * Copyright (c) 2018-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -572,7 +572,7 @@ namespace libbio {
 	template <typename t_value>
 	void array_list <t_value>::link_item(item_type &&item, size_type const idx)
 	{
-		libbio_assert_lt_msg(idx, m_items.size(), "Expected ", idx, " < ", m_items.size());
+		libbio_assert_lt(idx, m_items.size());
 
 		if (SIZE_MAX != item.prev)
 			m_items[item.prev].next = idx;

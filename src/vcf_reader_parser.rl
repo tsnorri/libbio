@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2024 Tuukka Norri
+ * Copyright (c) 2017-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -294,7 +294,7 @@ namespace libbio::vcf {
 
 				auto const &format_ptr(m_current_format_vec[subfield_idx]);
 				auto &samples(m_current_variant.m_samples);
-				libbio_always_assert_lt_msg(sample_idx, samples.size(), "Samples should be preallocated.");
+				libbio_always_assert_lt(sample_idx, samples.size(), "Samples should be preallocated.");
 				format_ptr->parse_and_assign(field_value, m_current_variant, samples[sample_idx]);
 
 				++subfield_idx;
@@ -304,7 +304,7 @@ namespace libbio::vcf {
 				subfield_idx = 0;
 				{
 					auto &samples(m_current_variant.m_samples);
-					libbio_always_assert_lt_msg(sample_idx, samples.size(), "Samples should be preallocated.");
+					libbio_always_assert_lt(sample_idx, samples.size(), "Samples should be preallocated.");
 					auto &current_sample(samples[sample_idx]);
 					current_sample.reset();
 					for (auto const *field_ptr : m_current_format_vec)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024 Tuukka Norri
+ * Copyright (c) 2019-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -22,7 +22,7 @@ namespace lb	= libbio;
 	\
 	template <typename t_lhs, typename t_rhs> \
 	void FN_NAME##_msg(t_lhs const &lhs, t_rhs const &rhs) { \
-		ASSERTION_NAME##_msg(lhs, rhs, "Test message"); \
+		ASSERTION_NAME(lhs, rhs, "Test message"); \
 	}
 
 
@@ -31,11 +31,9 @@ namespace lb	= libbio;
 	do { \
 		if ((EXPECTED_RES)) { \
 			CHECK_NOTHROW(ASSERTION((LHS), (RHS))); \
-			CHECK_NOTHROW(ASSERTION##_msg((LHS), (RHS))); \
 		} \
 		else { \
 			CHECK_THROWS_AS(ASSERTION((LHS), (RHS)), lb::assertion_failure_exception); \
-			CHECK_THROWS_AS(ASSERTION##_msg((LHS), (RHS)), lb::assertion_failure_exception); \
 		} \
 	} while (false)
 
@@ -56,7 +54,7 @@ namespace {
 	template <typename t_val>
 	void wrapped_assert_msg(t_val const &val)
 	{
-		libbio_always_assert_msg(val, "Test message");
+		libbio_always_assert(val, "Test message");
 	}
 
 	// ; not strictly required but makes the text editor happy.
