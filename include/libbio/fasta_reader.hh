@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Tuukka Norri
+ * Copyright (c) 2016-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -33,7 +33,7 @@ namespace libbio {
 	class fasta_reader_base
 	{
 	public:
-		typedef file_handle	handle_type;
+		typedef reading_handle	handle_type;
 
 		enum class parsing_status {
 			success,
