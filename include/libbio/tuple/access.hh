@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Tuukka Norri
+ * Copyright (c) 2022-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <tuple>
+#include <utility>
 
 
 namespace libbio::tuples::detail {
@@ -66,6 +67,25 @@ namespace libbio::tuples {
 		template <typename t_tuple>
 		using type = std::tuple_element_t <t_index, t_tuple>;
 	};
+
+
+	template <typename t_type>
+	struct size {};
+
+	template <typename... t_args>
+	struct size <std::tuple <t_args...>>
+	{
+		constexpr static std::size_t value{sizeof...(t_args)};
+	};
+
+	template <typename t_type, t_type... t_ints>
+	struct size <std::integer_sequence <t_type, t_ints...>>
+	{
+		constexpr static std::size_t value{sizeof...(t_ints)};
+	};
+
+	template <typename t_type>
+	constexpr static inline std::size_t size_v{size <t_type>::value};
 
 
 	template <typename t_tuple, typename t_default, std::size_t t_size = std::tuple_size_v <t_tuple>>
