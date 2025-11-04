@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Tuukka Norri
+ * Copyright (c) 2022-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -20,5 +20,6 @@
 #include <libbio/tuple/slice.hh>			// IWYU pragma: export
 #include <libbio/tuple/unique.hh>			// IWYU pragma: export
 #include <libbio/tuple/utility.hh>			// IWYU pragma: export
+#include <libbio/tuple/zip.hh>				// IWYU pragma: export
 
 #endif
