@@ -18,9 +18,11 @@ namespace libbio {
 	struct reading_handle
 	{
 		virtual ~reading_handle() {}
+		virtual void prepare() {}
 		std::size_t read(std::size_t const len, char *dst) { return read(len, reinterpret_cast <std::byte *>(dst)); }
 		virtual std::size_t read(std::size_t const len, std::byte *dst) = 0; // throws
 		virtual std::size_t io_op_blocksize() const = 0;
+		virtual void finish() {};
 	};
 
 
