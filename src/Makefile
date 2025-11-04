@@ -22,6 +22,7 @@ OBJECTS		=	bam_fields.o \
 				dispatch_thread_local_queue.o \
 				dispatch_thread_pool.o \
 				fasta_reader.o \
+				fastq_reader.o \
 				file_handle.o \
 				file_handle_buffered_writer.o \
 				file_handling.o \
