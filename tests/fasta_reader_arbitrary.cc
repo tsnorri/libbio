@@ -4,6 +4,7 @@
  */
 
 #include <array>
+#include <cstdint>
 #include <libbio/fasta_reader.hh>
 #include <libbio/file_handle.hh>
 #include <libbio/file_handling.hh>
@@ -11,8 +12,11 @@
 #include <libbio/rapidcheck_test_driver.hh>
 #include <libbio/rapidcheck/markov_chain.hh>
 #include <ostream>
+#include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/reverse.hpp>
 #include <range/v3/view/transform.hpp>
+#include <range/v3/view/zip.hpp>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -24,12 +28,12 @@
 namespace ios	= boost::iostreams;
 namespace lb	= libbio;
 namespace mcs	= libbio::markov_chains;
+namespace rsv	= ranges::views;
 
 
 namespace {
 
 	static std::string const sequence_characters{"ACGTUMRWSYKVHDBN-acgtumrwsykvhdbn"};
-	static std::string const comment_characters{"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_; "};
 	static std::string const header_characters{"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"};
 
 
@@ -44,8 +48,6 @@ namespace {
 	};
 
 	struct sequence_line : public line_base {};
-	struct comment_line : public line_base {};
-	struct initial_comment_line : public comment_line {};
 
 	struct initial_state
 	{
@@ -81,9 +83,8 @@ namespace {
 		enum class line_type : std::uint8_t
 		{
 			no_type		= 0,
-			comment		= 0x1,
-			header		= 0x2,
-			sequence	= 0x4
+			header		= 0x1,
+			sequence	= 0x2
 		};
 
 		typedef std::underlying_type_t <line_type> line_type_;
@@ -95,12 +96,6 @@ namespace {
 		/* implicit */ fasta_line(initial_state &&ll):
 			type(line_type::sequence),
 			content(std::move(ll.final_sequence_line.content))
-		{
-		}
-
-		/* implicit */ fasta_line(initial_comment_line &&ll):
-			type(line_type::comment),
-			content(std::move(ll.content))
 		{
 		}
 
@@ -117,12 +112,6 @@ namespace {
 		{
 		}
 
-		/* implicit */ fasta_line(comment_line &&ll):
-			type(line_type::comment),
-			content(std::move(ll.content))
-		{
-		}
-
 		decltype(auto) to_tuple() const { return std::tie(type, content, extra); }
 		bool operator==(fasta_line const &other) const { return to_tuple() == other.to_tuple(); }
 	};
@@ -132,10 +121,6 @@ namespace {
 	{
 		switch (line.type)
 		{
-			case fasta_line::line_type::comment:
-				os << ';' << line.content << '\n';
-				break;
-
 			case fasta_line::line_type::header:
 				os << '>' << line.content;
 				for (auto const &ee : line.extra)
@@ -172,16 +157,10 @@ namespace {
 		fasta_line,
 		initial_state,
 		mcs::transition_list <
-			mcs::transition <initial_state,			initial_comment_line,	0.5>,
-			mcs::transition <initial_state,			header_line,			0.5>,
-			mcs::transition <initial_comment_line,	initial_comment_line,	0.25>,
-			mcs::transition <initial_comment_line,	header_line,			0.75>,
-			mcs::transition <header_line,			sequence_line,			1.0>,
-			mcs::transition <sequence_line,			sequence_line,			0.5>,
-			mcs::transition <sequence_line,			comment_line,			0.2>,
-			mcs::transition <sequence_line,			header_line,			0.3>,
-			mcs::transition <comment_line,			header_line,			0.75>,
-			mcs::transition <comment_line,			comment_line,			0.25>
+			mcs::transition <initial_state, 		header_line,			1.0>,
+			mcs::transition <header_line, 			sequence_line,			1.0>,
+			mcs::transition <sequence_line, 		header_line,			0.5>,
+			mcs::transition <sequence_line, 		sequence_line,			0.5>
 		>
 	> test_input_markov_chain_type;
 }
@@ -217,30 +196,6 @@ namespace rc {
 				gen::nonEmpty(
 					gen::container <std::string>(gen::elementOf(sequence_characters))
 				)
-			);
-		}
-	};
-
-
-	template <>
-	struct Arbitrary <comment_line>
-	{
-		static Gen <comment_line> arbitrary()
-		{
-			return gen::construct <comment_line>(
-				gen::container <std::string>(gen::elementOf(comment_characters))
-			);
-		}
-	};
-
-
-	template <>
-	struct Arbitrary <initial_comment_line>
-	{
-		static Gen <initial_comment_line> arbitrary()
-		{
-			return gen::construct <initial_comment_line>(
-				gen::container <std::string>(gen::elementOf(comment_characters))
 			);
 		}
 	};
@@ -304,7 +259,7 @@ namespace rc {
 
 namespace {
 
-	struct fasta_reader_delegate final : public lb::fasta_reader_delegate
+	struct fasta_reader_delegate_ : public lb::fasta_reader_delegate
 	{
 		std::vector <fasta_line>	parsed_lines;
 		std::string					current_sequence_line;
@@ -333,71 +288,163 @@ namespace {
 			}
 			return true;
 		}
+	};
 
+
+	struct fasta_reader_delegate final : public fasta_reader_delegate_
+	{
 		bool handle_sequence_end(lb::fasta_reader_base &reader) override
 		{
 			return true;
 		}
+	};
 
-		bool handle_comment_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
+
+	struct fasta_reader_line_by_line_delegate final : public fasta_reader_delegate_
+	{
+		bool should_continue{};
+
+		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
 		{
-			parsed_lines.emplace_back(fasta_line{comment_line{std::string{sv}}});
-			return true;
+			should_continue = true;
+			return fasta_reader_delegate_::handle_identifier(reader, identifier, extra_fields);
+		}
+
+		bool handle_sequence_end(lb::fasta_reader_base &reader) override
+		{
+			return false;
 		}
 	};
+
+
+	class fasta_reader final : public lb::fasta_reader_base
+	{
+	private:
+		void report_unexpected_character(int const current_state) const override
+		{
+			throw std::runtime_error{"Unexpected character"};
+		}
+
+		void report_unexpected_eof(int const current_state) const override
+		{
+			throw std::runtime_error{"Unexpected EOF"};
+		}
+	};
+
+
+	template <typename t_cb>
+	void test_fasta_reader(fasta_input_with_sequence_headers const &input, t_cb &&cb)
+	{
+		// Report the line types in the current input.
+		fasta_line::line_type_ input_line_types_mask{};
+		for (auto const &line : input.lines)
+			input_line_types_mask |= std::to_underlying(line.type);
+		RC_TAG(input_line_types_mask);
+
+		std::array const blocksizes{0, 16, 64, 128, 256, 512, 1024, 2048};
+		for (auto const blocksize : blocksizes)
+		{
+			RC_LOG() << "blocksize: " << blocksize << '\n';
+
+			// Write the generated input to a pipe (to get a pair of file descriptors) and parse.
+			int fds[2]{};
+
+			{
+				auto const res(::pipe(fds));
+				RC_ASSERT(-1 != res);
+			}
+
+			lb::file_handle read_handle(fds[0]);
+			lb::file_handle write_handle(fds[1]);
+
+			{
+				std::thread write_thread([&, write_handle = std::move(write_handle)](){
+					lb::file_ostream write_stream;
+					write_stream.open(write_handle.get(), ios::never_close_handle);
+					write_stream.exceptions(std::ostream::badbit);
+
+					write_stream << input;
+				});
+				write_thread.detach();
+			}
+
+			cb(read_handle, blocksize);
+		}
+	}
+
+
+	bool compare_by_line(std::vector <fasta_line> const &lhs, std::vector <fasta_line> const &rhs)
+	{
+		if (lhs.size() != rhs.size())
+		{
+			RC_LOG() << "Size mismatch. lhs = " << lhs.size() << ", rhs = " << rhs.size() << '\n';
+			return false;
+		}
+
+		bool retval = true;
+		for (auto const &[lineno, tup] : rsv::zip(lhs, rhs) | rsv::enumerate)
+		{
+			auto const &[ll, rr] = tup;
+			if (ll != rr)
+			{
+				RC_LOG() << "Mismatch on line " << lineno << ".\n" << "lhs: " << ll << "\nrhs: " << rr << '\n';
+				retval = false;
+			}
+		}
+
+		return retval;
+	}
 }
 
 
 TEST_CASE(
-	"fasta_reader works with arbitrary input",
+	"fasta_reader can parse arbitrary input",
 	"[fasta_reader]"
 )
 {
 	return lb::rc_check(
-		"fasta_reader works with arbitrary input",
+		"fasta_reader can parse arbitrary input",
 		[](fasta_input_with_sequence_headers const &input){
-
-			// Report the line types in the current input.
-			fasta_line::line_type_ input_line_types_mask{};
-			for (auto const &line : input.lines)
-				input_line_types_mask |= std::to_underlying(line.type);
-			RC_TAG(input_line_types_mask);
-
-			std::array const blocksizes{0, 16, 64, 128, 256, 512, 1024, 2048};
-			for (auto const blocksize : blocksizes)
-			{
-				// Write the generated input to a pipe (to get a pair of file descriptors) and parse.
-				int fds[2]{};
-
-				{
-					auto const res(::pipe(fds));
-					RC_ASSERT(-1 != res);
-				}
-
-				lb::file_handle read_handle(fds[0]);
-				lb::file_handle write_handle(fds[1]);
-
-				{
-					std::thread write_thread([&, write_handle = std::move(write_handle)](){
-						lb::file_ostream write_stream;
-						write_stream.open(write_handle.get(), ios::never_close_handle);
-						write_stream.exceptions(std::ostream::badbit);
-
-						write_stream << input;
-					});
-					write_thread.detach();
-				}
-
-				lb::fasta_reader reader;
+			test_fasta_reader(input, [&](lb::reading_handle &read_handle, auto const blocksize){
+				fasta_reader reader;
 				fasta_reader_delegate delegate;
 				if (0 == blocksize)
 					reader.parse(read_handle, delegate);
 				else
 					reader.parse(read_handle, delegate, blocksize);
 
-				RC_ASSERT(input.lines == delegate.parsed_lines);
-			}
+				RC_ASSERT(compare_by_line(input.lines, delegate.parsed_lines));
+			});
+			return true;
+		}
+	);
+}
 
+
+TEST_CASE(
+	"fasta_reader can parse arbitrary input one block at a time",
+	"[fasta_reader]"
+)
+{
+	return lb::rc_check(
+		"fasta_reader can parse arbitrary input one block at a time",
+		[](fasta_input_with_sequence_headers const &input){
+			test_fasta_reader(input, [&](lb::reading_handle &read_handle, auto const blocksize){
+				fasta_reader reader;
+				fasta_reader_line_by_line_delegate delegate;
+				reader.prepare();
+
+				do
+				{
+					delegate.should_continue = false;
+					if (0 == blocksize)
+						reader.parse_(read_handle, delegate);
+					else
+						reader.parse_(read_handle, delegate, blocksize);
+				} while (delegate.should_continue);
+
+				RC_ASSERT(compare_by_line(input.lines, delegate.parsed_lines));
+			});
 			return true;
 		}
 	);

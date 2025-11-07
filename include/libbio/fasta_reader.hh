@@ -22,7 +22,6 @@ namespace libbio {
 	struct fasta_reader_delegate
 	{
 		virtual ~fasta_reader_delegate() {}
-		virtual bool handle_comment_line(fasta_reader_base &reader, std::string_view const &sv) = 0;
 		virtual bool handle_identifier(fasta_reader_base &reader, std::string_view const &sv, std::vector <std::string_view> const &additional_info) = 0;
 		virtual bool handle_sequence_chunk(fasta_reader_base &reader, std::string_view const &sv, bool has_newline) = 0; // The string view does not have the newline character.
 		virtual bool handle_sequence_end(fasta_reader_base &reader) = 0;
@@ -42,17 +41,33 @@ namespace libbio {
 		};
 
 	protected:
-		struct fsm
-		{
-			char const	*p{nullptr};
-			char const	*pe{nullptr};
-			char const	*eof{nullptr};
-		};
-
 		struct range
 		{
 			std::size_t pos{};
 			std::size_t end{};
+		};
+
+		struct fsm
+		{
+			char const	*p{};
+			char const	*pe{};
+			char const	*eof{};
+
+			char const *line_start{};
+			char const *text_start{};
+
+			range seq_identifier_range; // Relative to the current line.
+
+			std::size_t lineno{1};
+			int cs{};
+			bool in_sequence{};
+
+			constexpr fsm() = default;
+
+			explicit fsm(char const *text_start_):
+				text_start{text_start_}
+			{
+			}
 		};
 
 		// Try to save a bit of memory, as well as memory accesses.
@@ -77,21 +92,26 @@ namespace libbio {
 		fsm										m_fsm;
 
 	protected:
-		virtual void report_unexpected_character(char const *line_start, std::size_t const lineno, int const current_state) const = 0;
-		virtual void report_unexpected_eof(char const *line_start, std::size_t const lineno, int const current_state) const = 0;
+		virtual void report_unexpected_character(int current_state) const = 0;
+		virtual void report_unexpected_eof(int current_state) const = 0;
 
 	public:
 		parsing_status parse(handle_type &handle, fasta_reader_delegate &delegate, std::size_t blocksize);
 		parsing_status parse(handle_type &handle, fasta_reader_delegate &delegate) { return parse(handle, delegate, handle.io_op_blocksize()); }
+
+		// Prepare manually.
+		void prepare();
+		parsing_status parse_(handle_type &handle, fasta_reader_delegate &delegate, std::size_t blocksize);
+		parsing_status parse_(handle_type &handle, fasta_reader_delegate &delegate) { return parse_(handle, delegate, handle.io_op_blocksize()); }
 	};
 
 
 	class fasta_reader final : public fasta_reader_base
 	{
 	private:
-		[[noreturn]] void report_unexpected_character(char const *line_start, std::size_t const lineno, int const current_state) const override;
-		[[noreturn]] void report_unexpected_eof(char const *line_start, std::size_t const lineno, int const current_state) const override;
-		void output_buffer_end(char const *line_start) const;
+		[[noreturn]] void report_unexpected_character(int current_state) const override;
+		[[noreturn]] void report_unexpected_eof(int current_state) const override;
+		void output_buffer_end() const;
 	};
 
 
