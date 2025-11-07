@@ -25,12 +25,6 @@ namespace {
 	public:
 		std::stringstream const &stream() { return m_stream; }
 
-		bool handle_comment_line(lb::fasta_reader_base &reader, std::string_view const &sv) override
-		{
-			m_stream << ';' << sv << '\n';
-			return true;
-		}
-
 		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
 		{
 			m_stream << '>' << identifier;
@@ -108,7 +102,6 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 			{
 				auto const expected(handle_.to_string_view());
 				auto actual(cb.stream().str());
-				actual.pop_back();
 				REQUIRE(expected == actual);
 			}
 		}
@@ -128,7 +121,6 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 			{
 				auto const expected(handle_.to_string_view());
 				auto actual(cb.stream().str());
-				actual.pop_back();
 				REQUIRE(expected == actual);
 			}
 		}
@@ -167,7 +159,6 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 			{
 				auto const expected(handle_.to_string_view());
 				auto actual(cb.stream().str());
-				actual.pop_back();
 				REQUIRE(expected == actual);
 			}
 		}
@@ -187,7 +178,6 @@ SCENARIO("FASTA files can be parsed", "[fasta_reader]")
 			{
 				auto const expected(handle_.to_string_view());
 				auto actual(cb.stream().str());
-				actual.pop_back();
 				REQUIRE(expected == actual);
 			}
 		}

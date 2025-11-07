@@ -136,10 +136,10 @@ namespace libbio
 				++m_fsm.lineno;
 			}
 
-			// If fbreak is used in a final state action, the subsequent start state action
-			// will not be executed. (As of version 6.10, Ragel’s manual § 3.4 states that
-			// this happens only with to-state actions.) To resolve the issue, we update
-			// should_stop and check its value in the following start state action.
+			# If fbreak is used in a final state action, the subsequent start state action
+			# will not be executed. (As of version 6.10, Ragel’s manual § 3.4 states that
+			# this happens only with to-state actions.) To resolve the issue, we update
+			# should_stop and check its value in the following start state action.
 			action header {
 				m_fsm.line_start = fpc;
 				m_fsm.text_start = 1 + fpc;
@@ -178,7 +178,7 @@ namespace libbio
 				m_extra_fields.clear();
 			}
 
-			// See action header.
+			# See action header.
 			action sequence_line {
 				m_fsm.in_sequence = true;
 				m_fsm.line_start = fpc;
@@ -194,6 +194,11 @@ namespace libbio
 			action sequence_line_end {
 				m_fsm.in_sequence = false;
 				should_stop = !delegate.handle_sequence_chunk(*this, std::string_view{m_fsm.text_start, fpc}, true);
+			}
+
+			action sequence_line_end_no_eol {
+				m_fsm.in_sequence = false;
+				should_stop = !delegate.handle_sequence_chunk(*this, std::string_view{m_fsm.text_start, fpc}, false);
 			}
 
 			action sequence_end {
@@ -230,7 +235,7 @@ namespace libbio
 			# Allow missing final newline.
 
 			sequence_line			= ([A-Za-z*\-]+ nl) >sequence_line @sequence_line_end;
-			final_sequence_line_	= ([A-Za-z*\-]+) >sequence_line %eof(sequence_line_end);
+			final_sequence_line_	= ([A-Za-z*\-]+) >sequence_line %eof(sequence_line_end_no_eol);
 			final_sequence_line		= sequence_line | final_sequence_line_;
 
 			fasta_sequence			= (sequence_line+) %sequence_end;
