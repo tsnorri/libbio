@@ -9,9 +9,9 @@
 #include <libbio/file_handle.hh>
 #include <libbio/file_handling.hh>
 #include <libbio/mmap_file_handle.hh>
+#include <span>
 #include <sstream>
 #include <string_view>
-#include <vector>
 
 namespace lb	= libbio;
 
@@ -25,7 +25,7 @@ namespace {
 	public:
 		std::stringstream const &stream() { return m_stream; }
 
-		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
+		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view identifier, std::span <std::string_view const> extra_fields) override
 		{
 			m_stream << '>' << identifier;
 			for (auto const &extra : extra_fields)
@@ -34,7 +34,7 @@ namespace {
 			return true;
 		}
 
-		bool handle_sequence_chunk(lb::fasta_reader_base &reader, std::string_view const &sv, bool has_newline) override
+		bool handle_sequence_chunk(lb::fasta_reader_base &reader, std::string_view sv, bool has_newline) override
 		{
 			m_stream << sv;
 			if (has_newline)

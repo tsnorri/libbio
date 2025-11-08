@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <libbio/file_handle.hh>
+#include <span>
 #include <string_view>
 #include <type_traits>
 #include <vector>
@@ -22,8 +23,8 @@ namespace libbio {
 	struct fasta_reader_delegate
 	{
 		virtual ~fasta_reader_delegate() {}
-		virtual bool handle_identifier(fasta_reader_base &reader, std::string_view const &sv, std::vector <std::string_view> const &additional_info) = 0;
-		virtual bool handle_sequence_chunk(fasta_reader_base &reader, std::string_view const &sv, bool has_newline) = 0; // The string view does not have the newline character.
+		virtual bool handle_identifier(fasta_reader_base &reader, std::string_view sv, std::span <std::string_view const> additional_info) = 0;
+		virtual bool handle_sequence_chunk(fasta_reader_base &reader, std::string_view sv, bool has_newline) = 0; // The string view does not have the newline character.
 		virtual bool handle_sequence_end(fasta_reader_base &reader) = 0;
 	};
 

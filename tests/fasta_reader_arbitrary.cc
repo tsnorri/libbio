@@ -16,6 +16,7 @@
 #include <range/v3/view/reverse.hpp>
 #include <range/v3/view/transform.hpp>
 #include <range/v3/view/zip.hpp>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -264,7 +265,7 @@ namespace {
 		std::vector <fasta_line>	parsed_lines;
 		std::string					current_sequence_line;
 
-		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
+		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view identifier, std::span <std::string_view const> extra_fields) override
 		{
 			std::vector <std::string> extra_fields_;
 			extra_fields_.reserve(extra_fields.size());
@@ -278,7 +279,7 @@ namespace {
 			return true;
 		}
 
-		bool handle_sequence_chunk(lb::fasta_reader_base &reader, std::string_view const &sv, bool has_newline) override
+		bool handle_sequence_chunk(lb::fasta_reader_base &reader, std::string_view sv, bool has_newline) override
 		{
 			current_sequence_line += sv;
 			if (has_newline)
@@ -304,7 +305,7 @@ namespace {
 	{
 		bool should_continue{};
 
-		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra_fields) override
+		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view identifier, std::span <std::string_view const> extra_fields) override
 		{
 			should_continue = true;
 			return fasta_reader_delegate_::handle_identifier(reader, identifier, extra_fields);

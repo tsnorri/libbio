@@ -19,10 +19,10 @@ namespace libbio {
 	struct fastq_reader_delegate
 	{
 		virtual ~fastq_reader_delegate() {}
-		virtual bool handle_identifier(fastq_reader_base &reader, std::string_view const &sv) = 0;
-		virtual bool handle_sequence_chunk(fastq_reader_base &reader, std::string_view const &sv, bool has_newline) = 0; // The string view does not have the newline character.
+		virtual bool handle_identifier(fastq_reader_base &reader, std::string_view sv) = 0;
+		virtual bool handle_sequence_chunk(fastq_reader_base &reader, std::string_view sv, bool has_newline) = 0; // The string view does not have the newline character.
 		virtual bool handle_sequence_end(fastq_reader_base &reader) = 0;
-		virtual bool handle_quality_chunk(fastq_reader_base &reader, std::string_view const &sv, bool has_newline) = 0;
+		virtual bool handle_quality_chunk(fastq_reader_base &reader, std::string_view sv, bool has_newline) = 0;
 		virtual bool handle_quality_end(fastq_reader_base &reader) = 0;
 	};
 

@@ -15,6 +15,7 @@
 #include <thread>
 #include <tuple>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 
 namespace ios	= boost::iostreams;
@@ -107,14 +108,14 @@ namespace {
 	{
 		fastq_input input;
 
-		bool handle_identifier(lb::fastq_reader_base &reader, std::string_view const &sv) override
+		bool handle_identifier(lb::fastq_reader_base &reader, std::string_view sv) override
 		{
 			auto &block{input.blocks.emplace_back()};
 			block.header = sv;
 			return true;
 		}
 
-		bool handle_sequence_chunk(lb::fastq_reader_base &reader, std::string_view const &sv, bool has_newline) override
+		bool handle_sequence_chunk(lb::fastq_reader_base &reader, std::string_view sv, bool has_newline) override
 		{
 			input.blocks.back().sequence.append(sv);
 			return true;
@@ -125,7 +126,7 @@ namespace {
 			return true;
 		}
 
-		bool handle_quality_chunk(lb::fastq_reader_base &reader, std::string_view const &sv, bool has_newline) override
+		bool handle_quality_chunk(lb::fastq_reader_base &reader, std::string_view sv, bool has_newline) override
 		{
 			input.blocks.back().quality.append(sv);
 			return true;
@@ -146,7 +147,7 @@ namespace {
 	{
 		bool should_continue{};
 
-		bool handle_identifier(lb::fastq_reader_base &reader, std::string_view const &sv) override
+		bool handle_identifier(lb::fastq_reader_base &reader, std::string_view sv) override
 		{
 			should_continue = true;
 			return fastq_reader_delegate_::handle_identifier(reader, sv);

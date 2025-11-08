@@ -44,7 +44,7 @@ namespace
 		{
 		}
 
-		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view const &identifier, std::vector <std::string_view> const &extra) override
+		bool handle_identifier(lb::fasta_reader_base &reader, std::string_view identifier, std::span <std::string_view const> extra) override
 		{
 			// FIXME: Check if the identifier has multiple fields.
 			if (nullptr == m_sequence_id || identifier == m_sequence_id)
@@ -53,7 +53,7 @@ namespace
 			return true;
 		}
 
-		bool handle_sequence_chunk(lb::fasta_reader_base &reader, std::string_view const &sv, bool has_newline) override
+		bool handle_sequence_chunk(lb::fasta_reader_base &reader, std::string_view sv, bool has_newline) override
 		{
 			if (!m_is_copying)
 				return true;
@@ -173,7 +173,7 @@ namespace libbio
 					new (&extra.sv) std::string_view{m_fsm.line_start + range.pos, m_fsm.line_start + range.end};
 				}
 
-				auto const &extra_fields(reinterpret_cast <std::vector <std::string_view> const &>(m_extra_fields)); // FIXME: Is this UB?
+				std::span const extra_fields{reinterpret_cast <std::string_view *>(m_extra_fields.data()), m_extra_fields.size()};
 				should_stop = !delegate.handle_identifier(*this, seq_identifier, extra_fields);
 				m_extra_fields.clear();
 			}
