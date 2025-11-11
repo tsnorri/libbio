@@ -29,7 +29,7 @@ namespace {
 
 namespace libbio {
 
-	file_handle::~file_handle()
+	file_handle_::~file_handle_()
 	{
 		if (-1 != m_fd && m_should_close && !close())
 		{
@@ -39,7 +39,7 @@ namespace libbio {
 	}
 
 
-	bool file_handle::close()
+	bool file_handle_::close()
 	{
 		if (0 != ::close(m_fd))
 			return false;
@@ -48,7 +48,7 @@ namespace libbio {
 	}
 
 
-	std::size_t file_handle::seek(std::size_t const pos, int const whence)
+	std::size_t file_handle_::seek(std::size_t const pos, int const whence)
 	{
 		auto const res(::lseek(m_fd, pos, whence));
 		if (-1 == res)
@@ -58,7 +58,7 @@ namespace libbio {
 	}
 
 
-	std::size_t file_handle::read(std::size_t const len, std::byte * const dst)
+	std::size_t file_handle_::read(std::size_t const len, std::byte * const dst)
 	{
 		while (true)
 		{
@@ -76,7 +76,7 @@ namespace libbio {
 	}
 
 
-	std::size_t file_handle::write(char const *data, std::size_t const len)
+	std::size_t file_handle_::write(char const *data, std::size_t const len)
 	{
 		while (true)
 		{
@@ -94,7 +94,7 @@ namespace libbio {
 	}
 
 
-	void file_handle::truncate(std::size_t const len)
+	void file_handle_::truncate(std::size_t const len)
 	{
 		while (true)
 		{
@@ -112,7 +112,7 @@ namespace libbio {
 	}
 
 
-	void file_handle::stat(struct ::stat &sb) const
+	void file_handle_::stat(struct ::stat &sb) const
 	{
 		auto const res(::fstat(m_fd, &sb));
 		if (-1 == res)
@@ -120,7 +120,7 @@ namespace libbio {
 	}
 
 
-	std::size_t file_handle::io_op_blocksize() const
+	std::size_t file_handle_::io_op_blocksize() const
 	{
 		struct stat sb{};
 		stat(sb);

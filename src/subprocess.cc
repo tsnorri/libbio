@@ -48,20 +48,20 @@ namespace {
 	};
 
 
-	class file_handle final : public lb::file_handle
+	class file_handle final : public lb::file_handle_
 	{
 	protected:
 		file_handle_status_reporter	*m_sr{};
 
 	public:
 		explicit file_handle(file_handle_status_reporter &sr):
-			lb::file_handle(),
+			lb::file_handle_(),
 			m_sr(&sr)
 		{
 		}
 
 		file_handle(int fd, file_handle_status_reporter &sr):
-			lb::file_handle(fd, true),
+			lb::file_handle_(fd, true),
 			m_sr(&sr)
 		{
 		}
@@ -74,7 +74,17 @@ namespace {
 		{
 			if (-1 != m_fd && m_should_close && !close())
 				m_sr->handle_error();
-			libbio_assert_eq(-1, m_fd);
+			else
+				libbio_assert_eq(-1, m_fd);
+		}
+
+		operator lb::file_handle() const & = delete; // Prevent copying.
+
+		operator lb::file_handle() &&
+		{
+			auto const should_close{m_should_close};
+			m_should_close = false;
+			return lb::file_handle{m_fd, should_close};
 		}
 	};
 
@@ -176,7 +186,7 @@ namespace libbio::detail {
 		process_handle &ph,
 		char const * const args[],
 		subprocess_handle_spec const handle_spec,
-		lb::file_handle *dst_handles
+		lb::file_handle_ *dst_handles
 	) // nullptr-terminated list of arguments.
 	{
 		// Note that if this function is invoked simultaneously from different threads,
@@ -216,7 +226,7 @@ namespace libbio::detail {
 				// Redirect I/O.
 				{
 					auto it(res.stdio_handles.begin());
-					auto const handle_stdio_fh([&res, &it, &dn_handle, handle_spec, status_fd](lb::subprocess_handle_spec const spec, int const fd, int const oflags){
+					auto const handle_stdio_fh([&it, &dn_handle, handle_spec, status_fd](lb::subprocess_handle_spec const spec, int const fd, int const oflags){
 						if (std::to_underlying(handle_spec & spec))
 						{
 							if (-1 == ::dup2(it->get(), fd))

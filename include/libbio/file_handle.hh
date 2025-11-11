@@ -26,7 +26,7 @@ namespace libbio {
 	};
 
 
-	class file_handle : public reading_handle
+	class file_handle_ : public reading_handle
 	{
 	public:
 		typedef int	file_descriptor_type;
@@ -36,10 +36,10 @@ namespace libbio {
 		bool							m_should_close{};
 
 	public:
-		file_handle() = default;
+		file_handle_() = default;
 
 		// Takes ownership.
-		explicit file_handle(file_descriptor_type fd, bool should_close = true) noexcept:
+		explicit file_handle_(file_descriptor_type fd, bool should_close = true) noexcept:
 			m_fd(fd),
 			m_should_close(should_close)
 		{
@@ -48,13 +48,13 @@ namespace libbio {
 		using reading_handle::read;
 
 		// Copying not allowed.
-		file_handle(file_handle const &) = delete;
-		file_handle &operator=(file_handle const &) = delete;
+		file_handle_(file_handle_ const &) = delete;
+		file_handle_ &operator=(file_handle_ const &) = delete;
 
-		inline file_handle(file_handle &&other);
-		inline file_handle &operator=(file_handle &&other);
+		inline file_handle_(file_handle_ &&other);
+		inline file_handle_ &operator=(file_handle_ &&other);
 
-		virtual ~file_handle();
+		virtual ~file_handle_();
 
 		file_descriptor_type get() const { return m_fd; }
 
@@ -72,7 +72,13 @@ namespace libbio {
 	};
 
 
-	file_handle::file_handle(file_handle &&other)
+	class file_handle final : public file_handle_
+	{
+		using file_handle_::file_handle_;
+	};
+
+
+	file_handle_::file_handle_(file_handle_ &&other)
 	{
 		using std::swap;
 		swap(m_fd, other.m_fd);
@@ -80,7 +86,7 @@ namespace libbio {
 	}
 
 
-	file_handle &file_handle::operator=(file_handle &&other)
+	file_handle_ &file_handle_::operator=(file_handle_ &&other)
 	{
 		if (this != &other)
 		{
