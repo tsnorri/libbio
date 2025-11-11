@@ -4,7 +4,6 @@
  */
 
 #include <cstddef>
-#include <iostream>
 #include <libbio/assert.hh>
 #include <libbio/file_handle.hh>
 #include <libbio/gzip_read_handle.hh>
