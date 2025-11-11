@@ -15,5 +15,6 @@
 #include <libbio/utility/misc.hh>							// IWYU pragma: export
 #include <libbio/utility/smallest_unsigned_lockfree.hh>		// IWYU pragma: export
 #include <libbio/utility/string_hash.hh>					// IWYU pragma: export
+#include <libbio/utility/variable_guard.hh>					// IWYU pragma: export
 
 #endif
