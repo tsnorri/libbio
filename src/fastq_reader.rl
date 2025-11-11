@@ -74,14 +74,14 @@ namespace libbio {
 	}
 
 
-	auto fastq_reader_base::parse(handle_type &handle, fastq_reader_delegate &delegate, std::size_t blocksize) -> parsing_status
+	auto fastq_reader_base::parse(handle_type &handle, std::size_t blocksize) -> parsing_status
 	{
 		prepare();
-		return parse_(handle, delegate, blocksize);
+		return parse_(handle, blocksize);
 	}
 
 
-	auto fastq_reader_base::parse_(handle_type &handle, fastq_reader_delegate &delegate, std::size_t blocksize) -> parsing_status
+	auto fastq_reader_base::parse_(handle_type &handle, std::size_t blocksize) -> parsing_status
 	{
 		if (0U == blocksize)
 			blocksize = 16384U; // Best guess.
@@ -99,7 +99,7 @@ namespace libbio {
 			}
 
 			action identifier_end {
-				if (!delegate.handle_identifier(*this, std::string_view{m_fsm.line_start + 1U, fpc}))
+				if (!m_delegate->handle_identifier(*this, std::string_view{m_fsm.line_start + 1U, fpc}))
 				{
 					++fpc;
 					return parsing_status::cancelled;
@@ -117,7 +117,7 @@ namespace libbio {
 					std::string_view sv{m_fsm.text_start, fpc};
 					m_fsm.state = handling_state::none;
 					m_fsm.sequence_length += sv.size();
-					if (!delegate.handle_sequence_chunk(*this, sv, true))
+					if (!m_delegate->handle_sequence_chunk(*this, sv, true))
 					{
 						++fpc;
 						return parsing_status::cancelled;
@@ -126,7 +126,7 @@ namespace libbio {
 			}
 
 			action sequence_end {
-				if (!delegate.handle_sequence_end(*this))
+				if (!m_delegate->handle_sequence_end(*this))
 				{
 					++fpc;
 					return parsing_status::cancelled;
@@ -145,7 +145,7 @@ namespace libbio {
 					m_fsm.state = handling_state::none;
 					m_fsm.quality_length += sv.size();
 
-					if (!delegate.handle_quality_chunk(*this, sv, true))
+					if (!m_delegate->handle_quality_chunk(*this, sv, true))
 					{
 						++fpc;
 						return parsing_status::cancelled;
@@ -154,7 +154,7 @@ namespace libbio {
 					if (m_fsm.sequence_length == m_fsm.quality_length)
 					{
 						fnext main;
-						if (!delegate.handle_quality_end(*this))
+						if (!m_delegate->handle_quality_end(*this))
 						{
 							++fpc;
 							return parsing_status::cancelled;
@@ -253,7 +253,7 @@ namespace libbio {
 				{
 					std::string_view sv{m_fsm.text_start, m_fsm.p};
 					m_fsm.sequence_length += sv.size();
-					if (m_fsm.text_start < m_fsm.p && !delegate.handle_sequence_chunk(*this, sv, false))
+					if (m_fsm.text_start < m_fsm.p && !m_delegate->handle_sequence_chunk(*this, sv, false))
 						return parsing_status::cancelled;
 					clear_buffer();
 					break;
@@ -265,7 +265,7 @@ namespace libbio {
 					m_fsm.quality_length += sv.size();
 					if (m_fsm.sequence_length < m_fsm.quality_length)
 						report_length_mismatch(m_fsm.cs);
-					if (m_fsm.text_start < m_fsm.p && !delegate.handle_quality_chunk(*this, sv, false))
+					if (m_fsm.text_start < m_fsm.p && !m_delegate->handle_quality_chunk(*this, sv, false))
 						return parsing_status::cancelled;
 					clear_buffer();
 					break;

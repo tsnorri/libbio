@@ -117,14 +117,14 @@ namespace libbio
 	}
 
 
-	auto fasta_reader_base::parse(handle_type &handle, fasta_reader_delegate &delegate, std::size_t blocksize) -> parsing_status
+	auto fasta_reader_base::parse(handle_type &handle, std::size_t blocksize) -> parsing_status
 	{
 		prepare();
-		return parse_(handle, delegate, blocksize);
+		return parse_(handle, blocksize);
 	}
 
 
-	auto fasta_reader_base::parse_(handle_type &handle, fasta_reader_delegate &delegate, std::size_t blocksize) -> parsing_status
+	auto fasta_reader_base::parse_(handle_type &handle, std::size_t blocksize) -> parsing_status
 	{
 		if (0 == blocksize)
 			blocksize = 16384; // Best guess.
@@ -174,7 +174,7 @@ namespace libbio
 				}
 
 				std::span const extra_fields{reinterpret_cast <std::string_view *>(m_extra_fields.data()), m_extra_fields.size()};
-				should_stop = !delegate.handle_identifier(*this, seq_identifier, extra_fields);
+				should_stop = !m_delegate->handle_identifier(*this, seq_identifier, extra_fields);
 				m_extra_fields.clear();
 			}
 
@@ -193,16 +193,16 @@ namespace libbio
 
 			action sequence_line_end {
 				m_fsm.in_sequence = false;
-				should_stop = !delegate.handle_sequence_chunk(*this, std::string_view{m_fsm.text_start, fpc}, true);
+				should_stop = !m_delegate->handle_sequence_chunk(*this, std::string_view{m_fsm.text_start, fpc}, true);
 			}
 
 			action sequence_line_end_no_eol {
 				m_fsm.in_sequence = false;
-				should_stop = !delegate.handle_sequence_chunk(*this, std::string_view{m_fsm.text_start, fpc}, false);
+				should_stop = !m_delegate->handle_sequence_chunk(*this, std::string_view{m_fsm.text_start, fpc}, false);
 			}
 
 			action sequence_end {
-				should_stop = !delegate.handle_sequence_end(*this);
+				should_stop = !m_delegate->handle_sequence_end(*this);
 			}
 
 			action unexpected_eof {
@@ -279,7 +279,7 @@ namespace libbio
 			// Otherwise preserve the current line.
 			if (m_fsm.in_sequence)
 			{
-				if (m_fsm.text_start < m_fsm.p && !delegate.handle_sequence_chunk(*this, std::string_view{m_fsm.text_start, m_fsm.p}, false))
+				if (m_fsm.text_start < m_fsm.p && !m_delegate->handle_sequence_chunk(*this, std::string_view{m_fsm.text_start, m_fsm.p}, false))
 					return parsing_status::cancelled;
 
 				m_buffer.clear();

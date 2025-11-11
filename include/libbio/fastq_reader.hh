@@ -7,7 +7,10 @@
 #define LIBBIO_FASTQ_READER_HH
 
 #include <cstddef>
+#include <cstdint>
 #include <libbio/file_handle.hh>
+#include <libbio/sequence_reader.hh>
+#include <libbio/utility/variable_guard.hh>
 #include <string_view>
 #include <vector>
 
@@ -28,17 +31,9 @@ namespace libbio {
 
 
 	// Suitable for reading whole files, i.e. no random access.
-	class fastq_reader_base
+	class fastq_reader_base : public sequence_reader
 	{
 	public:
-		typedef reading_handle	handle_type;
-
-		enum class parsing_status {
-			success,
-			failure,
-			cancelled
-		};
-
 		enum class handling_state
 		{
 			none,
@@ -74,6 +69,7 @@ namespace libbio {
 	protected:
 		std::vector <char>						m_buffer;
 		fsm										m_fsm;
+		fastq_reader_delegate					*m_delegate{};
 
 	protected:
 		virtual void report_unexpected_character(int current_state) const = 0;
@@ -83,13 +79,19 @@ namespace libbio {
 	public:
 		virtual ~fastq_reader_base() {}
 
-		parsing_status parse(handle_type &handle, fastq_reader_delegate &delegate, std::size_t blocksize);
+		void set_delegate(fastq_reader_delegate &delegate) { m_delegate = &delegate; }
+
+		parsing_status parse(handle_type &handle, std::size_t blocksize) final;
+		parsing_status parse(handle_type &handle, fastq_reader_delegate &delegate, std::size_t blocksize) { variable_guard gg{m_delegate, delegate}; return parse(handle, blocksize); }
 		parsing_status parse(handle_type &handle, fastq_reader_delegate &delegate) { return parse(handle, delegate, handle.io_op_blocksize()); }
 
 		// Prepare manually.
-		void prepare();
-		parsing_status parse_(handle_type &handle, fastq_reader_delegate &delegate, std::size_t blocksize);
+		void prepare() final;
+		parsing_status parse_(handle_type &handle, std::size_t blocksize) final;
+		parsing_status parse_(handle_type &handle, fastq_reader_delegate &delegate, std::size_t blocksize) { variable_guard gg{m_delegate, delegate}; return parse_(handle, blocksize); }
 		parsing_status parse_(handle_type &handle, fastq_reader_delegate &delegate) { return parse_(handle, delegate, handle.io_op_blocksize()); }
+
+		std::uint64_t line_number() const final { return m_fsm.lineno; }
 	};
 
 
