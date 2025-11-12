@@ -86,6 +86,8 @@ namespace libbio {
 		if (0U == blocksize)
 			blocksize = 16384U; // Best guess.
 
+		bool should_stop{};
+
 		%%{
 			action handle_newline {
 				++m_fsm.lineno;
@@ -101,8 +103,8 @@ namespace libbio {
 			action identifier_end {
 				if (!m_delegate->handle_identifier(*this, std::string_view{m_fsm.line_start + 1U, fpc}))
 				{
-					++fpc;
-					return parsing_status::cancelled;
+					should_stop = true;
+					fbreak;
 				}
 			}
 
@@ -119,8 +121,8 @@ namespace libbio {
 					m_fsm.sequence_length += sv.size();
 					if (!m_delegate->handle_sequence_chunk(*this, sv, true))
 					{
-						++fpc;
-						return parsing_status::cancelled;
+						should_stop = true;
+						fbreak;
 					}
 				}
 			}
@@ -128,8 +130,8 @@ namespace libbio {
 			action sequence_end {
 				if (!m_delegate->handle_sequence_end(*this))
 				{
-					++fpc;
-					return parsing_status::cancelled;
+					should_stop = true;
+					fbreak;
 				}
 			}
 
@@ -147,8 +149,8 @@ namespace libbio {
 
 					if (!m_delegate->handle_quality_chunk(*this, sv, true))
 					{
-						++fpc;
-						return parsing_status::cancelled;
+						should_stop = true;
+						fbreak;
 					}
 
 					if (m_fsm.sequence_length == m_fsm.quality_length)
@@ -156,8 +158,8 @@ namespace libbio {
 						fnext main;
 						if (!m_delegate->handle_quality_end(*this))
 						{
-							++fpc;
-							return parsing_status::cancelled;
+							should_stop = true;
+							fbreak;
 						}
 					}
 					else if (m_fsm.sequence_length < m_fsm.quality_length)
@@ -173,17 +175,17 @@ namespace libbio {
 
 			action unexpected_eof {
 				report_unexpected_eof(fcurs);
-				return parsing_status::failure;
+				return parsing_status::failure; // No need to preserve state.
 			}
 
 			action main_eof {
-				return parsing_status::success;
+				return parsing_status::success; // No need to preserve state.
 			}
 
 			action error {
 				libbio_always_assert(fpc != m_fsm.pe);
 				report_unexpected_character(fcurs);
-				return parsing_status::failure;
+				return parsing_status::failure; // No need to preserve state.
 			}
 
 			access			m_fsm.;
@@ -193,7 +195,7 @@ namespace libbio {
 
 			nl					= "\n"											@handle_newline;
 
-			seqname_			= [A-Za-z0-9_.:\-]+;
+			seqname_			= [A-Za-z0-9_.:\- ]+;
 			seqname				= ("@" seqname_ nl)								>identifier_line @identifier_end <eof(unexpected_eof);
 
 			sequence_			= [A-Za-z\.~]+;
@@ -238,6 +240,9 @@ namespace libbio {
 			}
 
 			%% write exec;
+
+			if (should_stop)
+				return parsing_status::cancelled;
 
 			// If we’re currently handling a sequence or a quality string, pass it to the delegate.
 			// Otherwise preserve the current line.
