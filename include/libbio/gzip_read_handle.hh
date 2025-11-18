@@ -26,6 +26,11 @@ namespace libbio {
 		std::size_t			m_io_op_blocksize{};
 
 	public:
+		constexpr gzip_reading_handle() = default;
+		gzip_reading_handle(gzip_reading_handle const &) = delete;
+		gzip_reading_handle(gzip_reading_handle &&) = default;
+		gzip_reading_handle &operator=(gzip_reading_handle const &) = delete;
+		gzip_reading_handle &operator=(gzip_reading_handle &&) & = default;
 		~gzip_reading_handle() { ::inflateEnd(&m_stream); }
 
 		void prepare() override; // Call once before using.
