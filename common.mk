@@ -5,7 +5,7 @@ SHELL			?= /bin/bash
 
 # Default values.
 WARNING_FLAGS_		?=
-WARNING_FLAGS		?= -Wall -Werror -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-unused -Wno-misleading-indentation -Wno-interference-size $(WARNING_FLAGS_)
+WARNING_FLAGS		?= -Wall -Werror -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-unused -Wno-misleading-indentation $(WARNING_FLAGS_)
 WARNING_CXXFLAGS_	?=
 WARNING_CXXFLAGS	?= $(WARNING_CXXFLAGS_)
 OPT_FLAGS			?= -O2 -g
@@ -35,8 +35,13 @@ RM				?= rm
 GCOV			?= gcov
 GCOVR			?= gcovr
 
-BOOST_ROOT		?= /usr
+BOOST_ROOT		?=
+
+ifeq ($(BOOST_ROOT),)
+BOOST_INCLUDE	?=
+else
 BOOST_INCLUDE	?= -isystem $(BOOST_ROOT)/include
+endif
 
 IQUOTE			=
 ifneq ($(strip $(VPATH)),)
