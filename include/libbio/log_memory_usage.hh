@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2023-2024 Tuukka Norri
+ * Copyright (c) 2023-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
+
+#if defined(LIBBIO_ENABLE_MEMORY_LOGGER) && LIBBIO_ENABLE_MEMORY_LOGGER
 
 #ifndef LIBBIO_LOG_MEMORY_USAGE_HH
 #define LIBBIO_LOG_MEMORY_USAGE_HH
@@ -222,4 +224,5 @@ namespace libbio {
 	}
 }
 
+#endif
 #endif

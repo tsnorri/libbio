@@ -1,7 +1,11 @@
 /*
- * Copyright (c) 2024 Tuukka Norri
+ * Copyright (c) 2024-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
+
+#if defined(LIBBIO_ENABLE_MEMORY_LOGGER) && LIBBIO_ENABLE_MEMORY_LOGGER
+
+// FIXME: GCC 15 reported a potential bug when compiling. See if there actually is one.
 
 #include <boost/endian/conversion.hpp> // boost::endian::big_to_native
 #include <cerrno>
@@ -265,3 +269,5 @@ namespace libbio::memory_logger {
 		os << event_data();
 	}
 }
+
+#endif
