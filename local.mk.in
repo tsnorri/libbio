@@ -1,0 +1,6 @@
+WARNING_FLAGS	= @WARNING_FLAGS@
+
+AR              = @AR@ 
+CC              = @CC@ 
+CXX             = @CXX@
+RAGEL           = @RAGEL@
