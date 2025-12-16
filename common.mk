@@ -53,11 +53,6 @@ CXXFLAGS		+= -std=c++2b $(OPT_FLAGS) $(WARNING_FLAGS) $(WARNING_CXXFLAGS) $(SYST
 CPPFLAGS    	+= -I../include -isystem ../lib/range-v3/include $(BOOST_INCLUDE) $(SYSTEM_CPPFLAGS) $(IQUOTE)
 LDFLAGS			+= $(SYSTEM_LDFLAGS) -lz
 
-# Assume that swift-corelibs-libdispatch is a submodule of the containing project (for now).
-ifeq ($(shell uname -s),Linux)
-	CPPFLAGS    += -I../../swift-corelibs-libdispatch
-endif
-
 %.cov.o: %.cc
 	$(CXX) -c --coverage $(CXXFLAGS) $(CPPFLAGS) -o $@ $<
 
