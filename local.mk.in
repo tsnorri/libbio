@@ -1,3 +1,7 @@
+# @configure_input@
+
+USE_GENERATED_CONFIG_H	= 1
+
 WARNING_FLAGS	= @WARNING_FLAGS@
 
 AR              = @AR@ 
