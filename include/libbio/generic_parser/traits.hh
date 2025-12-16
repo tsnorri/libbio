@@ -26,7 +26,7 @@ namespace libbio::parsing::traits {
 			typedef t_line_sep	line_separator_type;
 
 			template <std::size_t t_i, typename t_next_field>
-			constexpr static inline enum field_position const field_position_()
+			constexpr static inline enum field_position field_position_()
 			{
 				if constexpr (1 == t_field_count)
 				{
