@@ -43,6 +43,12 @@ else
 BOOST_INCLUDE	?= -isystem $(BOOST_ROOT)/include
 endif
 
+ifeq ($(USE_GENERATED_CONFIG_H),1)
+CPPFLAGS += -include ../configuration/config.h
+else
+CPPFLAGS += -include ../configuration/config.default.h
+endif
+
 IQUOTE			=
 ifneq ($(strip $(VPATH)),)
 	IQUOTE += -iquote $(VPATH)

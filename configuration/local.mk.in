@@ -2,9 +2,14 @@
 
 USE_GENERATED_CONFIG_H	= 1
 
-WARNING_FLAGS	= @WARNING_FLAGS@
-
 AR              = @AR@ 
 CC              = @CC@ 
 CXX             = @CXX@
 RAGEL           = @RAGEL@
+
+WARNING_FLAGS	= @WARNING_FLAGS@
+
+CPPFLAGS		= @CPPFLAGS@
+CFLAGS			= @CFLAGS@
+CXXFLAGS		= @CXXFLAGS@
+LDFLAGS			= @LDFLAGS@

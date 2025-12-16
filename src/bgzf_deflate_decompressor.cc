@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2024 Tuukka Norri
+ * Copyright (c) 2024-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
+
+#if defined(LIBBIO_ENABLE_BGZF_DECOMPRESSOR) && LIBBIO_ENABLE_BGZF_DECOMPRESSOR
 
 #include <cstddef>
 #include <libbio/bgzf/deflate_decompressor.hh>
@@ -30,3 +32,5 @@ namespace libbio::bgzf::detail {
 		return std::span(out.data(), bytes_written);
 	}
 }
+
+#endif

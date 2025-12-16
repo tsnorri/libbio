@@ -3,7 +3,7 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#if defined(LIBBIO_ENABLE_MEMORY_LOGGER) && LIBBIO_ENABLE_MEMORY_LOGGER
+#if defined(LIBBIO_ENABLE_MEMORY_LOGGER_SUPPORT) && LIBBIO_ENABLE_MEMORY_LOGGER_SUPPORT
 
 // FIXME: GCC 15 reported a potential bug when compiling. See if there actually is one.
 
