@@ -1,6 +1,7 @@
 .DS_Store
 
 # Generated files
+/configuration/config.h
 /msa-identity-regions/cmdline.c
 /msa-identity-regions/cmdline.h
 /msa-identity-regions/msa_identity_regions
@@ -8,6 +9,9 @@
 /rapidcheck-test-driver/cmdline.h
 /read-allocation-log/read_allocation_log
 /src/fasta_reader.cc
+/src/fasta_reader.pdf
+/src/fastq_reader.cc
+/src/fastq_reader.pdf
 /src/subprocess_argument_parser.cc
 /src/subprocess_argument_parser.pdf
 /src/vcf_genotype_field_gt_parser.cc
