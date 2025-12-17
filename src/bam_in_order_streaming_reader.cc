@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2024 Tuukka Norri
+ * Copyright (c) 2024-2025 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
+
+#if defined(LIBBIO_ENABLE_BAM_PARSER) && LIBBIO_ENABLE_BAM_PARSER
 
 #include <algorithm>
 #include <functional>
@@ -120,3 +122,5 @@ namespace libbio::bam {
 		}
 	}
 }
+
+#endif

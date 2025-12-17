@@ -33,8 +33,9 @@ AC_PROG_CXX
 AC_CHECK_TOOL([AR], [ar], [:])
 AC_PATH_PROG([RAGEL], [ragel])
 
-libbio_enable_arg([memory-logger-support], [yes], [enable memory logger support])
+libbio_enable_arg([bam-parser], [yes], [enable BAM parser, requires libdeflate])
 libbio_enable_arg([bgzf-decompressor], [yes], [enable BGZF decompressor, requires libdeflate])
+libbio_enable_arg([memory-logger-support], [yes], [enable memory logger support])
 
 AC_LANG([C++])
 

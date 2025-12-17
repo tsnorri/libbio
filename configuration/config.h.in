@@ -31,6 +31,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* enable BAM parser, requires libdeflate */
+#undef LIBBIO_ENABLE_BAM_PARSER
+
 /* enable BGZF decompressor, requires libdeflate */
 #undef LIBBIO_ENABLE_BGZF_DECOMPRESSOR
 
