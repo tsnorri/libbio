@@ -45,6 +45,7 @@ AX_CHECK_COMPILE_FLAG([-Werror], [WARNING_FLAGS="${WARNING_FLAGS} -Werror"])
 AX_CHECK_COMPILE_FLAG([-Wno-deprecated-declarations], [WARNING_FLAGS="${WARNING_FLAGS} -Wno-deprecated-declarations"])
 AX_CHECK_COMPILE_FLAG([-Wno-unknown-pragmas], [WARNING_FLAGS="${WARNING_FLAGS} -Wno-unknown-pragmas"])
 AX_CHECK_COMPILE_FLAG([-Wno-unused], [WARNING_FLAGS="${WARNING_FLAGS} -Wno-unused"])
+AX_CHECK_COMPILE_FLAG([-Wno-shadow], [WARNING_FLAGS="${WARNING_FLAGS} -Wno-shadow"])
 AX_CHECK_COMPILE_FLAG([-Wno-misleading-indentation], [WARNING_FLAGS="${WARNING_FLAGS} -Wno-misleading-indentation"])
 AX_CHECK_COMPILE_FLAG([-Wno-error=interference-size], [WARNING_FLAGS="${WARNING_FLAGS} -Wno-error=interference-size"])
 

@@ -5,7 +5,7 @@ SHELL			?= /bin/bash
 
 # Default values.
 WARNING_FLAGS_		?=
-WARNING_FLAGS		?= -Wall -Werror -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-unused -Wno-misleading-indentation $(WARNING_FLAGS_)
+WARNING_FLAGS		?= -Wall -Werror -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-unused -Wno-misleading-indentation -Wno-shadow $(WARNING_FLAGS_)
 WARNING_CXXFLAGS_	?=
 WARNING_CXXFLAGS	?= $(WARNING_CXXFLAGS_)
 OPT_FLAGS			?= -O2 -g
