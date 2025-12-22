@@ -31,9 +31,9 @@ namespace libbio {
 		std::size_t lanes{hwy::HWY_NAMESPACE::Lanes(dd)};
 #endif
 
-		static auto set(value_type val) { return hwy::HWY_NAMESPACE::Set(dd, val); }
-		static void store_(vector_type const vec, value_type *dst) { hwy::HWY_NAMESPACE::Store(vec, dd, dst); }
-		static void store_unaligned_(vector_type const vec, value_type *dst) { hwy::HWY_NAMESPACE::StoreU(vec, dd, dst); }
+		HWY_ATTR static auto set(value_type val) { return hwy::HWY_NAMESPACE::Set(dd, val); }
+		HWY_ATTR static void store_(vector_type const vec, value_type *dst) { hwy::HWY_NAMESPACE::Store(vec, dd, dst); }
+		HWY_ATTR static void store_unaligned_(vector_type const vec, value_type *dst) { hwy::HWY_NAMESPACE::StoreU(vec, dd, dst); }
 
 		template <typename t_limit>
 		struct callback
@@ -48,12 +48,12 @@ namespace libbio {
 #endif
 
 			constexpr bool is_handling_remaining() const { return false; }
-			auto set(value_type val) const { return hwy_apply::set(val); }
-			auto load(value_type const *src) const { return hwy::HWY_NAMESPACE::Load(dd, src + ii); }
-			void store(vector_type const vec, value_type *dst) const { hwy_apply::store_(vec, dst + ii); }
-			void store_(vector_type const vec, value_type *dst) const { hwy_apply::store_(vec, dst); }
-			void store_unaligned(vector_type const vec, value_type *dst) const { hwy_apply::store_unaligned_(vec, dst + ii); }
-			void store_unaligned_(vector_type const vec, value_type *dst) const { hwy_apply::store_unaligned_(vec, dst); }
+			HWY_ATTR auto set(value_type val) const { return hwy_apply::set(val); }
+			HWY_ATTR auto load(value_type const *src) const { return hwy::HWY_NAMESPACE::Load(dd, src + ii); }
+			HWY_ATTR void store(vector_type const vec, value_type *dst) const { hwy_apply::store_(vec, dst + ii); }
+			HWY_ATTR void store_(vector_type const vec, value_type *dst) const { hwy_apply::store_(vec, dst); }
+			HWY_ATTR void store_unaligned(vector_type const vec, value_type *dst) const { hwy_apply::store_unaligned_(vec, dst + ii); }
+			HWY_ATTR void store_unaligned_(vector_type const vec, value_type *dst) const { hwy_apply::store_unaligned_(vec, dst); }
 		};
 
 		template <typename t_limit>
@@ -71,19 +71,19 @@ namespace libbio {
 			t_limit count() const { return remaining; }
 			constexpr bool is_handling_first() const { return false; }
 			constexpr bool is_handling_remaining() const { return true; }
-			auto set(value_type val) const { return hwy_apply::set(val); }
-			auto load(value_type const *src) const { return hwy::HWY_NAMESPACE::LoadN(dd, src + ii, remaining); }
-			void store(vector_type const vec, value_type *dst) const { hwy::HWY_NAMESPACE::StoreN(vec, dd, dst + ii, remaining); }
-			void store_(vector_type const vec, value_type *dst) const { hwy::HWY_NAMESPACE::StoreN(vec, dd, dst, remaining); }
-			void store_unaligned(vector_type const vec, value_type *dst) const { hwy::HWY_NAMESPACE::StoreN(vec, dd + ii, dst, remaining); }
-			void store_unaligned_(vector_type const vec, value_type *dst) const { hwy::HWY_NAMESPACE::StoreN(vec, dd, dst, remaining); }
+			HWY_ATTR auto set(value_type val) const { return hwy_apply::set(val); }
+			HWY_ATTR auto load(value_type const *src) const { return hwy::HWY_NAMESPACE::LoadN(dd, src + ii, remaining); }
+			HWY_ATTR void store(vector_type const vec, value_type *dst) const { hwy::HWY_NAMESPACE::StoreN(vec, dd, dst + ii, remaining); }
+			HWY_ATTR void store_(vector_type const vec, value_type *dst) const { hwy::HWY_NAMESPACE::StoreN(vec, dd, dst, remaining); }
+			HWY_ATTR void store_unaligned(vector_type const vec, value_type *dst) const { hwy::HWY_NAMESPACE::StoreN(vec, dd + ii, dst, remaining); }
+			HWY_ATTR void store_unaligned_(vector_type const vec, value_type *dst) const { hwy::HWY_NAMESPACE::StoreN(vec, dd, dst, remaining); }
 		};
 
 
 		template <typename t_limit, typename t_fn>
 		[[clang::always_inline]]
 		[[gnu::always_inline]]
-		inline void handle_remaining(t_limit ii, t_limit const limit, t_fn &&fn) const
+		HWY_ATTR void handle_remaining(t_limit ii, t_limit const limit, t_fn &&fn) const
 		{
 			remaining_callback callback{ii, limit};
 			if (callback)
@@ -92,7 +92,7 @@ namespace libbio {
 
 
 		template <typename t_limit, bool t_needs_to_check_remaining, typename t_fn>
-		void operator()(t_limit const limit, std::bool_constant <t_needs_to_check_remaining>, t_fn &&fn) const
+		HWY_ATTR void operator()(t_limit const limit, std::bool_constant <t_needs_to_check_remaining>, t_fn &&fn) const
 		{
 			auto const pos{[&] -> t_limit {
 				callback <t_limit> callback{};
@@ -112,7 +112,7 @@ namespace libbio {
 
 
 		template <typename t_limit, typename t_fn>
-		void operator()(t_limit const limit, t_fn &&fn) const
+		HWY_ATTR void operator()(t_limit const limit, t_fn &&fn) const
 		{
 			operator()(limit, std::true_type{}, std::forward <t_fn>(fn));
 		}
