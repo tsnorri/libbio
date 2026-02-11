@@ -187,7 +187,7 @@ namespace libbio::detail {
 		t_args && ... args
 	)
 	{
-		if (!test)
+		if (!test) [[unlikely]]
 			assertion_failure_(file, line, test_str, std::format(fmt, file, line, test_str, process_for_assertion_format(std::forward <t_args>(args))...));
 	}
 
@@ -205,7 +205,7 @@ namespace libbio::detail {
 	)
 	{
 		t_test test;
-		if (!test(lhs, rhs))
+		if (!test(lhs, rhs)) [[unlikely]]
 		{
 			auto const check_formattable([&]<typename t_value>(t_value &&value, auto &&cb){
 				if constexpr (std::formattable <t_value, char>)
