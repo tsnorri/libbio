@@ -6,15 +6,21 @@
 #ifndef LIBBIO_SYNCSTREAM_HH
 #define LIBBIO_SYNCSTREAM_HH
 
-#include <boost/iostreams/categories.hpp> // sink_tag
-#include <boost/iostreams/concepts.hpp> // sink
-#include <boost/iostreams/stream.hpp>
 #include <ios>
 #include <mutex>
 #include <ostream>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+
+#include <version>
+#if defined(__cpp_lib_syncbuf)
+#	include <syncstream>
+#else
+#	include <boost/iostreams/categories.hpp> // sink_tag
+#	include <boost/iostreams/concepts.hpp> // sink
+#	include <boost/iostreams/stream.hpp>
+#endif
 
 
 namespace libbio::detail {
