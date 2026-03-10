@@ -8,7 +8,6 @@
 
 #include <libbio/algorithm/merge_projected.hh>			// IWYU pragma: export
 #include <libbio/algorithm/min_max.hh>					// IWYU pragma: export
-#include <libbio/algorithm/pearson_correlation.hh>		// IWYU pragma: export
 #include <libbio/algorithm/reverse_bits.hh>				// IWYU pragma: export
 #include <libbio/algorithm/set_count.hh>				// IWYU pragma: export
 #include <libbio/algorithm/set_difference_inplace.hh>	// IWYU pragma: export
