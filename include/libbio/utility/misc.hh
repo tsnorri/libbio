@@ -33,7 +33,7 @@ namespace libbio {
 	struct aggregate : public t_args...
 	{
 		using t_args::operator()...;
-		constexpr aggregate(t_args && ... args): t_args(std::move(args))... {}
+		constexpr aggregate(t_args && ... args): t_args(std::forward <t_args>(args))... {}
 	};
 
 
