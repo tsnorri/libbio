@@ -7,6 +7,7 @@
 #define LIBBIO_ALGORITHM_SORTED_SET_UNION_HH
 
 #include <libbio/assert.hh>
+#include <iterator>
 #include <range/v3/range/access.hpp>
 #include <type_traits>
 
@@ -28,7 +29,7 @@ namespace libbio::detail {
 	{
 		typedef t_output_it handle_remaining_return_type;
 
-		t_output_it output_it;
+		t_output_it &output_it;
 
 		template <typename t_lhs_it, typename t_lhs_sentinel>
 		handle_remaining_return_type handle_remaining_left(t_lhs_it &&it, t_lhs_sentinel &&end)
@@ -222,13 +223,14 @@ namespace libbio {
 	template <typename t_lhs_it, typename t_lhs_sentinel, typename t_rhs_it, typename t_rhs_sentinel, typename t_dst, typename t_cmp>
 	auto sorted_set_union(t_lhs_it lhs_it, t_lhs_sentinel lhs_end, t_rhs_it rhs_it, t_rhs_sentinel rhs_end, t_dst &&dst, t_cmp &&cmp)
 	{
+		typedef std::remove_cvref_t <t_dst> dst_type;
 		typedef std::conditional_t <
 			(
-				std::output_iterator <t_dst, std::iter_value_t <t_lhs_it>> &&
-				std::output_iterator <t_dst, std::iter_value_t <t_rhs_it>>
+				std::output_iterator <dst_type, std::iter_value_t <t_lhs_it>> &&
+				std::output_iterator <dst_type, std::iter_value_t <t_rhs_it>>
 			),
-			detail::sorted_set_union_output_iterator_handler <t_dst>,
-			detail::sorted_set_union_callback_handler <t_dst>
+			detail::sorted_set_union_output_iterator_handler <dst_type>,
+			detail::sorted_set_union_callback_handler <dst_type>
 		> handler_type;
 
 		handler_type handler{dst};
