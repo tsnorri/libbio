@@ -7,7 +7,7 @@
 #include <cmath>
 #include <cstddef>
 #include <ostream>
-#include <libbio/algorithm.hh>
+#include <libbio/accumulator.hh>
 #include <libbio/assert.hh>
 #include <libbio/rapidcheck_test_driver.hh>
 #include <limits>
@@ -15,6 +15,7 @@
 
 namespace bms	= boost::math::statistics;
 namespace lb	= libbio;
+namespace acc	= libbio::accumulators;
 
 
 namespace {
@@ -87,12 +88,12 @@ TEMPLATE_TEST_CASE(
 			if (input.lhs.empty())
 				return;
 
-			lb::pearson_correlation_coefficient_calculator <typename TestType::value_type> pc{};
+			acc::pearson_correlation_coefficient <typename TestType::value_type> pc{};
 			pc.init(input.lhs.front(), input.rhs.front());
 			for (std::size_t ii{1}; ii < input.lhs.size(); ++ii)
 				pc.update(input.lhs[ii], input.rhs[ii]);
 
-			auto const actual{pc.correlation()};
+			auto const actual{pc.value()};
 			auto const expected{bms::correlation_coefficient(input.lhs, input.rhs)};
 			RC_LOG() << "Expected: " << expected << " actual: " << actual << '\n';
 			RC_ASSERT((std::isnan(expected) and std::isnan(actual)) or is_equal_fp(expected, actual));
@@ -112,7 +113,7 @@ TEMPLATE_TEST_CASE(
 		[](TestType const &input){
 			typedef typename TestType::value_type::value_type value_type;
 			typedef std::vector <value_type> value_vector;
-			typedef lb::pearson_correlation_coefficient_calculator <value_type> calculator_type;
+			typedef acc::pearson_correlation_coefficient <value_type> calculator_type;
 
 			value_vector combined_lhs;
 			value_vector combined_rhs;
@@ -167,7 +168,7 @@ TEMPLATE_TEST_CASE(
 
 			RC_TAG(non_empty_count);
 
-			auto const actual{pc.correlation()};
+			auto const actual{pc.value()};
 			auto const expected{bms::correlation_coefficient(combined_lhs, combined_rhs)};
 			RC_LOG() << "Expected: " << expected << " actual: " << actual << '\n';
 			RC_ASSERT((std::isnan(expected) and std::isnan(actual)) or is_equal_fp(expected, actual, 5000.0));

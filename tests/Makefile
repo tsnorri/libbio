@@ -46,6 +46,7 @@ OBJECTS	=	algorithm.o \
 			power_of_two_arbitrary.o \
 			radix_sort.o \
 			reverse_word.o \
+			reverse_word_arbitrary.o \
 			sam_reader_arbitrary.o \
 			set_difference_inplace_arbitrary.o \
 			sorted_set_union.o \
@@ -57,6 +58,7 @@ OBJECTS_RC	=	fasta_reader_arbitrary.rc.o \
 				fastq_reader_arbitrary.rc.o \
 				pearson_correlation_arbitrary.rc.o \
 				power_of_two_arbitrary.rc.o \
+				reverse_word_arbitrary.rc.o \
 				sam_reader_arbitrary.rc.o \
 				set_difference_inplace_arbitrary.rc.o \
 				stable_partition_left_arbitrary.rc.o
