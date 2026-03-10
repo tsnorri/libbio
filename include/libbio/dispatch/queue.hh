@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Tuukka Norri
+ * Copyright (c) 2023-2026 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -64,7 +64,7 @@ namespace libbio::dispatch {
 			m_thread_pool->add_queue(*this);
 		}
 
-		parallel_queue(thread_pool &pool): // Not thread-safe.
+		explicit parallel_queue(thread_pool &pool): // Not thread-safe.
 			m_thread_pool(&pool)
 		{
 			m_thread_pool->add_queue(*this);
@@ -122,7 +122,7 @@ namespace libbio::dispatch {
 		bool					m_has_thread{};
 
 	public:
-		serial_queue(parallel_queue &parent_queue):
+		explicit serial_queue(parallel_queue &parent_queue):
 			m_parent_queue(&parent_queue)
 		{
 		}
