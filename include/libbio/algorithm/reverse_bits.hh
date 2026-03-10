@@ -32,17 +32,17 @@ namespace libbio {
 		if constexpr (t_bits <= 4)
 			r = ((r & UINT64_C(0x0f0f'0f0f'0f0f'0f0f)) <<  4U) | ((r & UINT64_C(0xf0f0'f0f0'f0f0'f0f0)) >> 4U);		// Swap adjacent 4's.
 
-		if constexpr (8 == WORD_BITS) return r >> 56;
+		if constexpr (8 == WORD_BITS) return r;
 
 		if constexpr (t_bits <= 8)
 			r = ((r & UINT64_C(0x00ff'00ff'00ff'00ff)) <<  8U) | ((r & UINT64_C(0xff00'ff00'ff00'ff00)) >> 8U);		// Swap adjacent 8's.
 
-		if constexpr (16 == WORD_BITS) return r >> 48;
+		if constexpr (16 == WORD_BITS) return r;
 
 		if constexpr (t_bits <= 16)
 			r = ((r & UINT64_C(0x0000'ffff'0000'ffff)) << 16U) | ((r & UINT64_C(0xffff'0000'ffff'0000)) >> 16U);	// Swap adjacent 16's.
 
-		if constexpr (32 == WORD_BITS) return r >> 32;
+		if constexpr (32 == WORD_BITS) return r;
 
 		if constexpr (t_bits <= 32)
 			r = ((r & UINT64_C(0x0000'0000'ffff'ffff)) << 32U) | ((r & UINT64_C(0xffff'ffff'0000'0000)) >> 32U);	// Swap adjacent 32's.
