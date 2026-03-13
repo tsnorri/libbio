@@ -46,6 +46,18 @@ namespace libbio {
 	}
 
 
+	template <typename t_fn, typename t_tuple_like>
+	constexpr auto map_to_array(t_tuple_like &&tuple_like, t_fn &&fn)
+	{
+		typedef std::remove_cvref_t <t_tuple_like> tuple_like_type;
+		constexpr std::size_t size{std::tuple_size_v <tuple_like_type>};
+
+		return [&]<std::size_t... t_idx>(std::index_sequence <t_idx...>){
+			return std::array{fn(std::integral_constant <std::size_t, t_idx>{}, std::get <t_idx>(tuple_like))...};
+		}(std::make_index_sequence <size>{});
+	}
+
+
 	// Map an std::integer_sequence to an std::tuple.
 	template <typename t_integer, std::size_t... t_indices, typename t_fn>
 	constexpr auto map_indices_to_tuple(std::integer_sequence <t_integer, t_indices...> &&indices, t_fn &&fn)
