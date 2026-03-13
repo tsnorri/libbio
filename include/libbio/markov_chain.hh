@@ -10,7 +10,7 @@
 #include <array>
 #include <cstddef>
 #include <libbio/assert.hh>
-#include <libbio/fmap.hh>			//libbio::map_to_array
+#include <libbio/fmap.hh>			//libbio::map_indices_to_array
 #include <libbio/tuple.hh>
 #include <libbio/utility.hh>		// libbio::aggregate
 #include <limits>					// std::numeric_limits
@@ -330,13 +330,13 @@ namespace libbio::markov_chains::detail {
 
 		consteval static auto make_transition_map()
 		{
-			constexpr auto const node_indices_by_transition_idx(map_to_array(
+			constexpr auto const node_indices_by_transition_idx(map_indices_to_array(
 				std::make_index_sequence <transition_node_indices.size()>{},
 				[]<std::size_t t_idx>(std::integral_constant <std::size_t, t_idx> const) constexpr {
 					return tuples::first_index_of_v <nodes_type, std::tuple_element_t <t_idx, transition_nodes_type>>;
 				}
 			));
-			constexpr auto const transition_probabilities(map_to_array(
+			constexpr auto const transition_probabilities(map_indices_to_array(
 				std::make_index_sequence <transition_count>{},
 				[]<std::size_t t_idx>(std::integral_constant <std::size_t, t_idx> const) constexpr {
 					return std::tuple_element_t <t_idx, t_transitions>::probability;

@@ -45,16 +45,18 @@ namespace libbio {
 		);
 	}
 
+
 	// Map an std::integer_sequence to an std::tuple.
 	template <typename t_integer, std::size_t... t_indices, typename t_fn>
-	constexpr auto map_to_tuple(std::integer_sequence <t_integer, t_indices...> &&indices, t_fn &&fn)
+	constexpr auto map_indices_to_tuple(std::integer_sequence <t_integer, t_indices...> &&indices, t_fn &&fn)
 	{
 		return std::make_tuple(fn(std::integral_constant <t_integer, t_indices>{})...);
 	}
 
+
 	// Return std::array instead.
 	template <typename t_integer, std::size_t... t_indices, typename t_fn>
-	constexpr auto map_to_array(std::integer_sequence <t_integer, t_indices...> &&indices, t_fn &&fn)
+	constexpr auto map_indices_to_array(std::integer_sequence <t_integer, t_indices...> &&indices, t_fn &&fn)
 	{
 		auto to_array([](auto && ... values){ return std::array{std::forward <decltype(values)>(values)...}; });
 		return std::apply(to_array, std::make_tuple(fn(std::integral_constant <t_integer, t_indices>{})...));
