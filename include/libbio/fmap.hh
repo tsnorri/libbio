@@ -73,6 +73,19 @@ namespace libbio {
 		auto to_array([](auto && ... values){ return std::array{std::forward <decltype(values)>(values)...}; });
 		return std::apply(to_array, std::make_tuple(fn(std::integral_constant <t_integer, t_indices>{})...));
 	}
+
+
+	// FIXME: Move to some other header.
+	template <typename t_lhs, typename t_rhs, typename t_fn>
+	constexpr void pairwise_apply(t_lhs &&lhs, t_rhs &&rhs, t_fn &&fn)
+	{
+		constexpr auto size{std::tuple_size_v <std::remove_cvref_t <t_lhs>>};
+		static_assert(size == std::tuple_size_v <std::remove_cvref_t <t_rhs>>);
+
+		[&]<std::size_t... t_idx>(std::index_sequence <t_idx...>){
+			(fn(std::get <t_idx>(lhs), std::get <t_idx>(rhs)), ...);
+		}(std::make_index_sequence <size>{});
+	}
 }
 
 #endif
