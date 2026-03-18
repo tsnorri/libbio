@@ -12,6 +12,7 @@
 #include <iterator>
 #include <span>
 #include <type_traits>
+#include <utility>
 
 
 namespace libbio::detail {
@@ -61,14 +62,18 @@ namespace libbio {
 
 		constexpr join_iterator_() = default;
 
-		constexpr explicit join_iterator_(container_iterator it, container_sentinel end):
-			m_cit{it},
-			m_cend{end},
-			m_it{
-				(m_cit == m_cend)
-				? underlying_iterator{}
-				: access_container_type{}(*m_cit).begin()
-			}
+		constexpr explicit join_iterator_(container_iterator cit, container_sentinel cend, underlying_iterator it):
+			m_cit{cit},
+			m_cend{cend},
+			m_it{it}
+		{
+		}
+
+		// If it == end, works if default-constructed underlying_iterator represents the
+		// end of the underlying range.
+		constexpr explicit join_iterator_(container_sentinel cend)
+		requires std::is_same_v <container_iterator, container_sentinel>:
+			join_iterator_{cend, cend, underlying_iterator{}}
 		{
 		}
 
@@ -92,6 +97,8 @@ namespace libbio {
 				if (m_cit != m_cend)
 					m_it = acc(*m_cit).begin();
 			}
+
+			return *this;
 		}
 
 		constexpr join_iterator_ operator++(int)
@@ -103,7 +110,7 @@ namespace libbio {
 
 		friend constexpr bool operator==(join_iterator_ const &lhs, join_iterator_ const &rhs)
 		{
-			return lhs.m_it == rhs.m_it;
+			return lhs.m_cit == rhs.m_cit && lhs.m_it == rhs.m_it;
 		}
 
 		friend constexpr bool operator!=(join_iterator_ const &lhs, join_iterator_ const &rhs)
@@ -118,6 +125,74 @@ namespace libbio {
 
 	template <typename t_container_iterator, typename t_container_sentinel = t_container_iterator>
 	using indirect_join_iterator = join_iterator_ <t_container_iterator, t_container_sentinel, true>;
+
+
+	// Requires that std::crbegin does not affect the container range.
+	template <typename t_container_range, bool t_uses_indirection>
+	struct make_join_iterator_pair_traits
+	{
+		typedef detail::conditional_dereference <t_uses_indirection> access_container_type;
+		typedef std::remove_reference_t <t_container_range> container_range_type;
+		typedef decltype(std::begin(std::declval <container_range_type>())) container_iterator_type;
+		typedef decltype(std::end(std::declval <container_range_type>())) container_sentinel_type;
+		typedef join_iterator_ <container_iterator_type, container_sentinel_type, t_uses_indirection> join_iterator_type;
+		typedef std::pair <join_iterator_type, join_iterator_type> return_type;
+	};
+
+	template <typename t_container_range, bool t_uses_indirection>
+	using make_join_iterator_pair_return_type_t =
+		make_join_iterator_pair_traits <t_container_range, t_uses_indirection>::return_type;
+
+
+	template <
+		bool t_uses_indirection,
+		typename t_container_range
+	>
+	make_join_iterator_pair_return_type_t <t_container_range, t_uses_indirection>
+	make_join_iterator_pair_(t_container_range &&range)
+	{
+		typedef make_join_iterator_pair_traits <t_container_range, t_uses_indirection> return_type_traits;
+		typedef typename return_type_traits::join_iterator_type join_iterator_type;
+		typedef typename return_type_traits::access_container_type access_container_type;
+
+		auto cit{std::begin(range)};
+		auto const cend{std::end(range)};
+
+		if (cit == cend)
+		{
+			// Return an empty range.
+			return {
+				join_iterator_type{cend},
+				join_iterator_type{cend}
+			};
+		}
+
+		access_container_type acc{};
+		auto crit{std::rbegin(range)};
+		auto it{std::begin(acc(*cit))};
+		auto const end{std::end(acc(*crit))};
+
+		return {
+			join_iterator_type{cit, cend, it},
+			join_iterator_type{cend, cend, end}
+		};
+	}
+
+
+	template <typename t_container_range>
+	make_join_iterator_pair_return_type_t <t_container_range, false>
+	make_join_iterator_pair(t_container_range &&range)
+	{
+		return make_join_iterator_pair_ <false>(std::forward <t_container_range>(range));
+	}
+
+
+	template <typename t_container_range>
+	make_join_iterator_pair_return_type_t <t_container_range, true>
+	make_indirect_join_iterator_pair(t_container_range &&range)
+	{
+		return make_join_iterator_pair_ <true>(std::forward <t_container_range>(range));
+	}
 
 
 	template <typename t_iterator, typename t_sentinel, std::size_t t_size>
@@ -148,6 +223,8 @@ namespace libbio {
 			m_sentinels{std::move(sentinels)},
 			m_pos{pos}
 		{
+			while (m_pos < t_size && m_iterators[m_pos] == m_sentinels[m_pos])
+				++m_pos;
 		}
 
 		constexpr static joined_range_iterator make_sentinel() { return {iterator_array{}, sentinel_array{}, t_size}; }
@@ -167,6 +244,7 @@ namespace libbio {
 			++m_iterators[m_pos];
 			while (m_pos < t_size && m_iterators[m_pos] == m_sentinels[m_pos])
 				++m_pos;
+			return *this;
 		}
 
 		constexpr joined_range_iterator operator++(int)
