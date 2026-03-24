@@ -33,6 +33,14 @@ AC_PROG_CXX
 AC_CHECK_TOOL([AR], [ar], [:])
 AC_PATH_PROG([RAGEL], [ragel])
 
+# Boost path
+AC_ARG_WITH(
+	[boost],
+	[AS_HELP_STRING([--with-boost=PATH], [Path to Boost (e.g. /opt/local/boost-x.y)])],
+	[boost_root="${withval}"],
+	[boost_root=""]
+)
+
 libbio_enable_arg([bam-parser], [yes], [enable BAM parser, requires libdeflate])
 libbio_enable_arg([bgzf-decompressor], [yes], [enable BGZF decompressor, requires libdeflate])
 libbio_enable_arg([memory-logger-support], [yes], [enable memory logger support])
@@ -50,7 +58,14 @@ AX_CHECK_COMPILE_FLAG([-Wno-misleading-indentation], [WARNING_FLAGS="${WARNING_F
 AX_CHECK_COMPILE_FLAG([-Wno-error=interference-size], [WARNING_FLAGS="${WARNING_FLAGS} -Wno-error=interference-size"])
 
 # Check for Boost.Iostreams.
+CPPFLAGS_="${CPPFLAGS}"
+if test -n "${boost_root}"
+then
+	CPPFLAGS="${CPPFLAGS} -I${boost_root}/include"
+fi
 AC_CHECK_HEADERS([boost/iostreams/device/file_descriptor.hpp], [], [AC_MSG_ERROR(Boost.Iostreams is required.)])
+CPPFLAGS="${CPPFLAGS_}"
 
+AC_SUBST([BOOST_ROOT], ["${boost_root}"])
 AC_SUBST([WARNING_FLAGS])
 AC_OUTPUT
