@@ -14,7 +14,7 @@
 
 namespace libbio::bits::detail {
 
-	template <typename t_integer>
+	template <std::unsigned_integral t_integer>
 	constexpr inline std::uint8_t count_bits_set_(t_integer val)
 	{
 		// Adapted from https://graphics.stanford.edu/~seander/bithacks.html, in public domain.
@@ -57,21 +57,37 @@ namespace libbio::bits::detail {
 
 
 	// Starting from the least significant bit position.
-	// WARNING: These have been changed s.t. if the parameter has at least one bit set,
-	// the returned value is non-zero.
 	inline std::uint8_t trailing_zeros(unsigned int const i)
+	{
+		if (0 == i) return (CHAR_BIT * sizeof(unsigned int));
+		return __builtin_ctz(i);
+	}
+
+	inline std::uint8_t trailing_zeros(unsigned long const l)
+	{
+		if (0 == l) return (CHAR_BIT * sizeof(unsigned long));
+		return __builtin_ctzl(l);
+	}
+
+	inline std::uint8_t trailing_zeros(unsigned long long const ll)
+	{
+		if (0 == ll) return (CHAR_BIT * sizeof(unsigned long long));
+		return __builtin_ctzll(ll);
+	}
+
+	inline std::uint8_t trailing_zeros_(unsigned int const i)
 	{
 		if (0 == i) return 0;
 		return 1 + __builtin_ctz(i);
 	}
 
-	inline std::uint8_t trailing_zeros(unsigned long const l)
+	inline std::uint8_t trailing_zeros_(unsigned long const l)
 	{
 		if (0 == l) return 0;
 		return 1 + __builtin_ctzl(l);
 	}
 
-	inline std::uint8_t trailing_zeros(unsigned long long const ll)
+	inline std::uint8_t trailing_zeros_(unsigned long long const ll)
 	{
 		if (0 == ll) return 0;
 		return 1 + __builtin_ctzll(ll);
@@ -79,6 +95,8 @@ namespace libbio::bits::detail {
 
 	inline std::uint8_t trailing_zeros(unsigned char const ii)  { typedef unsigned int uint; return trailing_zeros(uint(ii)); }
 	inline std::uint8_t trailing_zeros(unsigned short const ii) { typedef unsigned int uint; return trailing_zeros(uint(ii)); }
+	inline std::uint8_t trailing_zeros_(unsigned char const ii)  { typedef unsigned int uint; return trailing_zeros_(uint(ii)); }
+	inline std::uint8_t trailing_zeros_(unsigned short const ii) { typedef unsigned int uint; return trailing_zeros_(uint(ii)); }
 
 
 	// Starting from the most significant bit position.
@@ -120,7 +138,7 @@ namespace libbio::bits {
 #	pragma clang diagnostic push
 #	pragma clang diagnostic ignored "-Wredundant-consteval-if"
 #endif
-	template <typename t_integer>
+	template <std::unsigned_integral t_integer>
 	constexpr std::uint8_t count_bits_set(t_integer const ii)
 	{
 		if consteval
@@ -137,7 +155,7 @@ namespace libbio::bits {
 #endif
 
 
-	template <typename t_integer>
+	template <std::unsigned_integral t_integer>
 	constexpr inline std::uint8_t trailing_zeros(t_integer val)
 	{
 		// Currently we don’t have an efficient implementation without the compiler intrinsic.
@@ -145,10 +163,13 @@ namespace libbio::bits {
 		{
 			// Use a naïve algorithm.
 			std::uint8_t retval{};
-			while (0x0 == (0x1 & val))
+			for (std::uint8_t ii{}; ii < CHAR_BIT * sizeof(t_integer); ++ii)
 			{
+				if (0x0 == (0x1 & val))
+					break;
+
 				++retval;
-				val >> 0x1;
+				val >>= 0x1;
 			}
 			return retval;
 		}
@@ -159,7 +180,34 @@ namespace libbio::bits {
 	}
 
 
-	template <typename t_integer>
+	template <std::unsigned_integral t_integer>
+	constexpr inline std::uint8_t trailing_zeros_(t_integer val)
+	{
+		// Currently we don’t have an efficient implementation without the compiler intrinsic.
+		if consteval
+		{
+			if (!val) return 0;
+
+			// Use a naïve algorithm.
+			std::uint8_t retval{1};
+			for (std::uint8_t ii{}; ii < CHAR_BIT * sizeof(t_integer); ++ii)
+			{
+				if (0x0 == (0x1 & val))
+					break;
+
+				++retval;
+				val >>= 0x1;
+			}
+			return retval;
+		}
+		else
+		{
+			return detail::trailing_zeros_(val);
+		}
+	}
+
+
+	template <std::unsigned_integral t_integer>
 	constexpr inline std::uint8_t leading_zeros(t_integer val)
 	{
 		// Currently we don’t have an efficient implementation without the compiler intrinsic.
@@ -181,7 +229,7 @@ namespace libbio::bits {
 	}
 
 
-	template <typename t_integer>
+	template <std::unsigned_integral t_integer>
 	constexpr inline std::uint8_t highest_bit_set(t_integer const val)
 	{
 		// Return the 1-based index.
