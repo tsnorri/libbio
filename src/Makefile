@@ -23,6 +23,8 @@ OBJECTS		=	bam_fields.o \
 				dispatch_serial_queue.o \
 				dispatch_thread_local_queue.o \
 				dispatch_thread_pool.o \
+				encoding_elias_delta.o \
+				encoding_elias_gamma.o \
 				fasta_reader.o \
 				fastq_reader.o \
 				file_handle.o \
