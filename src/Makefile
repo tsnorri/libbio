@@ -13,6 +13,8 @@ OBJECTS		=	bam_fields.o \
 				bgzf_deflate_decompressor.o \
 				bgzf_parser.o \
 				bgzf_streaming_reader.o \
+				bit_reading_stream.o \
+				bit_writing_stream.o \
 				buffered_writer_base.o \
 				circular_buffer.o \
 				dispatch_event.o \
