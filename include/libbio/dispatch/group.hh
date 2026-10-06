@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Tuukka Norri
+ * Copyright (c) 2023-2026 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -13,9 +13,14 @@
 #include <libbio/dispatch/task_decl.hh>
 #include <mutex>
 
+namespace libbio::dispatch::detail {
+
+	struct fiber_task_executor_item;
+}
+
 
 namespace libbio::dispatch {
-	
+
 	class group
 	{
 		friend class parallel_queue;
@@ -23,11 +28,12 @@ namespace libbio::dispatch {
 		friend class thread_local_queue;
 		friend class worker_thread_runner;
 		friend struct detail::serial_queue_executor_callable;
-		
+		friend struct detail::fiber_task_executor_item;
+
 	private:
 		typedef std::uint32_t						counter_type;
 		constexpr static inline counter_type const	NOTIFY_MASK{0x80000000};
-		
+
 	private:
 		task						m_task;		// For notify.
 		queue						*m_queue{};	// For notify.
@@ -35,11 +41,12 @@ namespace libbio::dispatch {
 		std::condition_variable		m_cv{};
 		std::mutex					m_mutex{};
 		bool						m_should_stop_waiting{};
-		
+
 	public:
 		void notify(queue &qq, task tt);
 		void wait();
-		
+		void wait_and_yield();
+
 		void enter() { m_count.fetch_add(1, std::memory_order_relaxed); } // Relaxed ordering in increment should be enough; see https://en.cppreference.com/w/cpp/atomic/memory_order#Relaxed_ordering
 		void exit();
 	};

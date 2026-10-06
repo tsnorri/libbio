@@ -1,5 +1,8 @@
 /* configuration/config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define to 1 if you have the <boost/context/fiber.hpp> header file. */
+#undef HAVE_BOOST_CONTEXT_FIBER_HPP
+
 /* Define to 1 if you have the <boost/iostreams/device/file_descriptor.hpp>
    header file. */
 #undef HAVE_BOOST_IOSTREAMS_DEVICE_FILE_DESCRIPTOR_HPP
@@ -37,6 +40,9 @@
 /* enable BGZF decompressor, requires libdeflate */
 #undef LIBBIO_ENABLE_BGZF_DECOMPRESSOR
 
+/* enable dispatch fiber support, requires Boost */
+#undef LIBBIO_ENABLE_DISPATCH_FIBER_SUPPORT
+
 /* enable memory logger support */
 #undef LIBBIO_ENABLE_MEMORY_LOGGER_SUPPORT
 
@@ -58,7 +64,7 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
-/* Define to 1 if all of the C90 standard headers exist (not just the ones
+/* Define to 1 if all of the C89 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
 #undef STDC_HEADERS

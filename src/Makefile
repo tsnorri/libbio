@@ -20,6 +20,7 @@ OBJECTS		=	bam_fields.o \
 				dispatch_group.o \
 				dispatch_parallel_queue.o \
 				dispatch_serial_queue.o \
+				dispatch_task_executor.o \
 				dispatch_thread_local_queue.o \
 				dispatch_thread_pool.o \
 				encoding_elias_delta.o \

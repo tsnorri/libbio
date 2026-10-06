@@ -1,11 +1,13 @@
 /*
- * Copyright (c) 2023-2024 Tuukka Norri
+ * Copyright (c) 2023-2026 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #include <atomic>
 #include <libbio/assert.hh>
 #include <libbio/dispatch.hh>
+#include <libbio/dispatch/detail/task_executor.hh>
+#include <libbio/dispatch/task_decl.hh>
 #include <mutex>
 #include <utility>
 
@@ -18,8 +20,22 @@ namespace libbio::dispatch {
 
 		std::unique_lock lock(m_mutex);
 		m_cv.wait(lock, [this]{ return m_should_stop_waiting; });
+
+		// Restore the group’s initial state.
 		m_should_stop_waiting = false;
-		m_count.fetch_add(1, std::memory_order_relaxed); // Restore the group’s initial state.
+		m_count.fetch_add(1, std::memory_order_relaxed);
+	}
+
+
+	void group::wait_and_yield()
+	{
+		exit();
+		if (!m_should_stop_waiting)
+			detail::task_executor::thread_executor()->yield(*this);
+
+		// Restore the group’s initial state.
+		m_should_stop_waiting = false;
+		m_count.fetch_add(1, std::memory_order_relaxed);
 	}
 
 
@@ -52,7 +68,9 @@ namespace libbio::dispatch {
 				m_should_stop_waiting = true;
 			}
 
-			m_cv.notify_all();
+			// Stop waiting.
+			m_cv.notify_all(); // Makes wait() continue.
+			detail::task_executor::thread_executor()->notify_can_resume();
 		}
 	}
 }

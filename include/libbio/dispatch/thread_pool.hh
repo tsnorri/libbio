@@ -1,19 +1,25 @@
 /*
- * Copyright (c) 2023-2024 Tuukka Norri
+ * Copyright (c) 2023-2026 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_DISPATCH_THREAD_POOL_HH
 #define LIBBIO_DISPATCH_THREAD_POOL_HH
 
-#include <atomic>
 #include <chrono>					// std::chrono::steady_clock etc.
 #include <condition_variable>
 #include <cstdint>
+#include <libbio/assert.hh>
 #include <libbio/dispatch/fwd.hh>
 #include <mutex>
 #include <shared_mutex>
 #include <vector>
+
+
+namespace libbio::dispatch::detail {
+	class task_executor;
+	class fiber_task_executor;
+}
 
 
 namespace libbio::dispatch {
@@ -24,6 +30,8 @@ namespace libbio::dispatch {
 	class thread_pool
 	{
 		friend class worker_thread_runner;
+		friend class detail::task_executor;
+		friend class detail::fiber_task_executor;
 
 	public:
 		typedef std::uint32_t thread_count_type;
@@ -48,14 +56,21 @@ namespace libbio::dispatch {
 		std::shared_mutex				m_queue_mutex{};							// Protects m_queues
 		std::mutex						m_mutex{};									// Protects m_waiting_tasks, m_current_workers, m_idle_workers, m_should_continue.
 		bool							m_should_continue{true};
+		bool							m_uses_fiber_executor{};
 
 	private:
 		void start_worker_();
 		void remove_worker();
 		void remove_idle_worker();
 
+		std::condition_variable &condition_variable() { return m_cv; }
+		std::mutex &mutex() { return m_mutex; }
+
 	public:
 		static inline thread_pool &shared_pool();
+
+		inline void set_uses_fiber_executor(bool flag);
+
 		void add_queue(parallel_queue &queue);			// Thread-safe.
 		void remove_queue(parallel_queue const &queue);	// Thread-safe.
 		void stop(bool should_wait = true);				// Thread-safe.
@@ -76,6 +91,15 @@ namespace libbio::dispatch {
 	{
 		static thread_pool pool;
 		return pool;
+	}
+
+
+	void thread_pool::set_uses_fiber_executor(bool flag)
+	{
+#if !LIBBIO_ENABLE_DISPATCH_FIBER_SUPPORT
+		libbio_assert(!flag, "Not compiled with fiber support.");
+#endif
+		m_uses_fiber_executor = flag;
 	}
 }
 

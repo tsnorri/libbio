@@ -6,6 +6,7 @@
 #ifndef LIBBIO_DISPATCH_QUEUE_HH
 #define LIBBIO_DISPATCH_QUEUE_HH
 
+#include <atomic>
 #include <condition_variable>
 #include <deque>
 #include <libbio/dispatch/fwd.hh>
@@ -16,6 +17,11 @@
 #include <libbio/dispatch/thread_pool.hh>
 #include <mutex>
 #include <utility>
+
+namespace libbio::dispatch::detail {
+
+	class task_executor; // Fwd.
+}
 
 
 namespace libbio::dispatch {
@@ -36,6 +42,7 @@ namespace libbio::dispatch {
 	class parallel_queue final : public queue
 	{
 		friend class worker_thread_runner;
+		friend class detail::task_executor;
 
 	private:
 		struct queue_item

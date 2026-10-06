@@ -43,6 +43,7 @@ AC_ARG_WITH(
 
 libbio_enable_arg([bam-parser], [yes], [enable BAM parser, requires libdeflate])
 libbio_enable_arg([bgzf-decompressor], [yes], [enable BGZF decompressor, requires libdeflate])
+libbio_enable_arg([dispatch-fiber-support], [yes], [enable dispatch fiber support, requires Boost])
 libbio_enable_arg([memory-logger-support], [yes], [enable memory logger support])
 
 AC_LANG([C++])
@@ -57,13 +58,33 @@ AX_CHECK_COMPILE_FLAG([-Wno-shadow], [WARNING_FLAGS="${WARNING_FLAGS} -Wno-shado
 AX_CHECK_COMPILE_FLAG([-Wno-misleading-indentation], [WARNING_FLAGS="${WARNING_FLAGS} -Wno-misleading-indentation"])
 AX_CHECK_COMPILE_FLAG([-Wno-error=interference-size], [WARNING_FLAGS="${WARNING_FLAGS} -Wno-error=interference-size"])
 
-# Check for Boost.Iostreams.
+# Check for Boost.Iostreams and Boost.Context.
 CPPFLAGS_="${CPPFLAGS}"
-if test -n "${boost_root}"
-then
-	CPPFLAGS="${CPPFLAGS} -I${boost_root}/include"
-fi
-AC_CHECK_HEADERS([boost/iostreams/device/file_descriptor.hpp], [], [AC_MSG_ERROR(Boost.Iostreams is required.)])
+
+AS_IF(
+	[test "x${boost_root}" = x],
+	[],
+	[CPPFLAGS="${CPPFLAGS} -I${boost_root}/include"]
+)
+
+AC_CHECK_HEADERS(
+	[boost/iostreams/device/file_descriptor.hpp],
+	[],
+	[AC_MSG_ERROR(Boost.Iostreams is required.)]
+)
+
+AS_IF(
+	[test "x${enable_dispatch_fiber_support}" = xyes],
+	[
+		AC_CHECK_HEADERS(
+			[boost/context/fiber.hpp],
+			[],
+			[AC_MSG_ERROR(Boost.Context is required for dispatch fiber support.)]
+		)
+	],
+	[]
+)
+
 CPPFLAGS="${CPPFLAGS_}"
 
 AC_SUBST([BOOST_ROOT], ["${boost_root}"])
