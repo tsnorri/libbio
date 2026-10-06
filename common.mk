@@ -36,11 +36,18 @@ GCOV			?= gcov
 GCOVR			?= gcovr
 
 BOOST_ROOT		?=
+LIBDEFLATE_ROOT	?=
 
 ifeq ($(BOOST_ROOT),)
 BOOST_INCLUDE	?=
 else
 BOOST_INCLUDE	?= -isystem $(BOOST_ROOT)/include
+endif
+
+ifeq ($(LIBDEFLATE_ROOT),)
+LIBDEFLATE_INCLUDE	?=
+else
+LIBDEFLATE_INCLUDE	?= -isystem $(LIBDEFLATE_ROOT)/include
 endif
 
 ifeq ($(USE_GENERATED_CONFIG_H),1)
@@ -56,7 +63,7 @@ endif
 
 CFLAGS			+= -std=c99   $(OPT_FLAGS) $(WARNING_FLAGS) $(SYSTEM_CFLAGS)
 CXXFLAGS		+= -std=c++2b $(OPT_FLAGS) $(WARNING_FLAGS) $(WARNING_CXXFLAGS) $(SYSTEM_CXXFLAGS)
-CPPFLAGS    	+= -I../include -isystem ../lib/range-v3/include $(BOOST_INCLUDE) $(SYSTEM_CPPFLAGS) $(IQUOTE)
+CPPFLAGS    	+= -I../include -isystem ../lib/range-v3/include $(BOOST_INCLUDE) $(LIBDEFLATE_INCLUDE) $(SYSTEM_CPPFLAGS) $(IQUOTE)
 LDFLAGS			+= $(SYSTEM_LDFLAGS) -lz
 
 %.cov.o: %.cc

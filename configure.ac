@@ -41,6 +41,13 @@ AC_ARG_WITH(
 	[boost_root=""]
 )
 
+AC_ARG_WITH(
+	[libdeflate],
+	[AS_HELP_STRING([--with-libdeflate=PATH], [Path to libdeflate])],
+	[libdeflate_root="${withval}"],
+	[libdeflate_root=""]
+)
+
 libbio_enable_arg([bam-parser], [yes], [enable BAM parser, requires libdeflate])
 libbio_enable_arg([bgzf-decompressor], [yes], [enable BGZF decompressor, requires libdeflate])
 libbio_enable_arg([dispatch-fiber-support], [yes], [enable dispatch fiber support, requires Boost])
@@ -88,5 +95,6 @@ AS_IF(
 CPPFLAGS="${CPPFLAGS_}"
 
 AC_SUBST([BOOST_ROOT], ["${boost_root}"])
+AC_SUBST([LIBDEFLATE_ROOT], ["${libdeflate_root}"])
 AC_SUBST([WARNING_FLAGS])
 AC_OUTPUT
