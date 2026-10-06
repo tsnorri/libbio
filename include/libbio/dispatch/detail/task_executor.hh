@@ -36,7 +36,7 @@ namespace libbio::dispatch::detail {
 	{
 		friend struct fiber_task_executor_item;
 
-	protected:
+	public:
 		typedef std::unique_lock <std::mutex> pool_lock_type;
 		typedef parallel_queue::queue_item queue_item_type;
 

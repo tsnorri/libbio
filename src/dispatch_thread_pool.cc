@@ -67,14 +67,20 @@ namespace libbio::dispatch {
 	class worker_thread_runner
 	{
 	private:
-		typedef	chrono::steady_clock	clock_type;
-		typedef clock_type::time_point	time_point_type;
-		typedef clock_type::duration	duration_type;
+		typedef	chrono::steady_clock					clock_type;
+		typedef clock_type::time_point					time_point_type;
+		typedef clock_type::duration					duration_type;
+		typedef detail::task_executor::queue_item_type	queue_item_type;
+		typedef detail::task_executor::pool_lock_type	pool_lock_type;
+		typedef std::int64_t							task_count_type;
 
 	private:
 		thread_pool		*m_thread_pool{};
 		duration_type	m_max_idle_time{};
 		bool			m_uses_fiber_executor{};
+
+	private:
+		bool handle_barrier(queue_item_type &queue_item, pool_lock_type &pool_lock, task_count_type const executed_tasks);
 
 	public:
 		worker_thread_runner(thread_pool &pool, duration_type const max_idle_time, bool uses_fiber_executor):
@@ -87,12 +93,12 @@ namespace libbio::dispatch {
 		void run();
 		void operator()() { run(); }
 
-		void remove_from_pool(std::int64_t const executed_tasks);
-		void begin_idle(std::int64_t const executed_tasks);
+		void remove_from_pool(task_count_type const executed_tasks);
+		void begin_idle(task_count_type const executed_tasks);
 	};
 
 
-	void worker_thread_runner::remove_from_pool(std::int64_t const executed_tasks)
+	void worker_thread_runner::remove_from_pool(task_count_type const executed_tasks)
 	{
 		auto &pool{*m_thread_pool};
 		pool.m_waiting_tasks -= executed_tasks;
@@ -100,7 +106,7 @@ namespace libbio::dispatch {
 	}
 
 
-	void worker_thread_runner::begin_idle(std::int64_t const executed_tasks)
+	void worker_thread_runner::begin_idle(task_count_type const executed_tasks)
 	{
 		auto &pool{*m_thread_pool};
 		pool.m_waiting_tasks -= executed_tasks;
@@ -127,7 +133,7 @@ namespace libbio::dispatch {
 		{
 			while (true)
 			{
-				std::int64_t executed_tasks{}; // Total over the iterations of the loop below (but not the enclosing loop).
+				task_count_type executed_tasks{}; // Total over the iterations of the loop below (but not the enclosing loop).
 
 				{
 					// Critical section 1.
@@ -146,79 +152,8 @@ namespace libbio::dispatch {
 							{
 								++executed_tasks;
 
-								// FIXME: Move this to a separate function.
-#if LIBBIO_ENABLE_DISPATCH_BARRIER
-								{
-									auto &queue_item{task_executor->current_queue_item()};
-									libbio_assert(queue_item.barrier_);
-									auto &bb{*queue_item.barrier_};
-									barrier::status_underlying_type state{barrier::NOT_EXECUTED};
-									if (bb.m_state.compare_exchange_strong(state, barrier::EXECUTING, std::memory_order_acq_rel, std::memory_order_acquire))
-									{
-										// Wait for the previous tasks and the previous barrier to complete.
-										bb.m_previous_has_finished.wait(false, std::memory_order_acquire);
-
-										bb.m_task();
-										bb.m_task = task{}; // Deallocate memory.
-
-										bool should_continue{};
-
-										{
-											std::lock_guard const lock_{task_executor->pool_lock()};
-											should_continue = pool.m_should_continue;
-											if (!should_continue)
-												remove_from_pool(executed_tasks);
-										}
-
-										if (should_continue)
-										{
-											bb.m_state.store(barrier::DONE, std::memory_order_release);
-											bb.m_state.notify_all();
-										}
-										else
-										{
-											bb.m_state.store(barrier::DO_STOP, std::memory_order_release);
-											bb.m_state.notify_all();
-											return;
-										}
-									}
-									else
-									{
-										// The barrier task is either currently being executed or has already been finished.
-										switch (state)
-										{
-											case barrier::EXECUTING:
-											{
-												bb.m_state.wait(barrier::EXECUTING, std::memory_order::acquire);
-												// The acquire operation above should make the modification visible here.
-												if (barrier::DO_STOP == bb.m_state.load(std::memory_order_relaxed))
-												{
-													std::lock_guard const lock_{task_executor->pool_lock()};
-													remove_from_pool(executed_tasks);
-													return;
-												}
-
-												break;
-											}
-
-											case barrier::DONE:
-												break;
-
-											// Stop if the barrier’s task called m_pool.stop().
-											case barrier::DO_STOP:
-											{
-												std::lock_guard const lock_{task_executor->pool_lock()};
-												remove_from_pool(executed_tasks);
-												return;
-											}
-
-											case barrier::NOT_EXECUTED:
-												// Unexpected.
-												std::abort();
-										}
-									}
-								}
-#endif
+								if (!handle_barrier(task_executor->current_queue_item(), task_executor->pool_lock(), executed_tasks))
+									return;
 
 								task_executor->run();
 							}
@@ -284,6 +219,86 @@ namespace libbio::dispatch {
 				}
 			} // Outer while (true)
 		}
+	}
+
+
+	bool worker_thread_runner::handle_barrier(
+		queue_item_type &queue_item,
+		pool_lock_type &pool_lock,
+		task_count_type const executed_tasks
+	)
+	{
+#if LIBBIO_ENABLE_DISPATCH_BARRIER
+		libbio_assert(queue_item.barrier_);
+		auto &pool{*m_thread_pool};
+		auto &bb{*queue_item.barrier_};
+		barrier::status_underlying_type state{barrier::NOT_EXECUTED};
+		if (bb.m_state.compare_exchange_strong(state, barrier::EXECUTING, std::memory_order_acq_rel, std::memory_order_acquire))
+		{
+			// Wait for the previous tasks and the previous barrier to complete.
+			bb.m_previous_has_finished.wait(false, std::memory_order_acquire);
+
+			bb.m_task();
+			bb.m_task = task{}; // Deallocate memory.
+
+			bool should_continue{};
+
+			{
+				std::lock_guard const lock_{pool_lock};
+				should_continue = pool.m_should_continue;
+				if (!should_continue)
+					remove_from_pool(executed_tasks);
+			}
+
+			if (should_continue)
+			{
+				bb.m_state.store(barrier::DONE, std::memory_order_release);
+				bb.m_state.notify_all();
+			}
+			else
+			{
+				bb.m_state.store(barrier::DO_STOP, std::memory_order_release);
+				bb.m_state.notify_all();
+				return false;
+			}
+		}
+		else
+		{
+			// The barrier task is either currently being executed or has already been finished.
+			switch (state)
+			{
+				case barrier::EXECUTING:
+				{
+					bb.m_state.wait(barrier::EXECUTING, std::memory_order::acquire);
+					// The acquire operation above should make the modification visible here.
+					if (barrier::DO_STOP == bb.m_state.load(std::memory_order_relaxed))
+					{
+						std::lock_guard const lock_{pool_lock};
+						remove_from_pool(executed_tasks);
+						return false;
+					}
+
+					break;
+				}
+
+				case barrier::DONE:
+					break;
+
+				// Stop if the barrier’s task called m_pool.stop().
+				case barrier::DO_STOP:
+				{
+					std::lock_guard const lock_{pool_lock};
+					remove_from_pool(executed_tasks);
+					return false;
+				}
+
+				case barrier::NOT_EXECUTED:
+					// Unexpected.
+					std::abort();
+			}
+		}
+#endif
+		return true;
 	}
 
 
