@@ -5,6 +5,7 @@
 
 #include <libbio/assert.hh>
 #include <libbio/dispatch/detail/task_executor.hh>
+#include <libbio/dispatch/task_def.hh>
 #include <libbio/dispatch/thread_pool.hh>
 #include <mutex>
 #include <utility>
