@@ -11,6 +11,7 @@
 #include <chrono>
 #include <cmath>				// std::floor
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <libbio/assert.hh>
 #include <libbio/dispatch.hh>
@@ -148,6 +149,7 @@ namespace libbio::dispatch {
 								// FIXME: Move this to a separate function.
 #if LIBBIO_ENABLE_DISPATCH_BARRIER
 								{
+									auto &queue_item{task_executor->current_queue_item()};
 									libbio_assert(queue_item.barrier_);
 									auto &bb{*queue_item.barrier_};
 									barrier::status_underlying_type state{barrier::NOT_EXECUTED};
@@ -162,7 +164,7 @@ namespace libbio::dispatch {
 										bool should_continue{};
 
 										{
-											std::lock_guard const lock_{lock};
+											std::lock_guard const lock_{task_executor->pool_lock()};
 											should_continue = pool.m_should_continue;
 											if (!should_continue)
 												remove_from_pool(executed_tasks);
@@ -191,7 +193,7 @@ namespace libbio::dispatch {
 												// The acquire operation above should make the modification visible here.
 												if (barrier::DO_STOP == bb.m_state.load(std::memory_order_relaxed))
 												{
-													std::lock_guard const lock_{lock};
+													std::lock_guard const lock_{task_executor->pool_lock()};
 													remove_from_pool(executed_tasks);
 													return;
 												}
@@ -205,7 +207,7 @@ namespace libbio::dispatch {
 											// Stop if the barrier’s task called m_pool.stop().
 											case barrier::DO_STOP:
 											{
-												std::lock_guard const lock_{lock};
+												std::lock_guard const lock_{task_executor->pool_lock()};
 												remove_from_pool(executed_tasks);
 												return;
 											}
