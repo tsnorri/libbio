@@ -6,7 +6,6 @@
 #ifndef LIBBIO_DISPATCH_TASK_EXECUTOR_HH
 #define LIBBIO_DISPATCH_TASK_EXECUTOR_HH
 
-#include <condition_variable>
 #include <libbio/dispatch/queue.hh>
 #include <libbio/dispatch/task_decl.hh>
 #include <mutex>
