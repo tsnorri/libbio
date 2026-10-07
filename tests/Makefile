@@ -26,8 +26,12 @@ CXXFLAGS +=	-ftemplate-backtrace-limit=0
 OBJECTS	=	algorithm.o \
 			array_list.o \
 			assert.o \
+			bit_reading_stream_arbitrary.o \
+			bit_writing_stream_arbitrary.o \
 			buffer.o \
+			disjoint_sets_arbitrary.o \
 			dispatch_event_manager.o \
+			encoding_arbitrary.o \
 			fasta_reader.o \
 			fasta_reader_arbitrary.o \
 			fastq_reader_arbitrary.o \
@@ -41,6 +45,7 @@ OBJECTS	=	algorithm.o \
 			is_equal.o \
 			matrix.o \
 			merge_projected.o \
+			partial_word.o \
 			pearson_correlation_arbitrary.o \
 			power_of_two.o \
 			power_of_two_arbitrary.o \
