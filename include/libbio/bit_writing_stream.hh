@@ -7,25 +7,33 @@
 #define LIBBIO_BIT_WRITING_STREAM_HH
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <libbio/assert.hh>
 #include <span>
+#include <utility>
 #include <vector>
 
 
 namespace libbio::bit_writing_streams {
 
+	template <std::size_t t_size>
 	class span_target
 	{
 	public:
 		typedef std::uint64_t position_type;
 		typedef std::uint64_t value_type;
-		typedef std::span <value_type> target_type;
+		typedef std::span <value_type, t_size> target_type;
 
 	private:
 		target_type m_values;
 
 	public:
+		explicit span_target(target_type values):
+			m_values{values}
+		{
+		}
+
 		[[nodiscard]] target_type values() const { return m_values; }
 		[[nodiscard]] bool prepare(position_type pos) const { return (pos + 63U) / 64U <= m_values.size(); }
 		[[nodiscard]] value_type &operator[](position_type index) { return m_values[index]; }
@@ -44,6 +52,13 @@ namespace libbio::bit_writing_streams {
 		target_type m_values;
 
 	public:
+		vector_target() = default;
+
+		explicit vector_target(target_type &&values):
+			m_values{std::move(values)}
+		{
+		}
+
 		[[nodiscard]] target_type &values() { return m_values; }
 		[[nodiscard]] bool prepare(position_type pos) { m_values.resize(pos, 0); return true; } // FIXME: catch std::bad_alloc?
 		[[nodiscard]] value_type &operator[](position_type index) { return m_values[index]; }
@@ -67,8 +82,14 @@ namespace libbio {
 		position_type m_write_pos{};
 
 	public:
+		explicit bit_writing_stream(target_type &&target):
+			m_target{std::move(target)}
+		{
+		}
+
 		[[nodiscard]] position_type current_position() const { return m_write_pos; }
 		[[nodiscard]] target_type &target() { return m_target; }
+		[[nodiscard]] target_type const &target() const { return m_target; }
 		[[nodiscard]] bool write_bits(value_type word, std::uint8_t bit_count);
 		[[nodiscard]] bool write_zeros(position_type count);
 		void clear() { m_target.clear(); m_write_pos = 0; }
