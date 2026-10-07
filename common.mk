@@ -43,6 +43,11 @@ BOOST_INCLUDE	?=
 else
 BOOST_INCLUDE	?= -isystem $(BOOST_ROOT)/include
 endif
+ifeq ($(LIBBIO_ENABLE_DISPATCH_FIBER_SUPPORT),1)
+BOOST_LIBS ?= -L$(BOOST_ROOT)/lib -lboost_iostreams -lboost_context
+else
+BOOST_LIBS ?= -L$(BOOST_ROOT)/lib -lboost_iostreams
+endif
 
 ifeq ($(LIBDEFLATE_ROOT),)
 LIBDEFLATE_INCLUDE	?=
