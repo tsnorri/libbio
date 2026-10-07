@@ -6,10 +6,10 @@ RAPIDCHECK_BUILD_DIR ?= build
 # macOS 10.11 does not have std::uncaught_exceptions. We could use a custom-installed libc++
 # but set a configuration option instead for now.
 CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
-			-I../lib/Catch2/src \
-			-I../lib/Catch2/build/generated-includes \
-			-I../lib/rapidcheck/include \
-			-I../lib/rapidcheck/extras/catch/include \
+			-isystem ../lib/Catch2/src \
+			-isystem ../lib/Catch2/build/generated-includes \
+			-isystem ../lib/rapidcheck/include \
+			-isystem ../lib/rapidcheck/extras/catch/include \
 			-I../rapidcheck-test-driver/include
 
 ifeq ($(origin NO_COVERAGE_CHECK),undefined)
