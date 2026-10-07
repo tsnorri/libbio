@@ -21,6 +21,7 @@ AC_DEFUN([libbio_enable_arg], [
 		[${libbio_define_val}],
 		[$3]
 	)
+	[LIBBIO_ENABLE_]AS_TR_SH(m4_toupper([$1]))[=${libbio_define_val}]
 ])
 
 AC_CONFIG_FILES([local.mk:configuration/local.mk.in])
@@ -94,6 +95,7 @@ AS_IF(
 
 CPPFLAGS="${CPPFLAGS_}"
 
+AC_SUBST([LIBBIO_ENABLE_DISPATCH_FIBER_SUPPORT])
 AC_SUBST([BOOST_ROOT], ["${boost_root}"])
 AC_SUBST([LIBDEFLATE_ROOT], ["${libdeflate_root}"])
 AC_SUBST([WARNING_FLAGS])
