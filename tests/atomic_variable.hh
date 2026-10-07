@@ -3,8 +3,8 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
-#ifndef LIBBIO_TEST_ATOMIC_VARIABLE_HH
-#define LIBBIO_TEST_ATOMIC_VARIABLE_HH
+#ifndef LIBBIO_TESTS_ATOMIC_VARIABLE_HH
+#define LIBBIO_TESTS_ATOMIC_VARIABLE_HH
 
 #include <chrono>
 #include <condition_variable>
