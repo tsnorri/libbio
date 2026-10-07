@@ -6,9 +6,12 @@
 #ifndef LIBBIO_BITS_HH
 #define LIBBIO_BITS_HH
 
+#include <bit>
 #include <climits>
+#include <cstddef>
 #include <concepts>
 #include <cstdint>
+#include <span>
 #include <stdexcept>	// std::range_error
 
 
@@ -270,6 +273,39 @@ namespace libbio::bits {
 		if (!retval)
 			throw std::range_error("Unable to calculate the power of two");
 		return retval;
+	}
+
+
+	template <std::unsigned_integral t_value, std::size_t t_size>
+	constexpr void shift_span_left(std::span <t_value, t_size> span, std::uint8_t const shift_amt)
+	{
+		t_value const higher_mask{(~(t_value{})) << shift_amt};
+		t_value const lower_mask{~higher_mask};
+		t_value prev{};
+		for (std::size_t ii{}; ii < span.size(); ++ii)
+		{
+			span[ii] = std::rotl(span[ii], shift_amt);
+			prev = span[ii] & lower_mask;
+			span[ii] &= higher_mask;
+			span[ii] |= prev;
+		}
+	}
+
+
+	template <std::unsigned_integral t_value, std::size_t t_size>
+	constexpr void shift_span_right(std::span <t_value, t_size> span, std::uint8_t const shift_amt)
+	{
+		t_value const higher_mask{(~(t_value{})) << shift_amt};
+		t_value const lower_mask{~higher_mask};
+		t_value prev{};
+		for (std::size_t ii{span.size()}; 0 < ii; --ii)
+		{
+			auto const ii_{ii - 1};
+			span[ii_] = std::rotr(span[ii_], shift_amt);
+			prev = span[ii_] & higher_mask;
+			span[ii_] &= lower_mask;
+			span[ii_] |= prev;
+		}
 	}
 }
 
