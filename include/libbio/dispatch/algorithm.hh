@@ -14,8 +14,18 @@
 
 namespace libbio::dispatch::detail {
 
+	inline void wait_for_group(group &gg)
+	{
+#if LIBBIO_ENABLE_DISPATCH_FIBER_SUPPORT
+		gg.wait_and_yield();
+#else
+		gg.wait();
+#endif
+	}
+
+
 	template <typename t_fn>
-	struct for_each_block_base
+	struct for_block_base
 	{
 		typedef std::uint64_t index_type;
 
@@ -25,8 +35,8 @@ namespace libbio::dispatch::detail {
 	};
 
 
-	template <typename t_fn, typename t_base = for_each_block_base <t_fn>>
-	struct for_each_block : public t_base
+	template <typename t_fn, typename t_base = for_block_base <t_fn>>
+	struct for_block : public t_base
 	{
 		typedef t_base::index_type index_type;
 
@@ -38,8 +48,8 @@ namespace libbio::dispatch::detail {
 	};
 
 
-	template <typename t_context, typename t_fn, typename t_base = for_each_block_base <t_fn>>
-	struct for_each_block_with_context : public t_base
+	template <typename t_context, typename t_fn, typename t_base = for_block_base <t_fn>>
+	struct for_block_with_context : public t_base
 	{
 		typedef t_base::index_type index_type;
 
@@ -54,7 +64,7 @@ namespace libbio::dispatch::detail {
 
 
 	template <typename t_enqueue>
-	void for_each(parallel_queue &queue, std::uint64_t const limit, std::uint64_t const block_size, t_enqueue &&enqueue)
+	void for_(parallel_queue &queue, std::uint64_t const limit, std::uint64_t const block_size, t_enqueue &&enqueue)
 	{
 		group gg;
 
@@ -73,7 +83,7 @@ namespace libbio::dispatch::detail {
 		if (lb < limit)
 			enqueue(gg, lb, limit);
 
-		gg.wait();
+		wait_for_group(gg);
 	}
 }
 
@@ -81,28 +91,28 @@ namespace libbio::dispatch::detail {
 namespace libbio::dispatch {
 
 	template <typename t_fn>
-	void for_each(parallel_queue &queue, std::uint64_t const limit, std::uint64_t const block_size, t_fn &&fn)
+	void for_(parallel_queue &queue, std::uint64_t const limit, std::uint64_t const block_size, t_fn &&fn)
 	{
 		auto const enqueue{[&](group &gg, std::uint64_t lb, std::uint64_t rb){
-			queue.group_async(gg, [fb = detail::for_each_block{&fn, lb, rb}] mutable {
+			queue.group_async(gg, [fb = detail::for_block{&fn, lb, rb}] mutable {
 				fb();
 			});
 		}};
 
-		detail::for_each(queue, limit, block_size, enqueue);
+		detail::for_(queue, limit, block_size, enqueue);
 	}
 
 
 	template <typename t_context, typename t_fn>
-	void for_each_with_context(parallel_queue &queue, std::uint64_t const limit, std::uint64_t const block_size, t_fn &&fn)
+	void for_with_context(parallel_queue &queue, std::uint64_t const limit, std::uint64_t const block_size, t_fn &&fn)
 	{
 		auto const enqueue{[&](group &gg, std::uint64_t lb, std::uint64_t rb){
-			queue.group_async(gg, [fb = detail::for_each_block_with_context <t_context, t_fn>{&fn, lb, rb}] mutable {
+			queue.group_async(gg, [fb = detail::for_block_with_context <t_context, t_fn>{&fn, lb, rb}] mutable {
 				fb();
 			});
 		}};
 
-		detail::for_each(queue, limit, block_size, enqueue);
+		detail::for_(queue, limit, block_size, enqueue);
 	}
 }
 
