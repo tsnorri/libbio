@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2018-2024 Tuukka Norri
+ * Copyright (c) 2018-2026 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
 #ifndef LIBBIO_BITS_HH
 #define LIBBIO_BITS_HH
 
+#include <algorithm>
 #include <bit>
 #include <climits>
 #include <cstddef>
@@ -13,6 +14,7 @@
 #include <cstdint>
 #include <span>
 #include <stdexcept>	// std::range_error
+#include <type_traits>
 
 
 namespace libbio::bits::detail {
@@ -276,35 +278,105 @@ namespace libbio::bits {
 	}
 
 
-	template <std::unsigned_integral t_value, std::size_t t_size>
-	constexpr void shift_span_left(std::span <t_value, t_size> span, std::uint8_t const shift_amt)
+	template <std::unsigned_integral t_value, std::size_t t_size, bool t_can_shift_whole_words = false>
+	constexpr void shift_span_left(
+		std::span <t_value, t_size> span,
+		std::uint8_t shift_amt,
+		std::bool_constant <t_can_shift_whole_words> = std::bool_constant <t_can_shift_whole_words>{}
+	)
 	{
+		constexpr auto const value_bits{CHAR_BIT * sizeof(t_value)};
+
+		if (0 == shift_amt) return;
+
+		std::size_t start{};
+		if (t_can_shift_whole_words && value_bits <= shift_amt)
+		{
+			// Shift by this many whole words.
+			auto const word_count{shift_amt / value_bits};
+
+			// Check if we can just zero-fill the span.
+			if (span.size() <= word_count)
+			{
+				std::fill(span.begin(), span.end(), 0);
+				return;
+			}
+
+			// We may have some bits to shift.
+			// Handle the whole words first.
+			std::copy_backward(span.begin(), span.end() - word_count, span.end());
+			start = word_count;
+
+			// Fill the start with zeros.
+			std::fill(span.begin(), span.begin() + word_count, 0);
+
+			shift_amt %= value_bits;
+			if (0 == shift_amt)
+				return;
+		}
+
 		t_value const higher_mask{(~(t_value{})) << shift_amt};
 		t_value const lower_mask{~higher_mask};
 		t_value prev{};
-		for (std::size_t ii{}; ii < span.size(); ++ii)
+		for (std::size_t ii{start}; ii < span.size(); ++ii)
 		{
 			span[ii] = std::rotl(span[ii], shift_amt);
-			prev = span[ii] & lower_mask;
+			auto const next{span[ii] & lower_mask};
 			span[ii] &= higher_mask;
 			span[ii] |= prev;
+			prev = next;
 		}
 	}
 
 
-	template <std::unsigned_integral t_value, std::size_t t_size>
-	constexpr void shift_span_right(std::span <t_value, t_size> span, std::uint8_t const shift_amt)
+	template <std::unsigned_integral t_value, std::size_t t_size, bool t_can_shift_whole_words = false>
+	constexpr void shift_span_right(
+		std::span <t_value, t_size> span,
+		std::uint8_t shift_amt,
+		std::bool_constant <t_can_shift_whole_words> = std::bool_constant <t_can_shift_whole_words>{}
+	)
 	{
+		constexpr auto const value_bits{CHAR_BIT * sizeof(t_value)};
+
+		if (0 == shift_amt) return;
+
+		std::size_t start{span.size()};
+		if (t_can_shift_whole_words && value_bits <= shift_amt)
+		{
+			// Shift by this many whole words.
+			auto const word_count{shift_amt / value_bits};
+
+			// Check if we can just zero-fill the span.
+			if (span.size() <= word_count)
+			{
+				std::fill(span.begin(), span.end(), 0);
+				return;
+			}
+
+			// We may have some bits to shift.
+			// Handle the whole words first.
+			std::copy(span.begin() + word_count, span.end(), span.begin());
+			start -= word_count;
+
+			// Fill the rest with zeros.
+			std::fill(span.begin() + word_count, span.end(), 0);
+
+			shift_amt %= value_bits;
+			if (0 == shift_amt)
+				return;
+		}
+
 		t_value const higher_mask{(~(t_value{})) << shift_amt};
 		t_value const lower_mask{~higher_mask};
 		t_value prev{};
-		for (std::size_t ii{span.size()}; 0 < ii; --ii)
+		for (std::size_t ii{start}; 0 < ii; --ii)
 		{
 			auto const ii_{ii - 1};
 			span[ii_] = std::rotr(span[ii_], shift_amt);
-			prev = span[ii_] & higher_mask;
+			auto const next{span[ii_] & higher_mask};
 			span[ii_] &= lower_mask;
 			span[ii_] |= prev;
+			prev = next;
 		}
 	}
 }
