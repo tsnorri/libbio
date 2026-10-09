@@ -85,17 +85,21 @@ int main(int argc, char **argv)
 
 	auto &driver(::libbio::tests::test_driver::shared());
 
+	bool should_exit_early{};
 	if (args_info.list_given)
 	{
 		driver.list_tests();
-		return EXIT_SUCCESS;
+		should_exit_early = true;
 	}
 
 	if (args_info.list_templates_given)
 	{
 		driver.list_template_tests();
-		return EXIT_SUCCESS;
+		should_exit_early = true;
 	}
+
+	if (should_exit_early)
+		return EXIT_SUCCESS;
 
 	std::size_t status{};
 

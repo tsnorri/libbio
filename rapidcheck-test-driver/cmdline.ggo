@@ -7,8 +7,8 @@ purpose		"Run tests written with RapidCheck"
 description	"The driver makes it possible to run  RapidCheck in reproduce mode."
 
 defmode		"List"	modedesc = "List the tests."
-modeoption	"list"				l	"List the tests."													mode = "List"	optional
-modeoption	"list-templates"	L	"List the template tests."											mode = "List"	optional
+modeoption	"list"				l	"List the tests and exit."											mode = "List"	optional
+modeoption	"list-templates"	L	"List the template tests and exit."									mode = "List"	optional
 
 defmode		"Run"	modedesc = "Run the tests."
 modeoption	"test"				t	"Run only the given test(s)"		string	typestr = "TEST"		mode = "Run"	optional	multiple
