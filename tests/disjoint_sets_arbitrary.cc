@@ -44,9 +44,13 @@ namespace rc {
 		{
 			return gen::withSize([](int size){
 				RC_ASSERT(0 <= size);
-				partition_count_type const partition_count((size + 6) / 3);
+				if (0 == size)
+					return gen::just(test_input{});
 
-				return gen::mapcat(gen::arbitrary <partition_count_type>(), [&](partition_count_type const seed){
+				partition_count_type const partition_count((size + 4) / 3);
+				RC_ASSERT(0 < partition_count);
+
+				return gen::mapcat(gen::arbitrary <partition_count_type>(), [size, partition_count](partition_count_type const seed){
 					std::default_random_engine rng{seed};
 
 					index_vector indices(size);
@@ -76,7 +80,9 @@ TEST_CASE(
 			RC_ASSERT(input.partitions.size() == input.indices.size());
 
 			auto const size{input.partitions.size()};
-			lb::disjoint_sets <index_vector> ds;
+			lb::disjoint_sets <index_vector> ds{size};
+
+			if (0 == size) return;
 
 			// Check that every set is initially a singleton.
 			for (index_type ii{}; ii < size; ++ii)
