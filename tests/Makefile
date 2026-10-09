@@ -3,14 +3,18 @@ include ../common.mk
 
 RAPIDCHECK_BUILD_DIR ?= build
 
+CPPFLAGS_RC := \
+	$(CPPFLAGS) \
+	-isystem ../lib/rapidcheck/include \
+	-I../rapidcheck-test-driver/include
+
 # macOS 10.11 does not have std::uncaught_exceptions. We could use a custom-installed libc++
 # but set a configuration option instead for now.
 CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
 			-isystem ../lib/Catch2/src \
 			-isystem ../lib/Catch2/build/generated-includes \
 			-isystem ../lib/rapidcheck/include \
-			-isystem ../lib/rapidcheck/extras/catch/include \
-			-I../rapidcheck-test-driver/include
+			-isystem ../lib/rapidcheck/extras/catch/include
 
 ifeq ($(origin NO_COVERAGE_CHECK),undefined)
 TEST_LDFLAGS = -coverage $(BOOST_LIBS) $(LDFLAGS)
@@ -59,8 +63,13 @@ OBJECTS	=	algorithm.o \
 			subprocess_argument_parser.o \
 			vcf_reader.o
 
-OBJECTS_RC	=	fasta_reader_arbitrary.rc.o \
+OBJECTS_RC	=	bit_reading_stream_arbitrary.rc.o \
+				bit_writing_stream_arbitrary.rc.o \
+				disjoint_sets_arbitrary.rc.o \
+				encoding_arbitrary.rc.o \
+				fasta_reader_arbitrary.rc.o \
 				fastq_reader_arbitrary.rc.o \
+				partial_word.rc.o \
 				pearson_correlation_arbitrary.rc.o \
 				power_of_two_arbitrary.rc.o \
 				reverse_word_arbitrary.rc.o \
@@ -102,7 +111,7 @@ clean:
 	$(RM) -r coverage
 
 %.rc.o: %.cc
-	$(CXX) -DBUILD_RAPIDCHECK_TEST_DRIVER -c $(CXXFLAGS) $(CPPFLAGS) -o $@ $<
+	$(CXX) -DBUILD_RAPIDCHECK_TEST_DRIVER -c $(CXXFLAGS) $(CPPFLAGS_RC) -o $@ $<
 
 %.vcf.gz: %.vcf
 	$(GZIP) -k $<
