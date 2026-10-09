@@ -11,6 +11,7 @@ CPPFLAGS_RC := \
 # macOS 10.11 does not have std::uncaught_exceptions. We could use a custom-installed libc++
 # but set a configuration option instead for now.
 CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
+			-I../rapidcheck-test-driver/include \
 			-isystem ../lib/Catch2/src \
 			-isystem ../lib/Catch2/build/generated-includes \
 			-isystem ../lib/rapidcheck/include \
@@ -111,7 +112,7 @@ clean:
 	$(RM) -r coverage
 
 %.rc.o: %.cc
-	$(CXX) -DBUILD_RAPIDCHECK_TEST_DRIVER -c $(CXXFLAGS) $(CPPFLAGS_RC) -o $@ $<
+	$(CXX) -DLIBBIO_BUILD_RAPIDCHECK_TEST_DRIVER -c $(CXXFLAGS) $(CPPFLAGS_RC) -o $@ $<
 
 %.vcf.gz: %.vcf
 	$(GZIP) -k $<

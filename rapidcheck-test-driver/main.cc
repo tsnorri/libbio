@@ -7,7 +7,9 @@
 #include <iostream>
 #include "cmdline.h"
 
-#define BUILD_RAPIDCHECK_TEST_DRIVER
+#if !defined(LIBBIO_BUILD_RAPIDCHECK_TEST_DRIVER)
+#	define LIBBIO_BUILD_RAPIDCHECK_TEST_DRIVER
+#endif
 #include <libbio/rapidcheck_test_driver.hh>
 
 

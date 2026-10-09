@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Tuukka Norri
+ * Copyright (c) 2023-2026 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -7,12 +7,7 @@
 #ifndef LIBBIO_RAPIDCHECK_TEST_DRIVER
 #define LIBBIO_RAPIDCHECK_TEST_DRIVER
 
-#include <boost/type_index.hpp>									// boost::typeindex::type_id <t_type>().pretty_name()
 #include <exception>											// Needed by RapidCheck
-#include <format>
-#include <iostream>
-#include <libbio/tuple/map.hh>
-#include <libbio/utility/compare_strings_transparent.hh>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-braces"
@@ -23,13 +18,19 @@
 #pragma clang diagnostic pop
 #pragma GCC diagnostic pop
 
+#include <boost/type_index.hpp>									// boost::typeindex::type_id <t_type>().pretty_name()
+#include <cstddef>
+#include <format>
+#include <iostream>
+#include <libbio/tuple/map.hh>
+#include <libbio/utility/compare_strings_transparent.hh>
 #include <set>
 #include <string>
 #include <utility>												// std::forward
 #include <vector>
 
 
-#ifdef BUILD_RAPIDCHECK_TEST_DRIVER
+#ifdef LIBBIO_BUILD_RAPIDCHECK_TEST_DRIVER
 
 namespace libbio::tests {
 
@@ -165,6 +166,6 @@ namespace libbio {
 		return rc::prop(std::forward <t_args>(args)...);
 	}
 }
-#endif // BUILD_RAPIDCHECK_TEST_DRIVER
+#endif // LIBBIO_BUILD_RAPIDCHECK_TEST_DRIVER
 
 #endif
