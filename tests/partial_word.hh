@@ -8,7 +8,9 @@
 
 #include <climits>
 #include <cstdint>
+#include <format>
 #include <libbio/rapidcheck_test_driver.hh>
+#include <ostream>
 #include <vector>
 
 
@@ -25,7 +27,18 @@ namespace libbio::tests {
 	};
 
 
-	std::uint64_t write_to_buffer(std::vector <partial_word> const &src, std::vector <partial_word::word_type> &dst);
+	std::uint64_t write_to_buffer(
+		std::vector <partial_word> const &src,
+		std::vector <partial_word::word_type> &dst,
+		bool should_reverse = false
+	);
+
+
+	inline std::ostream &operator<<(std::ostream &os, partial_word const pw)
+	{
+		os << std::format("(w: {:02X} b: {})", pw.word, +pw.bit_count);
+		return os;
+	}
 }
 
 

@@ -60,7 +60,7 @@ namespace libbio::bit_writing_streams {
 		}
 
 		[[nodiscard]] target_type &values() { return m_values; }
-		[[nodiscard]] bool prepare(position_type pos) { m_values.resize(pos, 0); return true; } // FIXME: catch std::bad_alloc?
+		[[nodiscard]] bool prepare(position_type pos) { m_values.resize((pos + 63U) / 64U, 0); return true; } // FIXME: catch std::bad_alloc?
 		[[nodiscard]] value_type &operator[](position_type index) { return m_values[index]; }
 		void clear() { m_values.clear(); }
 	};
