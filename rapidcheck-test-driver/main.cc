@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Tuukka Norri
+ * Copyright (c) 2023-2026 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
@@ -15,7 +15,7 @@ namespace {
 
 	bool run_test(::libbio::tests::test_case_base &tc)
 	{
-		std::cerr << "* Running test: " << tc.message() << '\n';
+		std::cerr << "\n** Running test: " << tc.message() << '\n';
 		return tc.run_test();
 	}
 }
