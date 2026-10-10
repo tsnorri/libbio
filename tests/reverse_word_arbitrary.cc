@@ -3,7 +3,10 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <array>
 #include <bit>
+#include <cstdint>
+#include <cstring>
 #include <libbio/algorithm.hh>
 #include <libbio/bits.hh>
 #include <libbio/rapidcheck_test_driver.hh>
