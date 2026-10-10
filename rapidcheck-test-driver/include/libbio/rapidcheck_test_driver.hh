@@ -130,6 +130,9 @@ namespace libbio {
 #	define LIBBIO_TEST_FN_NAME LIBBIO_CONCAT_TOKEN(LIBBIO_TEST_, __LINE__) // Use uppercase to make the function easier to notice from the call stack.
 #	define LIBBIO_TEST_CASE_VARIABLE_NAME LIBBIO_CONCAT_TOKEN(libio_test_case_instance_, __LINE__)
 
+#	define LIBBIO_UNPAREN_(R, DATA, ELEMENT) , BOOST_PP_REMOVE_PARENS(ELEMENT)
+#	define LIBBIO_UNPAREN_EACH(FIRST, ...) BOOST_PP_REMOVE_PARENS(FIRST) __VA_OPT__(BOOST_PP_SEQ_FOR_EACH(LIBBIO_UNPAREN_, "", BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)))
+
 // It is very important that all of the following are on the same line.
 #	define TEST_CASE(MESSAGE, TAGS) \
 		static inline bool __attribute__ ((always_inline)) LIBBIO_TEST_FN_NAME(); /* Forward declaration */ \
@@ -156,7 +159,7 @@ namespace libbio {
 				char const *message() const override { return m_message.data(); } \
 				bool run_test() override { return LIBBIO_TEST_FN_NAME <t_type>(); } \
 			}; \
-			libbio::tuples::map_t <std::tuple <__VA_ARGS__>, test_case> tests{}; \
+			libbio::tuples::map_t <std::tuple <LIBBIO_UNPAREN_EACH(__VA_ARGS__)>, test_case> tests{}; \
 			char const *message() const override { return MESSAGE; } \
 			bool run_test() override { return std::apply([](auto... tt){ return (tt.run_test() && ...); }, tests); } \
 		} LIBBIO_TEST_CASE_VARIABLE_NAME; \
