@@ -18,6 +18,9 @@
 #pragma clang diagnostic pop
 #pragma GCC diagnostic pop
 
+#include <boost/preprocessor/punctuation/remove_parens.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/preprocessor/variadic/to_seq.hpp>
 #include <boost/type_index.hpp>									// boost::typeindex::type_id <t_type>().pretty_name()
 #include <cstddef>
 #include <format>
@@ -34,6 +37,7 @@
 
 namespace libbio::tests {
 
+	struct test_case_base;
 	struct test_case;
 	struct template_test_case;
 
@@ -46,9 +50,12 @@ namespace libbio::tests {
 			libbio::compare_strings_transparent
 		> test_name_set;
 
+		typedef std::vector <test_case_base *> test_case_pointer_vector;
+
 	private:
 		std::vector <test_case *>			m_test_cases;
 		std::vector <template_test_case *>	m_template_test_cases;
+		test_case_pointer_vector			m_failed_test_cases;
 
 	public:
 		static test_driver &shared()
@@ -71,9 +78,11 @@ namespace libbio::tests {
 
 		void list_tests();
 		void list_template_tests();
+		void reset_failed_test_cases() { m_failed_test_cases.clear(); }
 		std::size_t run_all_tests();
 		std::size_t run_given_tests(test_name_set const &names);
 		std::size_t run_given_template_tests(test_name_set const &names);
+		test_case_pointer_vector const &failed_test_cases() const { return m_failed_test_cases; }
 	};
 
 
