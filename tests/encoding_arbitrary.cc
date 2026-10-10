@@ -4,20 +4,35 @@
  */
 
 #include <cstdint>
+#include <libbio/algorithm.hh>
 #include <libbio/bit_reading_stream.hh>
 #include <libbio/bit_writing_stream.hh>
 #include <libbio/encoding/elias_gamma.hh>
 #include <libbio/encoding/elias_delta.hh>
 #include <libbio/encoding/zigzag.hh>
+#include <libbio/rapidcheck/closed_range.hh>
 #include <libbio/rapidcheck_test_driver.hh>
-#include <span>
+#include <limits>
 #include <type_traits>
+#include "integer_type_name.hh"
+#include "span_bit_streams.hh"
 
 namespace lb		= libbio;
 namespace encoding	= libbio::encoding;
+namespace tests		= libbio::tests;
 
 
 namespace {
+
+	template <typename t_type, typename t_codec>
+	struct test_input
+	{
+		typedef t_type value_type;
+		typedef t_codec codec_type;
+
+		value_type value{};
+	};
+
 
 	template <typename t_value>
 	requires std::is_signed_v <t_value>
@@ -32,62 +47,67 @@ namespace {
 	}
 
 
-	struct span_writing_stream
-	{
-		typedef std::span <std::uint64_t, 1> span_type;
-		typedef lb::bit_writing_streams::span_target <span_type::extent> target_type;
-
-		std::uint64_t buffer{};
-		lb::bit_writing_stream <target_type> stream;
-
-		span_writing_stream():
-			stream{
-				target_type{
-					span_type{&buffer, 1}
-				}
-			}
-		{
-		}
-	};
-
-
-	struct span_reading_stream
-	{
-		lb::bit_reading_stream stream;
-
-		explicit span_reading_stream(span_writing_stream const writing_stream):
-			stream{
-				writing_stream.stream.target().values()
-			}
-		{
-		}
-	};
-
-
-	template <typename t_codec, typename t_value>
+	template <typename t_test_type>
 	auto test_elias()
 	{
 		return lb::rc_check(
 			"Elias gamma encoding works as expected",
-			[](t_value const value){
-				t_codec coder{};
-				span_writing_stream writing_stream;
-				span_reading_stream reading_stream{writing_stream};
+			[](t_test_type const input){
+				typedef typename t_test_type::value_type value_type;
+				typedef typename t_test_type::codec_type codec_type;
 
-				bool const res{coder.encode(writing_stream.stream, value)};
-				RC_ASSERT(res == true);
+				RC_LOG() << "Type: " << tests::integer_type_name <value_type>::value << '\n';
+				RC_LOG() << "Value: " << +input.value << '\n';
 
-				auto const res2{coder.decode(writing_stream.buffer)};
-				RC_ASSERT(bool(res2));
-				RC_ASSERT(value == res2->first);
-				RC_ASSERT(0 < res2->second);
+				codec_type coder{};
+				tests::span_writing_stream writing_stream;
+				tests::span_reading_stream reading_stream{writing_stream};
 
-				auto const res3{coder.decode(reading_stream.stream)};
-				RC_ASSERT(bool(res3));
-				RC_ASSERT(value == *res3);
+				{
+					bool const res{coder.encode(writing_stream.stream, input.value)};
+					RC_ASSERT(res == true);
+					reading_stream.stream.set_end_position(writing_stream.stream.current_position());
+				}
+
+				if constexpr (codec_type::max_encoded_size_is_64_bits)
+				{
+					if (input.value <= codec_type::max_value)
+					{
+						auto const res{coder.decode(writing_stream.buffer.front())};
+						RC_ASSERT(bool(res));
+						RC_ASSERT(input.value == res->first);
+						RC_ASSERT(0 < res->second);
+					}
+				}
+
+				{
+					auto const res{coder.decode(reading_stream.stream)};
+					RC_ASSERT(bool(res));
+					RC_ASSERT(input.value == *res);
+				}
 			}
 		);
 	}
+}
+
+
+namespace rc {
+
+	template <typename t_type, typename t_codec>
+	struct Arbitrary <test_input <t_type, t_codec>>
+	{
+		static Gen <test_input <t_type, t_codec>> arbitrary()
+		{
+			constexpr auto const max{lb::min_ct(
+				t_codec::max_value,
+				std::numeric_limits <t_type>::max()
+			)};
+
+			return gen::construct <test_input <t_type, t_codec>>(
+				gen::inClosedRange(t_type{}, t_type{max})
+			);
+		}
+	};
 }
 
 
@@ -119,24 +139,26 @@ TEMPLATE_TEST_CASE(
 TEMPLATE_TEST_CASE(
 	"Elias gamma encoding works as expected",
 	"[template][encoding::elias_gamma]",
-	std::int8_t,
-	std::int16_t,
-	std::int32_t,
-	std::int64_t
+	(test_input <std::uint8_t, encoding::elias_gamma>),
+	(test_input <std::uint16_t, encoding::elias_gamma>),
+	(test_input <std::uint32_t, encoding::elias_gamma>),
+	(test_input <std::uint64_t, encoding::elias_gamma>),
+	(test_input <std::uint64_t, encoding::elias_gamma_tpl <false>>)
 )
 {
-	return test_elias <encoding::elias_gamma, TestType>();
+	return test_elias <TestType>();
 }
 
 
 TEMPLATE_TEST_CASE(
 	"Elias delta encoding works as expected",
 	"[template][encoding::elias_delta]",
-	std::int8_t,
-	std::int16_t,
-	std::int32_t,
-	std::int64_t
+	(test_input <std::uint8_t, encoding::elias_delta>),
+	(test_input <std::uint16_t, encoding::elias_delta>),
+	(test_input <std::uint32_t, encoding::elias_delta>),
+	(test_input <std::uint64_t, encoding::elias_delta>),
+	(test_input <std::uint64_t, encoding::elias_delta_tpl <false>>)
 )
 {
-	return test_elias <encoding::elias_delta, TestType>();
+	return test_elias <TestType>();
 }

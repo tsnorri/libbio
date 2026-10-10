@@ -36,6 +36,7 @@ OBJECTS	=	algorithm.o \
 			buffer.o \
 			disjoint_sets_arbitrary.o \
 			dispatch_event_manager.o \
+			encoding.o \
 			encoding_arbitrary.o \
 			fasta_reader.o \
 			fasta_reader_arbitrary.o \
