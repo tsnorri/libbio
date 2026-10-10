@@ -62,6 +62,8 @@ namespace libbio {
 
 		position_type current_position() const { return m_read_pos; }
 		position_type end_position() const { return m_read_end; }
+		void set_current_position(position_type pos) { m_read_pos = pos; }
+		void set_end_position(position_type pos) { m_read_end = pos; }
 
 		[[nodiscard]] position_type bits_remaining() const { return m_read_end - m_read_pos; }
 		[[nodiscard]] operator bool() const { return bits_remaining(); }
@@ -113,7 +115,7 @@ namespace libbio {
 		auto const word_begin{m_read_pos % value_bits};
 		auto const read_end_{(word_begin + dst.size()) * value_bits};
 		auto const read_end{std::min(m_read_end, read_end_)};
-		auto const word_count{(read_end - m_read_pos + value_bits - 1) % value_bits};
+		auto const word_count{(read_end - m_read_pos + value_bits - 1) / value_bits};
 
 		std::copy_n(m_source.begin() + word_begin, word_count, dst.begin());
 		bits::shift_span_right(dst, m_read_pos % value_bits);
