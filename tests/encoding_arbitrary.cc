@@ -113,7 +113,7 @@ namespace rc {
 
 TEMPLATE_TEST_CASE(
 	"Zigzag encoding works as expected",
-	"[template][encoding::zigzag]",
+	"[template][encoding][encoding::zigzag]",
 	std::int8_t,
 	std::int16_t,
 	std::int32_t,
@@ -138,7 +138,7 @@ TEMPLATE_TEST_CASE(
 
 TEMPLATE_TEST_CASE(
 	"Elias gamma encoding works as expected",
-	"[template][encoding::elias_gamma]",
+	"[template][encoding][encoding::elias_gamma]",
 	(test_input <std::uint8_t, encoding::elias_gamma>),
 	(test_input <std::uint16_t, encoding::elias_gamma>),
 	(test_input <std::uint32_t, encoding::elias_gamma>),
@@ -152,7 +152,7 @@ TEMPLATE_TEST_CASE(
 
 TEMPLATE_TEST_CASE(
 	"Elias delta encoding works as expected",
-	"[template][encoding::elias_delta]",
+	"[template][encoding][encoding::elias_delta]",
 	(test_input <std::uint8_t, encoding::elias_delta>),
 	(test_input <std::uint16_t, encoding::elias_delta>),
 	(test_input <std::uint32_t, encoding::elias_delta>),

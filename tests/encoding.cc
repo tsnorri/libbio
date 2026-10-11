@@ -28,43 +28,43 @@ namespace {
 			THEN("it can be encoded")
 			{
 				REQUIRE(res == true);
-				reading_stream.stream.set_end_position(writing_stream.stream.current_position());
 			}
-		}
-
-		if constexpr (t_codec::max_encoded_size_is_64_bits)
-		{
-			if (value <= t_codec::max_value)
+			
+			if constexpr (t_codec::max_encoded_size_is_64_bits)
 			{
-				WHEN("the encoded value is decoded by reading it from a word")
+				if (value <= t_codec::max_value)
 				{
-					auto const res{coder.decode(writing_stream.buffer.front())};
-
-					THEN("it can be decoded and the decoded value matches the input")
+					AND_WHEN("the encoded value is decoded by reading it from a word")
 					{
-						REQUIRE(bool(res));
-						REQUIRE(value == res->first);
-						REQUIRE(0 < res->second);
+						auto const res{coder.decode(writing_stream.buffer.front())};
+
+						THEN("it can be decoded and the decoded value matches the input")
+						{
+							REQUIRE(bool(res));
+							REQUIRE(value == res->first);
+							REQUIRE(0 < res->second);
+						}
 					}
 				}
 			}
-		}
 
-		WHEN("the encoded value is decoded by reading it from a bit stream")
-		{
-			auto const res{coder.decode(reading_stream.stream)};
-
-			THEN("it can be decoded and the decoded value matches the input")
+			AND_WHEN("the encoded value is decoded by reading it from a bit stream")
 			{
-				REQUIRE(bool(res));
-				REQUIRE(value == *res);
+				reading_stream.stream.set_end_position(writing_stream.stream.current_position());
+				auto const res{coder.decode(reading_stream.stream)};
+
+				THEN("it can be decoded and the decoded value matches the input")
+				{
+					REQUIRE(bool(res));
+					REQUIRE(value == *res);
+				}
 			}
 		}
 	}
 }
 
 
-SCENARIO("Elias gamma encoding works with predefined values as expected", "[elias_gamma]")
+SCENARIO("Elias gamma encoding works with predefined values as expected", "[encoding][encoding::elias_gamma]")
 {
 	GIVEN("std::uint64_t{4294967295}")
 	{
