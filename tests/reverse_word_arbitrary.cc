@@ -51,8 +51,7 @@ TEMPLATE_TEST_CASE(
 	std::uint64_t
 )
 {
-	return lb::rc_check(
-		"libbio::reverse_bits <> works as expected",
+	return lb::rc_test(
 		[](TestType const value){
 			auto const expected{reverse_bits(value)};
 			auto const actual{lb::reverse_bits <1>(value)};

@@ -21,8 +21,7 @@ TEMPLATE_TEST_CASE(
 	std::true_type
 )
 {
-	return lb::rc_check(
-		"bit_writing_stream works as expected",
+	return lb::rc_test(
 		[](std::vector <tests::partial_word> const &input){
 			// Prepare expected.
 			std::vector <tests::partial_word::word_type> expected;
@@ -33,7 +32,7 @@ TEMPLATE_TEST_CASE(
 			bool did_use_write_zeros{};
 			for (tests::partial_word const pw : input)
 			{
-				
+
 				if constexpr (TestType::value)
 				{
 					if (pw.word)
@@ -49,7 +48,7 @@ TEMPLATE_TEST_CASE(
 					RC_ASSERT(stream.write_bits(pw.word, pw.bit_count));
 				}
 			}
-			
+
 			if constexpr (TestType::value)
 				RC_TAG(did_use_write_zeros);
 

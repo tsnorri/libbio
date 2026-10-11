@@ -74,8 +74,7 @@ TEMPLATE_TEST_CASE(
 	valid_input <std::uint64_t>
 )
 {
-	return lb::rc_check(
-		"bits::is_power_of_2 works with arbitrary valid input",
+	return lb::rc_test(
 		[](TestType const value){
 			auto const value_(value.get());
 			auto const power(lb::bits::gte_power_of_2(value_));
@@ -98,8 +97,7 @@ TEMPLATE_TEST_CASE(
 	invalid_input <std::uint64_t>
 )
 {
-	return lb::rc_check(
-		"bits::is_power_of_2 works with arbitrary invalid input",
+	return lb::rc_test(
 		[](TestType const value){
 			auto const value_(value.get());
 			auto const power(lb::bits::gte_power_of_2(value_));

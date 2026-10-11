@@ -27,8 +27,7 @@ TEST_CASE(
 	"[set_difference_inplace]"
 )
 {
-	return lb::rc_check(
-		"set_difference_inplace works with arbitrary disjoint input",
+	return lb::rc_test(
 		[](std::set <value_type> const &target_, std::set <value_type> const &matched_){
 
 			std::vector target(target_.begin(), target_.end());
@@ -65,8 +64,7 @@ TEST_CASE(
 	"[set_difference_inplace]"
 )
 {
-	return lb::rc_check(
-		"set_difference_inplace works with arbitrary intersecting input",
+	return lb::rc_test(
 		[](std::set <value_type> const &target_, std::set <value_type> const &matched__, std::uint_fast32_t const seed){
 			std::vector target(target_.begin(), target_.end());
 			auto matched_(matched__);

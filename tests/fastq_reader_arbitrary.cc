@@ -219,8 +219,7 @@ TEST_CASE(
 	"[fastq_reader]"
 )
 {
-	return lb::rc_check(
-		"fastq_reader works with arbitrary input",
+	return lb::rc_test(
 		[](fastq_input const &input){
 			test_fastq_reader(input, [&](lb::reading_handle &read_handle, auto const blocksize){
 				fastq_reader reader;
@@ -243,8 +242,7 @@ TEST_CASE(
 	"[fastq_reader]"
 )
 {
-	return lb::rc_check(
-		"fastq_reader can parse arbitrary input one block at a time",
+	return lb::rc_test(
 		[](fastq_input const &input){
 			test_fastq_reader(input, [&](lb::reading_handle &read_handle, auto const blocksize){
 				fastq_reader reader;

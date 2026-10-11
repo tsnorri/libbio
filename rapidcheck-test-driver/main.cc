@@ -5,7 +5,6 @@
 
 #include <cstdlib>
 #include <iostream>
-#include <vector>
 #include "cmdline.h"
 
 #if !defined(LIBBIO_BUILD_RAPIDCHECK_TEST_DRIVER)
@@ -14,17 +13,14 @@
 #include <libbio/rapidcheck_test_driver.hh>
 
 
-namespace {
+namespace libbio::tests {
 
-	bool run_test(::libbio::tests::test_case_base &tc)
+	bool test_driver::run_test(test_case_base &tc)
 	{
 		std::cerr << "\n** Running test: " << tc.message() << '\n';
-		return tc.run_test();
+		return tc.run_test(*this);
 	}
-}
 
-
-namespace libbio::tests {
 
 	void test_driver::list_tests()
 	{
@@ -38,6 +34,7 @@ namespace libbio::tests {
 		for (auto ptr : m_template_test_cases)
 			std::cout << ptr->message() << '\n';
 	}
+
 
 	std::size_t test_driver::run_all_tests()
 	{

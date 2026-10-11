@@ -606,8 +606,7 @@ TEST_CASE(
 )
 {
 	std::size_t iteration{};
-	return lb::rc_check(
-		"sam::reader works with arbitrary input",
+	return lb::rc_test(
 		[&iteration](record_set const &input){
 			RC_TAG(input.header.reference_sequences.size());
 

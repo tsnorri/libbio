@@ -89,8 +89,7 @@ TEST_CASE(
 	"[stable_partition_left]"
 )
 {
-	return lb::rc_check(
-		"stable_partition_left works with arbitrary input",
+	return lb::rc_test(
 		[](std::vector <value_type> const &values){
 			auto const pivot_index(*rc::gen::inRange(std::size_t(0), values.size()));
 			auto const pivot(values[pivot_index]);
@@ -129,8 +128,7 @@ TEST_CASE(
 	"[remove_at_indices]"
 )
 {
-	return lb::rc_check(
-		"remove_at_indices works with arbitrary input",
+	return lb::rc_test(
 		make_test <true>()
 	);
 }
@@ -141,8 +139,7 @@ TEST_CASE(
 	"[stable_partition_left_at_indices]"
 )
 {
-	return lb::rc_check(
-		"stable_partition_left_at_indices works with arbitrary input",
+	return lb::rc_test(
 		make_test <false>()
 	);
 }

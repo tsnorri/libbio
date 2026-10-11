@@ -25,6 +25,7 @@
 #include <cstddef>
 #include <format>
 #include <iostream>
+#include <libbio/assert.hh>
 #include <libbio/tuple/map.hh>
 #include <libbio/utility/compare_strings_transparent.hh>
 #include <set>
@@ -44,6 +45,8 @@ namespace libbio::tests {
 
 	class test_driver
 	{
+		friend struct test_case_base;
+
 	public:
 		typedef std::set <
 			std::string,
@@ -56,6 +59,10 @@ namespace libbio::tests {
 		std::vector <test_case *>			m_test_cases;
 		std::vector <template_test_case *>	m_template_test_cases;
 		test_case_pointer_vector			m_failed_test_cases;
+		test_case_base						*m_current_test_case{};
+
+	private:
+		bool run_test(test_case_base &tc);
 
 	public:
 		static test_driver &shared()
@@ -63,6 +70,8 @@ namespace libbio::tests {
 			static test_driver retval{};
 			return retval;
 		}
+
+		test_case_base *current_test_case() const { return m_current_test_case; }
 
 		std::size_t add_test_case(test_case &tc)
 		{
@@ -83,6 +92,7 @@ namespace libbio::tests {
 		std::size_t run_given_tests(test_name_set const &names);
 		std::size_t run_given_template_tests(test_name_set const &names);
 		test_case_pointer_vector const &failed_test_cases() const { return m_failed_test_cases; }
+
 	};
 
 
@@ -90,9 +100,21 @@ namespace libbio::tests {
 	{
 		std::size_t	identifier{};
 
+	private:
+		virtual bool run_test_(test_driver &driver) = 0;
+
+	public:
 		virtual ~test_case_base() {}
 		virtual char const *message() const = 0;
-		virtual bool run_test() = 0;
+
+		bool run_test(test_driver &driver)
+		{
+			auto *prev_test_case{driver.m_current_test_case};
+			driver.m_current_test_case = this;
+			auto const retval{run_test_(driver)};
+			driver.m_current_test_case = prev_test_case;
+			return retval;
+		}
 	};
 
 
@@ -118,6 +140,17 @@ namespace libbio::tests {
 namespace libbio {
 
 	template <typename... t_args>
+	auto rc_test(t_args && ... args)
+	{
+		auto &driver{tests::test_driver::shared()};
+		auto *current_test_case{driver.current_test_case()};
+		libbio_assert(current_test_case);
+
+		return rc::check(current_test_case->message(), std::forward <t_args>(args)...);
+	}
+
+
+	template <typename... t_args>
 	auto rc_check(t_args && ... args)
 	{
 		return rc::check(std::forward <t_args>(args)...);
@@ -138,7 +171,7 @@ namespace libbio {
 		static inline bool __attribute__ ((always_inline)) LIBBIO_TEST_FN_NAME(); /* Forward declaration */ \
 		static struct : public ::libbio::tests::test_case { \
 			char const *message() const override { return MESSAGE; } \
-			bool run_test() override { return LIBBIO_TEST_FN_NAME(); } \
+			bool run_test_(libbio::tests::test_driver &driver) override { return LIBBIO_TEST_FN_NAME(); } \
 		} LIBBIO_TEST_CASE_VARIABLE_NAME; \
 		static inline bool __attribute__ ((always_inline)) LIBBIO_TEST_FN_NAME()
 
@@ -157,11 +190,11 @@ namespace libbio {
 				{ \
 				} \
 				char const *message() const override { return m_message.data(); } \
-				bool run_test() override { return LIBBIO_TEST_FN_NAME <t_type>(); } \
+				bool run_test_(libbio::tests::test_driver &driver) override { return LIBBIO_TEST_FN_NAME <t_type>(); } \
 			}; \
 			libbio::tuples::map_t <std::tuple <LIBBIO_UNPAREN_EACH(__VA_ARGS__)>, test_case> tests{}; \
 			char const *message() const override { return MESSAGE; } \
-			bool run_test() override { return std::apply([](auto... tt){ return (tt.run_test() && ...); }, tests); } \
+			bool run_test_(libbio::tests::test_driver &driver) override { return std::apply([&driver](auto... tt){ return (tt.run_test(driver) && ...); }, tests); } \
 		} LIBBIO_TEST_CASE_VARIABLE_NAME; \
 		template <typename TestType> \
 		static bool LIBBIO_TEST_FN_NAME()
@@ -172,10 +205,20 @@ namespace libbio {
 
 namespace libbio {
 	template <typename ... t_args>
-	auto rc_check(t_args && ... args)
+	auto rc_test(t_args && ... args)
 	{
 		// Use Catch2 instead.
-		return rc::prop(std::forward <t_args>(args)...);
+		return rc::prop(
+			Catch::getResultCapture().getCurrentTestName(),
+			std::forward <t_args>(args)...
+		);
+	}
+
+
+	template <typename... t_args>
+	auto rc_check(t_args && ... args)
+	{
+		return rc::check(std::forward <t_args>(args)...);
 	}
 }
 #endif // LIBBIO_BUILD_RAPIDCHECK_TEST_DRIVER

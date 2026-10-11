@@ -403,8 +403,7 @@ TEST_CASE(
 	"[fasta_reader]"
 )
 {
-	return lb::rc_check(
-		"fasta_reader can parse arbitrary input",
+	return lb::rc_test(
 		[](fasta_input_with_sequence_headers const &input){
 			test_fasta_reader(input, [&](lb::reading_handle &read_handle, auto const blocksize){
 				fasta_reader reader;
@@ -427,8 +426,7 @@ TEST_CASE(
 	"[fasta_reader]"
 )
 {
-	return lb::rc_check(
-		"fasta_reader can parse arbitrary input one block at a time",
+	return lb::rc_test(
 		[](fasta_input_with_sequence_headers const &input){
 			test_fasta_reader(input, [&](lb::reading_handle &read_handle, auto const blocksize){
 				fasta_reader reader;

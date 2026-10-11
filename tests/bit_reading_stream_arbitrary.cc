@@ -22,8 +22,7 @@ TEST_CASE(
 	"[bit_reading_stream]"
 )
 {
-	return lb::rc_check(
-		"bit_reading_stream works as expected",
+	return lb::rc_test(
 		[](std::vector <tests::partial_word> const &input){
 			// Prepare source.
 			std::vector <tests::partial_word::word_type> source;

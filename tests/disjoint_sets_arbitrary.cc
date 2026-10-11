@@ -74,8 +74,7 @@ TEST_CASE(
 	"[disjoint_sets]"
 )
 {
-	return lb::rc_check(
-		"disjoint_sets’s operations work as expected",
+	return lb::rc_test(
 		[](test_input const &input){
 			RC_ASSERT(input.partitions.size() == input.indices.size());
 

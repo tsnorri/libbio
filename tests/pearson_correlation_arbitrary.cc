@@ -82,8 +82,7 @@ TEMPLATE_TEST_CASE(
 	correlation_input <double>
 )
 {
-	return lb::rc_check(
-		"pearson_correlation_calculator can calculate correlation",
+	return lb::rc_test(
 		[](TestType const &input){
 			if (input.lhs.empty())
 				return;
@@ -108,8 +107,7 @@ TEMPLATE_TEST_CASE(
 	std::vector <correlation_input <double>>
 )
 {
-	return lb::rc_check(
-		"pearson_correlation_calculator can calculate correlation",
+	return lb::rc_test(
 		[](TestType const &input){
 			typedef typename TestType::value_type::value_type value_type;
 			typedef std::vector <value_type> value_vector;

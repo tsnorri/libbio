@@ -50,8 +50,7 @@ namespace {
 	template <typename t_test_type>
 	auto test_elias()
 	{
-		return lb::rc_check(
-			"Elias gamma encoding works as expected",
+		return lb::rc_test(
 			[](t_test_type const input){
 				typedef typename t_test_type::value_type value_type;
 				typedef typename t_test_type::codec_type codec_type;
@@ -120,8 +119,7 @@ TEMPLATE_TEST_CASE(
 	std::int64_t
 )
 {
-	return lb::rc_check(
-		"Zigzag encoding works as expected",
+	return lb::rc_test(
 		[](TestType const value){
 			encoding::zigzag coder{};
 
