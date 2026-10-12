@@ -29,7 +29,7 @@
 #include <libbio/tuple/map.hh>
 #include <libbio/utility/compare_strings_transparent.hh>
 #include <set>
-#include <string>
+#include <string_view>
 #include <utility>												// std::forward
 #include <vector>
 
@@ -48,11 +48,7 @@ namespace libbio::tests {
 		friend struct test_case_base;
 
 	public:
-		typedef std::set <
-			std::string,
-			libbio::compare_strings_transparent
-		> test_name_set;
-
+		typedef std::vector <std::string_view> test_name_vector;
 		typedef std::vector <test_case_base *> test_case_pointer_vector;
 
 	private:
@@ -89,8 +85,8 @@ namespace libbio::tests {
 		void list_template_tests();
 		void reset_failed_test_cases() { m_failed_test_cases.clear(); }
 		std::size_t run_all_tests();
-		std::size_t run_given_tests(test_name_set const &names);
-		std::size_t run_given_template_tests(test_name_set const &names);
+		std::size_t run_given_tests(test_name_vector const &names); // names needs to be sorted.
+		std::size_t run_given_template_tests(test_name_vector const &names); // names needs to be sorted.
 		test_case_pointer_vector const &failed_test_cases() const { return m_failed_test_cases; }
 
 	};

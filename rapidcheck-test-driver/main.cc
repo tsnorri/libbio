@@ -3,14 +3,21 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <algorithm>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <iostream>
-#include "cmdline.h"
+#include <libbio/utility.hh>
+#include <string>
+#include <vector>
+//#include "cmdline.h"
 
 #if !defined(LIBBIO_BUILD_RAPIDCHECK_TEST_DRIVER)
 #	define LIBBIO_BUILD_RAPIDCHECK_TEST_DRIVER
 #endif
 #include <libbio/rapidcheck_test_driver.hh>
+
+namespace po = boost::program_options;
 
 
 namespace libbio::tests {
@@ -51,12 +58,13 @@ namespace libbio::tests {
 	}
 
 
-	std::size_t test_driver::run_given_tests(test_name_set const &names)
+	std::size_t test_driver::run_given_tests(test_name_vector const &names)
 	{
 		std::size_t retval{};
 		for (auto &ptr : m_test_cases)
 		{
-			if (names.contains(ptr->message()) && !run_test(*ptr))
+			auto const found{std::binary_search(names.begin(), names.end(), ptr->message(), compare_strings_transparent{})};
+			if (found && !run_test(*ptr))
 			{
 				++retval;
 				m_failed_test_cases.push_back(ptr);
@@ -67,12 +75,13 @@ namespace libbio::tests {
 	}
 
 
-	std::size_t test_driver::run_given_template_tests(test_name_set const &names)
+	std::size_t test_driver::run_given_template_tests(test_name_vector const &names)
 	{
 		std::size_t retval{};
 		for (auto &ptr : m_template_test_cases)
 		{
-			if (names.contains(ptr->message()) && !run_test(*ptr))
+			auto const found{std::binary_search(names.begin(), names.end(), ptr->message(), compare_strings_transparent{})};
+			if (found && !run_test(*ptr))
 			{
 				++retval;
 				m_failed_test_cases.push_back(ptr);
@@ -86,20 +95,48 @@ namespace libbio::tests {
 
 int main(int argc, char **argv)
 {
-	gengetopt_args_info args_info;
-	if (0 != cmdline_parser (argc, argv, &args_info))
-		std::exit(EXIT_FAILURE);
+	typedef libbio::tests::test_driver::test_name_vector test_name_vector;
+	typedef std::vector <std::string> test_name_vector_;
+
+	po::options_description description(
+		"libbio RapidCheck test driver\n"
+		"Run tests written with RapidCheck possibly in reproduce mode"
+	);
+
+	description.add_options()
+		("help,h", "Display this help message and exit.")
+		("version,V", "Display the version number and exit.")
+		("list,l", "List the tests without executing any.")
+		("list-templates,L", "List the template tests without executing any.")
+		("test,t", po::value <test_name_vector_>(), "Run only the given test(s)")
+		("template-test,T", po::value <test_name_vector_>(), "Run only the given template test(s)");
+
+	po::variables_map vm;
+	po::store(po::command_line_parser(argc, argv).options(description).run(), vm);
+	po::notify(vm);
+
+	if (vm.count("help"))
+	{
+		std::cout << description;
+		return EXIT_SUCCESS;
+	}
+
+	if (vm.count("version"))
+	{
+		std::cout << "Version 0.1\n";
+		return EXIT_SUCCESS;
+	}
 
 	auto &driver(::libbio::tests::test_driver::shared());
 
 	bool should_exit_early{};
-	if (args_info.list_given)
+	if (vm.count("list"))
 	{
 		driver.list_tests();
 		should_exit_early = true;
 	}
 
-	if (args_info.list_templates_given)
+	if (vm.count("list-templates"))
 	{
 		driver.list_template_tests();
 		should_exit_early = true;
@@ -111,19 +148,23 @@ int main(int argc, char **argv)
 	std::size_t status{};
 	driver.reset_failed_test_cases();
 
-	if (args_info.test_given)
+	if (vm.count("test"))
 	{
-		::libbio::tests::test_driver::test_name_set const test_names(args_info.test_arg, args_info.test_arg + args_info.test_given);
+		auto const &test_names_{vm["test"].as <test_name_vector_>()};
+		test_name_vector test_names{test_names_.begin(), test_names_.end()};
+		std::sort(test_names.begin(), test_names.end());
 		status += driver.run_given_tests(test_names);
 	}
 
-	if (args_info.template_test_given)
+	if (vm.count("template-test"))
 	{
-		::libbio::tests::test_driver::test_name_set const test_names(args_info.template_test_arg, args_info.template_test_arg + args_info.template_test_given);
+		auto const &test_names_{vm["template-test"].as <test_name_vector_>()};
+		test_name_vector test_names{test_names_.begin(), test_names_.end()};
+		std::sort(test_names.begin(), test_names.end());
 		status += driver.run_given_template_tests(test_names);
 	}
 
-	if (! (args_info.test_given || args_info.template_test_given))
+	if (0 == vm.count("test") && 0 == vm.count("template-test"))
 		status += driver.run_all_tests();
 
 	if (status)
