@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024 Tuukka Norri
+ * Copyright (c) 2019-2026 Tuukka Norri
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
