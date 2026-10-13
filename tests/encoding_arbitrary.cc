@@ -13,6 +13,7 @@
 #include <libbio/rapidcheck/closed_range.hh>
 #include <libbio/rapidcheck_test_driver.hh>
 #include <limits>
+#include <ostream>
 #include <type_traits>
 #include "integer_type_name.hh"
 #include "span_bit_streams.hh"
@@ -32,6 +33,14 @@ namespace {
 
 		value_type value{};
 	};
+
+
+	template <typename t_type, typename t_codec>
+	std::ostream &operator<<(std::ostream &os, test_input <t_type, t_codec> const input)
+	{
+		os << libbio::tests::integer_type_name <t_type>::value << '{' << (+input.value) << '}';
+		return os;
+	}
 
 
 	template <typename t_value>
