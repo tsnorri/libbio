@@ -70,4 +70,9 @@ SCENARIO("Elias gamma encoding works with predefined values as expected", "[enco
 	{
 		test_elias <encoding::elias_gamma_tpl <false>>(UINT64_C(4294967295));
 	}
+	
+	GIVEN("std::uint64_t{6442450943")
+	{
+		test_elias <encoding::elias_gamma_tpl <false>>(UINT64_C(6442450943));
+	}
 }
