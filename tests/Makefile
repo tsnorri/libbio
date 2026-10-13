@@ -33,6 +33,7 @@ OBJECTS	=	algorithm.o \
 			assert.o \
 			bit_reading_stream_arbitrary.o \
 			bit_writing_stream_arbitrary.o \
+			bits_arbitrary.o \
 			buffer.o \
 			disjoint_sets_arbitrary.o \
 			dispatch_event_manager.o \
@@ -67,6 +68,7 @@ OBJECTS	=	algorithm.o \
 
 OBJECTS_RC	=	bit_reading_stream_arbitrary.rc.o \
 				bit_writing_stream_arbitrary.rc.o \
+				bits_arbitrary.rc.o \
 				disjoint_sets_arbitrary.rc.o \
 				encoding_arbitrary.rc.o \
 				fasta_reader_arbitrary.rc.o \
