@@ -99,7 +99,7 @@ namespace libbio::encoding {
 		elias_gamma const eg{};
 		if (!eg.encode(bs, idx1, elias_gamma::signed_value_constant <0>{})) return false;
 
-		value_type const mask{~((~(value_type{})) << idx)};
+		value_type const mask(~(std::numeric_limits <value_type>::max() << idx));
 		auto const lower{value1 & mask};
 		return bs.write_bits(lower, idx);
 	}
@@ -115,22 +115,21 @@ namespace libbio::encoding {
 	{
 		// First decode the gamma encoded exponent.
 		elias_gamma const eg{};
-		auto const res{eg.decode(word, elias_gamma::signed_value_constant <0>{})};
+		auto const res{eg.decode(word)}; // Subtracts one.
 		if (!res) return res;
 
 		auto const res_{*res};
 		auto const exponent{res_.first};
 		if (max_exponent < exponent) return {std::nullopt};
 
-		auto const exponent_{exponent - 1U};
 		auto shift_amt{res_.second};
 		word >>= shift_amt;
 
-		value_type value{value_type{1} << exponent_};
-		value_type const mask{~((~(value_type{})) << exponent_)};
+		value_type value{value_type{1} << exponent};
+		value_type const mask(~(std::numeric_limits <value_type>::max() << exponent));
 		value |= word & mask;
 
-		return {{detail::add_signed_constant_to_unsigned <value_type, t_diff>(value), shift_amt + exponent_}};
+		return {{detail::add_signed_constant_to_unsigned <value_type, t_diff>(value), shift_amt + exponent}};
 	}
 
 
@@ -146,27 +145,25 @@ namespace libbio::encoding {
 
 		// First decode the gamma encoded exponent.
 		elias_gamma const eg{};
-		auto const res{eg.decode(buffer.front(), elias_gamma::signed_value_constant <0>{})};
+		auto const res{eg.decode(buffer.front())}; // Subtracts one.
 		if (!res) return {std::nullopt};
 
 		// Check that we got a valid value.
 		auto const res_{*res};
 		auto const exponent{res_.first};
 		if (max_exponent < exponent) return {std::nullopt};
-
-		auto const exponent_{exponent - 1U};
 		auto const exponent_bits{res_.second};
 
 		// Shift and check.
 		bs >>= exponent_bits;
-		if (bs.bits_remaining() < exponent_) return {std::nullopt};
+		if (bs.bits_remaining() < exponent) return {std::nullopt};
 		bits::shift_span_right(std::span{buffer}, exponent_bits);
 
 		// Construct the decoded value.
-		value_type value{value_type{1} << exponent_};
-		auto const mask{~((~(value_type{})) << exponent_)};
+		value_type value{value_type{1} << exponent};
+		value_type const mask(~(std::numeric_limits <value_type>::max() << exponent));
 		value |= buffer.front() & mask;
-		bs >>= exponent_;
+		bs >>= exponent;
 
 		return {detail::add_signed_constant_to_unsigned <value_type, t_diff>(value)};
 	}
