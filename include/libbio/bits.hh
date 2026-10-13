@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <concepts>
 #include <cstdint>
+#include <limits>
 #include <span>
 #include <stdexcept>	// std::range_error
 #include <type_traits>
@@ -315,8 +316,8 @@ namespace libbio::bits {
 				return;
 		}
 
-		t_value const higher_mask{(~(t_value{})) << shift_amt};
-		t_value const lower_mask{~higher_mask};
+		t_value const higher_mask(std::numeric_limits <t_value>::max() << shift_amt);
+		t_value const lower_mask(~higher_mask);
 		t_value prev{};
 		for (std::size_t ii{start}; ii < span.size(); ++ii)
 		{
@@ -366,8 +367,8 @@ namespace libbio::bits {
 				return;
 		}
 
-		t_value const higher_mask{(~(t_value{})) << shift_amt};
-		t_value const lower_mask{~higher_mask};
+		t_value const lower_mask(std::numeric_limits <t_value>::max() >> shift_amt);
+		t_value const higher_mask(~lower_mask);
 		t_value prev{};
 		for (std::size_t ii{start}; 0 < ii; --ii)
 		{
