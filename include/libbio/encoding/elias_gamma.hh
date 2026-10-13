@@ -94,7 +94,7 @@ namespace libbio::encoding {
 		auto const idx1{bits::highest_bit_set(value1)}; // 1-based.
 		auto const idx{idx1 - 1U};
 
-		value_type const mask{~((~(value_type{})) << idx)};
+		value_type const mask(~(std::numeric_limits <value_type>::max() << idx));
 		value_type const lower{((value1 & mask) << 1U) | value_type{1}};
 
 		if (bs.write_zeros(idx) && bs.write_bits(lower, idx1))
@@ -119,7 +119,7 @@ namespace libbio::encoding {
 		// Shift by the number of zeros.
 		word >>= tzc + 1;
 		value_type value{value_type{1} << tzc};
-		value_type const mask{~((~(value_type{})) << tzc)};
+		value_type const mask(~(std::numeric_limits <value_type>::max() << tzc));
 		value |= word & mask;
 
 		return {{detail::add_signed_constant_to_unsigned <value_type, t_diff>(value), 2 * tzc + 1}};
@@ -149,7 +149,7 @@ namespace libbio::encoding {
 
 		// Success; construct the value.
 		bits::shift_span_right(std::span{buffer}, tzc + 1, std::true_type{});
-		auto const mask{~((~(value_type{})) << tzc)};
+		auto const mask(~(std::numeric_limits <value_type>::max() << tzc));
 
 		value_type value{value_type{1} << tzc};
 		value |= buffer.front() & mask;

@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <libbio/assert.hh>
+#include <limits>
 #include <span>
 
 
@@ -97,7 +98,7 @@ namespace libbio {
 		// Apply a mask.
 		// Since we can read value_bits bits, we need to subtract one
 		// but we already checked that 0 < amount.
-		value_type const mask{~((~(value_type{1})) << (amount -  1))};
+		value_type const mask(~((std::numeric_limits <value_type>::max() << 1U) << (amount - 1U)));
 		retval &= mask;
 
 		return retval;
