@@ -6,4 +6,4 @@
 	url = https://github.com/ericniebler/range-v3.git
 [submodule "lib/rapidcheck"]
 	path = lib/rapidcheck
-	url = https://github.com/emil-e/rapidcheck.git
+	url = https://github.com/tsnorri/rapidcheck.git
