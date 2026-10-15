@@ -360,7 +360,7 @@ namespace libbio::bits {
 			start -= word_count;
 
 			// Fill the rest with zeros.
-			std::fill(span.begin() + word_count, span.end(), 0);
+			std::fill(span.end() - word_count, span.end(), 0);
 
 			shift_amt %= value_bits;
 			if (0 == shift_amt)
