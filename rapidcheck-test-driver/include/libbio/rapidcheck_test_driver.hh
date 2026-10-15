@@ -18,9 +18,7 @@
 #pragma clang diagnostic pop
 #pragma GCC diagnostic pop
 
-#include <boost/preprocessor/punctuation/remove_parens.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
-#include <boost/preprocessor/variadic/to_seq.hpp>
+#include <boost/preprocessor.hpp>
 #include <boost/type_index.hpp>									// boost::typeindex::type_id <t_type>().pretty_name()
 #include <cstddef>
 #include <format>
@@ -88,7 +86,6 @@ namespace libbio::tests {
 		std::size_t run_given_tests(test_name_vector const &names); // names needs to be sorted.
 		std::size_t run_given_template_tests(test_name_vector const &names); // names needs to be sorted.
 		test_case_pointer_vector const &failed_test_cases() const { return m_failed_test_cases; }
-
 	};
 
 
@@ -162,6 +159,20 @@ namespace libbio {
 #	define LIBBIO_UNPAREN_(R, DATA, ELEMENT) , BOOST_PP_REMOVE_PARENS(ELEMENT)
 #	define LIBBIO_UNPAREN_EACH(FIRST, ...) BOOST_PP_REMOVE_PARENS(FIRST) __VA_OPT__(BOOST_PP_SEQ_FOR_EACH(LIBBIO_UNPAREN_, "", BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)))
 
+// Given tuple X = (x1, x2), output (x1 <x2>).
+#	define LIBBIO_TEMPLATE_PRODUCT__(X) (BOOST_PP_TUPLE_ELEM(0, X) <BOOST_PP_TUPLE_ELEM(1, X)>)
+#	define LIBBIO_TEMPLATE_PRODUCT_(R, PAIR) LIBBIO_TEMPLATE_PRODUCT__(BOOST_PP_SEQ_TO_TUPLE(PAIR))
+
+// Make a sequence of the two given tuples converted to sequences.
+#	define LIBBIO_TEMPLATE_PRODUCT_MAKE_SEQ(TYPES_1, TYPES_2) \
+	(BOOST_PP_TUPLE_TO_SEQ(BOOST_PP_REMOVE_PARENS(TYPES_1)))(BOOST_PP_TUPLE_TO_SEQ(BOOST_PP_REMOVE_PARENS(TYPES_2)))
+
+// In the Cartesian product of TYPES_1 and TYPES_2, for each (t1, t2), pass t2 as a template parameter
+// to t1, i.e. t1 <t2>.
+#	define LIBBIO_TEMPLATE_PRODUCT(TYPES_1, TYPES_2) \
+	BOOST_PP_REMOVE_PARENS(BOOST_PP_SEQ_TO_TUPLE(BOOST_PP_SEQ_FOR_EACH_PRODUCT(LIBBIO_TEMPLATE_PRODUCT_, LIBBIO_TEMPLATE_PRODUCT_MAKE_SEQ(TYPES_1, TYPES_2))))
+
+
 // It is very important that all of the following are on the same line.
 #	define TEST_CASE(MESSAGE, TAGS) \
 		static inline bool __attribute__ ((always_inline)) LIBBIO_TEST_FN_NAME(); /* Forward declaration */ \
@@ -194,6 +205,11 @@ namespace libbio {
 		} LIBBIO_TEST_CASE_VARIABLE_NAME; \
 		template <typename TestType> \
 		static bool LIBBIO_TEST_FN_NAME()
+
+// And here.
+#	define TEMPLATE_PRODUCT_TEST_CASE(MESSAGE, TAGS, TYPES_1, TYPES_2) \
+		TEMPLATE_TEST_CASE(MESSAGE, TAGS, LIBBIO_TEMPLATE_PRODUCT((TYPES_1), (TYPES_2)))
+
 #else
 #	include <catch2/catch_test_macros.hpp>
 #	include <catch2/catch_template_test_macros.hpp>
