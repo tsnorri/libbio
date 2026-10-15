@@ -282,7 +282,7 @@ namespace libbio::bits {
 	template <std::unsigned_integral t_value, std::size_t t_size, bool t_can_shift_whole_words = false>
 	constexpr void shift_span_left(
 		std::span <t_value, t_size> span,
-		std::uint8_t shift_amt,
+		std::conditional_t <t_can_shift_whole_words, std::uint64_t, std::uint8_t> shift_amt,
 		std::bool_constant <t_can_shift_whole_words> = std::bool_constant <t_can_shift_whole_words>{}
 	)
 	{
@@ -333,7 +333,7 @@ namespace libbio::bits {
 	template <std::unsigned_integral t_value, std::size_t t_size, bool t_can_shift_whole_words = false>
 	constexpr void shift_span_right(
 		std::span <t_value, t_size> span,
-		std::uint8_t shift_amt,
+		std::conditional_t <t_can_shift_whole_words, std::uint64_t, std::uint8_t> shift_amt,
 		std::bool_constant <t_can_shift_whole_words> = std::bool_constant <t_can_shift_whole_words>{}
 	)
 	{
