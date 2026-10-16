@@ -6,7 +6,8 @@
 #ifndef LIBBIO_BIT_READING_STREAM_HH
 #define LIBBIO_BIT_READING_STREAM_HH
 
-#include "libbio/bits.hh"
+#include <libbio/algorithm.hh>
+#include <libbio/bits.hh>
 #include <climits>
 #include <cstdint>
 #include <cstddef>
@@ -69,6 +70,7 @@ namespace libbio {
 		[[nodiscard]] position_type bits_remaining() const { return m_read_end - m_read_pos; }
 		[[nodiscard]] operator bool() const { return bits_remaining(); }
 		[[nodiscard]] value_type read_bits(bit_count_type const amount) const;
+		[[nodiscard]] bool current_bit() const { return (m_source[m_read_pos / value_bits] >> (m_read_pos % value_bits) & 0x1); }
 		void seek_forward(position_type amt) { libbio_assert_lte(m_read_pos + amt, m_read_end); m_read_pos += amt; }
 		void operator>>=(position_type amt) { seek_forward(amt); }
 
@@ -113,10 +115,9 @@ namespace libbio {
 		// to the buffer and then shifted by the bit offset indicated by the
 		// current reading position.
 
-		auto const word_begin{m_read_pos % value_bits};
-		auto const read_end_{(word_begin + dst.size()) * value_bits};
-		auto const read_end{std::min(m_read_end, read_end_)};
-		auto const word_count{(read_end - m_read_pos + value_bits - 1) / value_bits};
+		auto const word_begin{m_read_pos / value_bits};
+		auto const word_end{(m_read_end + (value_bits - 1)) / value_bits};
+		auto const word_count{libbio::min_ct(word_end - word_begin, t_size)};
 
 		std::copy_n(m_source.begin() + word_begin, word_count, dst.begin());
 		bits::shift_span_right(dst, m_read_pos % value_bits);
