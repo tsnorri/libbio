@@ -73,13 +73,15 @@ namespace rc {
 		return gen::map(
 			gen::tuple(
 				gen::arbitrary <word_type>(),
-				gen::inClosedRange(bit_count_type{0}, bit_count_type{63})
+				gen::inClosedRange(bit_count_type{1}, bit_count_type{64})
 			),
 			[](std::tuple <word_type, bit_count_type> args) -> libbio::tests::partial_word {
+				static_assert(std::is_unsigned_v <word_type>);
+
 				auto &[word, bit_count]  = args;
-				word_type const mask{~(std::numeric_limits <word_type>::max() << bit_count)};
+				word_type const mask{~(std::numeric_limits <word_type>::max() << 1 << (bit_count - 1))};
 				word &= mask;
-				RC_ASSERT(0 == word >> bit_count);
+				RC_ASSERT(0 == word >> 1 >> bit_count);
 				return {word, bit_count};
 			}
 		);
