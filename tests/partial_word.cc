@@ -37,20 +37,24 @@ namespace libbio::tests {
 
 		dst.clear();
 		dst.resize((total_bit_size + (partial_word::word_bits - 1U)) / partial_word::word_bits, 0);
-		if (should_reverse)
+		RC_ASSERT(0 < total_bit_size); // Assumed in the block below.
+
 		{
-			for (partial_word const pw : std::ranges::reverse_view(src))
+			if (should_reverse)
 			{
-				libbio::bits::shift_span_left(std::span{dst}, pw.bit_count, std::true_type{});
-				dst.front() |= pw.word;
+				for (partial_word const pw : std::ranges::reverse_view(src))
+				{
+					libbio::bits::shift_span_left(std::span{dst}, pw.bit_count, std::true_type{});
+					dst.front() |= pw.word;
+				}
 			}
-		}
-		else
-		{
-			for (partial_word const pw : src)
+			else
 			{
-				libbio::bits::shift_span_left(std::span{dst}, pw.bit_count, std::true_type{});
-				dst.front() |= pw.word;
+				for (partial_word const pw : src)
+				{
+					libbio::bits::shift_span_left(std::span{dst}, pw.bit_count, std::true_type{});
+					dst.front() |= pw.word;
+				}
 			}
 		}
 
@@ -69,15 +73,14 @@ namespace rc {
 		return gen::map(
 			gen::tuple(
 				gen::arbitrary <word_type>(),
-				gen::inClosedRange(bit_count_type{1}, bit_count_type{64})
+				gen::inClosedRange(bit_count_type{0}, bit_count_type{63})
 			),
 			[](std::tuple <word_type, bit_count_type> args) -> libbio::tests::partial_word {
 				auto &[word, bit_count]  = args;
-				bit_count_type const bit_count_(bit_count_type{64} - bit_count);
-				word_type const mask{~(std::numeric_limits <word_type>::max() << bit_count_)};
+				word_type const mask{~(std::numeric_limits <word_type>::max() << bit_count)};
 				word &= mask;
-				RC_ASSERT(0 == word >> bit_count_);
-				return {word, bit_count_};
+				RC_ASSERT(0 == word >> bit_count);
+				return {word, bit_count};
 			}
 		);
 	}

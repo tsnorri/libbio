@@ -16,6 +16,7 @@
 
 namespace libbio::tests {
 
+	// Always used as a container value so always non-empty.
 	struct partial_word
 	{
 		typedef std::uint64_t word_type;
