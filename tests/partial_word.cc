@@ -37,7 +37,7 @@ namespace libbio::tests {
 
 		dst.clear();
 		dst.resize((total_bit_size + (partial_word::word_bits - 1U)) / partial_word::word_bits, 0);
-		RC_ASSERT(0 < total_bit_size); // Assumed in the block below.
+		RC_ASSERT(src.empty() || 0 < total_bit_size); // Assumed in the block below.
 
 		{
 			if (should_reverse)
