@@ -5,6 +5,8 @@
 
 #include <cstdint>
 #include <libbio/bits.hh>
+#include <libbio/rapidcheck/closed_range.hh>
+#include <limits>
 #include <numeric>
 #include <ranges>
 #include <span>
@@ -67,14 +69,15 @@ namespace rc {
 		return gen::map(
 			gen::tuple(
 				gen::arbitrary <word_type>(),
-				gen::inRange(bit_count_type{1}, bit_count_type{65})
+				gen::inClosedRange(bit_count_type{1}, bit_count_type{64})
 			),
 			[](std::tuple <word_type, bit_count_type> args) -> libbio::tests::partial_word {
 				auto &[word, bit_count]  = args;
-				word_type const mask{~((~(word_type{})) << bit_count)};
+				bit_count_type const bit_count_(bit_count_type{64} - bit_count);
+				word_type const mask{~(std::numeric_limits <word_type>::max() << bit_count_)};
 				word &= mask;
-				RC_ASSERT(0 == word >> bit_count);
-				return {word, bit_count};
+				RC_ASSERT(0 == word >> bit_count_);
+				return {word, bit_count_};
 			}
 		);
 	}
