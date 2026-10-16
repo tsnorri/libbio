@@ -45,14 +45,20 @@ namespace {
 
 	template <typename t_value>
 	requires std::is_signed_v <t_value>
-	std::make_unsigned_t <t_value> zigzag_naive(t_value const value)
+	std::make_unsigned_t <t_value> zigzag_naive(t_value value)
 	{
 		typedef std::make_unsigned_t <t_value> return_type;
 
 		if (0 <= value)
 			return return_type(2U * return_type(value));
 
-		return return_type(-2 * value - 1);
+		// Avoid UB by changing the sign using bit operations.
+		auto retval{~std::bit_cast <return_type>(value)}; // Invert all the bits.
+		++retval; // Add one.
+		// Encode.
+		retval *= 2U;
+		--retval;
+		return retval;
 	}
 
 
