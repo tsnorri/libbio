@@ -100,6 +100,8 @@ namespace libbio {
 	bool bit_writing_stream <t_target>::write_bits(value_type const word, std::uint8_t bit_count)
 	{
 		// The caller is responsible for setting bits of word starting from bit_count to zero.
+		
+		if (0 == bit_count) return true;
 
 		// Sanity check.
 		if (!m_target.prepare(m_write_pos + bit_count)) return false;
