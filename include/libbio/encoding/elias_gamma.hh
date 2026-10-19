@@ -35,8 +35,10 @@ namespace libbio::encoding {
 	{
 		typedef detail::elias_gamma_value_type value_type;
 		typedef detail::elias_gamma_signed_value_type signed_value_type;
+		typedef std::uint8_t bit_count_type;
 
 		constexpr static inline bool max_encoded_size_is_64_bits{t_max_encoded_size_is_64_bits};
+		constexpr static inline signed_value_type default_diff{1};
 
 		constexpr static inline value_type max_value{
 			max_encoded_size_is_64_bits
@@ -53,27 +55,38 @@ namespace libbio::encoding {
 		template <signed_value_type t_value>
 		using signed_value_constant = std::integral_constant <signed_value_type, t_value>;
 
-		typedef std::optional <std::pair <value_type, std::uint8_t>> decode_word_return_type;
+		typedef std::optional <std::pair <value_type, bit_count_type>> decode_word_return_type;
 		typedef std::optional <value_type> decode_return_type;
 
-		template <typename t_target, signed_value_type t_diff = 1>
+		template <signed_value_type t_diff = default_diff>
+		std::pair <value_type, bit_count_type> encode(
+			value_type value,
+			signed_value_constant <t_diff> = signed_value_constant <t_diff>{}
+		) const;
+
+		template <typename t_target, signed_value_type t_diff = default_diff>
 		bool encode(
 			bit_writing_stream <t_target> &bs,
 			value_type value,
 			signed_value_constant <t_diff> = signed_value_constant <t_diff>{}
 		) const;
 
-		template <signed_value_type t_diff = -1>
-		inline decode_word_return_type
-		decode(
-			std::uint64_t word,
+		template <signed_value_type t_diff = -1 * default_diff>
+		inline decode_word_return_type decode(
+			value_type word,
 			signed_value_constant <t_diff> = signed_value_constant <t_diff>{}
 		) const
 		requires (max_encoded_size_is_64_bits);
 
-		template <signed_value_type t_diff = -1>
-		inline decode_return_type
-		decode(
+		template <signed_value_type t_diff = -1 * default_diff>
+		inline decode_return_type decode(
+			bit_reading_stream &bs,
+			bit_count_type bit_count,
+			signed_value_constant <t_diff> = signed_value_constant <t_diff>{}
+		) const;
+
+		template <signed_value_type t_diff = -1 * default_diff>
+		inline decode_return_type decode(
 			bit_reading_stream &bs,
 			signed_value_constant <t_diff> = signed_value_constant <t_diff>{}
 		) const;
@@ -83,21 +96,35 @@ namespace libbio::encoding {
 
 
 	template <bool t_max_encoded_size_is_64_bits>
-	template <typename t_target, detail::elias_gamma_signed_value_type t_diff>
-	bool elias_gamma_tpl <t_max_encoded_size_is_64_bits>::encode(
-		bit_writing_stream <t_target> &bs,
+	template <detail::elias_gamma_signed_value_type t_diff>
+	auto elias_gamma_tpl <t_max_encoded_size_is_64_bits>::encode(
 		value_type value,
 		signed_value_constant <t_diff>
-	) const
+	) const -> std::pair <value_type, bit_count_type>
 	{
 		auto const value1{detail::add_signed_constant_to_unsigned <value_type, t_diff>(value)};
 		auto const idx1{bits::highest_bit_set(value1)}; // 1-based.
 		auto const idx{idx1 - 1U};
 
 		value_type const mask(~(std::numeric_limits <value_type>::max() << idx));
-		value_type const lower{((value1 & mask) << 1U) | value_type{1}};
+		value_type const lower{value1 & mask};
 
-		if (bs.write_zeros(idx) && bs.write_bits(lower, idx1))
+		return {lower, idx};
+	}
+
+
+	template <bool t_max_encoded_size_is_64_bits>
+	template <typename t_target, detail::elias_gamma_signed_value_type t_diff>
+	bool elias_gamma_tpl <t_max_encoded_size_is_64_bits>::encode(
+		bit_writing_stream <t_target> &bs,
+		value_type value,
+		signed_value_constant <t_diff> diff
+	) const
+	{
+		auto const [lower, bit_count] = encode(value, diff);
+		value_type const lower_{(lower << 1U) | value_type{1}};
+
+		if (bs.write_zeros(bit_count) && bs.write_bits(lower_, bit_count + 1))
 			return true;
 
 		return false;
@@ -123,6 +150,24 @@ namespace libbio::encoding {
 		value |= word & mask;
 
 		return {{detail::add_signed_constant_to_unsigned <value_type, t_diff>(value), 2 * tzc + 1}};
+	}
+
+
+	template <bool t_max_encoded_size_is_64_bits>
+	template <detail::elias_gamma_signed_value_type t_diff>
+	auto elias_gamma_tpl <t_max_encoded_size_is_64_bits>::decode(
+		bit_reading_stream &bs,
+		bit_count_type bit_count,
+		signed_value_constant <t_diff>
+	) const -> decode_return_type
+	{
+		if (bs.bits_remaining() < bit_count)
+			return {};
+
+		auto word{bs.read_bits(bit_count)};
+		bs >>= bit_count;
+		word |= value_type{1} << bit_count;
+		return {detail::add_signed_constant_to_unsigned <value_type, t_diff>(word)};
 	}
 
 

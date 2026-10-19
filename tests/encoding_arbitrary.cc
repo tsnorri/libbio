@@ -3,8 +3,10 @@
  * This code is licensed under MIT license (see LICENSE for details).
  */
 
+#include <climits>
 #include <cstdint>
 #include <libbio/algorithm.hh>
+#include <libbio/bits.hh>
 #include <libbio/bit_reading_stream.hh>
 #include <libbio/bit_writing_stream.hh>
 #include <libbio/encoding/elias_gamma.hh>
@@ -14,11 +16,13 @@
 #include <libbio/rapidcheck_test_driver.hh>
 #include <limits>
 #include <ostream>
+#include <span>
 #include <type_traits>
 #include "integer_type_name.hh"
 #include "span_bit_streams.hh"
 
 namespace lb		= libbio;
+namespace bits		= libbio::bits;
 namespace encoding	= libbio::encoding;
 namespace tests		= libbio::tests;
 
@@ -30,6 +34,8 @@ namespace {
 	{
 		typedef t_type value_type;
 		typedef t_codec codec_type;
+
+		constexpr static std::uint8_t const value_bits{CHAR_BIT * sizeof(value_type)};
 
 		value_type value{};
 	};
@@ -160,6 +166,40 @@ TEMPLATE_TEST_CASE(
 )
 {
 	return test_elias <TestType>();
+}
+
+
+TEMPLATE_TEST_CASE(
+	"Elias gamma encoding with split values works as expected",
+	"[template][encoding][encoding::elias_gamma]",
+	(test_input <std::uint8_t, encoding::elias_gamma>),
+	(test_input <std::uint16_t, encoding::elias_gamma>),
+	(test_input <std::uint32_t, encoding::elias_gamma>),
+	(test_input <std::uint64_t, encoding::elias_gamma>),
+	(test_input <std::uint64_t, encoding::elias_gamma_tpl <false>>)
+)
+{
+	return lb::rc_test(
+		[](TestType const input){
+			typedef typename TestType::codec_type codec_type;
+
+			codec_type coder{};
+			auto const res{coder.encode(input.value)};
+
+			lb::bit_reading_stream bs{
+				std::span <typename codec_type::value_type const, 1>{
+					&res.first,
+					1
+				},
+				0,
+				res.second
+			};
+
+			auto const decoded{coder.decode(bs, res.second)};
+			RC_ASSERT(decoded);
+			RC_ASSERT(input.value == *decoded);
+		}
+	);
 }
 
 
