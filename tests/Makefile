@@ -17,22 +17,9 @@ CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
 			-isystem ../lib/rapidcheck/include \
 			-isystem ../lib/rapidcheck/extras/catch/include
 
-should_test_coverage = 1
-ifneq ($(origin ENABLE_COVERAGE_CHECK),undefined)
-ifeq ($(ENABLE_COVERAGE_CHECK),0)
-should_test_coverage := 0
-endif
-endif
-
-ifeq ($(should_test_coverage),1)
-TEST_LDFLAGS = -coverage $(BOOST_LIBS) $(LDFLAGS)
-LIBBIO_PATH ?= ../src/libbio.coverage.a
-else
-TEST_LDFLAGS = $(BOOST_LIBS) $(LDFLAGS)
-LIBBIO_PATH ?= ../src/libbio.a
-endif
-
 CXXFLAGS +=	-ftemplate-backtrace-limit=0
+
+LDFLAGS += $(BOOST_LIBS)
 
 
 OBJECTS	=	algorithm.o \
@@ -91,10 +78,20 @@ OBJECTS_RC	=	bit_reading_stream_arbitrary.rc.o \
 GENERATED_TEST_FILES = 	test-files/test-data-types.vcf.gz \
 						test-files/test-simple.vcf.gz
 
-TEST_DEPENDENCIES =	$(LIBBIO_PATH) \
-					../lib/rapidcheck/build/librapidcheck.a \
-					../lib/Catch2/build/src/libCatch2Main.a \
-					../lib/Catch2/build/src/libCatch2.a
+
+TEST_DEPENDENCIES_ = \
+	../lib/rapidcheck/build/librapidcheck.a \
+	../lib/Catch2/build/src/libCatch2Main.a \
+	../lib/Catch2/build/src/libCatch2.a
+
+TEST_DEPENDENCIES = ../src/libbio.a $(TEST_DEPENDENCIES_)
+TEST_DEPENDENCIES_COVERAGE = ../src/libbio.coverage.a $(TEST_DEPENDENCIES_)
+
+
+OBJECTS_COVERAGE	= $(OBJECTS:.o=.cov.o)
+GCDA				= $(OBJECTS_COVERAGE:.o=.gcda)
+GCNO				= $(OBJECTS_COVERAGE:.o=.gcno)
+
 
 all: tests
 
@@ -103,22 +100,28 @@ all: tests
 run-tests: tests
 	./tests
 
+run-tests-coverage: tests-coverage
+	./tests-coverage
+
 coverage: coverage/index.html
 
-coverage/index.html: run-tests
+coverage/index.html: run-tests-coverage
 	$(MKDIR) -p coverage
-	$(GCOVR) --gcov-executable $(GCOV) --root .. --filter ../include --filter ../src --print-summary --html --html-details -o coverage/index.html ../src
+	$(GCOVR) --gcov-executable $(GCOV) --root .. --filter ../include --filter ../src --print-summary --html --html-details -o coverage/index.html ../src .
 
 rapidcheck: rc_tests
 
 tests: $(OBJECTS) $(GENERATED_TEST_FILES) $(TEST_DEPENDENCIES)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS) $(TEST_DEPENDENCIES) $(TEST_LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS) $(TEST_DEPENDENCIES) $(LDFLAGS)
+
+tests-coverage: $(OBJECTS_COVERAGE) $(GENERATED_TEST_FILES) $(TEST_DEPENDENCIES_COVERAGE)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS_COVERAGE) $(TEST_DEPENDENCIES_COVERAGE) $(LDFLAGS) -coverage
 
 rc_tests: $(OBJECTS_RC)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS_RC) ../rapidcheck-test-driver/libbio_rc_test_driver.a $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) $(TEST_LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS_RC) ../rapidcheck-test-driver/libbio_rc_test_driver.a $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) $(LDFLAGS)
 
 clean:
-	$(RM) $(OBJECTS) $(OBJECTS_RC) $(OBJECTS_COVERAGE) $(GENERATED_TEST_FILES) tests rc_tests
+	$(RM) $(OBJECTS) $(OBJECTS_RC) $(OBJECTS_COVERAGE) $(GENERATED_TEST_FILES) $(GCDA) $(GCNO) tests rc_tests
 	$(RM) -r coverage
 
 %.rc.o: %.cc
