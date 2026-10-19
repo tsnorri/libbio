@@ -81,7 +81,7 @@ namespace rc {
 				auto &[word, bit_count]  = args;
 				word_type const mask{~(std::numeric_limits <word_type>::max() << 1 << (bit_count - 1))};
 				word &= mask;
-				RC_ASSERT(0 == word >> 1 >> bit_count);
+				RC_ASSERT(0 == word >> 1 >> (bit_count - 1));
 				return {word, bit_count};
 			}
 		);
