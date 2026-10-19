@@ -120,26 +120,28 @@ namespace {
 				codec_type coder{};
 				auto const res{coder.encode(input.value)};
 
-				if constexpr (t_should_use_bit_stream)
-				{
-					lb::bit_reading_stream bs{
-						std::span <typename codec_type::value_type const, 1>{
-							&res.first,
-							1
-						},
-						0,
-						res.second
-					};
+				auto const decoded{[&]{
+					if constexpr (t_should_use_bit_stream)
+					{
+						lb::bit_reading_stream bs{
+							std::span <typename codec_type::value_type const, 1>{
+								&res.first,
+								1
+							},
+							0,
+							res.second
+						};
 
-					auto const decoded{coder.decode(bs, res.second)};
-					RC_ASSERT(decoded);
-					RC_ASSERT(input.value == *decoded);
-				}
-				else
-				{
-					auto const decoded{coder.decode(res.first, res.second)};
-					RC_ASSERT(input.value == decoded);
-				}
+						return coder.decode(bs, res.second);
+					}
+					else
+					{
+						return coder.decode(res.first, res.second);
+					}
+				}()};
+
+				RC_ASSERT(decoded);
+				RC_ASSERT(input.value == *decoded);
 			}
 		);
 	}

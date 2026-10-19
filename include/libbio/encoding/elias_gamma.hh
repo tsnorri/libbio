@@ -46,6 +46,7 @@ namespace libbio::encoding {
 			: std::numeric_limits <value_type>::max() - 2
 		};
 
+		constexpr static inline std::uint8_t max_exponent_{63};
 		constexpr static inline std::uint8_t max_exponent{
 			max_encoded_size_is_64_bits
 			? 31
@@ -168,6 +169,9 @@ namespace libbio::encoding {
 		signed_value_constant <t_diff>
 	) const -> decode_return_type
 	{
+		if (max_exponent_ < bit_count)
+			return {};
+
 		word |= value_type{1} << bit_count;
 		return {detail::add_signed_constant_to_unsigned <value_type, t_diff>(word)};
 	}
@@ -181,6 +185,9 @@ namespace libbio::encoding {
 		signed_value_constant <t_diff>
 	) const -> decode_return_type
 	{
+		if (max_exponent_ < bit_count)
+			return {};
+
 		if (bs.bits_remaining() < bit_count)
 			return {};
 
