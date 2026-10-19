@@ -117,8 +117,8 @@ tests: $(OBJECTS) $(GENERATED_TEST_FILES) $(TEST_DEPENDENCIES)
 tests-coverage: $(OBJECTS_COVERAGE) $(GENERATED_TEST_FILES) $(TEST_DEPENDENCIES_COVERAGE)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS_COVERAGE) $(TEST_DEPENDENCIES_COVERAGE) $(LDFLAGS) -coverage
 
-rc_tests: $(OBJECTS_RC)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS_RC) ../rapidcheck-test-driver/libbio_rc_test_driver.a $(LIBBIO_PATH) ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(BOOST_LIBS) $(LDFLAGS)
+rc_tests: $(OBJECTS_RC) ../src/libbio.a
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS_RC) ../rapidcheck-test-driver/libbio_rc_test_driver.a ../src/libbio.a ../lib/rapidcheck/$(RAPIDCHECK_BUILD_DIR)/librapidcheck.a $(LDFLAGS)
 
 clean:
 	$(RM) $(OBJECTS) $(OBJECTS_RC) $(OBJECTS_COVERAGE) $(GENERATED_TEST_FILES) $(GCDA) $(GCNO) tests rc_tests
