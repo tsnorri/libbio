@@ -108,6 +108,41 @@ namespace {
 			}
 		);
 	}
+
+
+	template <typename t_test_type, bool t_should_use_bit_stream>
+	auto test_elias_gamma_split()
+	{
+		return lb::rc_test(
+			[](t_test_type const input){
+				typedef typename t_test_type::codec_type codec_type;
+
+				codec_type coder{};
+				auto const res{coder.encode(input.value)};
+
+				if constexpr (t_should_use_bit_stream)
+				{
+					lb::bit_reading_stream bs{
+						std::span <typename codec_type::value_type const, 1>{
+							&res.first,
+							1
+						},
+						0,
+						res.second
+					};
+
+					auto const decoded{coder.decode(bs, res.second)};
+					RC_ASSERT(decoded);
+					RC_ASSERT(input.value == *decoded);
+				}
+				else
+				{
+					auto const decoded{coder.decode(res.first, res.second)};
+					RC_ASSERT(input.value == decoded);
+				}
+			}
+		);
+	}
 }
 
 
@@ -170,7 +205,7 @@ TEMPLATE_TEST_CASE(
 
 
 TEMPLATE_TEST_CASE(
-	"Elias gamma encoding with split values works as expected",
+	"Elias gamma encoding with split values with bit stream works as expected",
 	"[template][encoding][encoding::elias_gamma]",
 	(test_input <std::uint8_t, encoding::elias_gamma>),
 	(test_input <std::uint16_t, encoding::elias_gamma>),
@@ -179,27 +214,21 @@ TEMPLATE_TEST_CASE(
 	(test_input <std::uint64_t, encoding::elias_gamma_tpl <false>>)
 )
 {
-	return lb::rc_test(
-		[](TestType const input){
-			typedef typename TestType::codec_type codec_type;
+	return test_elias_gamma_split <TestType, true>();
+}
 
-			codec_type coder{};
-			auto const res{coder.encode(input.value)};
 
-			lb::bit_reading_stream bs{
-				std::span <typename codec_type::value_type const, 1>{
-					&res.first,
-					1
-				},
-				0,
-				res.second
-			};
-
-			auto const decoded{coder.decode(bs, res.second)};
-			RC_ASSERT(decoded);
-			RC_ASSERT(input.value == *decoded);
-		}
-	);
+TEMPLATE_TEST_CASE(
+	"Elias gamma encoding with split values without bit stream works as expected",
+	"[template][encoding][encoding::elias_gamma]",
+	(test_input <std::uint8_t, encoding::elias_gamma>),
+	(test_input <std::uint16_t, encoding::elias_gamma>),
+	(test_input <std::uint32_t, encoding::elias_gamma>),
+	(test_input <std::uint64_t, encoding::elias_gamma>),
+	(test_input <std::uint64_t, encoding::elias_gamma_tpl <false>>)
+)
+{
+	return test_elias_gamma_split <TestType, false>();
 }
 
 

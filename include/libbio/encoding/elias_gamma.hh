@@ -72,6 +72,13 @@ namespace libbio::encoding {
 		) const;
 
 		template <signed_value_type t_diff = -1 * default_diff>
+		inline decode_return_type decode(
+			value_type word,
+			bit_count_type bit_count,
+			signed_value_constant <t_diff> = signed_value_constant <t_diff>{}
+		) const;
+
+		template <signed_value_type t_diff = -1 * default_diff>
 		inline decode_word_return_type decode(
 			value_type word,
 			signed_value_constant <t_diff> = signed_value_constant <t_diff>{}
@@ -150,6 +157,19 @@ namespace libbio::encoding {
 		value |= word & mask;
 
 		return {{detail::add_signed_constant_to_unsigned <value_type, t_diff>(value), 2 * tzc + 1}};
+	}
+
+
+	template <bool t_max_encoded_size_is_64_bits>
+	template <detail::elias_gamma_signed_value_type t_diff>
+	auto elias_gamma_tpl <t_max_encoded_size_is_64_bits>::decode(
+		std::uint64_t word,
+		bit_count_type bit_count,
+		signed_value_constant <t_diff>
+	) const -> decode_return_type
+	{
+		word |= value_type{1} << bit_count;
+		return {detail::add_signed_constant_to_unsigned <value_type, t_diff>(word)};
 	}
 
 
