@@ -17,12 +17,11 @@ CPPFLAGS +=	-DCATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS \
 			-isystem ../lib/rapidcheck/include \
 			-isystem ../lib/rapidcheck/extras/catch/include
 
-should_test_coverage = 0
-ifeq ($(origin ENABLE_COVERAGE_CHECK),undefined)
-should_test_coverage := 1
+should_test_coverage = 1
+ifneq ($(origin ENABLE_COVERAGE_CHECK),undefined)
+ifeq ($(ENABLE_COVERAGE_CHECK),0)
+should_test_coverage := 0
 endif
-ifeq ($(ENABLE_COVERAGE_CHECK),1)
-should_test_coverage := 1
 endif
 
 ifeq ($(should_test_coverage),1)
