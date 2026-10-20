@@ -20,9 +20,12 @@ namespace rc::gen {
 		return [=](Random const &random, int size){
 			if (max < min)
 				throw GenerationFailure("Invalid range");
-
-			auto const rangeSize(detail::scaleInteger(static_cast <Random::Number>(max) - static_cast <Random::Number>(min), size) + 1);
-			auto const value(static_cast <t_type>((Random(random).next() % rangeSize) + min));
+			
+			auto const rangeSize_{detail::scaleInteger(static_cast <Random::Number>(max) - static_cast <Random::Number>(min), size)};
+			static_assert (std::is_unsigned_v <decltype(rangeSize_)>); // Check that we can safely add one.
+			auto const rangeSize{rangeSize_ + 1};
+			// rangeSize becomes zero on unsigned integer overflow.
+			auto const value{static_cast <t_type>((Random(random).next() % (rangeSize ?: 1)) + min)};
 			assert(min <= value && value <= max);
 			return shrinkable::shrinkRecur(value, [=](t_type const x){ return shrink::towards <t_type>(x, min); });
 		};
