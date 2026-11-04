@@ -17,6 +17,7 @@ namespace libbio {
 	public:
 		typedef t_vector vector_type;
 		typedef vector_type::value_type value_type;
+		typedef vector_type::size_type size_type;
 
 	private:
 		vector_type m_parents{};
@@ -32,6 +33,7 @@ namespace libbio {
 			std::iota(m_parents.begin(), m_parents.end(), 0);
 		}
 
+		size_type size() const { return m_parents.size(); }
 		bool is_singleton(value_type node) const { return m_parents[node] == node; }
 		value_type find(value_type node);
 		void set_union(value_type n1, value_type n2);
