@@ -33,6 +33,8 @@ namespace libbio::python {
 		disjoint_sets() = delete;
 		~disjoint_sets() {}
 
+		void check_value(value_type value) const;
+
 		// The types of static member functions (unlike those of non-static
 		// member functions) are the same as those of ordinary functions.
 		static int init(disjoint_sets *self, PyObject *args, PyObject **kwargs) noexcept;
@@ -90,10 +92,22 @@ namespace libbio::python {
 
 
 	template <typename t_vector>
+	void disjoint_sets <t_vector>::check_value(value_type const value) const
+	{
+		if (disjoint_sets_.size() <= value)
+		{
+			PyErr_SetString(PyExc_KeyError, "Value out of range");
+			throw exception_already_handled{};
+		}
+	}
+
+
+	template <typename t_vector>
 	PyObject *disjoint_sets <t_vector>::is_singleton(disjoint_sets *self, PyObject *value) noexcept
 	{
 		return handle_exceptions([&] -> PyObject* {
 			auto const value_{check_and_get_long_value <value_type>(value, 1)};
+			self->check_value(value_);
 			return (self->disjoint_sets_.is_singleton(value_) ? Py_True : Py_False);
 		});
 	}
@@ -104,6 +118,7 @@ namespace libbio::python {
 	{
 		return handle_exceptions([&] -> PyObject* {
 			auto const value_{check_and_get_long_value <value_type>(value, 1)};
+			self->check_value(value_);
 			auto const res{self->disjoint_sets_.find(value_)};
 			return new_py_long(res);
 		});
@@ -126,6 +141,8 @@ namespace libbio::python {
 
 			auto const lhs{check_and_get_long_value <value_type>(args[0], 1)};
 			auto const rhs{check_and_get_long_value <value_type>(args[1], 2)};
+			self->check_value(lhs);
+			self->check_value(rhs);
 			self->disjoint_sets_.set_union(lhs, rhs);
 			Py_RETURN_NONE;
 		});
