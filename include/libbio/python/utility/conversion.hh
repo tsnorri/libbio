@@ -22,10 +22,11 @@ namespace libbio::python {
 	inline PyObject *new_py_long(unsigned long long vv) { return PyLong_FromUnsignedLongLong(vv); }
 
 
-	inline int py_long_value(PyObject *obj, std::int32_t &value) { return PyLong_AsInt32(obj, &value); }
-	inline int py_long_value(PyObject *obj, std::int64_t &value) { return PyLong_AsInt64(obj, &value); }
-	inline int py_long_value(PyObject *obj, std::uint32_t &value) { return PyLong_AsUInt32(obj, &value); }
-	inline int py_long_value(PyObject *obj, std::uint64_t &value) { return PyLong_AsUInt64(obj, &value); }
+	// Return true on success.
+	inline bool py_long_value(PyObject *obj, std::int32_t &value) { return 0 == PyLong_AsInt32(obj, &value); }
+	inline bool py_long_value(PyObject *obj, std::int64_t &value) { return 0 == PyLong_AsInt64(obj, &value); }
+	inline bool py_long_value(PyObject *obj, std::uint32_t &value) { return 0 == PyLong_AsUInt32(obj, &value); }
+	inline bool py_long_value(PyObject *obj, std::uint64_t &value) { return 0 == PyLong_AsUInt64(obj, &value); }
 
 
 	template <typename t_type>
