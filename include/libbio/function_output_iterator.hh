@@ -43,13 +43,6 @@ namespace libbio::iterators::detail {
 		typedef void pointer;
 
 	public:
-		// ranges::semiregular <T> (in range-v3/include/concepts/concepts.hpp) requires copyable and default_constructible.
-		// m_fn is needed for the iterator to work, though, so throw in case the default constructor is somehow called.
-		function_output_iterator_base()
-		{
-			throw std::runtime_error("function_output_iterator’s default constructor should not be called.");
-		}
-
 		function_output_iterator_base &operator++() { return *this; }		// Return *this.
 		function_output_iterator_base &operator++(int) { return *this; }	// Return *this.
 	};
@@ -70,9 +63,15 @@ namespace libbio {
 		t_fn	*m_fn{};
 
 	public:
-		using iterators::detail::function_output_iterator_base::function_output_iterator_base;
+		// ranges::semiregular <T> (in range-v3/include/concepts/concepts.hpp) requires copyable and default_constructible.
+		// m_fn is needed for the iterator to work, though, so throw in case the default constructor is somehow called.
+		function_output_iterator()
+		{
+			throw std::runtime_error("function_output_iterator’s default constructor should not be called.");
+		}
 
-		function_output_iterator(t_fn &fn):
+
+		explicit function_output_iterator(t_fn &fn):
 			m_fn{&fn}
 		{
 		}
@@ -99,7 +98,7 @@ namespace libbio {
 
 		function_output_context_iterator() = default;
 
-		function_output_context_iterator(context_type &&ctx):
+		explicit function_output_context_iterator(context_type &&ctx):
 			m_ctx{std::forward <t_context>(ctx)}
 		{
 		}
