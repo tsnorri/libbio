@@ -11,7 +11,13 @@
 
 #include <libbio/assert.hh>
 #include <exception>
+#include <iostream>
 #include <type_traits>
+
+#ifdef LIBBIO_USE_BOOST_STACKTRACE
+#	include <boost/stacktrace.hpp>
+#	include <boost/exception/all.hpp>
+#endif
 
 
 namespace libbio::python {
@@ -22,6 +28,22 @@ namespace libbio::python {
 	template <typename t_fn, typename t_return = std::invoke_result_t <t_fn>>
 	auto handle_exceptions(t_fn &&fn, t_return const error_retval = t_return{}) -> t_return
 	{
+		auto const print_stacktrace_if_available([](auto const &exc){
+#ifdef LIBBIO_USE_BOOST_STACKTRACE
+			auto const *trace{boost::get_error_info <detail::traced>(exc)};
+			if (!trace)
+			{
+				std::cerr << "*** No C++ stack trace available.\n";
+				return;
+			}
+
+			std::cerr << "*** C++ stack trace:\n";
+			std::cerr << *trace << '\n';
+#else
+			std::cerr << "*** C++ stack trace disabled.\n";
+#endif
+		});
+
 		try
 		{
 			return fn();
@@ -32,10 +54,12 @@ namespace libbio::python {
 		}
 		catch (libbio::assertion_failure_exception const &exc)
 		{
+			print_stacktrace_if_available(exc);
 			PyErr_SetString(PyExc_AssertionError, exc.what());
 		}
 		catch (std::exception const &exc)
 		{
+			print_stacktrace_if_available(exc);
 			PyErr_SetString(PyExc_RuntimeError, exc.what());
 		}
 		catch (...)
