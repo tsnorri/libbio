@@ -37,7 +37,7 @@ namespace libbio::dispatch::detail {
 		friend struct fiber_task_executor_item;
 
 	public:
-		typedef std::unique_lock <std::mutex> pool_lock_type;
+		typedef std::unique_lock <std::mutex> pool_lock_type; // Always lock exclusively.
 		typedef parallel_queue::queue_item queue_item_type;
 
 	protected:
@@ -55,7 +55,7 @@ namespace libbio::dispatch::detail {
 
 		pool_lock_type &pool_lock() { return m_pool_lock; }
 
-		virtual void prepare(thread_pool &pool) { m_pool_lock = std::unique_lock{pool.mutex(), std::defer_lock}; }
+		virtual void prepare(thread_pool &pool) { m_pool_lock = pool_lock_type{pool.mutex(), std::defer_lock}; }
 		virtual queue_item_type &current_queue_item() = 0;
 		virtual void run() = 0;
 
@@ -65,7 +65,7 @@ namespace libbio::dispatch::detail {
 
 		// Do not use with a barrier in the queue; things break.
 		virtual void yield(group &gg) = 0;
-		virtual void notify_can_resume() = 0;
+		virtual void notify_can_resume() = 0; // Thread-safe.
 	};
 
 
@@ -83,7 +83,7 @@ namespace libbio::dispatch::detail {
 		bool lock_and_check_pending_and_run() override { m_pool_lock.lock(); return true; }
 
 		void yield(group &gg) override { throw std::runtime_error("Unable to yield when running tasks directly"); }
-		void notify_can_resume() override {}
+		void notify_can_resume() override {} // Thread-safe.
 	};
 
 
@@ -132,7 +132,7 @@ namespace libbio::dispatch::detail {
 		bool lock_and_check_pending_and_run() override;
 
 		void yield(group &gg) override;
-		void notify_can_resume() override;
+		void notify_can_resume() override; // Thread-safe.
 	};
 #endif
 }

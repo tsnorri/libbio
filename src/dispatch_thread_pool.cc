@@ -114,6 +114,7 @@ namespace libbio::dispatch {
 	}
 
 
+	// FIXME: Accomodating fiber_task_executor has made things quite complex. Try to mitigate by using friend declarations more sparingly.
 	void worker_thread_runner::run()
 	{
 		block_signals();
@@ -186,31 +187,44 @@ namespace libbio::dispatch {
 
 					// Acquired the lock since lock_and_check_pending_and_run() returned true.
 					// Handle spurious wake-ups by repeatedly calling wait_for().
+					begin_idle(executed_tasks);
 					while (true)
 					{
 						// m_mutex is locked when wait_until() returns.
-						switch (pool.m_cv.wait_for(task_executor->pool_lock(), m_max_idle_time))
+						auto const wait_res{pool.m_cv.wait_for(task_executor->pool_lock(), m_max_idle_time)};
+
+						// Check if we should stop immediately.
+						if (!pool.m_should_continue)
+						{
+							pool.remove_worker();
+							return;
+						}
+
+						// Check if we can resume any pending tasks before making any other decisions.
+						task_executor->check_pending_and_run();
+
+						// Check for timeout.
+						switch (wait_res)
 						{
 							case std::cv_status::no_timeout:
 								break;
 
 							case std::cv_status::timeout:
-								// Still marked idle.
-								pool.remove_idle_worker();
-								return;
+								// Still marked idle. Check for pending tasks.
+								if (!task_executor->has_pending_tasks())
+								{
+									pool.remove_worker();
+									return;
+								}
+
+								break;
 						}
 
-						if (!pool.m_should_continue)
-						{
-							pool.remove_idle_worker();
-							return;
-						}
-
-						// Check for a spurious wake-up.
+						// Check for intentional wake-up due to new tasks.
 						if (pool.m_notified_workers)
 						{
-							// Intentional wake-up.
 							--pool.m_notified_workers;
+							--pool.m_idle_workers;
 							break;
 						}
 					}
@@ -336,15 +350,6 @@ namespace libbio::dispatch {
 	}
 
 
-	void thread_pool::remove_idle_worker()
-	{
-		// Worker still marked idle.
-		libbio_assert_lt(0, m_current_workers);
-		if (0 == --m_current_workers)
-			m_stop_cv.notify_one();
-	}
-
-
 	void thread_pool::start_worker()
 	{
 		std::lock_guard const lock{m_mutex};
@@ -357,9 +362,8 @@ namespace libbio::dispatch {
 		{
 			std::lock_guard const lock{m_mutex};
 			++m_waiting_tasks;
-			if (m_idle_workers)
+			if (m_notified_workers < m_idle_workers)
 			{
-				--m_idle_workers;
 				++m_notified_workers;
 				goto do_notify;
 			}

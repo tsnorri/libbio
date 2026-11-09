@@ -164,6 +164,8 @@ namespace libbio::dispatch::detail {
 
 	void fiber_task_executor::notify_can_resume()
 	{
+		// Thread-safe.
+
 		{
 			std::lock_guard const lock{m_pool_lock};
 			m_has_resumable_tasks = true;

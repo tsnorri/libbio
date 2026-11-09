@@ -30,8 +30,27 @@ namespace libbio::dispatch {
 	void group::wait_and_yield()
 	{
 		exit();
-		if (!m_should_stop_waiting)
-			detail::task_executor::thread_executor()->yield(*this);
+		auto *thread_task_executor{detail::task_executor::thread_executor()};
+
+		if (thread_task_executor)
+		{
+			auto const should_stop_waiting{[this]{
+				std::lock_guard const lock{m_mutex};
+				return m_should_stop_waiting;
+			}()};
+
+			if (!should_stop_waiting)
+			{
+				m_task_executor = thread_task_executor;
+				thread_task_executor->yield(*this);
+				m_task_executor = nullptr;
+			}
+		}
+		else
+		{
+			std::unique_lock lock{m_mutex};
+			m_cv.wait(lock, [this]{ return m_should_stop_waiting; });
+		}
 
 		// Restore the group’s initial state.
 		m_should_stop_waiting = false;
@@ -70,7 +89,8 @@ namespace libbio::dispatch {
 
 			// Stop waiting.
 			m_cv.notify_all(); // Makes wait() continue.
-			detail::task_executor::thread_executor()->notify_can_resume();
+			if (m_task_executor)
+				m_task_executor->notify_can_resume();
 		}
 	}
 }

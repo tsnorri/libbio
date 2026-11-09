@@ -15,6 +15,7 @@
 
 namespace libbio::dispatch::detail {
 
+	class task_executor;
 	struct fiber_task_executor_item;
 }
 
@@ -37,6 +38,8 @@ namespace libbio::dispatch {
 	private:
 		task						m_task;		// For notify.
 		queue						*m_queue{};	// For notify.
+		detail::task_executor		*m_task_executor{}; // For notify.
+
 		std::atomic <counter_type>	m_count{1};
 		std::condition_variable		m_cv{};
 		std::mutex					m_mutex{};

@@ -50,7 +50,7 @@ namespace libbio::dispatch {
 		thread_count_type				m_min_workers{};							// Overrides m_max_workers if greater.
 		thread_count_type				m_current_workers{};
 		thread_count_type				m_idle_workers{};
-		thread_count_type				m_notified_workers{};						// For detecting spurious wake-ups.
+		thread_count_type				m_notified_workers{};						// For detecting intentional wake-ups due to new tasks.
 		std::condition_variable			m_cv{};										// For pausing the workers.
 		std::condition_variable			m_stop_cv{};								// For stopping the thread pool.
 		std::shared_mutex				m_queue_mutex{};							// Protects m_queues
@@ -61,7 +61,6 @@ namespace libbio::dispatch {
 	private:
 		void start_worker_();
 		void remove_worker();
-		void remove_idle_worker();
 
 		std::condition_variable &condition_variable() { return m_cv; }
 		std::mutex &mutex() { return m_mutex; }
