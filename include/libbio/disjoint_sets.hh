@@ -34,7 +34,7 @@ namespace libbio {
 		}
 
 		size_type size() const { return m_parents.size(); }
-		bool is_singleton(value_type node) const { return m_parents[node] == node; }
+		bool is_singleton(value_type node) const { return m_parents[node] == node && 1 == m_sizes[node]; }
 		value_type find(value_type node);
 		void set_union(value_type n1, value_type n2);
 	};
